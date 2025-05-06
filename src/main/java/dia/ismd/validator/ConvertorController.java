@@ -1,6 +1,7 @@
 package dia.ismd.validator;
 
 import dia.ismd.validator.convertor.ConvertorService;
+import dia.ismd.validator.enums.FileFormat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 @RestController
@@ -22,20 +25,67 @@ public class ConvertorController {
     private final ConvertorService convertorService;
 
     @PostMapping("/prevod")
-    public ResponseEntity<?> convertOntology(
+    public ResponseEntity<?> convertFile(
             @RequestParam("file")MultipartFile file,
             @RequestParam(value = "output", defaultValue = "json") String output) {
 
         try {
-            String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+            FileFormat fileFormat = checkFileFormat(file);
+            if (fileFormat == FileFormat.UNSUPPORTED) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
 
-            convertorService.parseArchiFromString(xmlContent);
-            convertorService.convertArchi();
+            switch (fileFormat) {
+                case ARCHI_XML -> {
+                    String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+                    convertorService.parseArchiFromString(xmlContent);
+                    convertorService.convertArchi();
+                }
+
+                default -> {
+                    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                }
+            }
 
             return getResponseEntity(output);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
+    }
+
+    private FileFormat checkFileFormat(MultipartFile file) throws IOException {
+        String fileName = file.getOriginalFilename();
+        if (fileName != null) {
+            String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+            if (extension.equals("xlsx")) {
+                return FileFormat.XLSX;
+            }
+        }
+
+        String contentType = file.getContentType();
+        if (contentType != null && (contentType.equals("application/xml")
+                || contentType.equals("text/xml")
+                || contentType.contains("xml"))) {
+
+            byte[] bytes = new byte[4096];
+            try (InputStream stream = file.getInputStream()) {
+                stream.read(bytes);
+            }
+
+            String xmlHeader = new String(bytes, StandardCharsets.UTF_8);
+
+            if (xmlHeader.contains("http://www.opengroup.org/xsd/archimate/3.0/")
+                    || xmlHeader.contains("http://www.opengroup.org/xsd/archimate")) {
+                return FileFormat.ARCHI_XML;
+            }
+
+            if (xmlHeader.contains("http://schema.omg.org/spec/XMI/2.1")
+                    || xmlHeader.contains("XMI.version=\"2.1\"")) {
+                return FileFormat.XMI;
+            }
+        }
+
+        return FileFormat.UNSUPPORTED;
     }
 
     private ResponseEntity<?> getResponseEntity(

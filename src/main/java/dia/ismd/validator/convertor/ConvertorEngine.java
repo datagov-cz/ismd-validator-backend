@@ -1,4 +1,4 @@
-package dia.ismd.validator.convertor.internal;
+package dia.ismd.validator.convertor;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,13 +10,14 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class ConvertorEngine {
 
-    private ArchiConvertor archiConvertor;
-
-    private JSONExporter jsonExporter;
-    private TurtleExporter turtleExporter;
+    private final ArchiConvertor archiConvertor;
 
     public void parseArchiFromString(String content) {
-        archiConvertor.parseFromString(content);
+        try {
+            archiConvertor.parseFromString(content);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void convertArchi() {
@@ -24,10 +25,10 @@ public class ConvertorEngine {
     }
 
     public String exportToJson() throws JSONException {
-        return jsonExporter.exportToJson();
+        return archiConvertor.exportToJson();
     }
 
     public String exportToTurtle() {
-        return turtleExporter.exportToTurtle();
+        return archiConvertor.exportToTurtle();
     }
 }

@@ -1,6 +1,5 @@
 package dia.ismd.validator.convertor;
 
-import dia.ismd.validator.convertor.internal.ConvertorEngine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Service;
@@ -12,7 +11,7 @@ public class ConvertorServiceImpl implements ConvertorService {
     private final ConvertorEngine convertorEngine;
 
     @Override
-    public void parseArchiFromString(String content) {
+    public void parseArchiFromString(String content) throws Exception {
         convertorEngine.parseArchiFromString(content);
     }
 
