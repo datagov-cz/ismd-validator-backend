@@ -1,5 +1,6 @@
 package dia.ismd.validator;
 
+import dia.ismd.common.exception.UnsupportedFormatException;
 import dia.ismd.validator.convertor.ConvertorService;
 import dia.ismd.validator.enums.FileFormat;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class ConvertorController {
         try {
             FileFormat fileFormat = checkFileFormat(file);
             if (fileFormat == FileFormat.UNSUPPORTED) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
             }
 
             switch (fileFormat) {
@@ -42,14 +43,20 @@ public class ConvertorController {
                     convertorService.convertArchi();
                 }
 
+                case UNSUPPORTED -> throw new UnsupportedFormatException("Unsupported file format");
+
                 default -> {
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
 
             return getResponseEntity(output);
+        } catch (UnsupportedFormatException e) {
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                    .body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(e.getMessage());
         }
     }
 
@@ -102,7 +109,7 @@ public class ConvertorController {
                 yield ResponseEntity.ok()
                         .body(ttlOutput);
             }
-            default -> ResponseEntity.badRequest().body("unsupported output");
+            default -> throw new UnsupportedFormatException("Unsupported output format: " + output);
         };
     }
 }

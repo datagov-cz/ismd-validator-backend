@@ -18,7 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static dia.ismd.validator.convertor.ArchiOntologyConstants.*;
+import static dia.ismd.validator.convertor.constants.ArchiOntologyConstants.*;
 
 @Slf4j
 class JSONExporter {

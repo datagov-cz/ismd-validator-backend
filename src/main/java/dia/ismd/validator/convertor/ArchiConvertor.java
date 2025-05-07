@@ -1,12 +1,13 @@
 package dia.ismd.validator.convertor;
 
+import dia.ismd.common.exception.ConvertionException;
+import dia.ismd.common.exception.FileParsingException;
+import dia.ismd.common.models.OFNBaseModel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.ontology.OntClass;
 import org.apache.jena.ontology.OntModel;
-import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.ontology.OntProperty;
-import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
@@ -16,21 +17,24 @@ import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static dia.ismd.validator.convertor.ArchiOntologyConstants.*;
+import static dia.ismd.validator.convertor.constants.ArchiOntologyConstants.*;
 
 @Component
 @Slf4j
-public class ArchiConvertor {
+class ArchiConvertor {
 
     private static final Set<String> COMMON_PROPERTY_NAMES = new HashSet<>(Arrays.asList(
             LABEL_TYP, LABEL_POPIS, LABEL_DEF, LABEL_ZDROJ, LABEL_SZ, LABEL_AN,
@@ -39,38 +43,42 @@ public class ArchiConvertor {
             LABEL_UDN, LABEL_ALKD, LABEL_DEF_O, LABEL_OBOR_HODNOT, LABEL_VU, LABEL_NVU, LABEL_NT
     ));
 
-    private final Map<String, String> propertyMapping = new HashMap<>();
-
     private static final Map<String, String> TYPE_MAPPINGS = new HashMap<>();
+
     static {
         TYPE_MAPPINGS.put("typ subjektu", TYP_TSP);
         TYPE_MAPPINGS.put("typ objektu", TYP_TOP);
         TYPE_MAPPINGS.put("typ vlastnosti", TYP_VLASTNOST);
     }
 
-    private Document archiDoc;
+    private final Map<String, String> propertyMapping = new HashMap<>();
     private final OntModel ontModel;
     private final Map<String, Resource> resourceMap;
+
+    private Document archiDoc;
     private String modelName;
 
     public ArchiConvertor() {
-        ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-        resourceMap = new HashMap<>();
-
-        ontModel.setNsPrefix("cz", NS);
-        ontModel.setNsPrefix("rdf", RDF.getURI());
-        ontModel.setNsPrefix("rdfs", RDFS.getURI());
-        ontModel.setNsPrefix("owl", OWL2.getURI());
-        ontModel.setNsPrefix("xsd", XSD);
+        this.resourceMap = new HashMap<>();
+        OFNBaseModel ofnBaseModel = new OFNBaseModel();
+        this.ontModel = ofnBaseModel.getOntModel();
     }
 
-    public void parseFromString(String content) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newDefaultInstance();
-        factory.setNamespaceAware(true);
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        archiDoc = builder.parse(new ByteArrayInputStream(content.getBytes()));
+    public void parseFromString(String content) throws FileParsingException {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newDefaultInstance();
+            factory.setNamespaceAware(true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            archiDoc = builder.parse(new ByteArrayInputStream(content.getBytes()));
 
-        buildPropertyMapping();
+            buildPropertyMapping();
+        } catch (ParserConfigurationException e) {
+            throw new FileParsingException("Failed to configure XML parser", e);
+        } catch (SAXException e) {
+            throw new FileParsingException("Failed to parse XML content", e);
+        } catch (IOException e) {
+            throw new FileParsingException("Failed to read XML content", e);
+        }
     }
 
     private void buildPropertyMapping() {
@@ -113,9 +121,9 @@ public class ArchiConvertor {
         }
     }
 
-    public void convert() {
+    public void convert() throws ConvertionException {
         if (archiDoc == null) {
-            throw new IllegalStateException("No ArchiMate document to convert. Call parseFromFile or parseFromString first.");
+            throw new ConvertionException("No ArchiMate document to convert. Call parseFromFile or parseFromString first.");
         }
 
         NodeList nameNodes = archiDoc.getElementsByTagNameNS(ARCHI_NS, "name");
@@ -124,8 +132,6 @@ public class ArchiConvertor {
         } else {
             modelName = "Untitled Model";
         }
-
-        createBaseClasses();
 
         processElements();
 
@@ -165,115 +171,12 @@ public class ArchiConvertor {
         return result;
     }
 
-    private void createBaseClasses() {
-        OntClass pojemClass = ontModel.createClass(NS + TYP_POJEM);
-        pojemClass.addLabel(LABEL_POJEM, "cs");
-        pojemClass.addLabel(LABEL_POJEM, "en");
 
-        OntClass vlastnostClass = ontModel.createClass(NS + TYP_VLASTNOST);
-        vlastnostClass.addLabel(LABEL_VLASTNOST, "cs");
-        vlastnostClass.addLabel(LABEL_VLASTNOST, "en");
-        vlastnostClass.addSuperClass(pojemClass);
-
-        OntClass vztahClass = ontModel.createClass(NS + TYP_VZTAH);
-        vztahClass.addLabel(LABEL_VZTAH, "cs");
-        vztahClass.addLabel(LABEL_VZTAH, "en");
-        vztahClass.addSuperClass(pojemClass);
-
-        OntClass tridaClass = ontModel.createClass(NS + TYP_TRIDA);
-        tridaClass.addLabel(LABEL_TRIDA, "cs");
-        tridaClass.addLabel(LABEL_TRIDA, "en");
-        tridaClass.addSuperClass(pojemClass);
-
-        OntClass datovyTyp = ontModel.createClass(NS + TYP_DT);
-        datovyTyp.addLabel(LABEL_DT, "cs");
-        datovyTyp.addLabel(LABEL_DT, "en");
-
-        OntClass typSubjektuClass = ontModel.createClass(NS + TYP_TSP);
-        typSubjektuClass.addLabel(LABEL_TSP, "cs");
-        typSubjektuClass.addLabel(LABEL_TSP, "en");
-        typSubjektuClass.addSuperClass(tridaClass);
-
-        OntClass typObjektuClass = ontModel.createClass(NS + TYP_TOP);
-        typObjektuClass.addLabel(LABEL_TOP, "cs");
-        typObjektuClass.addLabel(LABEL_TOP, "en");
-        typObjektuClass.addSuperClass(tridaClass);
-
-        OntClass verejnyUdajClass = ontModel.createClass(NS + TYP_VEREJNY_UDAJ);
-        verejnyUdajClass.addLabel(LABEL_VU, "cs");
-        verejnyUdajClass.addLabel(LABEL_VU, "en");
-
-        OntClass neverejnyUdajClass = ontModel.createClass(NS + TYP_NEVEREJNY_UDAJ);
-        neverejnyUdajClass.addLabel(LABEL_NVU, "cs");
-        neverejnyUdajClass.addLabel(LABEL_NVU, "en");
-
-        OntProperty nazevProp = ontModel.createOntProperty(NS + LABEL_NAZEV);
-        nazevProp.addLabel(LABEL_NAZEV, "cs");
-        nazevProp.addLabel(LABEL_NAZEV, "en");
-        nazevProp.addDomain(pojemClass);
-        nazevProp.addRange(ontModel.createClass(XSD));
-
-        OntProperty popisProp = ontModel.createOntProperty(NS + LABEL_POPIS);
-        popisProp.addLabel(LABEL_POPIS, "cs");
-        popisProp.addLabel(LABEL_POPIS, "en");
-        popisProp.addDomain(pojemClass);
-        popisProp.addRange(ontModel.createClass("http://www.w3.org/2001/XMLSchema#string"));
-
-        OntProperty definiceProp = ontModel.createOntProperty(NS + LABEL_DEF);
-        definiceProp.addLabel(LABEL_DEF, "cs");
-        definiceProp.addLabel(LABEL_DEF, "en");
-        definiceProp.addDomain(pojemClass);
-        definiceProp.addRange(ontModel.createClass("http://www.w3.org/2001/XMLSchema#string"));
-
-        OntProperty zdrojProp = ontModel.createOntProperty(NS + LABEL_ZDROJ);
-        zdrojProp.addLabel(LABEL_ZDROJ, "cs");
-        zdrojProp.addLabel(LABEL_ZDROJ, "en");
-        zdrojProp.addDomain(pojemClass);
-        zdrojProp.addRange(ontModel.createClass("http://www.w3.org/2001/XMLSchema#anyURI"));
-
-        OntProperty jeSdilenVPpdfProp = ontModel.createOntProperty(NS + LABEL_JE_PPDF);
-        jeSdilenVPpdfProp.addLabel(LABEL_JE_PPDF, "cs");
-        jeSdilenVPpdfProp.addLabel(LABEL_JE_PPDF, "en");
-        jeSdilenVPpdfProp.addDomain(pojemClass);
-        jeSdilenVPpdfProp.addRange(ontModel.createClass("http://www.w3.org/2001/XMLSchema#boolean"));
-
-        OntProperty agendaProp = ontModel.createOntProperty(NS + LABEL_AGENDA);
-        agendaProp.addLabel(LABEL_AGENDA, "cs");
-        agendaProp.addLabel(LABEL_AGENDA, "en");
-        agendaProp.addDomain(pojemClass);
-        agendaProp.addRange(RDFS.Resource);
-
-        OntProperty aisProp = ontModel.createOntProperty(NS + LABEL_AIS);
-        aisProp.addLabel(LABEL_AIS, "cs");
-        aisProp.addLabel(LABEL_AIS, "en");
-        aisProp.addDomain(pojemClass);
-        aisProp.addRange(RDFS.Resource);
-
-        OntProperty ustanoveniProp = ontModel.createOntProperty(NS + LABEL_UDN);
-        ustanoveniProp.addLabel(LABEL_UDN, "cs");
-        ustanoveniProp.addLabel(LABEL_UDN, "en");
-        ustanoveniProp.addDomain(neverejnyUdajClass);
-        ustanoveniProp.addRange(RDFS.Resource);
-
-        OntProperty definicniOborProp = ontModel.createOntProperty(NS + LABEL_DEF_O);
-        definicniOborProp.addLabel(LABEL_DEF_O, "cs");
-        definicniOborProp.addLabel(LABEL_DEF_O, "en");
-
-        OntProperty oborHodnotProp = ontModel.createOntProperty(NS + LABEL_OBOR_HODNOT);
-        oborHodnotProp.addLabel(LABEL_OBOR_HODNOT, "cs");
-        oborHodnotProp.addLabel(LABEL_OBOR_HODNOT, "en");
-
-        OntProperty nadrazenaTrida = ontModel.createOntProperty(NS + LABEL_NT);
-        nadrazenaTrida.addLabel(LABEL_NT, "cs");
-        nadrazenaTrida.addLabel(LABEL_NT, "en");
-
-        OntProperty souvisejiciUstanoveni = ontModel.createOntProperty(NS + LABEL_SUPP);
-        souvisejiciUstanoveni.addLabel(LABEL_SUPP, "cs");
-        souvisejiciUstanoveni.addLabel(LABEL_SUPP, "en");
-    }
-
-    private void processElements() {
+    private void processElements() throws ConvertionException {
         NodeList elements = archiDoc.getElementsByTagNameNS(ARCHI_NS, "element");
+        if (elements.getLength() < 0) {
+            throw new ConvertionException("No elements found in file");
+        }
 
         for (int i = 0; i < elements.getLength(); i++) {
             Element element = (Element) elements.item(i);

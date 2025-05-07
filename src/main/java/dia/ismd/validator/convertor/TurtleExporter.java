@@ -1,5 +1,6 @@
 package dia.ismd.validator.convertor;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.rdf.model.Resource;
