@@ -4,7 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.ResIterator;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
@@ -22,6 +26,7 @@ import static dia.ismd.validator.convertor.constants.ArchiOntologyConstants.*;
 
 @Slf4j
 class JSONExporter {
+    // TODO potřebuje refactor
 
     private static final String FIELD_CONTEXT = "@context";
     private static final String FIELD_IRI = "iri";
@@ -69,7 +74,7 @@ class JSONExporter {
             containsFieldInMap(originalMap, orderedMap, FIELD_POPIS);
 
             if (originalMap.containsKey(FIELD_POJMY)) {
-                @SuppressWarnings("unchecked")
+
                 List<Map<String, Object>> pojmyList = (List<Map<String, Object>>) originalMap.get(FIELD_POJMY);
                 List<Map<String, Object>> orderedPojmyList = new ArrayList<>();
 

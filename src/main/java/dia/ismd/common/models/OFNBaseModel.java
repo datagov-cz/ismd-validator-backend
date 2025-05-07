@@ -15,6 +15,7 @@ import static dia.ismd.validator.convertor.constants.ArchiOntologyConstants.LABE
 
 @Getter
 public class OFNBaseModel {
+    // TODO zkontrolovat zda odpovídá OFN modelu
 
     private final OntModel ontModel;
 

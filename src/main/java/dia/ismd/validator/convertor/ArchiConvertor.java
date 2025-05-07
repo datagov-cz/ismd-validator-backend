@@ -1,6 +1,6 @@
 package dia.ismd.validator.convertor;
 
-import dia.ismd.common.exceptions.ConvertionException;
+import dia.ismd.common.exceptions.ConversionException;
 import dia.ismd.common.exceptions.FileParsingException;
 import dia.ismd.common.models.OFNBaseModel;
 import lombok.extern.slf4j.Slf4j;
@@ -121,9 +121,9 @@ class ArchiConvertor {
         }
     }
 
-    public void convert() throws ConvertionException {
+    public void convert() throws ConversionException {
         if (archiDoc == null) {
-            throw new ConvertionException("No ArchiMate document to convert. Call parseFromFile or parseFromString first.");
+            throw new ConversionException("No ArchiMate document to convert. Call parseFromFile or parseFromString first.");
         }
 
         NodeList nameNodes = archiDoc.getElementsByTagNameNS(ARCHI_NS, "name");
@@ -172,10 +172,10 @@ class ArchiConvertor {
     }
 
 
-    private void processElements() throws ConvertionException {
+    private void processElements() throws ConversionException {
         NodeList elements = archiDoc.getElementsByTagNameNS(ARCHI_NS, "element");
         if (elements.getLength() < 0) {
-            throw new ConvertionException("No elements found in file");
+            throw new ConversionException("No elements found in file");
         }
 
         for (int i = 0; i < elements.getLength(); i++) {

@@ -1,6 +1,6 @@
 package dia.ismd.validator.convertor;
 
-import dia.ismd.common.exceptions.ConvertionException;
+import dia.ismd.common.exceptions.ConversionException;
 import dia.ismd.common.exceptions.FileParsingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ class ConvertorEngine {
         archiConvertor.parseFromString(content);
     }
 
-    public void convertArchi() throws ConvertionException {
+    public void convertArchi() throws ConversionException {
         archiConvertor.convert();
     }
 

@@ -1,6 +1,6 @@
 package dia.ismd.validator.convertor;
 
-import lombok.Getter;
+import dia.ismd.common.exceptions.ExportException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.rdf.model.Resource;
@@ -14,6 +14,7 @@ import java.util.Map;
 
 @Slf4j
 class TurtleExporter {
+    // TODO potřebuje refactor
 
     private final OntModel ontModel;
     private final Map<String, Resource> resourceMap;
@@ -48,9 +49,9 @@ class TurtleExporter {
             RDFDataMgr.write(outputStream, ontModel, RDFFormat.TURTLE_PRETTY);
 
             return outputStream.toString(StandardCharsets.UTF_8);
-        } catch (Exception e) {
+        } catch (ExportException e) {
             log.error("Error exporting to Turtle format: {}", e.getMessage(), e);
-            throw new RuntimeException("Error exporting to Turtle format: " + e.getMessage(), e);
+            throw new ExportException("Error exporting to Turtle format: " + e.getMessage());
         }
     }
 
@@ -83,9 +84,9 @@ class TurtleExporter {
             }
 
             return output;
-        } catch (Exception e) {
+        } catch (ExportException e) {
             log.error("Error exporting to Turtle format: {}", e.getMessage(), e);
-            throw new RuntimeException("Error exporting to Turtle format: " + e.getMessage(), e);
+            throw new ExportException("Error exporting to Turtle format: " + e.getMessage());
         }
     }
 
@@ -102,9 +103,9 @@ class TurtleExporter {
             RDFDataMgr.write(outputStream, ontModel, RDFFormat.TURTLE_PRETTY);
 
             return outputStream.toString(StandardCharsets.UTF_8);
-        } catch (Exception e) {
+        } catch (ExportException e) {
             log.error("Error exporting to Turtle format: {}", e.getMessage(), e);
-            throw new RuntimeException("Error exporting to Turtle format: " + e.getMessage(), e);
+            throw new ExportException("Error exporting to Turtle format: " + e.getMessage());
         }
     }
 }

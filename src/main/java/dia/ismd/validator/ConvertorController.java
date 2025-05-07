@@ -110,6 +110,7 @@ public class ConvertorController {
             case "ttl" -> {
                 String ttlOutput = convertorService.exportArchiToTurtle();
                 yield ResponseEntity.ok()
+                        .contentType(MediaType.TEXT_PLAIN)
                         .body(ttlOutput);
             }
             default -> throw new UnsupportedFormatException("Nepodporovaný výstupní formát: " + output);
