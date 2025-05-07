@@ -1,6 +1,6 @@
 package dia.ismd.validator.convertor;
 
-import dia.ismd.common.exception.FileParsingException;
+import dia.ismd.common.exceptions.FileParsingException;
 import lombok.RequiredArgsConstructor;
 import org.apache.jena.ontology.ConversionException;
 import org.springframework.boot.configurationprocessor.json.JSONException;
@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class ConvertorServiceImpl implements ConvertorService {
+class ConvertorServiceImpl implements ConvertorService {
 
     private final ConvertorEngine convertorEngine;
 

@@ -1,4 +1,4 @@
-package dia.ismd.common.exception;
+package dia.ismd.common.exceptions;
 
 public class UnsupportedFormatException extends RuntimeException {
     public UnsupportedFormatException(String message) {

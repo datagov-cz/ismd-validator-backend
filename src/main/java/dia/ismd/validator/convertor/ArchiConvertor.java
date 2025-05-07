@@ -1,7 +1,7 @@
 package dia.ismd.validator.convertor;
 
-import dia.ismd.common.exception.ConvertionException;
-import dia.ismd.common.exception.FileParsingException;
+import dia.ismd.common.exceptions.ConvertionException;
+import dia.ismd.common.exceptions.FileParsingException;
 import dia.ismd.common.models.OFNBaseModel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.datatypes.xsd.XSDDatatype;

@@ -22,6 +22,7 @@ class TurtleExporter {
 
     // Standard prefixes to include in the output
     private static final Map<String, String> STANDARD_PREFIXES = new HashMap<>();
+
     static {
         STANDARD_PREFIXES.put("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
         STANDARD_PREFIXES.put("rdfs", "http://www.w3.org/2000/01/rdf-schema#");

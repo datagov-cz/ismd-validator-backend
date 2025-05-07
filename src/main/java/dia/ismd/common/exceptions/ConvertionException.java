@@ -1,4 +1,4 @@
-package dia.ismd.common.exception;
+package dia.ismd.common.exceptions;
 
 public class ConvertionException extends RuntimeException {
     public ConvertionException(String message) {

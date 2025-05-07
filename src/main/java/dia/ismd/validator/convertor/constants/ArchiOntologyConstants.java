@@ -35,7 +35,7 @@ public class ArchiOntologyConstants {
     public static final String LABEL_UDN = "ustanovení-dokládající-neveřejnost";
     public static final String LABEL_ALKD = "adresa-lokálního-katalogu-dat-ve-kterém-bude-slovník-registrován";
     public static final String LABEL_DEF_O = "definiční-obor";
-    public static final String LABEL_OBOR_HODNOT= "obor-hodnot";
+    public static final String LABEL_OBOR_HODNOT = "obor-hodnot";
     public static final String LABEL_VU = "veřejný-údaj";
     public static final String LABEL_NVU = "neveřejný-údaj";
     public static final String LABEL_NT = "nadřazená-třída";
@@ -48,5 +48,6 @@ public class ArchiOntologyConstants {
     public static final String LABEL_VLASTNOST = "vlastnost";
     public static final String LABEL_TRIDA = "třída";
 
-    private ArchiOntologyConstants() {}
+    private ArchiOntologyConstants() {
+    }
 }

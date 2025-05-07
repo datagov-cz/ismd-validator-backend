@@ -1,6 +1,6 @@
 package dia.ismd.validator;
 
-import dia.ismd.common.exception.UnsupportedFormatException;
+import dia.ismd.common.exceptions.UnsupportedFormatException;
 import dia.ismd.validator.convertor.ConvertorService;
 import dia.ismd.validator.enums.FileFormat;
 import lombok.RequiredArgsConstructor;
