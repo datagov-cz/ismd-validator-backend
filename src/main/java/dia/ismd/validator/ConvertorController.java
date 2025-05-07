@@ -27,24 +27,25 @@ public class ConvertorController {
 
     @PostMapping("/prevod")
     public ResponseEntity<?> convertFile(
-            @RequestParam("file")MultipartFile file,
+            @RequestParam("file") MultipartFile file,
             @RequestParam(value = "output", defaultValue = "json") String output) {
 
         try {
+            if (file.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nebyl vložen žádný soubor.");
+            }
+
             FileFormat fileFormat = checkFileFormat(file);
             if (fileFormat == FileFormat.UNSUPPORTED) {
                 return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
             }
-
             switch (fileFormat) {
                 case ARCHI_XML -> {
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
                     convertorService.parseArchiFromString(xmlContent);
                     convertorService.convertArchi();
                 }
-
-                case UNSUPPORTED -> throw new UnsupportedFormatException("Unsupported file format");
-
+                case UNSUPPORTED -> throw new UnsupportedFormatException("Nepodporovaný formát souboru.");
                 default -> {
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
@@ -75,20 +76,22 @@ public class ConvertorController {
                 || contentType.contains("xml"))) {
 
             byte[] bytes = new byte[4096];
+            int bytesRead;
             try (InputStream stream = file.getInputStream()) {
-                stream.read(bytes);
+                bytesRead = stream.read(bytes);
             }
+            if (bytesRead > 0) {
+                String xmlHeader = new String(bytes, StandardCharsets.UTF_8);
 
-            String xmlHeader = new String(bytes, StandardCharsets.UTF_8);
+                if (xmlHeader.contains("http://www.opengroup.org/xsd/archimate/3.0/")
+                        || xmlHeader.contains("http://www.opengroup.org/xsd/archimate")) {
+                    return FileFormat.ARCHI_XML;
+                }
 
-            if (xmlHeader.contains("http://www.opengroup.org/xsd/archimate/3.0/")
-                    || xmlHeader.contains("http://www.opengroup.org/xsd/archimate")) {
-                return FileFormat.ARCHI_XML;
-            }
-
-            if (xmlHeader.contains("http://schema.omg.org/spec/XMI/2.1")
-                    || xmlHeader.contains("XMI.version=\"2.1\"")) {
-                return FileFormat.XMI;
+                if (xmlHeader.contains("http://schema.omg.org/spec/XMI/2.1")
+                        || xmlHeader.contains("XMI.version=\"2.1\"")) {
+                    return FileFormat.XMI;
+                }
             }
         }
 
@@ -96,7 +99,7 @@ public class ConvertorController {
     }
 
     private ResponseEntity<?> getResponseEntity(
-            @RequestParam(value = "output", defaultValue = "json")  String output) throws JSONException {
+            @RequestParam(value = "output", defaultValue = "json") String output) throws JSONException {
         return switch (output.toLowerCase()) {
             case "json" -> {
                 String jsonOutput = convertorService.exportArchiToJson();
@@ -109,7 +112,7 @@ public class ConvertorController {
                 yield ResponseEntity.ok()
                         .body(ttlOutput);
             }
-            default -> throw new UnsupportedFormatException("Unsupported output format: " + output);
+            default -> throw new UnsupportedFormatException("Nepodporovaný výstupní formát: " + output);
         };
     }
 }
