@@ -2,6 +2,8 @@ package dia.ismd.validator.convertor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import dia.ismd.common.exceptions.JsonExportException;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.rdf.model.Property;
@@ -17,32 +19,25 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static dia.ismd.validator.convertor.constants.ArchiOntologyConstants.*;
+import static dia.ismd.validator.convertor.constants.JsonExportConstants.*;
 
 @Slf4j
 class JSONExporter {
-    // TODO potřebuje refactor
-
-    private static final String FIELD_CONTEXT = "@context";
-    private static final String FIELD_IRI = "iri";
-    private static final String FIELD_TYP = "typ";
-    private static final String FIELD_NAZEV = "název";
-    private static final String FIELD_POPIS = "popis";
-    private static final String FIELD_POJMY = "pojmy";
 
     private final OntModel ontModel;
+    @Getter
     private final Map<String, Resource> resourceMap;
     private final String modelName;
     private final Map<String, String> modelProperties;
 
     public JSONExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties) {
         this.ontModel = ontModel;
-        this.resourceMap = new HashMap<>();
+        this.resourceMap = new HashMap<>(resourceMap);
         this.modelName = modelName;
         this.modelProperties = modelProperties;
     }
@@ -52,99 +47,137 @@ class JSONExporter {
 
         addModelMetadata(unorderedRoot);
 
-        unorderedRoot.put(FIELD_POJMY, createConceptsArray());
+        unorderedRoot.put(JSON_FIELD_POJMY, createConceptsArray());
 
         return formatJsonWithOrderedFields(unorderedRoot);
     }
 
-    private String formatJsonWithOrderedFields(JSONObject unorderedRoot) throws JSONException {
+    private String formatJsonWithOrderedFields(JSONObject unorderedRoot) throws JsonExportException {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.enable(SerializationFeature.INDENT_OUTPUT);
-
             Map<String, Object> originalMap = jsonToMap(unorderedRoot);
 
-            Map<String, Object> orderedMap = new LinkedHashMap<>();
+            Map<String, Object> orderedMap = createOrderedModelMap(originalMap);
 
-            addFieldIfExists(originalMap, orderedMap, FIELD_CONTEXT);
-            addFieldIfExists(originalMap, orderedMap, FIELD_IRI);
-            addFieldIfExists(originalMap, orderedMap, FIELD_TYP);
+            processConceptsArray(originalMap, orderedMap);
 
-            containsFieldInMap(originalMap, orderedMap, FIELD_NAZEV);
-            containsFieldInMap(originalMap, orderedMap, FIELD_POPIS);
+            addRemainingFields(originalMap, orderedMap);
 
-            if (originalMap.containsKey(FIELD_POJMY)) {
-
-                List<Map<String, Object>> pojmyList = (List<Map<String, Object>>) originalMap.get(FIELD_POJMY);
-                List<Map<String, Object>> orderedPojmyList = new ArrayList<>();
-
-                for (Map<String, Object> pojem : pojmyList) {
-                    orderedPojmyList.add(orderPojemFields(pojem));
-                }
-
-                orderedMap.put(FIELD_POJMY, orderedPojmyList);
-            } else {
-                orderedMap.put(FIELD_POJMY, new ArrayList<>());
-            }
-
-            for (Map.Entry<String, Object> entry : originalMap.entrySet()) {
-                if (!orderedMap.containsKey(entry.getKey())) {
-                    orderedMap.put(entry.getKey(), entry.getValue());
-                }
-            }
-
-            return mapper.writeValueAsString(orderedMap);
+            return convertMapToFormattedJson(orderedMap);
+        } catch (JSONException e) {
+            log.error("Error parsing JSON: {}", e.getMessage(), e);
+            throw new JsonExportException("Error parsing JSON: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error formatting JSON: {}", e.getMessage(), e);
-            throw new JSONException("Error formatting JSON: " + e.getMessage());
+            throw new JsonExportException("Error formatting JSON: " + e.getMessage());
         }
     }
 
-    private void containsFieldInMap(Map<String, Object> originalMap, Map<String, Object> orderedMap, String fieldNazev) {
-        if (originalMap.containsKey(fieldNazev)) {
-            orderedMap.put(fieldNazev, originalMap.get(fieldNazev));
+    private Map<String, Object> createOrderedModelMap(Map<String, Object> originalMap) {
+        Map<String, Object> orderedMap = new LinkedHashMap<>();
+
+        addFieldIfExists(originalMap, orderedMap, JSON_FIELD_CONTEXT);
+        addFieldIfExists(originalMap, orderedMap, JSON_FIELD_IRI);
+        addFieldIfExists(originalMap, orderedMap, JSON_FIELD_TYP);
+
+        addFieldWithDefault(originalMap, orderedMap, JSON_FIELD_NAZEV, createEmptyMultilingualField());
+        addFieldWithDefault(originalMap, orderedMap, JSON_FIELD_POPIS, createEmptyMultilingualField());
+
+        return orderedMap;
+    }
+
+    private Map<String, String> createEmptyMultilingualField() {
+        Map<String, String> emptyField = new LinkedHashMap<>();
+        emptyField.put("cs", "");
+        emptyField.put("en", "");
+        return emptyField;
+    }
+
+    private void addFieldWithDefault(Map<String, Object> source, Map<String, Object> target,
+                                     String fieldName, Object defaultValue) {
+        target.put(fieldName, source.getOrDefault(fieldName, defaultValue));
+    }
+
+    private void processConceptsArray(Map<String, Object> originalMap, Map<String, Object> orderedMap) {
+        if (originalMap.containsKey(JSON_FIELD_POJMY)) {
+            Object pojmyObj = originalMap.get(JSON_FIELD_POJMY);
+
+            if (pojmyObj instanceof List<?> rawList) {
+                List<Map<String, Object>> orderedPojmyList = new ArrayList<>();
+
+                for (Object item : rawList) {
+                    if (item instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> mapItem = (Map<String, Object>) item;
+                        orderedPojmyList.add(orderPojemFields(mapItem));
+                    } else {
+                        log.warn("Unexpected non-map object in pojmy list: {}", item);
+                    }
+                }
+
+                orderedMap.put(JSON_FIELD_POJMY, orderedPojmyList);
+            } else {
+                log.warn("Expected pojmy to be a List but was: {}", pojmyObj.getClass().getName());
+                orderedMap.put(JSON_FIELD_POJMY, new ArrayList<>());
+            }
         } else {
-            Map<String, String> emptyNazev = new LinkedHashMap<>();
-            emptyNazev.put("cs", "");
-            emptyNazev.put("en", "");
-            orderedMap.put(fieldNazev, emptyNazev);
+            orderedMap.put(JSON_FIELD_POJMY, new ArrayList<>());
+        }
+    }
+
+    private void addRemainingFields(Map<String, Object> originalMap, Map<String, Object> orderedMap) {
+        originalMap.forEach((key, value) -> {
+            if (!orderedMap.containsKey(key)) {
+                orderedMap.put(key, value);
+            }
+        });
+    }
+
+    private String convertMapToFormattedJson(Map<String, Object> map) throws JsonExportException {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.enable(SerializationFeature.INDENT_OUTPUT);
+            return mapper.writeValueAsString(map);
+        } catch (Exception e) {
+            throw new JsonExportException("Error converting map to JSON: " + e.getMessage());
         }
     }
 
     private Map<String, Object> orderPojemFields(Map<String, Object> pojemMap) {
         Map<String, Object> orderedPojem = new LinkedHashMap<>();
 
-        addFieldIfExists(pojemMap, orderedPojem, "iri");
-        addFieldIfExists(pojemMap, orderedPojem, "typ");
-        addFieldIfExists(pojemMap, orderedPojem, "název");
-        addFieldIfExists(pojemMap, orderedPojem, "popis");
-        addFieldIfExists(pojemMap, orderedPojem, "definice");
+        String[] orderedFields = {"iri", "typ", "název", "popis", "definice"};
 
-        for (Map.Entry<String, Object> entry : pojemMap.entrySet()) {
-            if (!orderedPojem.containsKey(entry.getKey())) {
-                orderedPojem.put(entry.getKey(), entry.getValue());
-            }
+        for (String field : orderedFields) {
+            addFieldIfExists(pojemMap, orderedPojem, field);
         }
+
+        pojemMap.forEach((key, value) -> {
+            if (!orderedPojem.containsKey(key)) {
+                orderedPojem.put(key, value);
+            }
+        });
 
         return orderedPojem;
     }
 
     private Map<String, Object> jsonToMap(JSONObject json) throws JSONException {
         Map<String, Object> map = new LinkedHashMap<>();
-        Iterator<String> keys = json.keys();
+        JSONArray names = json.names();
 
-        while (keys.hasNext()) {
-            String key = keys.next();
-            Object value = json.get(key);
+        if (names != null) {
+            for (int i = 0; i < names.length(); i++) {
+                String key = names.getString(i);
+                Object value = json.get(key);
 
-            if (value instanceof JSONObject jsonObject) {
-                map.put(key, jsonToMap(jsonObject));
-            } else if (value instanceof JSONArray jsonArray) {
-                map.put(key, jsonToArray(jsonArray));
-            } else if (value == JSONObject.NULL) {
-                map.put(key, null);
-            } else {
-                map.put(key, value);
+                if (value instanceof JSONObject jsonObject) {
+                    map.put(key, jsonToMap(jsonObject));
+                } else if (value instanceof JSONArray jsonArray) {
+                    map.put(key, jsonToArray(jsonArray));
+                } else if (value == JSONObject.NULL) {
+                    map.put(key, null);
+                } else {
+                    map.put(key, value);
+                }
             }
         }
 
@@ -186,22 +219,22 @@ class JSONExporter {
     }
 
     private void addModelMetadata(JSONObject root) throws JSONException {
-        root.put(FIELD_CONTEXT, CONTEXT);
+        root.put(JSON_FIELD_CONTEXT, CONTEXT);
 
         String modelIri = modelProperties.getOrDefault(LABEL_ALKD, NS);
-        root.put(FIELD_IRI, modelIri);
+        root.put(JSON_FIELD_IRI, modelIri);
 
-        root.put(FIELD_TYP, addJSONtypes());
+        root.put(JSON_FIELD_TYP, addJSONtypes());
 
         JSONObject nameObj = new JSONObject();
         nameObj.put("cs", modelName);
         nameObj.put("en", "");
-        root.put(FIELD_NAZEV, nameObj);
+        root.put(JSON_FIELD_NAZEV, nameObj);
 
         JSONObject descObj = new JSONObject();
         descObj.put("cs", modelProperties.getOrDefault(LABEL_POPIS, ""));
         descObj.put("en", "");
-        root.put(FIELD_POPIS, descObj);
+        root.put(JSON_FIELD_POPIS, descObj);
     }
 
     private JSONArray createConceptsArray() throws JSONException {
@@ -229,7 +262,7 @@ class JSONExporter {
 
         pojemObj.put("typ", getConceptTypes(concept));
 
-        addMultilingualProperty(concept, RDFS.label, FIELD_NAZEV, pojemObj);
+        addMultilingualProperty(concept, RDFS.label, JSON_FIELD_NAZEV, pojemObj);
         addMultilingualProperty(concept, ontModel.getProperty(NS + LABEL_DEF), LABEL_DEF, pojemObj);
         addMultilingualProperty(concept, ontModel.getProperty(NS + LABEL_POPIS), LABEL_POPIS, pojemObj);
 
@@ -326,7 +359,7 @@ class JSONExporter {
         Statement sharedStmt = concept.getProperty(sharedProp);
         if (sharedStmt != null && sharedStmt.getObject().isLiteral()) {
             boolean isShared = sharedStmt.getBoolean();
-            pojemObj.put("je-sdílen-v-ppdf", isShared);
+            pojemObj.put(LABEL_JE_PPDF, isShared);
         }
 
         Property aisProp = ontModel.getProperty(NS + LABEL_AIS);

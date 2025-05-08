@@ -1,7 +1,7 @@
 package dia.ismd.validator.convertor.constants;
 
 public class ArchiOntologyConstants {
-    public static final String NS = "http://example.dev/ofn#";
+    public static final String NS = "https://example.dev/ofn#";
     public static final String ARCHI_NS = "http://www.opengroup.org/xsd/archimate/3.0/";
     public static final String XSD = "http://www.w3.org/2001/XMLSchema#";
     public static final String IDENT = "identifier";
@@ -30,7 +30,7 @@ public class ArchiOntologyConstants {
     public static final String LABEL_AIS = "agendový-informační-systém";
     public static final String LABEL_AGENDA = "agenda";
     public static final String LABEL_DT = "datový-typ";
-    public static final String LABEL_JE_PPDF = "je-sdílen-v-PPDF";
+    public static final String LABEL_JE_PPDF = "je-sdílen-v-ppdf";
     public static final String LABEL_JE_VEREJNY = "je-pojem-veřejný";
     public static final String LABEL_UDN = "ustanovení-dokládající-neveřejnost";
     public static final String LABEL_ALKD = "adresa-lokálního-katalogu-dat-ve-kterém-bude-slovník-registrován";
