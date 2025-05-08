@@ -85,45 +85,70 @@ class ArchiConvertor {
         propertyMapping.clear();
 
         NodeList propertyDefs = archiDoc.getElementsByTagNameNS(ARCHI_NS, "propertyDefinition");
+
         for (int i = 0; i < propertyDefs.getLength(); i++) {
             Element propDef = (Element) propertyDefs.item(i);
             String propId = propDef.getAttribute(IDENT);
 
-            NodeList nameNodes = propDef.getElementsByTagNameNS(ARCHI_NS, "name");
-            if (nameNodes.getLength() > 0) {
-                String propName = nameNodes.item(0).getTextContent();
-                propertyMapping.put(propId, propName);
+            String propName = extractPropName(propDef);
+            if (propName == null) continue;
 
-                switch (propName) {
-                    case LABEL_POPIS -> propertyMapping.put(propId, LABEL_POPIS);
-                    case LABEL_DEF -> propertyMapping.put(propId, LABEL_DEF);
-                    case LABEL_ZDROJ -> propertyMapping.put(propId, LABEL_ZDROJ);
-                    case LABEL_ID -> propertyMapping.put(propId, LABEL_ID);
-                    case "ustanovení dokládající neveřejnost" -> propertyMapping.put(propId, LABEL_SUPP);
-                    case LABEL_AGENDA -> propertyMapping.put(propId, LABEL_AGENDA);
-                    case "agendový informační systém" -> propertyMapping.put(propId, LABEL_AIS);
-                    case "je pojem sdílen v PPDF?" -> propertyMapping.put(propId, LABEL_JE_PPDF);
-                    case "je pojem veřejný?" -> propertyMapping.put(propId, LABEL_JE_VEREJNY);
-                    case "alternativní název" -> propertyMapping.put(propId, LABEL_AN);
-                    case "datový typ" -> propertyMapping.put(propId, LABEL_DT);
-                    case "typ" -> propertyMapping.put(propId, LABEL_TYP);
-                    default -> propertyMapping.put("nedefinováno", "nedefinováno");
-                }
+            propertyMapping.put(propId, propName);
 
-                String normalizedName = propName.toLowerCase().replace(" ", "-");
-                propertyMapping.put("name:" + normalizedName, propId);
-            }
+            mapStandardizedLabel(propId, propName);
+
+            createNormalizedNameMapping(propId, propName);
         }
 
+        logPropertyMappings();
+    }
+
+    private String extractPropName(Element propDef) {
+        NodeList nodeList = propDef.getElementsByTagNameNS(ARCHI_NS, "name");
+        if (nodeList.getLength() > 0) {
+            return nodeList.item(0).getTextContent();
+        }
+        return null;
+    }
+
+    private void mapStandardizedLabel(String propId, String propName) {
+        Map<String, String> labelPatterns = new HashMap<>();
+        labelPatterns.put(LABEL_POPIS, LABEL_POPIS);
+        labelPatterns.put(LABEL_DEF, LABEL_DEF);
+        labelPatterns.put(LABEL_ZDROJ, LABEL_ZDROJ);
+        labelPatterns.put(LABEL_ID, LABEL_ID);
+        labelPatterns.put("ustanovení dokládající neveřejnost", LABEL_SUPP);
+        labelPatterns.put(LABEL_AGENDA, LABEL_AGENDA);
+        labelPatterns.put("agendový informační systém", LABEL_AIS);
+        labelPatterns.put("je pojem sdílen v PPDF?", LABEL_JE_PPDF);
+        labelPatterns.put("je pojem veřejný?", LABEL_JE_VEREJNY);
+        labelPatterns.put("alternativní název", LABEL_AN);
+        labelPatterns.put("datový typ", LABEL_DT);
+        labelPatterns.put("typ", LABEL_TYP);
+
+        for (Map.Entry<String, String> pattern : labelPatterns.entrySet()) {
+            if (propName.contains(pattern.getKey())) {
+                propertyMapping.put(propId, pattern.getValue());
+                break;
+            }
+        }
+    }
+
+    private void logPropertyMappings() {
         log.debug("Property mappings built:");
         for (Map.Entry<String, String> entry : propertyMapping.entrySet()) {
             log.debug("  {} -> {}", entry.getKey(), entry.getValue());
         }
     }
 
+    private void createNormalizedNameMapping(String propId, String propName) {
+        String normalizedName = propName.toLowerCase().replace(" ", "-");
+        propertyMapping.put("name:" + normalizedName, propId);
+    }
+
     public void convert() throws ConversionException {
         if (archiDoc == null) {
-            throw new ConversionException("No ArchiMate document to convert. Call parseFromFile or parseFromString first.");
+            throw new ConversionException("Dokument ke konverzi nebyl nalezen.");
         }
 
         NodeList nameNodes = archiDoc.getElementsByTagNameNS(ARCHI_NS, "name");
