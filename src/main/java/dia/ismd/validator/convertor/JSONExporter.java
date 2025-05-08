@@ -219,21 +219,21 @@ class JSONExporter {
 
     private void addModelMetadata(JSONObject root) throws JSONException {
         root.put(JSON_FIELD_CONTEXT, CONTEXT);
-
-        String modelIri = modelProperties.getOrDefault(LABEL_ALKD, NS);
-        root.put(JSON_FIELD_IRI, modelIri);
+        root.put(JSON_FIELD_IRI, modelProperties.getOrDefault(LABEL_ALKD, NS));
 
         root.put(JSON_FIELD_TYP, addJSONtypes());
 
-        JSONObject nameObj = new JSONObject();
-        nameObj.put("cs", modelName);
-        nameObj.put("en", "");
-        root.put(JSON_FIELD_NAZEV, nameObj);
+        addMultilingualModelProperty(root, JSON_FIELD_NAZEV, modelName);
+        addMultilingualModelProperty(root, JSON_FIELD_POPIS,
+                modelProperties.getOrDefault(LABEL_POPIS, ""));
+    }
 
-        JSONObject descObj = new JSONObject();
-        descObj.put("cs", modelProperties.getOrDefault(LABEL_POPIS, ""));
-        descObj.put("en", "");
-        root.put(JSON_FIELD_POPIS, descObj);
+    private void addMultilingualModelProperty(JSONObject root, String propertyName,
+                                              String csValue) throws JSONException {
+        JSONObject propObj = new JSONObject();
+        propObj.put("cs", csValue);
+        propObj.put("en", "");
+        root.put(propertyName, propObj);
     }
 
     private JSONArray createConceptsArray() {
