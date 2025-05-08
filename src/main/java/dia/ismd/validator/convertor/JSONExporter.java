@@ -41,14 +41,13 @@ class JSONExporter {
         this.modelProperties = modelProperties;
     }
 
-    public String exportToJson() throws JSONException {
-        JSONObject unorderedRoot = new JSONObject();
-
-        addModelMetadata(unorderedRoot);
-
-        unorderedRoot.put(JSON_FIELD_POJMY, createConceptsArray());
-
-        return formatJsonWithOrderedFields(unorderedRoot);
+    public String exportToJson() {
+        return handleJsonOperation(() -> {
+            JSONObject unorderedRoot = new JSONObject();
+            addModelMetadata(unorderedRoot);
+            unorderedRoot.put(JSON_FIELD_POJMY, createConceptsArray());
+            return formatJsonWithOrderedFields(unorderedRoot);
+        });
     }
 
     private String formatJsonWithOrderedFields(JSONObject unorderedRoot) throws JsonExportException {
@@ -87,6 +86,7 @@ class JSONExporter {
     private Map<String, String> createEmptyMultilingualField() {
         Map<String, String> emptyField = new LinkedHashMap<>();
         emptyField.put("cs", "");
+        emptyField.put("sk", "");
         emptyField.put("en", "");
         return emptyField;
     }
@@ -281,14 +281,19 @@ class JSONExporter {
         JSONArray types = new JSONArray();
         types.put(TYP_POJEM);
 
-        String[] typeNames = {TYP_TRIDA, TYP_VZTAH, TYP_VLASTNOST, TYP_TSP,
-                TYP_TOP, TYP_VEREJNY_UDAJ, TYP_NEVEREJNY_UDAJ};
-        String[] displayNames = {TYP_TRIDA, TYP_VZTAH, TYP_VLASTNOST, TYP_TSP,
-                TYP_TOP, TYP_VEREJNY_UDAJ, TYP_NEVEREJNY_UDAJ};
+        String[][] typeMapping = {
+                {TYP_TRIDA, TYP_TRIDA},
+                {TYP_VZTAH, TYP_VZTAH},
+                {TYP_VLASTNOST, TYP_VLASTNOST},
+                {TYP_TSP, TYP_TSP},
+                {TYP_TOP, TYP_TOP},
+                {TYP_VEREJNY_UDAJ, TYP_VEREJNY_UDAJ},
+                {TYP_NEVEREJNY_UDAJ, TYP_NEVEREJNY_UDAJ}
+        };
 
-        for (int i = 0; i < typeNames.length; i++) {
-            if (concept.hasProperty(RDF.type, ontModel.getResource(NS + typeNames[i]))) {
-                types.put(displayNames[i]);
+        for (String[] mapping : typeMapping) {
+            if (concept.hasProperty(RDF.type, ontModel.getResource(NS + mapping[0]))) {
+                types.put(mapping[1]);
             }
         }
 
@@ -333,19 +338,19 @@ class JSONExporter {
     }
 
     private void addDomainAndRange(Resource concept, JSONObject pojemObj) throws JSONException {
-        Property domainProp = ontModel.getProperty(NS + LABEL_DEF_O);
-        Statement domainStmt = concept.getProperty(domainProp);
-        if (domainStmt != null && domainStmt.getObject().isResource()) {
-            pojemObj.put(LABEL_DEF_O, domainStmt.getObject().asResource().getURI());
-        }
+        addResourceProperty(concept, NS + LABEL_DEF_O, LABEL_DEF_O, pojemObj);
+        addRangeProperty(concept, pojemObj);
+    }
 
+    private void addRangeProperty(Resource concept, JSONObject pojemObj) throws JSONException {
         Property rangeProp = ontModel.getProperty(NS + LABEL_OBOR_HODNOT);
         Statement rangeStmt = concept.getProperty(rangeProp);
+
         if (rangeStmt != null && rangeStmt.getObject().isResource()) {
             String rangeUri = rangeStmt.getObject().asResource().getURI();
+
             if (rangeUri.startsWith(XSD)) {
-                String datatype = rangeUri.substring(XSD.length());
-                pojemObj.put(LABEL_OBOR_HODNOT, "xsd:" + datatype);
+                pojemObj.put(LABEL_OBOR_HODNOT, "xsd:" + rangeUri.substring(XSD.length()));
             } else {
                 pojemObj.put(LABEL_OBOR_HODNOT, rangeUri);
             }
@@ -353,26 +358,43 @@ class JSONExporter {
     }
 
     private void addRppMetadata(Resource concept, JSONObject pojemObj) throws JSONException {
-        Property sharedProp = ontModel.getProperty(NS + LABEL_JE_PPDF);
-        Statement sharedStmt = concept.getProperty(sharedProp);
-        if (sharedStmt != null && sharedStmt.getObject().isLiteral()) {
-            boolean isShared = sharedStmt.getBoolean();
-            pojemObj.put(LABEL_JE_PPDF, isShared);
-        }
+        addBooleanProperty(concept, pojemObj);
+        addResourceProperty(concept, NS + LABEL_AIS, LABEL_AIS, pojemObj);
+        addResourceProperty(concept, NS + LABEL_AGENDA, LABEL_AGENDA, pojemObj);
+        addResourceArrayProperty(concept, ontModel.getProperty(NS + LABEL_UDN), LABEL_UDN, pojemObj);
+    }
 
-        Property aisProp = ontModel.getProperty(NS + LABEL_AIS);
-        Statement aisStmt = concept.getProperty(aisProp);
-        if (aisStmt != null && aisStmt.getObject().isResource()) {
-            pojemObj.put(LABEL_AIS, aisStmt.getObject().asResource().getURI());
+    private void addBooleanProperty(Resource concept, JSONObject targetObj) throws JSONException {
+        Property property = ontModel.getProperty(LABEL_JE_PPDF);
+        Statement stmt = concept.getProperty(property);
+        if (stmt != null && stmt.getObject().isLiteral()) {
+            boolean value = stmt.getBoolean();
+            targetObj.put(LABEL_JE_PPDF, value);
         }
+    }
 
-        Property agendaProp = ontModel.getProperty(NS + LABEL_AGENDA);
-        Statement agendaStmt = concept.getProperty(agendaProp);
-        if (agendaStmt != null && agendaStmt.getObject().isResource()) {
-            pojemObj.put(LABEL_AGENDA, agendaStmt.getObject().asResource().getURI());
+    private void addResourceProperty(Resource concept, String propertyUri, String jsonProperty, JSONObject targetObj) throws JSONException {
+        Property property = ontModel.getProperty(propertyUri);
+        Statement stmt = concept.getProperty(property);
+        if (stmt != null && stmt.getObject().isResource()) {
+            targetObj.put(jsonProperty, stmt.getObject().asResource().getURI());
         }
+    }
 
-        addResourceArrayProperty(concept, ontModel.getProperty(NS + LABEL_UDN),
-                LABEL_UDN, pojemObj);
+    private <T> T handleJsonOperation(JsonSupplier<T> operation) throws JsonExportException {
+        try {
+            return operation.get();
+        } catch (JsonExportException e) {
+            log.error("{}: {}", "Error exporting to JSON", e.getMessage(), e);
+            throw new JsonExportException("Error exporting to JSON" + ": " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error during JSON operation: {}", e.getMessage(), e);
+            throw new JsonExportException("Error during JSON processing: " + e.getMessage());
+        }
+    }
+
+    @FunctionalInterface
+    private interface JsonSupplier<T> {
+        T get() throws JsonExportException, JSONException;
     }
 }
