@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.ResIterator;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
@@ -237,20 +236,19 @@ class JSONExporter {
         root.put(JSON_FIELD_POPIS, descObj);
     }
 
-    private JSONArray createConceptsArray() throws JSONException {
+    private JSONArray createConceptsArray() {
         JSONArray pojmy = new JSONArray();
+        Resource pojemType = ontModel.getResource(NS + TYP_POJEM);
 
-        ResIterator iter = ontModel.listSubjectsWithProperty(RDF.type, ontModel.getResource(NS + TYP_POJEM));
-
-        while (iter.hasNext()) {
-            Resource concept = iter.nextResource();
-
-            if (concept.getURI().startsWith(NS)) {
-                continue;
-            }
-
-            pojmy.put(createConceptObject(concept));
-        }
+        ontModel.listSubjectsWithProperty(RDF.type, pojemType)
+                .filterKeep(concept -> !concept.getURI().startsWith(NS))
+                .forEachRemaining(concept -> {
+                    try {
+                        pojmy.put(createConceptObject(concept));
+                    } catch (JSONException e) {
+                        log.warn("Could not process concept: {}", concept.getURI(), e);
+                    }
+                });
 
         return pojmy;
     }
