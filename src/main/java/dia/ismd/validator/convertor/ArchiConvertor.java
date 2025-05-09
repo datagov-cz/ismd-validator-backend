@@ -75,12 +75,74 @@ class ArchiConvertor {
 
             buildPropertyMapping();
         } catch (ParserConfigurationException e) {
-            throw new FileParsingException("Failed to configure XML parser", e);
+            throw new FileParsingException("Failed to configure XML parser.", e);
         } catch (SAXException e) {
-            throw new FileParsingException("Failed to parse XML content", e);
+            throw new FileParsingException("Failed to parse XML content.", e);
         } catch (IOException e) {
-            throw new FileParsingException("Failed to read XML content", e);
+            throw new FileParsingException("Failed to read XML content.", e);
         }
+    }
+
+    public void convert() throws ConversionException {
+        if (archiDoc == null) {
+            throw new ConversionException("Dokument ke konverzi nebyl nalezen.");
+        }
+
+        NodeList nameNodes = archiDoc.getElementsByTagNameNS(ARCHI_NS, "name");
+        if (nameNodes.getLength() > 0) {
+            modelName = nameNodes.item(0).getTextContent();
+        } else {
+            modelName = "Untitled Model";
+        }
+
+        getModelProperties();
+
+        initializeTypeClasses();
+
+        processElements();
+        processRelationships();
+    }
+
+
+    public String exportToJson() throws JsonExportException {
+        JSONExporter exporter = new JSONExporter(
+                ontModel,
+                resourceMap,
+                modelName,
+                getModelProperties(),
+                getEffectiveOntologyNamespace()
+        );
+        return exporter.exportToJson();
+    }
+
+    public String exportToTurtle() {
+        TurtleExporter exporter = new TurtleExporter(
+                ontModel,
+                resourceMap,
+                modelName,
+                getModelProperties()
+        );
+        return exporter.exportToTurtle();
+    }
+
+    public String exportToTurtle(boolean prettyPrint, boolean includeBaseUri) {
+        TurtleExporter exporter = new TurtleExporter(
+                ontModel,
+                resourceMap,
+                modelName,
+                getModelProperties()
+        );
+        return exporter.exportToTurtle(prettyPrint, includeBaseUri);
+    }
+
+    public String exportToTurtleWithPrefixes(Map<String, String> customPrefixes) {
+        TurtleExporter exporter = new TurtleExporter(
+                ontModel,
+                resourceMap,
+                modelName,
+                getModelProperties()
+        );
+        return exporter.exportToTurtleWithPrefixes(customPrefixes);
     }
 
     private void buildPropertyMapping() {
@@ -105,12 +167,109 @@ class ArchiConvertor {
         logPropertyMappings();
     }
 
-    private String extractPropName(Element propDef) {
-        NodeList nodeList = propDef.getElementsByTagNameNS(ARCHI_NS, "name");
-        if (nodeList.getLength() > 0) {
-            return nodeList.item(0).getTextContent();
+    private Map<String, String> getModelProperties() {
+        Map<String, String> modelProperties = new HashMap<>();
+
+        // Find the properties element that belongs to the model
+        Element modelPropertiesElement = findModelPropertiesElement();
+        if (modelPropertiesElement == null) {
+            return modelProperties;
+        }
+
+        // Extract properties from the model properties element
+        extractPropertiesFromElement(modelPropertiesElement, modelProperties);
+
+        return modelProperties;
+    }
+
+    private Element findModelPropertiesElement() {
+        NodeList propertiesNodes = archiDoc.getElementsByTagNameNS(ARCHI_NS, "properties");
+
+        for (int p = 0; p < propertiesNodes.getLength(); p++) {
+            Element propertiesElement = (Element) propertiesNodes.item(p);
+            if (propertiesElement.getParentNode().getNodeName().endsWith("model")) {
+                return propertiesElement;
+            }
+        }
+
+        return null;
+    }
+
+    private void extractPropertiesFromElement(Element propertiesElement, Map<String, String> modelProperties) {
+        NodeList propertyNodes = propertiesElement.getElementsByTagNameNS(ARCHI_NS, "property");
+
+        for (int i = 0; i < propertyNodes.getLength(); i++) {
+            Element property = (Element) propertyNodes.item(i);
+            processProperty(property, modelProperties);
+        }
+    }
+
+    private void processProperty(Element property, Map<String, String> modelProperties) {
+        String propRef = property.getAttribute("propertyDefinitionRef");
+        String propName = propertyMapping.getOrDefault(propRef, propRef);
+
+        String value = getPropertyValue(property);
+        if (value != null) {
+            modelProperties.put(propName, value);
+
+            if (isOntologyNamespaceProperty(propRef)) {
+                ontologyNamespace = value;
+            }
+        }
+    }
+
+    private String getPropertyValue(Element property) {
+        NodeList valueNodes = property.getElementsByTagNameNS(ARCHI_NS, "value");
+        if (valueNodes.getLength() > 0) {
+            return valueNodes.item(0).getTextContent();
         }
         return null;
+    }
+
+    private void initializeTypeClasses() {
+        createNamespacedResource(TYP_POJEM);
+        createNamespacedResource(TYP_TRIDA);
+        createNamespacedResource(TYP_VZTAH);
+        createNamespacedResource(TYP_VLASTNOST);
+        createNamespacedResource(TYP_TSP);
+        createNamespacedResource(TYP_TOP);
+        createNamespacedResource(TYP_VEREJNY_UDAJ);
+        createNamespacedResource(TYP_NEVEREJNY_UDAJ);
+    }
+
+    private void processElements() throws ConversionException {
+        NodeList elements = archiDoc.getElementsByTagNameNS(ARCHI_NS, "element");
+        if (elements.getLength() < 0) {
+            throw new ConversionException("No elements found in file.");
+        }
+
+        for (int i = 0; i < elements.getLength(); i++) {
+            Element element = (Element) elements.item(i);
+
+            String name = getElementName(element);
+            if (name.equals("Subjekt") || name.equals("Objekt") || name.equals(TYP_VLASTNOST)) {
+                continue;
+            }
+
+            String id = element.getAttribute(IDENT);
+
+            Map<String, String> properties = getElementProperties(element);
+
+            String elementType = properties.getOrDefault("typ", "").trim();
+            String ontologyClass = TYPE_MAPPINGS.getOrDefault(elementType, TYP_POJEM);
+
+            Resource resource = createResourceFromElement(id, name, ontologyClass, properties);
+            resourceMap.put(id, resource);
+        }
+    }
+
+    private void processRelationships() {
+        NodeList relationships = archiDoc.getElementsByTagNameNS(ARCHI_NS, "relationship");
+
+        for (int i = 0; i < relationships.getLength(); i++) {
+            Element relationship = (Element) relationships.item(i);
+            processIndividualRelationship(relationship);
+        }
     }
 
     private void mapStandardizedLabel(String propId, String propName) {
@@ -148,78 +307,12 @@ class ArchiConvertor {
         propertyMapping.put("name:" + normalizedName, propId);
     }
 
-    public void convert() throws ConversionException {
-        if (archiDoc == null) {
-            throw new ConversionException("Dokument ke konverzi nebyl nalezen.");
-        }
-
-        NodeList nameNodes = archiDoc.getElementsByTagNameNS(ARCHI_NS, "name");
-        if (nameNodes.getLength() > 0) {
-            modelName = nameNodes.item(0).getTextContent();
-        } else {
-            modelName = "Untitled Model";
-        }
-
-        getModelProperties();
-
-        String namespace = getEffectiveOntologyNamespace();
-        initializeTypeClasses(namespace);
-
-        processElements();
-        processRelationships();
+    private void createNamespacedResource(String resourceName) {
+        ontModel.createResource(resolveNamespacedUri(resourceName));
     }
 
-    private void initializeTypeClasses(String namespace) {
-        ontModel.createResource(namespace + TYP_POJEM);
-        ontModel.createResource(namespace + TYP_TRIDA);
-        ontModel.createResource(namespace + TYP_VZTAH);
-        ontModel.createResource(namespace + TYP_VLASTNOST);
-        ontModel.createResource(namespace + TYP_TSP);
-        ontModel.createResource(namespace + TYP_TOP);
-        ontModel.createResource(namespace + TYP_VEREJNY_UDAJ);
-        ontModel.createResource(namespace + TYP_NEVEREJNY_UDAJ);
-    }
-
-    private Map<String, String> getModelProperties() {
-        Map<String, String> result = new HashMap<>();
-
-        NodeList propertiesNodes = archiDoc.getElementsByTagNameNS(ARCHI_NS, "properties");
-        if (propertiesNodes.getLength() == 0) {
-            return result;
-        }
-
-        for (int p = 0; p < propertiesNodes.getLength(); p++) {
-            Element propertiesElement = (Element) propertiesNodes.item(p);
-
-            if (propertiesElement.getParentNode().getNodeName().endsWith("model")) {
-                NodeList propertyNodes = propertiesElement.getElementsByTagNameNS(ARCHI_NS, "property");
-
-                for (int i = 0; i < propertyNodes.getLength(); i++) {
-                    Element property = (Element) propertyNodes.item(i);
-                    String propRef = property.getAttribute("propertyDefinitionRef");
-                    String propName = propertyMapping.getOrDefault(propRef, propRef);
-
-                    NodeList valueNodes = property.getElementsByTagNameNS(ARCHI_NS, "value");
-                    if (valueNodes.getLength() > 0) {
-                        String value = valueNodes.item(0).getTextContent();
-                        result.put(propName, value);
-
-                        if (isOntologyNamespaceProperty(propRef)) {
-                            ontologyNamespace = value;
-                        }
-                    }
-                }
-
-                break;
-            }
-        }
-
-        return result;
-    }
-
-    private boolean isOntologyNamespaceProperty(String propRef) {
-        String propertyName = propertyMapping.getOrDefault(propRef, "");
-        return propertyName.contains("adresa lokálního katalogu dat");
+    private String resolveNamespacedUri(String name) {
+        return getEffectiveOntologyNamespace() + name;
     }
 
     private String getEffectiveOntologyNamespace() {
@@ -232,39 +325,17 @@ class ArchiConvertor {
         return NS;
     }
 
-    private void processElements() throws ConversionException {
-        NodeList elements = archiDoc.getElementsByTagNameNS(ARCHI_NS, "element");
-        if (elements.getLength() < 0) {
-            throw new ConversionException("No elements found in file");
+    private String extractPropName(Element propDef) {
+        NodeList nodeList = propDef.getElementsByTagNameNS(ARCHI_NS, "name");
+        if (nodeList.getLength() > 0) {
+            return nodeList.item(0).getTextContent();
         }
-
-        for (int i = 0; i < elements.getLength(); i++) {
-            Element element = (Element) elements.item(i);
-
-            String name = getElementName(element);
-            if (name.equals("Subjekt") || name.equals("Objekt") || name.equals(TYP_VLASTNOST)) {
-                continue;
-            }
-
-            String id = element.getAttribute(IDENT);
-
-            Map<String, String> properties = getElementProperties(element);
-
-            String elementType = properties.getOrDefault("typ", "").trim();
-            String ontologyClass = TYPE_MAPPINGS.getOrDefault(elementType, TYP_POJEM);
-
-            Resource resource = createResourceFromElement(id, name, ontologyClass, properties);
-            resourceMap.put(id, resource);
-        }
+        return null;
     }
 
-    private void processRelationships() {
-        NodeList relationships = archiDoc.getElementsByTagNameNS(ARCHI_NS, "relationship");
-
-        for (int i = 0; i < relationships.getLength(); i++) {
-            Element relationship = (Element) relationships.item(i);
-            processIndividualRelationship(relationship);
-        }
+    private boolean isOntologyNamespaceProperty(String propRef) {
+        String propertyName = propertyMapping.getOrDefault(propRef, "");
+        return propertyName.contains("adresa lokálního katalogu dat");
     }
 
     private void processIndividualRelationship(Element relationship) {
@@ -295,17 +366,15 @@ class ArchiConvertor {
     }
 
     private void processSpecializationRelationship(Resource source, Resource target) {
-        String namespace = getEffectiveOntologyNamespace();
         if (source instanceof OntClass sourceClass && target instanceof OntClass targetClass) {
             sourceClass.addSuperClass(targetClass);
-            source.addProperty(ontModel.getProperty(namespace + LABEL_NT), target);
+            source.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_NT), target);
         }
     }
 
     private void processCompositionRelationship(Resource source, Resource target) {
-        String namespace = getEffectiveOntologyNamespace();
         String relName = "ma" + capitalize(getLocalName(target));
-        OntProperty property = ontModel.createOntProperty(namespace + relName);
+        OntProperty property = ontModel.createOntProperty(getEffectiveOntologyNamespace() + relName);
         property.addDomain(source);
         property.addRange(target);
 
@@ -329,8 +398,6 @@ class ArchiConvertor {
     }
 
     private String determineIri(Map<String, String> relProps, String id) {
-        String namespace = getEffectiveOntologyNamespace();
-
         String iri = null;
         if (relProps.containsKey(LABEL_ID)) {
             iri = relProps.get(LABEL_ID);
@@ -342,7 +409,7 @@ class ArchiConvertor {
         }
 
         if (iri == null || iri.isEmpty()) {
-            iri = namespace + id;
+            iri = getEffectiveOntologyNamespace() + id;
         }
 
         return iri;
@@ -478,19 +545,15 @@ class ArchiConvertor {
     }
 
     private void addSourceReferences(Resource resource, Map<String, String> properties) {
-        String namespace = getEffectiveOntologyNamespace();
-
         if (properties.containsKey(LABEL_ZDROJ)) {
-            resource.addProperty(ontModel.getProperty(namespace + LABEL_ZDROJ),
+            resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ),
                     ontModel.createResource(properties.get(LABEL_ZDROJ)));
         }
     }
 
     private void addDomainAndRange(Resource resource, Map<String, String> properties) {
-        String namespace = getEffectiveOntologyNamespace();
-
         if (properties.containsKey(LABEL_DEF_O)) {
-            resource.addProperty(ontModel.getProperty(namespace + LABEL_DEF_O),
+            resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_DEF_O),
                     ontModel.createResource(properties.get(LABEL_DEF_O)));
         }
 
@@ -513,21 +576,17 @@ class ArchiConvertor {
     }
 
     private void addSuperclasses(Resource resource, Map<String, String> properties) {
-        String namespace = getEffectiveOntologyNamespace();
-
         if (properties.containsKey(LABEL_NT)) {
             String superClass = properties.get(LABEL_NT);
-            resource.addProperty(ontModel.getProperty(namespace + LABEL_NT),
+            resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_NT),
                     ontModel.createResource(superClass));
         }
     }
 
     private void addLegalSources(Resource resource, Map<String, String> properties) {
-        String namespace = getEffectiveOntologyNamespace();
-
         if (properties.containsKey(LABEL_SUPP)) {
             String provision = properties.get(LABEL_SUPP);
-            resource.addProperty(ontModel.getProperty(namespace + LABEL_SUPP),
+            resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SUPP),
                     ontModel.createResource(provision));
         }
     }
@@ -553,12 +612,10 @@ class ArchiConvertor {
     }
 
     private void addPublicFlag(Resource resource, Map<String, String> properties) {
-        String namespace = getEffectiveOntologyNamespace();
-
         if (properties.containsKey(LABEL_JE_VEREJNY)) {
             String value = properties.get(LABEL_JE_VEREJNY);
             if ("true".equalsIgnoreCase(value) || "ano".equalsIgnoreCase(value)) {
-                resource.addProperty(RDF.type, ontModel.getResource(namespace + LABEL_VU));
+                resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + LABEL_VU));
             }
         }
     }
@@ -674,46 +731,5 @@ class ArchiConvertor {
             return str;
         }
         return str.substring(0, 1).toUpperCase() + str.substring(1);
-    }
-
-    public String exportToJson() throws JsonExportException {
-        JSONExporter exporter = new JSONExporter(
-                ontModel,
-                resourceMap,
-                modelName,
-                getModelProperties(),
-                getEffectiveOntologyNamespace()
-        );
-        return exporter.exportToJson();
-    }
-
-    public String exportToTurtle() {
-        TurtleExporter exporter = new TurtleExporter(
-                ontModel,
-                resourceMap,
-                modelName,
-                getModelProperties()
-        );
-        return exporter.exportToTurtle();
-    }
-
-    public String exportToTurtle(boolean prettyPrint, boolean includeBaseUri) {
-        TurtleExporter exporter = new TurtleExporter(
-                ontModel,
-                resourceMap,
-                modelName,
-                getModelProperties()
-        );
-        return exporter.exportToTurtle(prettyPrint, includeBaseUri);
-    }
-
-    public String exportToTurtleWithPrefixes(Map<String, String> customPrefixes) {
-        TurtleExporter exporter = new TurtleExporter(
-                ontModel,
-                resourceMap,
-                modelName,
-                getModelProperties()
-        );
-        return exporter.exportToTurtleWithPrefixes(customPrefixes);
     }
 }
