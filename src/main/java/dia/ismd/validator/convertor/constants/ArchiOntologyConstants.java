@@ -1,7 +1,9 @@
 package dia.ismd.validator.convertor.constants;
 
 public class ArchiOntologyConstants {
-    public static final String NS = "https://example.dev/ofn#";
+    // TODO zkontrolovat zda vyhovuje OFN
+
+    public static final String NS = "https://slovník.gov.cz/";
     public static final String ARCHI_NS = "http://www.opengroup.org/xsd/archimate/3.0/";
     public static final String XSD = "http://www.w3.org/2001/XMLSchema#";
     public static final String IDENT = "identifier";

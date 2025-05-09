@@ -33,12 +33,14 @@ class JSONExporter {
     private final Map<String, Resource> resourceMap;
     private final String modelName;
     private final Map<String, String> modelProperties;
+    private final String effectiveNamespace;
 
-    public JSONExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties) {
+    public JSONExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
         this.ontModel = ontModel;
         this.resourceMap = new HashMap<>(resourceMap);
         this.modelName = modelName;
         this.modelProperties = modelProperties;
+        this.effectiveNamespace = effectiveNamespace;
     }
 
     public String exportToJson() {
@@ -219,7 +221,7 @@ class JSONExporter {
 
     private void addModelMetadata(JSONObject root) throws JSONException {
         root.put(JSON_FIELD_CONTEXT, CONTEXT);
-        root.put(JSON_FIELD_IRI, modelProperties.getOrDefault(LABEL_ALKD, NS));
+        root.put(JSON_FIELD_IRI, modelProperties.getOrDefault(LABEL_ALKD, effectiveNamespace));
 
         root.put(JSON_FIELD_TYP, addJSONtypes());
 
@@ -238,10 +240,9 @@ class JSONExporter {
 
     private JSONArray createConceptsArray() {
         JSONArray pojmy = new JSONArray();
-        Resource pojemType = ontModel.getResource(NS + TYP_POJEM);
+        Resource pojemType = ontModel.getResource(effectiveNamespace + TYP_POJEM);
 
         ontModel.listSubjectsWithProperty(RDF.type, pojemType)
-                .filterKeep(concept -> !concept.getURI().startsWith(NS))
                 .forEachRemaining(concept -> {
                     try {
                         pojmy.put(createConceptObject(concept));
@@ -255,26 +256,125 @@ class JSONExporter {
 
     private JSONObject createConceptObject(Resource concept) throws JSONException {
         JSONObject pojemObj = new JSONObject();
+        String namespace = effectiveNamespace;
 
         pojemObj.put("iri", concept.getURI());
-
         pojemObj.put("typ", getConceptTypes(concept));
 
         addMultilingualProperty(concept, RDFS.label, JSON_FIELD_NAZEV, pojemObj);
-        addMultilingualProperty(concept, ontModel.getProperty(NS + LABEL_DEF), LABEL_DEF, pojemObj);
-        addMultilingualProperty(concept, ontModel.getProperty(NS + LABEL_POPIS), LABEL_POPIS, pojemObj);
 
-        addResourceArrayProperty(concept, ontModel.getProperty(NS + LABEL_SUPP),
-                LABEL_SUPP, pojemObj);
+        Property definitionProp1 = ontModel.getProperty(NS + LABEL_DEF);
+        Property definitionProp2 = ontModel.getProperty(namespace + LABEL_DEF);
+        if (concept.hasProperty(definitionProp1)) {
+            addMultilingualProperty(concept, definitionProp1, LABEL_DEF, pojemObj);
+        } else if (concept.hasProperty(definitionProp2)) {
+            addMultilingualProperty(concept, definitionProp2, LABEL_DEF, pojemObj);
+        }
 
-        addDomainAndRange(concept, pojemObj);
+        Property descriptionProp1 = ontModel.getProperty(NS + LABEL_POPIS);
+        Property descriptionProp2 = ontModel.getProperty(namespace + LABEL_POPIS);
+        if (concept.hasProperty(descriptionProp1)) {
+            addMultilingualProperty(concept, descriptionProp1, LABEL_POPIS, pojemObj);
+        } else if (concept.hasProperty(descriptionProp2)) {
+            addMultilingualProperty(concept, descriptionProp2, LABEL_POPIS, pojemObj);
+        }
 
-        addResourceArrayProperty(concept, ontModel.getProperty(NS + LABEL_NT),
-                LABEL_NT, pojemObj);
+        Property suppProp1 = ontModel.getProperty(NS + LABEL_SUPP);
+        Property suppProp2 = ontModel.getProperty(namespace + LABEL_SUPP);
+        if (concept.hasProperty(suppProp1)) {
+            addResourceArrayProperty(concept, suppProp1, LABEL_SUPP, pojemObj);
+        } else if (concept.hasProperty(suppProp2)) {
+            addResourceArrayProperty(concept, suppProp2, LABEL_SUPP, pojemObj);
+        }
 
-        addRppMetadata(concept, pojemObj);
+        addDomainAndRangeWithBothNamespaces(concept, pojemObj, namespace);
+
+        Property ntProp1 = ontModel.getProperty(NS + LABEL_NT);
+        Property ntProp2 = ontModel.getProperty(namespace + LABEL_NT);
+        if (concept.hasProperty(ntProp1)) {
+            addResourceArrayProperty(concept, ntProp1, LABEL_NT, pojemObj);
+        } else if (concept.hasProperty(ntProp2)) {
+            addResourceArrayProperty(concept, ntProp2, LABEL_NT, pojemObj);
+        }
+
+        addRppMetadataWithBothNamespaces(concept, pojemObj, namespace);
 
         return pojemObj;
+    }
+
+    private void addDomainAndRangeWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+        Property domainProp1 = ontModel.getProperty(NS + LABEL_DEF_O);
+        Property domainProp2 = ontModel.getProperty(namespace + LABEL_DEF_O);
+
+        if (concept.hasProperty(domainProp1)) {
+            addResourceProperty(concept, NS + LABEL_DEF_O, LABEL_DEF_O, pojemObj);
+        } else if (concept.hasProperty(domainProp2)) {
+            addResourceProperty(concept, namespace + LABEL_DEF_O, LABEL_DEF_O, pojemObj);
+        }
+
+        addRangePropertyWithBothNamespaces(concept, pojemObj, namespace);
+    }
+
+    private void addRangePropertyWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+        Property rangeProp1 = ontModel.getProperty(NS + LABEL_OBOR_HODNOT);
+        Property rangeProp2 = ontModel.getProperty(namespace + LABEL_OBOR_HODNOT);
+
+        Statement rangeStmt = concept.getProperty(rangeProp1);
+        if (rangeStmt == null) {
+            rangeStmt = concept.getProperty(rangeProp2);
+        }
+
+        if (rangeStmt != null && rangeStmt.getObject().isResource()) {
+            String rangeUri = rangeStmt.getObject().asResource().getURI();
+
+            if (rangeUri.startsWith(XSD)) {
+                pojemObj.put(LABEL_OBOR_HODNOT, "xsd:" + rangeUri.substring(XSD.length()));
+            } else {
+                pojemObj.put(LABEL_OBOR_HODNOT, rangeUri);
+            }
+        }
+    }
+
+    private void addRppMetadataWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+        Property ppdfProp1 = ontModel.getProperty(NS + LABEL_JE_PPDF);
+        Property ppdfProp2 = ontModel.getProperty(namespace + LABEL_JE_PPDF);
+
+        Statement stmt = concept.getProperty(ppdfProp1);
+        if (stmt == null) {
+            stmt = concept.getProperty(ppdfProp2);
+        }
+
+        if (stmt != null && stmt.getObject().isLiteral()) {
+            boolean value = stmt.getBoolean();
+            pojemObj.put(LABEL_JE_PPDF, value);
+        }
+
+        Property aisProp1 = ontModel.getProperty(NS + LABEL_AIS);
+        Property aisProp2 = ontModel.getProperty(namespace + LABEL_AIS);
+
+        if (concept.hasProperty(aisProp1)) {
+            addResourceProperty(concept, NS + LABEL_AIS, LABEL_AIS, pojemObj);
+        } else if (concept.hasProperty(aisProp2)) {
+            addResourceProperty(concept, namespace + LABEL_AIS, LABEL_AIS, pojemObj);
+        }
+
+        Property agendaProp1 = ontModel.getProperty(NS + LABEL_AGENDA);
+        Property agendaProp2 = ontModel.getProperty(namespace + LABEL_AGENDA);
+
+        if (concept.hasProperty(agendaProp1)) {
+            addResourceProperty(concept, NS + LABEL_AGENDA, LABEL_AGENDA, pojemObj);
+        } else if (concept.hasProperty(agendaProp2)) {
+            addResourceProperty(concept, namespace + LABEL_AGENDA, LABEL_AGENDA, pojemObj);
+        }
+
+        Property udnProp1 = ontModel.getProperty(NS + LABEL_UDN);
+        Property udnProp2 = ontModel.getProperty(namespace + LABEL_UDN);
+
+        if (concept.hasProperty(udnProp1)) {
+            addResourceArrayProperty(concept, udnProp1, LABEL_UDN, pojemObj);
+        } else if (concept.hasProperty(udnProp2)) {
+            addResourceArrayProperty(concept, udnProp2, LABEL_UDN, pojemObj);
+        }
     }
 
     private JSONArray getConceptTypes(Resource concept) {
@@ -292,7 +392,7 @@ class JSONExporter {
         };
 
         for (String[] mapping : typeMapping) {
-            if (concept.hasProperty(RDF.type, ontModel.getResource(NS + mapping[0]))) {
+            if (concept.hasProperty(RDF.type, ontModel.getResource(effectiveNamespace + mapping[0]))) { // Use effectiveNamespace
                 types.put(mapping[1]);
             }
         }
@@ -334,42 +434,6 @@ class JSONExporter {
             if (propArray.length() > 0) {
                 pojemObj.put(jsonProperty, propArray);
             }
-        }
-    }
-
-    private void addDomainAndRange(Resource concept, JSONObject pojemObj) throws JSONException {
-        addResourceProperty(concept, NS + LABEL_DEF_O, LABEL_DEF_O, pojemObj);
-        addRangeProperty(concept, pojemObj);
-    }
-
-    private void addRangeProperty(Resource concept, JSONObject pojemObj) throws JSONException {
-        Property rangeProp = ontModel.getProperty(NS + LABEL_OBOR_HODNOT);
-        Statement rangeStmt = concept.getProperty(rangeProp);
-
-        if (rangeStmt != null && rangeStmt.getObject().isResource()) {
-            String rangeUri = rangeStmt.getObject().asResource().getURI();
-
-            if (rangeUri.startsWith(XSD)) {
-                pojemObj.put(LABEL_OBOR_HODNOT, "xsd:" + rangeUri.substring(XSD.length()));
-            } else {
-                pojemObj.put(LABEL_OBOR_HODNOT, rangeUri);
-            }
-        }
-    }
-
-    private void addRppMetadata(Resource concept, JSONObject pojemObj) throws JSONException {
-        addBooleanProperty(concept, pojemObj);
-        addResourceProperty(concept, NS + LABEL_AIS, LABEL_AIS, pojemObj);
-        addResourceProperty(concept, NS + LABEL_AGENDA, LABEL_AGENDA, pojemObj);
-        addResourceArrayProperty(concept, ontModel.getProperty(NS + LABEL_UDN), LABEL_UDN, pojemObj);
-    }
-
-    private void addBooleanProperty(Resource concept, JSONObject targetObj) throws JSONException {
-        Property property = ontModel.getProperty(LABEL_JE_PPDF);
-        Statement stmt = concept.getProperty(property);
-        if (stmt != null && stmt.getObject().isLiteral()) {
-            boolean value = stmt.getBoolean();
-            targetObj.put(LABEL_JE_PPDF, value);
         }
     }
 
