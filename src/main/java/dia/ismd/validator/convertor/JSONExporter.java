@@ -52,6 +52,25 @@ class JSONExporter {
         });
     }
 
+    private void addModelMetadata(JSONObject root) throws JSONException {
+        root.put(JSON_FIELD_CONTEXT, CONTEXT);
+        root.put(JSON_FIELD_IRI, modelProperties.getOrDefault(LABEL_ALKD, effectiveNamespace));
+
+        root.put(JSON_FIELD_TYP, addJSONtypes());
+
+        addMultilingualModelProperty(root, JSON_FIELD_NAZEV, modelName);
+        addMultilingualModelProperty(root, JSON_FIELD_POPIS,
+                modelProperties.getOrDefault(LABEL_POPIS, ""));
+    }
+
+    private void addMultilingualModelProperty(JSONObject root, String propertyName,
+                                              String csValue) throws JSONException {
+        JSONObject propObj = new JSONObject();
+        propObj.put("cs", csValue);
+        propObj.put("en", "");
+        root.put(propertyName, propObj);
+    }
+
     private String formatJsonWithOrderedFields(JSONObject unorderedRoot) throws JsonExportException {
         try {
             Map<String, Object> originalMap = jsonToMap(unorderedRoot);
@@ -72,6 +91,30 @@ class JSONExporter {
         }
     }
 
+    private Map<String, Object> jsonToMap(JSONObject json) throws JSONException {
+        Map<String, Object> map = new LinkedHashMap<>();
+        JSONArray names = json.names();
+
+        if (names != null) {
+            for (int i = 0; i < names.length(); i++) {
+                String key = names.getString(i);
+                Object value = json.get(key);
+
+                if (value instanceof JSONObject jsonObject) {
+                    map.put(key, jsonToMap(jsonObject));
+                } else if (value instanceof JSONArray jsonArray) {
+                    map.put(key, jsonToArray(jsonArray));
+                } else if (value == JSONObject.NULL) {
+                    map.put(key, null);
+                } else {
+                    map.put(key, value);
+                }
+            }
+        }
+
+        return map;
+    }
+
     private Map<String, Object> createOrderedModelMap(Map<String, Object> originalMap) {
         Map<String, Object> orderedMap = new LinkedHashMap<>();
 
@@ -83,19 +126,6 @@ class JSONExporter {
         addFieldWithDefault(originalMap, orderedMap, JSON_FIELD_POPIS, createEmptyMultilingualField());
 
         return orderedMap;
-    }
-
-    private Map<String, String> createEmptyMultilingualField() {
-        Map<String, String> emptyField = new LinkedHashMap<>();
-        emptyField.put("cs", "");
-        emptyField.put("sk", "");
-        emptyField.put("en", "");
-        return emptyField;
-    }
-
-    private void addFieldWithDefault(Map<String, Object> source, Map<String, Object> target,
-                                     String fieldName, Object defaultValue) {
-        target.put(fieldName, source.getOrDefault(fieldName, defaultValue));
     }
 
     private void processConceptsArray(Map<String, Object> originalMap, Map<String, Object> orderedMap) {
@@ -143,6 +173,20 @@ class JSONExporter {
         }
     }
 
+    private Map<String, String> createEmptyMultilingualField() {
+        Map<String, String> emptyField = new LinkedHashMap<>();
+        emptyField.put("cs", "");
+        emptyField.put("sk", "");
+        emptyField.put("en", "");
+        return emptyField;
+    }
+
+    private void addFieldWithDefault(Map<String, Object> source, Map<String, Object> target,
+                                     String fieldName, Object defaultValue) {
+        target.put(fieldName, source.getOrDefault(fieldName, defaultValue));
+    }
+
+
     private Map<String, Object> orderPojemFields(Map<String, Object> pojemMap) {
         Map<String, Object> orderedPojem = new LinkedHashMap<>();
 
@@ -159,30 +203,6 @@ class JSONExporter {
         });
 
         return orderedPojem;
-    }
-
-    private Map<String, Object> jsonToMap(JSONObject json) throws JSONException {
-        Map<String, Object> map = new LinkedHashMap<>();
-        JSONArray names = json.names();
-
-        if (names != null) {
-            for (int i = 0; i < names.length(); i++) {
-                String key = names.getString(i);
-                Object value = json.get(key);
-
-                if (value instanceof JSONObject jsonObject) {
-                    map.put(key, jsonToMap(jsonObject));
-                } else if (value instanceof JSONArray jsonArray) {
-                    map.put(key, jsonToArray(jsonArray));
-                } else if (value == JSONObject.NULL) {
-                    map.put(key, null);
-                } else {
-                    map.put(key, value);
-                }
-            }
-        }
-
-        return map;
     }
 
     private List<Object> jsonToArray(JSONArray array) throws JSONException {
@@ -219,25 +239,6 @@ class JSONExporter {
         return typArray;
     }
 
-    private void addModelMetadata(JSONObject root) throws JSONException {
-        root.put(JSON_FIELD_CONTEXT, CONTEXT);
-        root.put(JSON_FIELD_IRI, modelProperties.getOrDefault(LABEL_ALKD, effectiveNamespace));
-
-        root.put(JSON_FIELD_TYP, addJSONtypes());
-
-        addMultilingualModelProperty(root, JSON_FIELD_NAZEV, modelName);
-        addMultilingualModelProperty(root, JSON_FIELD_POPIS,
-                modelProperties.getOrDefault(LABEL_POPIS, ""));
-    }
-
-    private void addMultilingualModelProperty(JSONObject root, String propertyName,
-                                              String csValue) throws JSONException {
-        JSONObject propObj = new JSONObject();
-        propObj.put("cs", csValue);
-        propObj.put("en", "");
-        root.put(propertyName, propObj);
-    }
-
     private JSONArray createConceptsArray() {
         JSONArray pojmy = new JSONArray();
         Resource pojemType = ontModel.getResource(effectiveNamespace + TYP_POJEM);
@@ -263,65 +264,65 @@ class JSONExporter {
 
         addMultilingualProperty(concept, RDFS.label, JSON_FIELD_NAZEV, pojemObj);
 
-        Property definitionProp1 = ontModel.getProperty(NS + LABEL_DEF);
-        Property definitionProp2 = ontModel.getProperty(namespace + LABEL_DEF);
-        if (concept.hasProperty(definitionProp1)) {
-            addMultilingualProperty(concept, definitionProp1, LABEL_DEF, pojemObj);
-        } else if (concept.hasProperty(definitionProp2)) {
-            addMultilingualProperty(concept, definitionProp2, LABEL_DEF, pojemObj);
-        }
+        addMultilingualPropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_DEF);
 
-        Property descriptionProp1 = ontModel.getProperty(NS + LABEL_POPIS);
-        Property descriptionProp2 = ontModel.getProperty(namespace + LABEL_POPIS);
-        if (concept.hasProperty(descriptionProp1)) {
-            addMultilingualProperty(concept, descriptionProp1, LABEL_POPIS, pojemObj);
-        } else if (concept.hasProperty(descriptionProp2)) {
-            addMultilingualProperty(concept, descriptionProp2, LABEL_POPIS, pojemObj);
-        }
+        addMultilingualPropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_POPIS);
 
-        Property suppProp1 = ontModel.getProperty(NS + LABEL_SUPP);
-        Property suppProp2 = ontModel.getProperty(namespace + LABEL_SUPP);
-        if (concept.hasProperty(suppProp1)) {
-            addResourceArrayProperty(concept, suppProp1, LABEL_SUPP, pojemObj);
-        } else if (concept.hasProperty(suppProp2)) {
-            addResourceArrayProperty(concept, suppProp2, LABEL_SUPP, pojemObj);
-        }
+        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_SUPP);
 
         addDomainAndRangeWithBothNamespaces(concept, pojemObj, namespace);
 
-        Property ntProp1 = ontModel.getProperty(NS + LABEL_NT);
-        Property ntProp2 = ontModel.getProperty(namespace + LABEL_NT);
-        if (concept.hasProperty(ntProp1)) {
-            addResourceArrayProperty(concept, ntProp1, LABEL_NT, pojemObj);
-        } else if (concept.hasProperty(ntProp2)) {
-            addResourceArrayProperty(concept, ntProp2, LABEL_NT, pojemObj);
-        }
+        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_NT);
 
         addRppMetadataWithBothNamespaces(concept, pojemObj, namespace);
 
         return pojemObj;
     }
 
-    private void addDomainAndRangeWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
-        Property domainProp1 = ontModel.getProperty(NS + LABEL_DEF_O);
-        Property domainProp2 = ontModel.getProperty(namespace + LABEL_DEF_O);
-
-        if (concept.hasProperty(domainProp1)) {
-            addResourceProperty(concept, NS + LABEL_DEF_O, LABEL_DEF_O, pojemObj);
-        } else if (concept.hasProperty(domainProp2)) {
-            addResourceProperty(concept, namespace + LABEL_DEF_O, LABEL_DEF_O, pojemObj);
+    private void addResourceArrayPropertyFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace, String labelSupp) throws JSONException {
+        Property suppDefault = ontModel.getProperty(NS + labelSupp);
+        Property suppCustom = ontModel.getProperty(namespace + labelSupp);
+        if (concept.hasProperty(suppDefault)) {
+            addResourceArrayProperty(concept, suppDefault, labelSupp, pojemObj);
+        } else if (concept.hasProperty(suppCustom)) {
+            addResourceArrayProperty(concept, suppCustom, labelSupp, pojemObj);
         }
+    }
+
+    private void addMultilingualPropertyFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace, String labelDef) throws JSONException {
+        Property langDefault = ontModel.getProperty(NS + labelDef);
+        Property langCustom = ontModel.getProperty(namespace + labelDef);
+        if (concept.hasProperty(langDefault)) {
+            addMultilingualProperty(concept, langDefault, labelDef, pojemObj);
+        } else if (concept.hasProperty(langCustom)) {
+            addMultilingualProperty(concept, langCustom, labelDef, pojemObj);
+        }
+    }
+
+    private void addDomainAndRangeWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+        addSingleResourcePropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_DEF_O);
 
         addRangePropertyWithBothNamespaces(concept, pojemObj, namespace);
     }
 
-    private void addRangePropertyWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
-        Property rangeProp1 = ontModel.getProperty(NS + LABEL_OBOR_HODNOT);
-        Property rangeProp2 = ontModel.getProperty(namespace + LABEL_OBOR_HODNOT);
+    private void addSingleResourcePropertyFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace, String labelDefO) throws JSONException {
+        Property domainDefault = ontModel.getProperty(NS + labelDefO);
+        Property domainCustom = ontModel.getProperty(namespace + labelDefO);
 
-        Statement rangeStmt = concept.getProperty(rangeProp1);
+        if (concept.hasProperty(domainDefault)) {
+            addResourceProperty(concept, NS + labelDefO, labelDefO, pojemObj);
+        } else if (concept.hasProperty(domainCustom)) {
+            addResourceProperty(concept, namespace + labelDefO, labelDefO, pojemObj);
+        }
+    }
+
+    private void addRangePropertyWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+        Property rangeDefault = ontModel.getProperty(NS + LABEL_OBOR_HODNOT);
+        Property rangeCustom = ontModel.getProperty(namespace + LABEL_OBOR_HODNOT);
+
+        Statement rangeStmt = concept.getProperty(rangeDefault);
         if (rangeStmt == null) {
-            rangeStmt = concept.getProperty(rangeProp2);
+            rangeStmt = concept.getProperty(rangeCustom);
         }
 
         if (rangeStmt != null && rangeStmt.getObject().isResource()) {
@@ -336,12 +337,12 @@ class JSONExporter {
     }
 
     private void addRppMetadataWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
-        Property ppdfProp1 = ontModel.getProperty(NS + LABEL_JE_PPDF);
-        Property ppdfProp2 = ontModel.getProperty(namespace + LABEL_JE_PPDF);
+        Property ppdfDefault = ontModel.getProperty(NS + LABEL_JE_PPDF);
+        Property ppdfCustom = ontModel.getProperty(namespace + LABEL_JE_PPDF);
 
-        Statement stmt = concept.getProperty(ppdfProp1);
+        Statement stmt = concept.getProperty(ppdfDefault);
         if (stmt == null) {
-            stmt = concept.getProperty(ppdfProp2);
+            stmt = concept.getProperty(ppdfCustom);
         }
 
         if (stmt != null && stmt.getObject().isLiteral()) {
@@ -349,32 +350,11 @@ class JSONExporter {
             pojemObj.put(LABEL_JE_PPDF, value);
         }
 
-        Property aisProp1 = ontModel.getProperty(NS + LABEL_AIS);
-        Property aisProp2 = ontModel.getProperty(namespace + LABEL_AIS);
+        addSingleResourcePropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_AIS);
 
-        if (concept.hasProperty(aisProp1)) {
-            addResourceProperty(concept, NS + LABEL_AIS, LABEL_AIS, pojemObj);
-        } else if (concept.hasProperty(aisProp2)) {
-            addResourceProperty(concept, namespace + LABEL_AIS, LABEL_AIS, pojemObj);
-        }
+        addSingleResourcePropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_AGENDA);
 
-        Property agendaProp1 = ontModel.getProperty(NS + LABEL_AGENDA);
-        Property agendaProp2 = ontModel.getProperty(namespace + LABEL_AGENDA);
-
-        if (concept.hasProperty(agendaProp1)) {
-            addResourceProperty(concept, NS + LABEL_AGENDA, LABEL_AGENDA, pojemObj);
-        } else if (concept.hasProperty(agendaProp2)) {
-            addResourceProperty(concept, namespace + LABEL_AGENDA, LABEL_AGENDA, pojemObj);
-        }
-
-        Property udnProp1 = ontModel.getProperty(NS + LABEL_UDN);
-        Property udnProp2 = ontModel.getProperty(namespace + LABEL_UDN);
-
-        if (concept.hasProperty(udnProp1)) {
-            addResourceArrayProperty(concept, udnProp1, LABEL_UDN, pojemObj);
-        } else if (concept.hasProperty(udnProp2)) {
-            addResourceArrayProperty(concept, udnProp2, LABEL_UDN, pojemObj);
-        }
+        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_UDN);
     }
 
     private JSONArray getConceptTypes(Resource concept) {
