@@ -1,10 +1,10 @@
 package dia.ismd.validator;
 
+import dia.ismd.common.exceptions.JsonExportException;
 import dia.ismd.common.exceptions.UnsupportedFormatException;
 import dia.ismd.validator.convertor.ConvertorService;
 import dia.ismd.validator.enums.FileFormat;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -99,7 +99,7 @@ public class ConvertorController {
     }
 
     private ResponseEntity<?> getResponseEntity(
-            @RequestParam(value = "output", defaultValue = "json") String output) throws JSONException {
+            @RequestParam(value = "output", defaultValue = "json") String output) throws JsonExportException {
         return switch (output.toLowerCase()) {
             case "json" -> {
                 String jsonOutput = convertorService.exportArchiToJson();
