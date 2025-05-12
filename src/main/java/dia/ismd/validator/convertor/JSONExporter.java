@@ -60,14 +60,17 @@ class JSONExporter {
 
         addMultilingualModelProperty(root, JSON_FIELD_NAZEV, modelName);
         addMultilingualModelProperty(root, JSON_FIELD_POPIS,
-                modelProperties.getOrDefault(LABEL_POPIS, ""));
+                modelProperties.getOrDefault(LABEL_POPIS, null));
     }
 
     private void addMultilingualModelProperty(JSONObject root, String propertyName,
                                               String csValue) throws JSONException {
+        if (csValue == null || csValue.isEmpty()) {
+            return;
+        }
+
         JSONObject propObj = new JSONObject();
         propObj.put("cs", csValue);
-        propObj.put("en", "");
         root.put(propertyName, propObj);
     }
 
@@ -165,9 +168,11 @@ class JSONExporter {
 
     private String convertMapToFormattedJson(Map<String, Object> map) throws JsonExportException {
         try {
+            Map<String, Object> filteredMap = filterEmptyValues(map);
+
             ObjectMapper mapper = new ObjectMapper();
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
-            return mapper.writeValueAsString(map);
+            return mapper.writeValueAsString(filteredMap);
         } catch (Exception e) {
             throw new JsonExportException("Error converting map to JSON: " + e.getMessage());
         }
@@ -176,8 +181,6 @@ class JSONExporter {
     private Map<String, String> createEmptyMultilingualField() {
         Map<String, String> emptyField = new LinkedHashMap<>();
         emptyField.put("cs", "");
-        emptyField.put("sk", "");
-        emptyField.put("en", "");
         return emptyField;
     }
 
@@ -372,7 +375,7 @@ class JSONExporter {
         };
 
         for (String[] mapping : typeMapping) {
-            if (concept.hasProperty(RDF.type, ontModel.getResource(effectiveNamespace + mapping[0]))) { // Use effectiveNamespace
+            if (concept.hasProperty(RDF.type, ontModel.getResource(effectiveNamespace + mapping[0]))) {
                 types.put(mapping[1]);
             }
         }
@@ -385,16 +388,24 @@ class JSONExporter {
         StmtIterator propIter = concept.listProperties(property);
         if (propIter.hasNext()) {
             JSONObject propObj = new JSONObject();
+            boolean hasNonEmptyValue = false;
+
             while (propIter.hasNext()) {
                 Statement propStmt = propIter.next();
+                String value = propStmt.getString();
+                if (value == null || value.isEmpty()) {
+                    continue;
+                }
+
                 String lang = propStmt.getLanguage();
                 if (lang != null && !lang.isEmpty()) {
                     propObj.put(lang, propStmt.getString());
                 } else {
                     propObj.put("cs", propStmt.getString());
                 }
+                hasNonEmptyValue = true;
             }
-            if (propObj.length() != 0) {
+            if (hasNonEmptyValue && propObj.length() > 0) {
                 pojemObj.put(jsonProperty, propObj);
             }
         }
@@ -423,6 +434,58 @@ class JSONExporter {
         if (stmt != null && stmt.getObject().isResource()) {
             targetObj.put(jsonProperty, stmt.getObject().asResource().getURI());
         }
+    }
+
+    private Map<String, Object> filterEmptyValues(Map<String, Object> map) {
+        Map<String, Object> filteredMap = new LinkedHashMap<>();
+
+        map.forEach((key, value) -> {
+            if (value != null) {
+                if (value instanceof String str && !str.isEmpty()) {
+                    filteredMap.put(key, value);
+                } else if (value instanceof Map<?, ?> innerMap) {
+                    Map<String, Object> filteredInnerMap = filterEmptyValues((Map<String, Object>) innerMap);
+                    if (!filteredInnerMap.isEmpty()) {
+                        filteredMap.put(key, filteredInnerMap);
+                    }
+                } else if (value instanceof List<?> list) {
+                    List<Object> filteredList = filterEmptyList(list);
+                    if (!filteredList.isEmpty()) {
+                        filteredMap.put(key, filteredList);
+                    }
+                } else {
+                    filteredMap.put(key, value);
+                }
+            }
+        });
+
+        return filteredMap;
+    }
+
+    private List<Object> filterEmptyList(List<?> list) {
+        List<Object> filteredList = new ArrayList<>();
+
+        for (Object item : list) {
+            if (item != null) {
+                if (item instanceof String str && !str.isEmpty()) {
+                    filteredList.add(item);
+                } else if (item instanceof Map<?, ?> map) {
+                    Map<String, Object> filteredMap = filterEmptyValues((Map<String, Object>) map);
+                    if (!filteredMap.isEmpty()) {
+                        filteredList.add(filteredMap);
+                    }
+                } else if (item instanceof List<?> innerList) {
+                    List<Object> filteredInnerList = filterEmptyList(innerList);
+                    if (!filteredInnerList.isEmpty()) {
+                        filteredList.add(filteredInnerList);
+                    }
+                } else {
+                    filteredList.add(item);
+                }
+            }
+        }
+
+        return filteredList;
     }
 
     private <T> T handleJsonOperation(JsonSupplier<T> operation) throws JsonExportException {

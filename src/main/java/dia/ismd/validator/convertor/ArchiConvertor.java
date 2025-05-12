@@ -170,13 +170,11 @@ class ArchiConvertor {
     private Map<String, String> getModelProperties() {
         Map<String, String> modelProperties = new HashMap<>();
 
-        // Find the properties element that belongs to the model
         Element modelPropertiesElement = findModelPropertiesElement();
         if (modelPropertiesElement == null) {
             return modelProperties;
         }
 
-        // Extract properties from the model properties element
         extractPropertiesFromElement(modelPropertiesElement, modelProperties);
 
         return modelProperties;
