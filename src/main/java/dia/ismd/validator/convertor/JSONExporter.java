@@ -58,20 +58,25 @@ class JSONExporter {
 
         root.put(JSON_FIELD_TYP, addJSONtypes());
 
-        addMultilingualModelProperty(root, JSON_FIELD_NAZEV, modelName);
-        addMultilingualModelProperty(root, JSON_FIELD_POPIS,
-                modelProperties.getOrDefault(LABEL_POPIS, null));
+        if (modelName != null && !modelName.isEmpty()) {
+            addMultilingualModelProperty(root, JSON_FIELD_NAZEV, modelName);
+        }
+
+        String description = modelProperties.getOrDefault(LABEL_POPIS, "");
+        if (description != null && !description.isEmpty()) {
+            addMultilingualModelProperty(root, JSON_FIELD_POPIS, description);
+        }
     }
 
     private void addMultilingualModelProperty(JSONObject root, String propertyName,
                                               String csValue) throws JSONException {
-        if (csValue == null || csValue.isEmpty()) {
-            return;
-        }
-
         JSONObject propObj = new JSONObject();
-        propObj.put("cs", csValue);
-        root.put(propertyName, propObj);
+        if (csValue != null && !csValue.isEmpty()) {
+            propObj.put("cs", csValue);
+        }
+        if (propObj.length() > 0) {
+            root.put(propertyName, propObj);
+        }
     }
 
     private String formatJsonWithOrderedFields(JSONObject unorderedRoot) throws JsonExportException {
@@ -84,7 +89,9 @@ class JSONExporter {
 
             addRemainingFields(originalMap, orderedMap);
 
-            return convertMapToFormattedJson(orderedMap);
+            Map<String, Object> filteredMap = filterEmptyValues(orderedMap);
+
+            return convertMapToFormattedJson(filteredMap);
         } catch (JSONException e) {
             log.error("Error parsing JSON: {}", e.getMessage(), e);
             throw new JsonExportException("Error parsing JSON: " + e.getMessage());
@@ -236,9 +243,9 @@ class JSONExporter {
 
     private JSONArray addJSONtypes() {
         JSONArray typArray = new JSONArray();
-        typArray.put("Slovník");
-        typArray.put("Tezaurus");
-        typArray.put("Konceptuální model");
+        typArray.put(TYPE_SLOVNIK);
+        typArray.put(TYPE_TEZAURUS);
+        typArray.put(TYPE_KM);
         return typArray;
     }
 
@@ -441,9 +448,12 @@ class JSONExporter {
 
         map.forEach((key, value) -> {
             if (value != null) {
-                if (value instanceof String str && !str.isEmpty()) {
-                    filteredMap.put(key, value);
+                if (value instanceof String str) {
+                    if (!str.isEmpty()) {
+                        filteredMap.put(key, value);
+                    }
                 } else if (value instanceof Map<?, ?> innerMap) {
+                    @SuppressWarnings("unchecked")
                     Map<String, Object> filteredInnerMap = filterEmptyValues((Map<String, Object>) innerMap);
                     if (!filteredInnerMap.isEmpty()) {
                         filteredMap.put(key, filteredInnerMap);
@@ -467,9 +477,12 @@ class JSONExporter {
 
         for (Object item : list) {
             if (item != null) {
-                if (item instanceof String str && !str.isEmpty()) {
-                    filteredList.add(item);
+                if (item instanceof String str) {
+                    if (!str.isEmpty()) {
+                        filteredList.add(item);
+                    }
                 } else if (item instanceof Map<?, ?> map) {
+                    @SuppressWarnings("unchecked")
                     Map<String, Object> filteredMap = filterEmptyValues((Map<String, Object>) map);
                     if (!filteredMap.isEmpty()) {
                         filteredList.add(filteredMap);
