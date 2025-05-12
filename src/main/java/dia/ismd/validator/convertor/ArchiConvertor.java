@@ -437,7 +437,7 @@ class ArchiConvertor {
         if (relProps.containsKey(LABEL_ZDROJ)) {
             String sourceUrl = relProps.get(LABEL_ZDROJ);
             if (!sourceUrl.isEmpty()) {
-                relResource.addProperty(ontModel.getProperty(NS + LABEL_ZDROJ),
+                relResource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ),
                         ontModel.createResource(sourceUrl));
             }
         }
@@ -445,7 +445,7 @@ class ArchiConvertor {
         if (relProps.containsKey(LABEL_SUPP)) {
             String provision = relProps.get(LABEL_SUPP);
             if (!provision.isEmpty()) {
-                relResource.addProperty(ontModel.getProperty(NS + LABEL_SUPP),
+                relResource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SUPP),
                         ontModel.createResource(provision));
             }
         }
