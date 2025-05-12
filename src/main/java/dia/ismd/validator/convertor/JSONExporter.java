@@ -24,6 +24,7 @@ import java.util.Map;
 
 import static dia.ismd.validator.convertor.constants.ArchiOntologyConstants.*;
 import static dia.ismd.validator.convertor.constants.JsonExportConstants.*;
+import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @Slf4j
 class JSONExporter {
@@ -89,7 +90,7 @@ class JSONExporter {
 
             addRemainingFields(originalMap, orderedMap);
 
-            Map<String, Object> filteredMap = filterEmptyValues(orderedMap);
+            Map<String, Object> filteredMap = filterMap(orderedMap);
 
             return convertMapToFormattedJson(filteredMap);
         } catch (JSONException e) {
@@ -175,7 +176,7 @@ class JSONExporter {
 
     private String convertMapToFormattedJson(Map<String, Object> map) throws JsonExportException {
         try {
-            Map<String, Object> filteredMap = filterEmptyValues(map);
+            Map<String, Object> filteredMap = filterMap(map);
 
             ObjectMapper mapper = new ObjectMapper();
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -443,62 +444,45 @@ class JSONExporter {
         }
     }
 
-    private Map<String, Object> filterEmptyValues(Map<String, Object> map) {
-        Map<String, Object> filteredMap = new LinkedHashMap<>();
+    private Map<String, Object> filterMap(Map<String, Object> map) {
+        Map<String, Object> result = new LinkedHashMap<>();
 
         map.forEach((key, value) -> {
-            if (value != null) {
-                if (value instanceof String str) {
-                    if (!str.isEmpty()) {
-                        filteredMap.put(key, value);
-                    }
-                } else if (value instanceof Map<?, ?> innerMap) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> filteredInnerMap = filterEmptyValues((Map<String, Object>) innerMap);
-                    if (!filteredInnerMap.isEmpty()) {
-                        filteredMap.put(key, filteredInnerMap);
-                    }
-                } else if (value instanceof List<?> list) {
-                    List<Object> filteredList = filterEmptyList(list);
-                    if (!filteredList.isEmpty()) {
-                        filteredMap.put(key, filteredList);
-                    }
-                } else {
-                    filteredMap.put(key, value);
-                }
+            Object filtered = filterValue(value);
+            if (filtered != null) {
+                result.put(key, filtered);
             }
         });
 
-        return filteredMap;
+        return result;
     }
 
-    private List<Object> filterEmptyList(List<?> list) {
-        List<Object> filteredList = new ArrayList<>();
+    private List<Object> filterList(List<?> list) {
+        List<Object> result = new ArrayList<>();
 
         for (Object item : list) {
-            if (item != null) {
-                if (item instanceof String str) {
-                    if (!str.isEmpty()) {
-                        filteredList.add(item);
-                    }
-                } else if (item instanceof Map<?, ?> map) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> filteredMap = filterEmptyValues((Map<String, Object>) map);
-                    if (!filteredMap.isEmpty()) {
-                        filteredList.add(filteredMap);
-                    }
-                } else if (item instanceof List<?> innerList) {
-                    List<Object> filteredInnerList = filterEmptyList(innerList);
-                    if (!filteredInnerList.isEmpty()) {
-                        filteredList.add(filteredInnerList);
-                    }
-                } else {
-                    filteredList.add(item);
-                }
+            Object filtered = filterValue(item);
+            if (filtered != null) {
+                result.add(filtered);
             }
         }
 
-        return filteredList;
+        return result;
+    }
+
+    private Object filterValue(Object value) {
+        if (isEmpty(value)) return null;
+
+        if (value instanceof Map<?, ?> map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> filtered = filterMap((Map<String, Object>) map);
+            return filtered.isEmpty() ? null : filtered;
+        } else if (value instanceof List<?> list) {
+            List<Object> filtered = filterList(list);
+            return filtered.isEmpty() ? null : filtered;
+        }
+
+        return value;
     }
 
     private <T> T handleJsonOperation(JsonSupplier<T> operation) throws JsonExportException {
