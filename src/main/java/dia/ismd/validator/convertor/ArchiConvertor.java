@@ -95,8 +95,6 @@ class ArchiConvertor {
             modelName = "Untitled Model";
         }
 
-        getModelProperties();
-
         initializeTypeClasses();
 
         processElements();
@@ -297,6 +295,28 @@ class ArchiConvertor {
         log.debug("Property mappings built:");
         for (Map.Entry<String, String> entry : propertyMapping.entrySet()) {
             log.debug("  {} -> {}", entry.getKey(), entry.getValue());
+        }
+    }
+
+    private String sanitizeForIRI(String input) {
+        if (input == null || input.isEmpty()) {
+            return "unnamed";
+        }
+
+        String result = input.toLowerCase();
+        result = result.replaceAll("[^a-z0-9\\-._~!$&'()*+,;=/?#@%]", "-");
+        result = result.replaceAll("-+", "-");
+        result = result.replaceAll("^-?-$", "");
+
+        return result;
+    }
+
+    private boolean isValidUrl(String url) {
+        try {
+            new java.net.URL(url);
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 
