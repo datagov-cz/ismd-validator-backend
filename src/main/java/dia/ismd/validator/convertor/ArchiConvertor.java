@@ -95,9 +95,14 @@ class ArchiConvertor {
             modelName = "Untitled Model";
         }
 
+        processModelNameProperty();
+
+        setModelIRI();
+
         initializeTypeClasses();
 
         processElements();
+
         processRelationships();
     }
 
@@ -141,6 +146,36 @@ class ArchiConvertor {
                 getModelProperties()
         );
         return exporter.exportToTurtleWithPrefixes(customPrefixes);
+    }
+
+    private void processModelNameProperty() {
+        Map<String, String> properties = getModelProperties();
+
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            if (entry.getKey().contains("adresa lokálního katalogu dat")) {
+                String ns = entry.getValue();
+                if (ns != null && !ns.isEmpty() && isValidUrl(ns)) {
+                    this.ontologyNamespace = ns;
+                }
+            }
+        }
+    }
+
+    private void setModelIRI() {
+        String iri = modelName;
+        String sanitisedIri = assembleIri(iri);
+        ontModel.createOntology(sanitisedIri);
+
+        Resource ontologyResource = ontModel.getResource(sanitisedIri);
+        if (ontologyResource != null) {
+            ontologyResource.addProperty(OWL2.versionInfo, "Vygenerováno z Archi modelu: " + archiDoc.getDocumentURI());
+        }
+    }
+
+    private String assembleIri(String iri) {
+        String effectiveNamespace = getEffectiveOntologyNamespace();
+
+        return effectiveNamespace + sanitizeForIRI(iri);
     }
 
     private void buildPropertyMapping() {
@@ -304,7 +339,7 @@ class ArchiConvertor {
         }
 
         String result = input.toLowerCase();
-        result = result.replaceAll("[^a-z0-9\\-._~!$&'()*+,;=/?#@%]", "-");
+        result = result.replaceAll("[^\\p{L}\\p{N}\\-._~!$&'()*+,;=/?#@%]", "-");
         result = result.replaceAll("-+", "-");
         result = result.replaceAll("^-?-$", "");
 
@@ -340,6 +375,7 @@ class ArchiConvertor {
             }
             return ontologyNamespace;
         }
+
         return NS;
     }
 
@@ -353,7 +389,8 @@ class ArchiConvertor {
 
     private boolean isOntologyNamespaceProperty(String propRef) {
         String propertyName = propertyMapping.getOrDefault(propRef, "");
-        return propertyName.contains("adresa lokálního katalogu dat");
+        return propertyName.contains("adresa lokálního katalogu dat") ||
+                propertyName.equals("adresa lokálního katalogu dat, ve kterém bude slovník registrován");
     }
 
     private void processIndividualRelationship(Element relationship) {

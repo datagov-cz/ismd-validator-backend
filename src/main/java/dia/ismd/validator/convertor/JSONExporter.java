@@ -10,6 +10,7 @@ import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
+import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
@@ -55,8 +56,7 @@ class JSONExporter {
 
     private void addModelMetadata(JSONObject root) throws JSONException {
         root.put(JSON_FIELD_CONTEXT, CONTEXT);
-        root.put(JSON_FIELD_IRI, modelProperties.getOrDefault(LABEL_ALKD, effectiveNamespace));
-
+        root.put(JSON_FIELD_IRI, getOntologyIRI());
         root.put(JSON_FIELD_TYP, addJSONtypes());
 
         if (modelName != null && !modelName.isEmpty()) {
@@ -124,6 +124,17 @@ class JSONExporter {
         }
 
         return map;
+    }
+
+    private String getOntologyIRI() {
+        Resource ontologyResource = null;
+        StmtIterator iter = ontModel.listStatements(null, RDF.type, OWL2.Ontology);
+        if (iter.hasNext()) {
+            ontologyResource = iter.next().getSubject();
+            return ontologyResource.getURI();
+        }
+
+        return modelProperties.getOrDefault(LABEL_ALKD, effectiveNamespace);
     }
 
     private Map<String, Object> createOrderedModelMap(Map<String, Object> originalMap) {
