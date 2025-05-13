@@ -10,8 +10,7 @@ import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 
-import static dia.ismd.validator.convertor.constants.ArchiOntologyConstants.*;
-import static dia.ismd.validator.convertor.constants.ArchiOntologyConstants.LABEL_SUPP;
+import static dia.ismd.validator.constants.ArchiOntologyConstants.LABEL_SUPP;
 
 @Getter
 public class OFNBaseModel {

@@ -1,4 +1,4 @@
-package dia.ismd.validator.convertor.constants;
+package dia.ismd.validator.constants;
 
 public class ArchiOntologyConstants {
     public static final String NS = "https://slovník.gov.cz/";

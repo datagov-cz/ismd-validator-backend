@@ -23,8 +23,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static dia.ismd.validator.convertor.constants.ArchiOntologyConstants.*;
-import static dia.ismd.validator.convertor.constants.JsonExportConstants.*;
+import static dia.ismd.validator.constants.ArchiOntologyConstants.*;
+import static dia.ismd.validator.constants.JsonExportConstants.*;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @Slf4j

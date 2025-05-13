@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static dia.ismd.validator.convertor.constants.ArchiOntologyConstants.*;
+import static dia.ismd.validator.constants.ArchiOntologyConstants.*;
 
 @Component
 @Slf4j

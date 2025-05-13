@@ -21,18 +21,13 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+import static dia.ismd.validator.constants.ConvertorControllerConstants.*;
+
 @RestController
 @RequestMapping("/api/prevodnik")
 @RequiredArgsConstructor
 @Slf4j
 public class ConvertorController {
-
-    private static final String ARCHI_3_HEADER = "http://www.opengroup.org/xsd/archimate/3.0/";
-    private static final String ARCHIMATE_HEADER = "http://www.opengroup.org/xsd/archimate";
-    private static final String XMI_HEADER = "http://schema.omg.org/spec/XMI/2.1";
-
-    private static final String LOG_REQUEST_ID = "requestId";
-
 
     private final ConvertorService convertorService;
 

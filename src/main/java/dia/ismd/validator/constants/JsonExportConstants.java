@@ -1,4 +1,4 @@
-package dia.ismd.validator.convertor.constants;
+package dia.ismd.validator.constants;
 
 public class JsonExportConstants {
     public static final String JSON_FIELD_CONTEXT = "@context";
