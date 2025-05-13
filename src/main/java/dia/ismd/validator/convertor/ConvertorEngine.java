@@ -2,9 +2,9 @@ package dia.ismd.validator.convertor;
 
 import dia.ismd.common.exceptions.ConversionException;
 import dia.ismd.common.exceptions.FileParsingException;
+import dia.ismd.common.exceptions.JsonExportException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -22,7 +22,7 @@ class ConvertorEngine {
         archiConvertor.convert();
     }
 
-    public String exportToJson() throws JSONException {
+    public String exportToJson() throws JsonExportException {
         return archiConvertor.exportToJson();
     }
 
