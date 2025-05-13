@@ -51,7 +51,7 @@ class TurtleExporter {
             return outputStream.toString(StandardCharsets.UTF_8);
         } catch (TurtleExportException e) {
             log.error("Error exporting to Turtle format: {}", e.getMessage(), e);
-            throw new TurtleExportException("Error exporting to Turtle format: " + e.getMessage());
+            throw new TurtleExportException("Při exportu do Turtle došlo k chybě: " + e.getMessage());
         }
     }
 

@@ -3,6 +3,7 @@ package dia.ismd.validator.convertor;
 import dia.ismd.common.exceptions.ConversionException;
 import dia.ismd.common.exceptions.FileParsingException;
 import dia.ismd.common.exceptions.JsonExportException;
+import dia.ismd.common.exceptions.TurtleExportException;
 import dia.ismd.common.models.OFNBaseModel;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
@@ -13,6 +14,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static dia.ismd.validator.constants.ArchiOntologyConstants.*;
+import static dia.ismd.validator.constants.ConvertorControllerConstants.*;
 
 @Component
 @Slf4j
@@ -67,85 +70,140 @@ class ArchiConvertor {
     }
 
     public void parseFromString(String content) throws FileParsingException {
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        int contentLength = content != null ? content.length() : 0;
+
+        log.info("Starting XML parsing: requestId={}, contentLength={}", requestId, contentLength);
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newDefaultInstance();
-            factory.setNamespaceAware(true);
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            archiDoc = builder.parse(new ByteArrayInputStream(content.getBytes()));
 
+            log.debug("Configuring XML parser: requestId={}, namespaceAware=true", requestId);
+            factory.setNamespaceAware(true);
+
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            log.debug("XML parser security features enabled: requestId={}", requestId);
+
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            log.debug("Parsing XML content: requestId={}", requestId);
+            archiDoc = builder.parse(new ByteArrayInputStream(content.getBytes()));
+            log.debug("XML document successfully parsed: requestId={}", requestId);
+
+            log.debug("Building property mappings: requestId={}", requestId);
             buildPropertyMapping();
+            log.info("XML parsing completed successfully: requestId={}", requestId);
         } catch (ParserConfigurationException e) {
-            throw new FileParsingException("Během konfigurace XML parseru došlo k chybě..", e);
+            log.error("XML parser configuration failed: requestId={}, error={}", requestId, e.getMessage(), e);
+            throw new FileParsingException("Během konfigurace XML parseru došlo k chybě.", e);
         } catch (SAXException e) {
+            log.error("XML parsing error: requestId={}, error={}", requestId, e.getMessage(), e);
             throw new FileParsingException("Při zpracovávání XML došlo k chybě.", e);
         } catch (IOException e) {
-            throw new FileParsingException("Při čtení XML došlo k chybě,", e);
+            log.error("IO error while parsing XML: requestId={}, error={}", requestId, e.getMessage(), e);
+            throw new FileParsingException("Při čtení XML došlo k chybě.", e);
+        } catch (Exception e) {
+            log.error("Unexpected error during XML parsing: requestId={}", requestId, e);
+            throw new FileParsingException("Neočekávaná chyba při zpracování XML.", e);
         }
     }
 
     public void convert() throws ConversionException {
-        if (archiDoc == null) {
-            throw new ConversionException("Dokument ke konverzi nebyl nalezen.");
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        log.info("Starting Archi model conversion: requestId={}", requestId);
+
+        try {
+            if (archiDoc == null) {
+                log.error("Document not found for conversion: requestId={}", requestId);
+                throw new ConversionException("Dokument ke konverzi nebyl nalezen.");
+            }
+
+            log.debug("Extracting model name: requestId={}", requestId);
+            NodeList nameNodes = archiDoc.getElementsByTagNameNS(ARCHI_NS, "name");
+            if (nameNodes.getLength() > 0) {
+                modelName = nameNodes.item(0).getTextContent();
+                log.debug("Model name extracted: requestId={}, modelName={}", requestId, modelName);
+            } else {
+                modelName = "Untitled Model";
+                log.warn("No model name found, using default: requestId={}, modelName={}", requestId, modelName);
+            }
+
+            log.debug("Processing model name properties: requestId={}", requestId);
+            processModelNameProperty();
+
+            log.debug("Setting model IRI: requestId={}", requestId);
+            setModelIRI();
+
+            log.debug("Initializing type classes: requestId={}", requestId);
+            initializeTypeClasses();
+
+            log.debug("Processing elements: requestId={}", requestId);
+            processElements();
+
+            log.debug("Processing relationships: requestId={}", requestId);
+            processRelationships();
+
+            log.info("Archi model conversion completed successfully: requestId={}, modelName={}",
+                    requestId, modelName);
+        } catch (ConversionException e) {
+            log.error("Conversion error: requestId={}, error={}", requestId, e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error during conversion: requestId={}", requestId, e);
+            throw new ConversionException("Neočekávaná chyba při konverzi.", e);
         }
-
-        NodeList nameNodes = archiDoc.getElementsByTagNameNS(ARCHI_NS, "name");
-        if (nameNodes.getLength() > 0) {
-            modelName = nameNodes.item(0).getTextContent();
-        } else {
-            modelName = "Untitled Model";
-        }
-
-        processModelNameProperty();
-
-        setModelIRI();
-
-        initializeTypeClasses();
-
-        processElements();
-
-        processRelationships();
     }
 
 
     public String exportToJson() throws JsonExportException {
-        JSONExporter exporter = new JSONExporter(
-                ontModel,
-                resourceMap,
-                modelName,
-                getModelProperties(),
-                getEffectiveOntologyNamespace()
-        );
-        return exporter.exportToJson();
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        log.info("Starting JSON export: requestId={}, modelName={}", requestId, modelName);
+
+        try {
+            log.debug("Creating JSON exporter: requestId={}", requestId);
+            JSONExporter exporter = new JSONExporter(
+                    ontModel,
+                    resourceMap,
+                    modelName,
+                    getModelProperties(),
+                    getEffectiveOntologyNamespace()
+            );
+
+            String result = exporter.exportToJson();
+            log.info("JSON export completed: requestId={}, outputSize={}", requestId, result.length());
+            return result;
+        } catch (JsonExportException e) {
+            log.error("JSON export error: requestId={}, error={}", requestId, e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error during JSON export: requestId={}", requestId, e);
+            throw new JsonExportException("Neočekávaná chyba při exportu do JSON.", e);
+        }
     }
 
-    public String exportToTurtle() {
-        TurtleExporter exporter = new TurtleExporter(
-                ontModel,
-                resourceMap,
-                modelName,
-                getModelProperties()
-        );
-        return exporter.exportToTurtle();
-    }
+    public String exportToTurtle() throws TurtleExportException {
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        log.info("Starting Turtle export: requestId={}, modelName={}", requestId, modelName);
 
-    public String exportToTurtle(boolean prettyPrint, boolean includeBaseUri) {
-        TurtleExporter exporter = new TurtleExporter(
-                ontModel,
-                resourceMap,
-                modelName,
-                getModelProperties()
-        );
-        return exporter.exportToTurtle(prettyPrint, includeBaseUri);
-    }
+        try {
+            log.debug("Creating Turtle exporter: requestId={}", requestId);
+            TurtleExporter exporter = new TurtleExporter(
+                    ontModel,
+                    resourceMap,
+                    modelName,
+                    getModelProperties()
+            );
 
-    public String exportToTurtleWithPrefixes(Map<String, String> customPrefixes) {
-        TurtleExporter exporter = new TurtleExporter(
-                ontModel,
-                resourceMap,
-                modelName,
-                getModelProperties()
-        );
-        return exporter.exportToTurtleWithPrefixes(customPrefixes);
+            String result = exporter.exportToTurtle();
+            log.info("Turtle export completed: requestId={}, outputSize={}", requestId, result.length());
+            return result;
+        } catch (TurtleExportException e) {
+            log.error("Turtle export error: requestId={}, error={}", requestId, e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error during Turtle export: requestId={}", requestId, e);
+            throw new TurtleExportException("Neočekávaná chyba při exportu do formátu Turtle.", e);
+        }
     }
 
     private void processModelNameProperty() {
