@@ -11,9 +11,11 @@ import org.apache.jena.ontology.OntClass;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntProperty;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.vocabulary.SKOS;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
@@ -30,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static dia.ismd.validator.constants.ArchiOntologyConstants.*;
@@ -87,7 +90,7 @@ class ArchiConvertor {
 
             DocumentBuilder builder = factory.newDocumentBuilder();
             log.debug("Parsing XML content: requestId={}", requestId);
-            archiDoc = builder.parse(new ByteArrayInputStream(content.getBytes()));
+            archiDoc = builder.parse(new ByteArrayInputStream(Objects.requireNonNull(content).getBytes()));
             log.debug("XML document successfully parsed: requestId={}", requestId);
 
             log.debug("Building property mappings: requestId={}", requestId);
@@ -220,13 +223,28 @@ class ArchiConvertor {
     }
 
     private void setModelIRI() {
-        String iri = modelName;
-        String sanitisedIri = assembleIri(iri);
+        String sanitisedIri = assembleIri(modelName);
+
         ontModel.createOntology(sanitisedIri);
 
         Resource ontologyResource = ontModel.getResource(sanitisedIri);
         if (ontologyResource != null) {
-            ontologyResource.addProperty(OWL2.versionInfo, "Vygenerováno z Archi modelu: " + archiDoc.getDocumentURI());
+            ontologyResource.addProperty(RDF.type, SKOS.ConceptScheme);
+
+            ontologyResource.addProperty(OWL2.versionInfo,
+                    "Vygenerováno z Archi modelu: " +
+                            (modelName));
+
+            ontologyResource.addProperty(SKOS.prefLabel, modelName, "cs");
+            ontologyResource.addProperty(SKOS.prefLabel, modelName, "en");
+
+            Map<String, String> properties = getModelProperties();
+            String description = properties.getOrDefault(LABEL_POPIS, "");
+            if (description != null && !description.isEmpty()) {
+                ontologyResource.addProperty(DCTerms.description, description, "cs");
+            }
+
+            resourceMap.put("ontology", ontologyResource);
         }
     }
 
@@ -541,6 +559,8 @@ class ArchiConvertor {
         relResource.addProperty(ontModel.getProperty(namespace + LABEL_DEF_O), source);
         relResource.addProperty(ontModel.getProperty(namespace + LABEL_OBOR_HODNOT), target);
 
+        addSchemeRelationship(relResource);
+
         return relResource;
     }
 
@@ -594,6 +614,8 @@ class ArchiConvertor {
         addLegalSources(resource, properties);
 
         addPurpleLayerProperties(resource, properties);
+
+        addSchemeRelationship(resource);
 
         return resource;
     }
@@ -769,6 +791,14 @@ class ArchiConvertor {
                         ontModel.createResource(agenda)
                 );
             }
+        }
+    }
+
+    private void addSchemeRelationship(Resource resource) {
+        Resource ontologyResource = resourceMap.get("ontology");
+        if (ontologyResource != null && resource.hasProperty(RDF.type,
+                ontModel.getResource(getEffectiveOntologyNamespace() + TYP_POJEM))) {
+            resource.addProperty(SKOS.inScheme, ontologyResource);
         }
     }
 
