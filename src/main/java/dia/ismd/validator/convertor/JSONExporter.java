@@ -96,10 +96,10 @@ class JSONExporter {
             return convertMapToFormattedJson(filteredMap);
         } catch (JSONException e) {
             log.error("Error parsing JSON: {}", e.getMessage(), e);
-            throw new JsonExportException("Error parsing JSON: " + e.getMessage());
+            throw new JsonExportException("Při čtení JSON došlo k chybě: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error formatting JSON: {}", e.getMessage(), e);
-            throw new JsonExportException("Error formatting JSON: " + e.getMessage());
+            throw new JsonExportException("Při formátování JSON došlo k chybě: " + e.getMessage());
         }
     }
 
@@ -128,7 +128,7 @@ class JSONExporter {
     }
 
     private String getOntologyIRI() {
-        Resource ontologyResource = null;
+        Resource ontologyResource;
         StmtIterator iter = ontModel.listStatements(null, RDF.type, OWL2.Ontology);
         if (iter.hasNext()) {
             ontologyResource = iter.next().getSubject();
@@ -194,7 +194,7 @@ class JSONExporter {
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
             return mapper.writeValueAsString(filteredMap);
         } catch (Exception e) {
-            throw new JsonExportException("Error converting map to JSON: " + e.getMessage());
+            throw new JsonExportException("Při konverzi do JSON došlo k chybě: " + e.getMessage());
         }
     }
 
@@ -515,10 +515,10 @@ class JSONExporter {
             return operation.get();
         } catch (JsonExportException e) {
             log.error("{}: {}", "Error exporting to JSON", e.getMessage(), e);
-            throw new JsonExportException("Error exporting to JSON" + ": " + e.getMessage());
+            throw new JsonExportException("Při exportu do JSON došlo k chybě" + ": " + e.getMessage());
         } catch (Exception e) {
             log.error("Unexpected error during JSON operation: {}", e.getMessage(), e);
-            throw new JsonExportException("Error during JSON processing: " + e.getMessage());
+            throw new JsonExportException("Během zpracovávání JSON došlo k chybě: " + e.getMessage());
         }
     }
 

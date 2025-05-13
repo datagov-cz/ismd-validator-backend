@@ -75,11 +75,11 @@ class ArchiConvertor {
 
             buildPropertyMapping();
         } catch (ParserConfigurationException e) {
-            throw new FileParsingException("Failed to configure XML parser.", e);
+            throw new FileParsingException("Během konfigurace XML parseru došlo k chybě..", e);
         } catch (SAXException e) {
-            throw new FileParsingException("Failed to parse XML content.", e);
+            throw new FileParsingException("Při zpracovávání XML došlo k chybě.", e);
         } catch (IOException e) {
-            throw new FileParsingException("Failed to read XML content.", e);
+            throw new FileParsingException("Při čtení XML došlo k chybě,", e);
         }
     }
 
@@ -271,7 +271,7 @@ class ArchiConvertor {
     private void processElements() throws ConversionException {
         NodeList elements = archiDoc.getElementsByTagNameNS(ARCHI_NS, "element");
         if (elements.getLength() < 0) {
-            throw new ConversionException("No elements found in file.");
+            throw new ConversionException("Soubor neobsahuje žádné elementy.");
         }
 
         for (int i = 0; i < elements.getLength(); i++) {

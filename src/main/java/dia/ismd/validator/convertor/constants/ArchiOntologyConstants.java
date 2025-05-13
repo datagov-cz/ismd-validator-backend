@@ -1,15 +1,12 @@
 package dia.ismd.validator.convertor.constants;
 
 public class ArchiOntologyConstants {
-    // TODO zkontrolovat zda vyhovuje OFN
-
     public static final String NS = "https://slovník.gov.cz/";
     public static final String ARCHI_NS = "http://www.opengroup.org/xsd/archimate/3.0/";
     public static final String XSD = "http://www.w3.org/2001/XMLSchema#";
     public static final String IDENT = "identifier";
     public static final String CONTEXT = "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld";
 
-    // Type constants
     public static final String TYP_TSP = "Typ subjektu práva";
     public static final String TYP_TOP = "Typ objektu práva";
     public static final String TYP_POJEM = "Pojem";
@@ -20,7 +17,6 @@ public class ArchiOntologyConstants {
     public static final String TYP_VLASTNOST = "Vlastnost";
     public static final String TYP_DT = "Datový typ";
 
-    // Label constants
     public static final String LABEL_TYP = "typ";
     public static final String LABEL_POPIS = "popis";
     public static final String LABEL_DEF = "definice";
