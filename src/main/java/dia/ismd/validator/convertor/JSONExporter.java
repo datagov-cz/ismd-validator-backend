@@ -37,7 +37,8 @@ class JSONExporter {
     private final Map<String, String> modelProperties;
     private final String effectiveNamespace;
 
-    public JSONExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
+    public JSONExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName,
+                        Map<String, String> modelProperties, String effectiveNamespace) {
         this.ontModel = ontModel;
         this.resourceMap = new HashMap<>(resourceMap);
         this.modelName = modelName;
@@ -303,7 +304,10 @@ class JSONExporter {
         return pojemObj;
     }
 
-    private void addResourceArrayPropertyFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace, String labelSupp) throws JSONException {
+    private void addResourceArrayPropertyFromEitherNamespace(Resource concept,
+                                                             JSONObject pojemObj,
+                                                             String namespace,
+                                                             String labelSupp) throws JSONException {
         Property suppDefault = ontModel.getProperty(NS + labelSupp);
         Property suppCustom = ontModel.getProperty(namespace + labelSupp);
         if (concept.hasProperty(suppDefault)) {
@@ -313,7 +317,10 @@ class JSONExporter {
         }
     }
 
-    private void addMultilingualPropertyFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace, String labelDef) throws JSONException {
+    private void addMultilingualPropertyFromEitherNamespace(Resource concept,
+                                                            JSONObject pojemObj,
+                                                            String namespace,
+                                                            String labelDef) throws JSONException {
         Property langDefault = ontModel.getProperty(NS + labelDef);
         Property langCustom = ontModel.getProperty(namespace + labelDef);
         if (concept.hasProperty(langDefault)) {
@@ -323,13 +330,15 @@ class JSONExporter {
         }
     }
 
-    private void addDomainAndRangeWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+    private void addDomainAndRangeWithBothNamespaces(Resource concept, JSONObject pojemObj,
+                                                     String namespace) throws JSONException {
         addSingleResourcePropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_DEF_O);
 
         addRangePropertyWithBothNamespaces(concept, pojemObj, namespace);
     }
 
-    private void addSingleResourcePropertyFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace, String labelDefO) throws JSONException {
+    private void addSingleResourcePropertyFromEitherNamespace(Resource concept, JSONObject pojemObj,
+                                                              String namespace, String labelDefO) throws JSONException {
         Property domainDefault = ontModel.getProperty(NS + labelDefO);
         Property domainCustom = ontModel.getProperty(namespace + labelDefO);
 
@@ -340,7 +349,8 @@ class JSONExporter {
         }
     }
 
-    private void addRangePropertyWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+    private void addRangePropertyWithBothNamespaces(Resource concept, JSONObject pojemObj,
+                                                    String namespace) throws JSONException {
         Property rangeDefault = ontModel.getProperty(NS + LABEL_OBOR_HODNOT);
         Property rangeCustom = ontModel.getProperty(namespace + LABEL_OBOR_HODNOT);
 
@@ -360,7 +370,8 @@ class JSONExporter {
         }
     }
 
-    private void addRppMetadataWithBothNamespaces(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+    private void addRppMetadataWithBothNamespaces(Resource concept, JSONObject pojemObj,
+                                                  String namespace) throws JSONException {
         Property ppdfDefault = ontModel.getProperty(NS + LABEL_JE_PPDF);
         Property ppdfCustom = ontModel.getProperty(namespace + LABEL_JE_PPDF);
 
@@ -449,7 +460,8 @@ class JSONExporter {
         }
     }
 
-    private void addResourceProperty(Resource concept, String propertyUri, String jsonProperty, JSONObject targetObj) throws JSONException {
+    private void addResourceProperty(Resource concept, String propertyUri, String jsonProperty,
+                                     JSONObject targetObj) throws JSONException {
         Property property = ontModel.getProperty(propertyUri);
         Statement stmt = concept.getProperty(property);
         if (stmt != null && stmt.getObject().isResource()) {

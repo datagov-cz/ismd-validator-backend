@@ -1,6 +1,7 @@
 package dia.ismd.validator.convertor;
 
 import dia.ismd.common.exceptions.ExportException;
+import dia.ismd.common.exceptions.TurtleExportException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.rdf.model.Resource;
@@ -21,7 +22,6 @@ class TurtleExporter {
     private final String modelName;
     private final Map<String, String> modelProperties;
 
-    // Standard prefixes to include in the output
     private static final Map<String, String> STANDARD_PREFIXES = new HashMap<>();
 
     static {
@@ -40,7 +40,7 @@ class TurtleExporter {
         this.modelProperties = modelProperties;
     }
 
-    public String exportToTurtle() {
+    public String exportToTurtle() throws TurtleExportException {
         try {
             addStandardPrefixes();
 
@@ -49,9 +49,9 @@ class TurtleExporter {
             RDFDataMgr.write(outputStream, ontModel, RDFFormat.TURTLE_PRETTY);
 
             return outputStream.toString(StandardCharsets.UTF_8);
-        } catch (ExportException e) {
+        } catch (TurtleExportException e) {
             log.error("Error exporting to Turtle format: {}", e.getMessage(), e);
-            throw new ExportException("Error exporting to Turtle format: " + e.getMessage());
+            throw new TurtleExportException("Error exporting to Turtle format: " + e.getMessage());
         }
     }
 
