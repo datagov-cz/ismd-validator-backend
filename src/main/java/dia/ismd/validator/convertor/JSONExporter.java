@@ -3,6 +3,7 @@ package dia.ismd.validator.convertor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import dia.ismd.common.exceptions.JsonExportException;
+import dia.ismd.common.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
@@ -25,7 +26,6 @@ import java.util.Map;
 
 import static dia.ismd.validator.constants.ArchiOntologyConstants.*;
 import static dia.ismd.validator.constants.JsonExportConstants.*;
-import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @Slf4j
 class JSONExporter {
@@ -91,7 +91,7 @@ class JSONExporter {
 
             addRemainingFields(originalMap, orderedMap);
 
-            Map<String, Object> filteredMap = filterMap(orderedMap);
+            Map<String, Object> filteredMap = UtilityMethods.filterMap(orderedMap);
 
             return convertMapToFormattedJson(filteredMap);
         } catch (JSONException e) {
@@ -188,7 +188,7 @@ class JSONExporter {
 
     private String convertMapToFormattedJson(Map<String, Object> map) throws JsonExportException {
         try {
-            Map<String, Object> filteredMap = filterMap(map);
+            Map<String, Object> filteredMap = UtilityMethods.filterMap(map);
 
             ObjectMapper mapper = new ObjectMapper();
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -467,47 +467,6 @@ class JSONExporter {
         if (stmt != null && stmt.getObject().isResource()) {
             targetObj.put(jsonProperty, stmt.getObject().asResource().getURI());
         }
-    }
-
-    private Map<String, Object> filterMap(Map<String, Object> map) {
-        Map<String, Object> result = new LinkedHashMap<>();
-
-        map.forEach((key, value) -> {
-            Object filtered = filterValue(value);
-            if (filtered != null) {
-                result.put(key, filtered);
-            }
-        });
-
-        return result;
-    }
-
-    private List<Object> filterList(List<?> list) {
-        List<Object> result = new ArrayList<>();
-
-        for (Object item : list) {
-            Object filtered = filterValue(item);
-            if (filtered != null) {
-                result.add(filtered);
-            }
-        }
-
-        return result;
-    }
-
-    private Object filterValue(Object value) {
-        if (isEmpty(value)) return null;
-
-        if (value instanceof Map<?, ?> map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> filtered = filterMap((Map<String, Object>) map);
-            return filtered.isEmpty() ? null : filtered;
-        } else if (value instanceof List<?> list) {
-            List<Object> filtered = filterList(list);
-            return filtered.isEmpty() ? null : filtered;
-        }
-
-        return value;
     }
 
     private <T> T handleJsonOperation(JsonSupplier<T> operation) throws JsonExportException {

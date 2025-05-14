@@ -3,6 +3,7 @@ package dia.ismd.validator.convertor;
 import dia.ismd.common.exceptions.ConversionException;
 import dia.ismd.common.exceptions.FileParsingException;
 import dia.ismd.common.exceptions.JsonExportException;
+import dia.ismd.common.exceptions.TurtleExportException;
 
 public interface ConvertorService {
     void parseArchiFromString(String value) throws FileParsingException;
@@ -11,5 +12,5 @@ public interface ConvertorService {
 
     String exportArchiToJson() throws JsonExportException;
 
-    String exportArchiToTurtle();
+    String exportArchiToTurtle() throws TurtleExportException;
 }

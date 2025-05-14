@@ -1,15 +1,26 @@
 package dia.ismd.validator.convertor;
 
-import dia.ismd.common.exceptions.ExportException;
 import dia.ismd.common.exceptions.TurtleExportException;
+import dia.ismd.common.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.ResIterator;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
-import org.apache.jena.vocabulary.*;
+import org.apache.jena.vocabulary.DCTerms;
+import org.apache.jena.vocabulary.OWL2;
+import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.vocabulary.SKOS;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +33,6 @@ import static dia.ismd.validator.constants.ArchiOntologyConstants.*;
 
 @Slf4j
 class TurtleExporter {
-    // TODO potřebuje refactor
 
     private final OntModel ontModel;
     @Getter
@@ -39,7 +49,7 @@ class TurtleExporter {
         STANDARD_PREFIXES.put("rdf", RDF.getURI());
         STANDARD_PREFIXES.put("rdfs", RDFS.getURI());
         STANDARD_PREFIXES.put("skos", SKOS.getURI());
-        STANDARD_PREFIXES.put("xsd", "http://www.w3.org/2001/XMLSchema#");
+        STANDARD_PREFIXES.put("xsd", XSD);
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties) {
@@ -51,7 +61,7 @@ class TurtleExporter {
     }
 
     public String exportToTurtle() throws TurtleExportException {
-        try {
+        return handleTurtleOperation(()-> {
             OntModel transformedModel = createTransformedModel();
 
             applyTransformations(transformedModel);
@@ -60,33 +70,7 @@ class TurtleExporter {
             RDFDataMgr.write(outputStream, transformedModel, RDFFormat.TURTLE_PRETTY);
 
             return outputStream.toString(StandardCharsets.UTF_8);
-        } catch (TurtleExportException e) {
-            log.error("Error exporting to Turtle format: {}", e.getMessage(), e);
-            throw new TurtleExportException("Při exportu do Turtle došlo k chybě: " + e.getMessage());
-        }
-    }
-
-    public String exportToTurtlePretty(boolean prettyPrint, boolean includeBaseUri) {
-        try {
-            OntModel transformedModel = createTransformedModel();
-
-            applyTransformations(transformedModel);
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            RDFFormat format = prettyPrint ? RDFFormat.TURTLE_PRETTY : RDFFormat.TURTLE_BLOCKS;
-            RDFDataMgr.write(outputStream, transformedModel, format);
-
-            String output = outputStream.toString(StandardCharsets.UTF_8);
-
-            if (!includeBaseUri) {
-                output = output.replaceAll("@base\\s+<[^>]*>\\s*\\.", "");
-            }
-
-            return output;
-        } catch (ExportException e) {
-            log.error("Error exporting to Turtle format: {}", e.getMessage(), e);
-            throw new ExportException("Error exporting to Turtle format: " + e.getMessage());
-        }
+        });
     }
 
     private OntModel createTransformedModel() {
@@ -116,43 +100,13 @@ class TurtleExporter {
         for (Map.Entry<String, String> entry : modelProperties.entrySet()) {
             if (entry.getKey().contains("adresa lokálního katalogu dat")) {
                 String ns = entry.getValue();
-                if (ns != null && !ns.isEmpty() && isValidUrl(ns)) {
-                    return ensureNamespaceEndsWithDelimiter(ns);
-                }
-            }
-        }
-
-        StmtIterator iter = ontModel.listStatements(null, RDF.type, OWL2.Ontology);
-        if (iter.hasNext()) {
-            String uri = iter.next().getSubject().getURI();
-            if (uri != null && !uri.isEmpty()) {
-                int lastHash = uri.lastIndexOf('#');
-                int lastSlash = uri.lastIndexOf('/');
-                int pos = Math.max(lastHash, lastSlash);
-
-                if (pos > 0) {
-                    return uri.substring(0, pos + 1);
+                if (ns != null && !ns.isEmpty() && UtilityMethods.isValidUrl(ns)) {
+                    return UtilityMethods.ensureNamespaceEndsWithDelimiter(ns);
                 }
             }
         }
 
         return NS;
-    }
-
-    private String ensureNamespaceEndsWithDelimiter(String namespace) {
-        if (!namespace.endsWith("/") && !namespace.endsWith("#")) {
-            return namespace + "/";
-        }
-        return namespace;
-    }
-
-    private boolean isValidUrl(String url) {
-        try {
-            new java.net.URL(url);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     private void setupPrefixes(OntModel transformedModel) {
@@ -171,27 +125,17 @@ class TurtleExporter {
 
         String domain = namespace
                 .replaceAll("https?://", "")
-                .replaceAll("www\\.", "");
+                .replace("www\\.", "");
 
         String[] parts = domain.split("[./]");
 
         for (String part : parts) {
-            if (!part.isEmpty() && !isTLD(part)) {
+            if (!part.isEmpty()) {
                 return part.toLowerCase();
             }
         }
 
         return "domain";
-    }
-
-    private boolean isTLD(String part) {
-        String[] commonTLDs = {"com", "org", "net", "gov", "cz", "eu", "io"};
-        for (String tld : commonTLDs) {
-            if (tld.equals(part)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private void createConceptScheme(OntModel transformedModel) {
@@ -200,27 +144,25 @@ class TurtleExporter {
             ontologyUri = ontologyUri.substring(0, ontologyUri.length() - 1);
         }
 
-        Resource resource = null;
+        Resource resource;
         StmtIterator iter = transformedModel.listStatements(null, RDF.type, OWL2.Ontology);
         if (iter.hasNext()) {
             resource = iter.next().getSubject();
         } else {
             resource = transformedModel.createResource(ontologyUri);
+            resource.addProperty(RDF.type, OWL2.Ontology);
         }
 
-        resource.addProperty(RDF.type, OWL2.Ontology);
         resource.addProperty(RDF.type, SKOS.ConceptScheme);
 
         if (modelName != null && !modelName.isEmpty()) {
             resource.removeAll(SKOS.prefLabel);
-
             resource.addProperty(SKOS.prefLabel, modelName, "cs");
         }
 
         String description = modelProperties.getOrDefault(LABEL_POPIS, "");
         if (description != null && !description.isEmpty()) {
             resource.removeAll(DCTerms.description);
-
             resource.addProperty(DCTerms.description, description, "cs");
         }
     }
@@ -239,71 +181,98 @@ class TurtleExporter {
     }
 
     private void mapResourceTypes(Resource resource, OntModel transformedModel) {
-        if (resource.hasProperty(RDF.type, transformedModel.createResource(effectiveNamespace + TYP_TRIDA))) {
-            resource.addProperty(RDF.type, OWL2.Class);
+        String baseNamespace = NS;
+        String verejnySektorNamespace = baseNamespace + "veřejný-sektor/pojem/";
 
-            if (resource.hasProperty(RDF.type, transformedModel.createResource(effectiveNamespace + TYP_TSP))) {
-                resource.addProperty(RDF.type, transformedModel.createResource(effectiveNamespace.replace("sbírka/56/2001", "veřejný-sektor") + "typ-subjektu-práva"));
-            } else if (resource.hasProperty(RDF.type, transformedModel.createResource(effectiveNamespace + TYP_TOP))) {
-                resource.addProperty(RDF.type, transformedModel.createResource(effectiveNamespace.replace("sbírka/56/2001", "veřejný-sektor") + "typ-objektu-práva"));
-            }
+        if (hasResourceType(resource, transformedModel, TYP_TRIDA)) {
+            addResourceType(resource, OWL2.Class);
+            mapSubjectOrObjectType(resource, transformedModel, verejnySektorNamespace);
         }
-        else if (resource.hasProperty(RDF.type, transformedModel.createResource(effectiveNamespace + TYP_VLASTNOST))) {
-            Property rangeProperty = transformedModel.createProperty(effectiveNamespace + LABEL_OBOR_HODNOT);
-            Statement rangeStmt = resource.getProperty(rangeProperty);
+        else if (hasResourceType(resource, transformedModel, TYP_VLASTNOST)) {
+            mapPropertyType(resource, transformedModel);
+        }
+        else if (hasResourceType(resource, transformedModel, TYP_VZTAH)) {
+            addResourceType(resource, OWL2.ObjectProperty);
+        }
 
-            if (rangeStmt != null && rangeStmt.getObject().isResource()) {
-                String rangeUri = rangeStmt.getObject().asResource().getURI();
-                if (rangeUri.startsWith("http://www.w3.org/2001/XMLSchema#")) {
-                    resource.addProperty(RDF.type, OWL2.DatatypeProperty);
-                } else {
-                    resource.addProperty(RDF.type, OWL2.ObjectProperty);
-                }
+        mapDataAccessType(resource, transformedModel, baseNamespace);
+    }
+
+    private boolean hasResourceType(Resource resource, OntModel model, String typeName) {
+        Resource typeResource = model.createResource(effectiveNamespace + typeName);
+        return resource.hasProperty(RDF.type, typeResource);
+    }
+
+    private void addResourceType(Resource resource, Resource type) {
+        resource.addProperty(RDF.type, type);
+    }
+
+    private void mapSubjectOrObjectType(Resource resource, OntModel model, String vsNamespace) {
+        if (hasResourceType(resource, model, TYP_TSP)) {
+            addResourceType(resource, model.createResource(vsNamespace + "typ-subjektu-práva"));
+        } else if (hasResourceType(resource, model, TYP_TOP)) {
+            addResourceType(resource, model.createResource(vsNamespace + "typ-objektu-práva"));
+        }
+    }
+
+    private void mapPropertyType(Resource resource, OntModel model) {
+        Property rangeProperty = model.createProperty(effectiveNamespace + LABEL_OBOR_HODNOT);
+        Statement rangeStmt = resource.getProperty(rangeProperty);
+
+        if (rangeStmt != null && rangeStmt.getObject().isResource()) {
+            String rangeUri = rangeStmt.getObject().asResource().getURI();
+            if (rangeUri.startsWith(XSD)) {
+                addResourceType(resource, OWL2.DatatypeProperty);
             } else {
-                resource.addProperty(RDF.type, OWL2.DatatypeProperty);
+                addResourceType(resource, OWL2.ObjectProperty);
             }
+        } else {
+            addResourceType(resource, OWL2.DatatypeProperty);
         }
-        else if (resource.hasProperty(RDF.type, transformedModel.createResource(effectiveNamespace + TYP_VZTAH))) {
-            resource.addProperty(RDF.type, OWL2.ObjectProperty);
-        }
+    }
 
-        if (resource.hasProperty(RDF.type, transformedModel.createResource(effectiveNamespace + TYP_VEREJNY_UDAJ))) {
-            resource.addProperty(RDF.type, transformedModel.createResource(effectiveNamespace.replace("sbírka/56/2001", "sbírka/111/2009") + "veřejný-údaj"));
-        } else if (resource.hasProperty(RDF.type, transformedModel.createResource(effectiveNamespace + TYP_NEVEREJNY_UDAJ))) {
-            resource.addProperty(RDF.type, transformedModel.createResource(effectiveNamespace.replace("sbírka/56/2001", "sbírka/111/2009") + "neveřejný-údaj"));
+
+    private void mapDataAccessType(Resource resource, OntModel model, String baseNamespace) {
+        if (hasResourceType(resource, model, TYP_VEREJNY_UDAJ)) {
+            String publicDataUri = baseNamespace + "legislativní/sbírka/111/2009/pojem/veřejný-údaj";
+            addResourceType(resource, model.createResource(publicDataUri));
+        } else if (hasResourceType(resource, model, TYP_NEVEREJNY_UDAJ)) {
+            String nonPublicDataUri = baseNamespace + "legislativní/sbírka/111/2009/pojem/neveřejný-údaj";
+            addResourceType(resource, model.createResource(nonPublicDataUri));
         }
     }
 
     private void transformLabelsToSKOS(OntModel transformedModel) {
-        StmtIterator labelStmts = transformedModel.listStatements(null, RDFS.label, (RDFNode)null);
-        List<Statement> toAdd = new ArrayList<>();
-        List<Statement> toRemove = new ArrayList<>();
+        Map<Resource, Map<String, String>> resourceLabels = new HashMap<>();
 
+        StmtIterator labelStmts = transformedModel.listStatements(null, RDFS.label, (RDFNode)null);
         while (labelStmts.hasNext()) {
             Statement stmt = labelStmts.next();
             if (stmt.getObject().isLiteral()) {
+                Resource subject = stmt.getSubject();
                 Literal lit = stmt.getObject().asLiteral();
                 String lang = lit.getLanguage();
+                String text = lit.getString();
 
-                if (lang != null && !lang.isEmpty()) {
-                    toAdd.add(transformedModel.createStatement(
-                            stmt.getSubject(),
-                            SKOS.prefLabel,
-                            transformedModel.createLiteral(lit.getString(), lang)
-                    ));
-                } else {
-                    toAdd.add(transformedModel.createStatement(
-                            stmt.getSubject(),
-                            SKOS.prefLabel,
-                            transformedModel.createLiteral(lit.getString(), "cs")
-                    ));
+                if (lang == null || lang.isEmpty()) {
+                    lang = "cs";
                 }
+
+                resourceLabels.computeIfAbsent(subject, k -> new HashMap<>()).put(lang, text);
             }
-            toRemove.add(stmt);
         }
 
-        transformedModel.remove(toRemove);
-        transformedModel.add(toAdd);
+        transformedModel.removeAll(null, RDFS.label, null);
+
+        for (Map.Entry<Resource, Map<String, String>> entry : resourceLabels.entrySet()) {
+            Resource subject = entry.getKey();
+            Map<String, String> labels = entry.getValue();
+
+            for (Map.Entry<String, String> langLabel : labels.entrySet()) {
+                subject.addProperty(SKOS.prefLabel,
+                        transformedModel.createLiteral(langLabel.getValue(), langLabel.getKey()));
+            }
+        }
 
         transformDefinitionsToSKOS(transformedModel);
     }
@@ -374,21 +343,12 @@ class TurtleExporter {
             Statement stmt = rangeStmts.next();
             if (stmt.getObject().isResource()) {
                 Resource rangeValue = stmt.getObject().asResource();
-                String rangeUri = rangeValue.getURI();
 
-                if (rangeUri.startsWith("http://www.w3.org/2001/XMLSchema#")) {
-                    toAdd.add(transformedModel.createStatement(
-                            stmt.getSubject(),
-                            RDFS.range,
-                            rangeValue
-                    ));
-                } else {
-                    toAdd.add(transformedModel.createStatement(
-                            stmt.getSubject(),
-                            RDFS.range,
-                            rangeValue
-                    ));
-                }
+                toAdd.add(transformedModel.createStatement(
+                        stmt.getSubject(),
+                        RDFS.range,
+                        rangeValue
+                ));
                 toRemove.add(stmt);
             }
         }
@@ -398,129 +358,59 @@ class TurtleExporter {
     }
 
     private void mapCustomPropertiesToStandard(OntModel transformedModel) {
-        mapPropertyToDCTerms(transformedModel);
+        String baseNamespace = "https://slovník.gov.cz/";
+        String agendovyNamespace = baseNamespace + "agendový/104/pojem/";
+        String legislativniNamespace = baseNamespace + "legislativní/sbírka/111/2009/pojem/";
 
-        mapPpdfSharingProperty(transformedModel);
+        mapProperty(transformedModel,
+                transformedModel.createProperty(effectiveNamespace + LABEL_ZDROJ),
+                DCTerms.relation);
 
-        mapNonPublicDataProvisions(transformedModel);
+        mapBooleanProperty(transformedModel,
+                transformedModel.createProperty(effectiveNamespace + LABEL_JE_PPDF),
+                transformedModel.createProperty(agendovyNamespace + "je-sdílen-v-propojeném-datovém-fondu"));
 
-        mapSubclassRelationships(transformedModel);
+        mapProperty(transformedModel,
+                transformedModel.createProperty(effectiveNamespace + LABEL_SUPP),
+                transformedModel.createProperty(legislativniNamespace + "je-vymezen-ustanovení-stanovujícím-jeho-neveřejnost"));
 
-        mapAgendaAndSystemProperties(transformedModel);
+        mapProperty(transformedModel,
+                transformedModel.createProperty(effectiveNamespace + LABEL_NT),
+                RDFS.subClassOf);
+
+        mapProperty(transformedModel,
+                transformedModel.createProperty(effectiveNamespace + LABEL_AIS),
+                transformedModel.createProperty(agendovyNamespace + "údaje-jsou-v-ais"));
+
+        mapProperty(transformedModel,
+                transformedModel.createProperty(effectiveNamespace + LABEL_AGENDA),
+                transformedModel.createProperty(agendovyNamespace + "sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy"));
     }
 
-    private void mapPropertyToDCTerms(OntModel transformedModel) {
-        Property sourceProperty = transformedModel.createProperty(effectiveNamespace + dia.ismd.validator.constants.ArchiOntologyConstants.LABEL_ZDROJ);
-        Property targetProperty = transformedModel.createProperty(DCTerms.getURI() + "relation");
-
-        StmtIterator stmts = transformedModel.listStatements(null, sourceProperty, (RDFNode)null);
-
-        List<Statement> toAdd = new ArrayList<>();
-        List<Statement> toRemove = new ArrayList<>();
-
-        while (stmts.hasNext()) {
-            Statement stmt = stmts.next();
-            toAdd.add(transformedModel.createStatement(
-                    stmt.getSubject(),
-                    targetProperty,
-                    stmt.getObject()
-            ));
-            toRemove.add(stmt);
-        }
-
-        transformedModel.remove(toRemove);
-        transformedModel.add(toAdd);
-    }
-
-    private void mapPpdfSharingProperty(OntModel transformedModel) {
-        Property ppdfProperty = transformedModel.createProperty(effectiveNamespace + LABEL_JE_PPDF);
-        Property targetProperty = transformedModel.createProperty(effectiveNamespace.replace("sbírka/56/2001", "agendový/104") + LABEL_JE_PPDF);
-
-        StmtIterator stmts = transformedModel.listStatements(null, ppdfProperty, (RDFNode)null);
-
+    private void mapBooleanProperty(OntModel model, Property sourceProperty, Property targetProperty) {
+        StmtIterator stmts = model.listStatements(null, sourceProperty, (RDFNode)null);
         List<Statement> toAdd = new ArrayList<>();
         List<Statement> toRemove = new ArrayList<>();
 
         while (stmts.hasNext()) {
             Statement stmt = stmts.next();
             if (stmt.getObject().isLiteral()) {
-                boolean value = stmt.getObject().asLiteral().getBoolean();
-                toAdd.add(transformedModel.createStatement(
+                boolean value = false;
+                String literal = stmt.getObject().asLiteral().getString().toLowerCase();
+                if ("true".equals(literal) || "ano".equals(literal)) {
+                    value = true;
+                }
+                toAdd.add(model.createStatement(
                         stmt.getSubject(),
                         targetProperty,
-                        transformedModel.createTypedLiteral(value)
+                        model.createTypedLiteral(value)
                 ));
             }
             toRemove.add(stmt);
         }
 
-        transformedModel.remove(toRemove);
-        transformedModel.add(toAdd);
-    }
-
-    private void mapNonPublicDataProvisions(OntModel transformedModel) {
-        Property suppProperty = transformedModel.createProperty(effectiveNamespace + LABEL_SUPP);
-        Property targetProperty = transformedModel.createProperty(effectiveNamespace.replace("sbírka/56/2001", "sbírka/111/2009")
-                + "je-vymezen-ustanovení-stanovujícím-jeho-neveřejnost");
-
-        StmtIterator stmts = transformedModel.listStatements(null, suppProperty, (RDFNode)null);
-
-        List<Statement> toAdd = new ArrayList<>();
-        List<Statement> toRemove = new ArrayList<>();
-
-        while (stmts.hasNext()) {
-            Statement stmt = stmts.next();
-            if (stmt.getObject().isResource()) {
-                toAdd.add(transformedModel.createStatement(
-                        stmt.getSubject(),
-                        targetProperty,
-                        stmt.getObject()
-                ));
-                toRemove.add(stmt);
-            }
-        }
-
-        transformedModel.remove(toRemove);
-        transformedModel.add(toAdd);
-    }
-
-    private void mapSubclassRelationships(OntModel transformedModel) {
-        Property ntProperty = transformedModel.createProperty(effectiveNamespace + LABEL_NT);
-
-        StmtIterator stmts = transformedModel.listStatements(null, ntProperty, (RDFNode)null);
-
-        List<Statement> toAdd = new ArrayList<>();
-        List<Statement> toRemove = new ArrayList<>();
-
-        while (stmts.hasNext()) {
-            Statement stmt = stmts.next();
-            if (stmt.getObject().isResource()) {
-                toAdd.add(transformedModel.createStatement(
-                        stmt.getSubject(),
-                        RDFS.subClassOf,
-                        stmt.getObject()
-                ));
-                toRemove.add(stmt);
-            }
-        }
-
-        transformedModel.remove(toRemove);
-        transformedModel.add(toAdd);
-    }
-
-    private void mapAgendaAndSystemProperties(OntModel transformedModel) {
-        Property aisProperty = transformedModel.createProperty(effectiveNamespace + LABEL_AIS);
-        Property targetAisProperty = transformedModel.createProperty(effectiveNamespace
-                .replace("sbírka/56/2001", "agendový/104") + "údaje-jsou-v-ais");
-
-        mapProperty(transformedModel, aisProperty, targetAisProperty);
-
-        Property agendaProperty = transformedModel.createProperty(effectiveNamespace + LABEL_AGENDA);
-        Property targetAgendaProperty = transformedModel.createProperty(effectiveNamespace
-                .replace("sbírka/56/2001", "agendový/104")
-                + "sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy");
-
-        mapProperty(transformedModel, agendaProperty, targetAgendaProperty);
+        model.remove(toRemove);
+        model.add(toAdd);
     }
 
     private void mapProperty(OntModel transformedModel, Property sourceProperty, Property targetProperty) {
@@ -544,7 +434,7 @@ class TurtleExporter {
     }
 
     private void addInSchemeRelationships(OntModel transformedModel) {
-        Resource conceptScheme = null;
+        Resource conceptScheme;
         StmtIterator iter = transformedModel.listStatements(null, RDF.type, SKOS.ConceptScheme);
         if (iter.hasNext()) {
             conceptScheme = iter.next().getSubject();
@@ -558,5 +448,22 @@ class TurtleExporter {
             concept.removeAll(SKOS.inScheme);
             concept.addProperty(SKOS.inScheme, conceptScheme);
         }
+    }
+
+    private <T> T handleTurtleOperation(TurtleExporter.TurtleSupplier<T> operation) throws TurtleExportException {
+        try {
+            return operation.get();
+        } catch (TurtleExportException e) {
+            log.error("{}: {}", "Error exporting to Turtle", e.getMessage(), e);
+            throw new TurtleExportException("Při exportu do Turtle došlo k chybě" + ": " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error during Turtle operation: {}", e.getMessage(), e);
+            throw new TurtleExportException("Během zpracovávání Turtle došlo k chybě: " + e.getMessage());
+        }
+    }
+
+    @FunctionalInterface
+    private interface TurtleSupplier<T> {
+        T get() throws TurtleExportException;
     }
 }

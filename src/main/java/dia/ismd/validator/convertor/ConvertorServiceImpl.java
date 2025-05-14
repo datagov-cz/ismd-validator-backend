@@ -2,6 +2,7 @@ package dia.ismd.validator.convertor;
 
 import dia.ismd.common.exceptions.FileParsingException;
 import dia.ismd.common.exceptions.JsonExportException;
+import dia.ismd.common.exceptions.TurtleExportException;
 import lombok.RequiredArgsConstructor;
 import org.apache.jena.ontology.ConversionException;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ class ConvertorServiceImpl implements ConvertorService {
     }
 
     @Override
-    public String exportArchiToTurtle() {
+    public String exportArchiToTurtle() throws TurtleExportException {
         return convertorEngine.exportToTurtle();
     }
 }

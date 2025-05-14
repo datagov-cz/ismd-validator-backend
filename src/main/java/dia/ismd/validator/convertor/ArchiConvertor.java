@@ -5,6 +5,7 @@ import dia.ismd.common.exceptions.FileParsingException;
 import dia.ismd.common.exceptions.JsonExportException;
 import dia.ismd.common.exceptions.TurtleExportException;
 import dia.ismd.common.models.OFNBaseModel;
+import dia.ismd.common.utility.UtilityMethods;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.ontology.OntClass;
@@ -160,7 +161,6 @@ class ArchiConvertor {
         }
     }
 
-
     public String exportToJson() throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting JSON export: requestId={}, modelName={}", requestId, modelName);
@@ -218,7 +218,7 @@ class ArchiConvertor {
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             if (entry.getKey().contains("adresa lokálního katalogu dat")) {
                 String ns = entry.getValue();
-                if (ns != null && !ns.isEmpty() && isValidUrl(ns)) {
+                if (ns != null && !ns.isEmpty() && UtilityMethods.isValidUrl(ns)) {
                     this.ontologyNamespace = ns;
                 }
             }
@@ -248,7 +248,7 @@ class ArchiConvertor {
     private String assembleIri(String iri) {
         String effectiveNamespace = getEffectiveOntologyNamespace();
 
-        return effectiveNamespace + sanitizeForIRI(iri);
+        return effectiveNamespace + UtilityMethods.sanitizeForIRI(iri);
     }
 
     private void buildPropertyMapping() {
@@ -406,28 +406,6 @@ class ArchiConvertor {
         }
     }
 
-    private String sanitizeForIRI(String input) {
-        if (input == null || input.isEmpty()) {
-            return "unnamed";
-        }
-
-        String result = input.toLowerCase();
-        result = result.replaceAll("[^\\p{L}\\p{N}\\-._~!$&'()*+,;=/?#@%]", "-");
-        result = result.replaceAll("-+", "-");
-        result = result.replaceAll("^-?-$", "");
-
-        return result;
-    }
-
-    private boolean isValidUrl(String url) {
-        try {
-            new java.net.URL(url);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     private void createNormalizedNameMapping(String propId, String propName) {
         String normalizedName = propName.toLowerCase().replace(" ", "-");
         propertyMapping.put("name:" + normalizedName, propId);
@@ -442,8 +420,8 @@ class ArchiConvertor {
     }
 
     private String getEffectiveOntologyNamespace() {
-        if (ontologyNamespace != null && !ontologyNamespace.isEmpty()) {
-            if (!ontologyNamespace.endsWith("/") && !ontologyNamespace.endsWith("#")) {
+        if (ontologyNamespace != null && !ontologyNamespace.isEmpty() && UtilityMethods.isValidUrl(ontologyNamespace)) {
+            if (!ontologyNamespace.endsWith("/")) {
                 return ontologyNamespace + "/";
             }
             return ontologyNamespace;
@@ -500,7 +478,7 @@ class ArchiConvertor {
     }
 
     private void processCompositionRelationship(Resource source, Resource target) {
-        String relName = capitalize(getLocalName(target));
+        String relName = UtilityMethods.capitalize(getLocalName(target));
 
         OntProperty property = ontModel.createOntProperty(getEffectiveOntologyNamespace() + relName);
 
@@ -545,29 +523,25 @@ class ArchiConvertor {
         }
 
         Map<String, String> relProps = getElementProperties(relationship);
-        String iri = determineIri(relProps, id);
+
+        String baseVocabularyIri = getEffectiveOntologyNamespace();
+        if (baseVocabularyIri.endsWith("/")) {
+            baseVocabularyIri = baseVocabularyIri.substring(0, baseVocabularyIri.length() - 1);
+        }
+
+        String iri = baseVocabularyIri + "/pojem/" + UtilityMethods.sanitizeForIRI(relName);
+
+        if (relProps.containsKey(LABEL_ID)) {
+            String explicitIri = relProps.get(LABEL_ID);
+            if (explicitIri != null && !explicitIri.isEmpty()) {
+                iri = explicitIri;
+            }
+        }
+
         Resource relResource = createRelationshipResource(iri, relName, source, target);
         addRelationshipProperties(relResource, relProps);
 
         resourceMap.put(id, relResource);
-    }
-
-    private String determineIri(Map<String, String> relProps, String id) {
-        String iri = null;
-        if (relProps.containsKey(LABEL_ID)) {
-            iri = relProps.get(LABEL_ID);
-        }
-
-        String identPropId = propertyMapping.getOrDefault("name:identifikátor", null);
-        if (identPropId != null && relProps.containsKey("propRef:" + identPropId)) {
-            iri = relProps.get("propRef:" + identPropId);
-        }
-
-        if (iri == null || iri.isEmpty()) {
-            iri = getEffectiveOntologyNamespace() + id;
-        }
-
-        return iri;
     }
 
     private Resource createRelationshipResource(String iri, String relName, Resource source, Resource target) {
@@ -647,18 +621,28 @@ class ArchiConvertor {
     private Resource createResourceWithIri(String id, String name, Map<String, String> properties) {
         if (properties.containsKey(LABEL_ID)) {
             String iri = properties.get(LABEL_ID);
-            if (iri != null && !iri.isEmpty()) {
-                return ontModel.createResource(iri);
-            }
+            if (iri != null && !iri.isEmpty() && UtilityMethods.isValidUrl(iri)) {
+                    return ontModel.createResource(iri);
+                }
+
         }
 
         String namespace = getEffectiveOntologyNamespace();
 
-        if (id != null && !id.isEmpty()) {
-            return ontModel.createResource(namespace + id);
+        if (name != null && !name.isEmpty() && !UtilityMethods.looksLikeId(name)) {
+            if (modelName.equals(name)) {
+                return ontModel.createResource(namespace + UtilityMethods.sanitizeForIRI(name));
+            } else {
+                String baseVocabularyIri = namespace;
+                if (baseVocabularyIri.endsWith("/")) {
+                    baseVocabularyIri = baseVocabularyIri.substring(0, baseVocabularyIri.length() - 1);
+                }
+
+                return ontModel.createResource(baseVocabularyIri + "/pojem/" + UtilityMethods.sanitizeForIRI(name));
+            }
         }
 
-        return ontModel.createResource(namespace + toValidResourceName(name));
+        return ontModel.createResource(namespace + id);
     }
 
     private void addRdfTypesAndClasses(Resource resource, String ontologyClass) {
@@ -926,17 +910,5 @@ class ArchiConvertor {
             return uri.substring(pos + 1);
         }
         return uri;
-    }
-
-    private String toValidResourceName(String name) {
-        return name.replaceAll("\\s+", "")
-                .replaceAll("[^a-zA-Z0-9]", "");
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) {
-            return str;
-        }
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 }
