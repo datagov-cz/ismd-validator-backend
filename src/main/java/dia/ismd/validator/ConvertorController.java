@@ -29,6 +29,8 @@ import static dia.ismd.validator.constants.ConvertorControllerConstants.*;
 @Slf4j
 public class ConvertorController {
 
+    private static final long MAX_FILE_SIZE = 5242880;
+
     private final ConvertorService convertorService;
 
     @PostMapping("/prevod")
@@ -45,6 +47,13 @@ public class ConvertorController {
             if (file.isEmpty()) {
                 log.warn("Empty file upload attempt");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nebyl vložen žádný soubor.");
+            }
+
+            if (file.getSize() > MAX_FILE_SIZE) {
+                log.warn("File too large: filename={}, size={}, maxAllowedSize={}",
+                        file.getOriginalFilename(), file.getSize(), MAX_FILE_SIZE);
+                return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                        .body("Soubor je příliš velký. Maximální povolená velikost je 5 MB.");
             }
 
             FileFormat fileFormat = checkFileFormat(file);
