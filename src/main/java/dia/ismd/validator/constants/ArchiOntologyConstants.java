@@ -6,6 +6,7 @@ public class ArchiOntologyConstants {
     public static final String XSD = "http://www.w3.org/2001/XMLSchema#";
     public static final String IDENT = "identifier";
     public static final String CONTEXT = "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld";
+    public static final String LANG = "lang=";
 
     public static final String TYP_TSP = "Typ subjektu práva";
     public static final String TYP_TOP = "Typ objektu práva";

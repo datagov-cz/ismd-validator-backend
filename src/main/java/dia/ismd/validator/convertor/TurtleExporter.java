@@ -222,11 +222,6 @@ class TurtleExporter {
             resource.removeAll(DCTerms.description);
 
             resource.addProperty(DCTerms.description, description, "cs");
-
-            String englishDescription = modelProperties.getOrDefault("popis-en", "");
-            if (englishDescription != null && !englishDescription.isEmpty()) {
-                resource.addProperty(DCTerms.description, englishDescription, "en");
-            }
         }
     }
 

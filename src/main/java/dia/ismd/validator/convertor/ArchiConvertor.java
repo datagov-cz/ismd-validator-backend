@@ -10,7 +10,10 @@ import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.ontology.OntClass;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntProperty;
+import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
@@ -230,13 +233,7 @@ class ArchiConvertor {
         Resource ontologyResource = ontModel.getResource(sanitisedIri);
         if (ontologyResource != null) {
             ontologyResource.addProperty(RDF.type, SKOS.ConceptScheme);
-
-            ontologyResource.addProperty(OWL2.versionInfo,
-                    "Vygenerováno z Archi modelu: " +
-                            (modelName));
-
             ontologyResource.addProperty(SKOS.prefLabel, modelName, "cs");
-            ontologyResource.addProperty(SKOS.prefLabel, modelName, "en");
 
             Map<String, String> properties = getModelProperties();
             String description = properties.getOrDefault(LABEL_POPIS, "");
@@ -465,8 +462,7 @@ class ArchiConvertor {
 
     private boolean isOntologyNamespaceProperty(String propRef) {
         String propertyName = propertyMapping.getOrDefault(propRef, "");
-        return propertyName.contains("adresa lokálního katalogu dat") ||
-                propertyName.equals("adresa lokálního katalogu dat, ve kterém bude slovník registrován");
+        return propertyName.contains("adresa lokálního katalogu dat");
     }
 
     private void processIndividualRelationship(Element relationship) {
@@ -504,14 +500,42 @@ class ArchiConvertor {
     }
 
     private void processCompositionRelationship(Resource source, Resource target) {
-        String relName = "ma" + capitalize(getLocalName(target));
+        String relName = capitalize(getLocalName(target));
+
         OntProperty property = ontModel.createOntProperty(getEffectiveOntologyNamespace() + relName);
+
         property.addDomain(source);
         property.addRange(target);
 
-        String targetName = target.getProperty(RDFS.label).getString();
-        property.addLabel("má " + targetName.toLowerCase(), "cs");
-        property.addLabel("has " + targetName.toLowerCase(), "en");
+        addCompositionLabels(property, target);
+    }
+
+    private void addCompositionLabels(OntProperty property, Resource target) {
+        StmtIterator labelStatements = target.listProperties(RDFS.label);
+
+        while (labelStatements.hasNext()) {
+            Statement labelStmt = labelStatements.next();
+
+            if (labelStmt.getObject().isLiteral()) {
+                Literal labelLiteral = labelStmt.getObject().asLiteral();
+                String label = labelLiteral.getString();
+                String language = labelLiteral.getLanguage();
+
+                if (language != null && !language.isEmpty()) {
+                    property.addLabel(label, language);
+
+                    log.debug("Added label '{}' to property {}",
+                            language + label, property.getURI());
+                }
+            }
+        }
+
+        if (!property.hasProperty(RDFS.label)) {
+            String defaultName = getLocalName(target);
+            property.addLabel(defaultName, "cs");
+            log.debug("Added default label '{}' to property {}",
+                    defaultName, property.getURI());
+        }
     }
 
     private void processAssociationRelationship(Element relationship, String id, Resource source, Resource target) {
@@ -659,10 +683,14 @@ class ArchiConvertor {
     private void addLabels(Resource resource, String name, Map<String, String> properties) {
         resource.addProperty(RDFS.label, name, "cs");
 
-        if (properties.containsKey("název-en") || properties.containsKey("name-en")) {
-            String enName = properties.getOrDefault("název-en", properties.getOrDefault("name-en", null));
-            if (enName != null && !enName.isEmpty()) {
-                resource.addProperty(RDFS.label, enName, "en");
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            if (entry.getKey().startsWith(LANG) && !entry.getKey().equals("lang=cs")) {
+                String lang = entry.getKey().substring(5);
+                String langLabel = entry.getValue();
+                if (langLabel != null && !langLabel.isEmpty()) {
+                    resource.addProperty(RDFS.label, langLabel, lang);
+                    log.debug("Adding {} label to resource {}: {}", lang, resource.getURI(), langLabel);
+                }
             }
         }
     }
@@ -676,6 +704,21 @@ class ArchiConvertor {
 
         if (properties.containsKey(LABEL_DEF)) {
             resource.addProperty(ontModel.getProperty(namespace + LABEL_DEF), properties.get(LABEL_DEF), "cs");
+        }
+
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            String key = entry.getKey();
+            if (key.contains(":") && !key.endsWith(":cs")) {
+                String[] parts = key.split(":");
+                if (parts.length == 2) {
+                    String propName = parts[0];
+                    String lang = parts[1];
+
+                    if (propName.equals(LABEL_POPIS) || propName.equals(LABEL_DEF)) {
+                        resource.addProperty(ontModel.getProperty(namespace + propName), entry.getValue(), lang);
+                    }
+                }
+            }
         }
     }
 
@@ -822,34 +865,55 @@ class ArchiConvertor {
         Map<String, String> result = new HashMap<>();
 
         NodeList propertiesNodes = element.getElementsByTagNameNS(ARCHI_NS, "properties");
-        if (propertiesNodes.getLength() == 0) {
-            return result;
-        }
+        if (propertiesNodes.getLength() > 0) {
+            Element propertiesElement = (Element) propertiesNodes.item(0);
+            NodeList propertyNodes = propertiesElement.getElementsByTagNameNS(ARCHI_NS, "property");
 
-        Element propertiesElement = (Element) propertiesNodes.item(0);
-        NodeList propertyNodes = propertiesElement.getElementsByTagNameNS(ARCHI_NS, "property");
+            for (int i = 0; i < propertyNodes.getLength(); i++) {
+                Element property = (Element) propertyNodes.item(i);
+                String propRef = property.getAttribute("propertyDefinitionRef");
+                String propName = propertyMapping.getOrDefault(propRef, propRef);
 
-        for (int i = 0; i < propertyNodes.getLength(); i++) {
-            Element property = (Element) propertyNodes.item(i);
-            String propRef = property.getAttribute("propertyDefinitionRef");
+                NodeList valueNodes = property.getElementsByTagNameNS(ARCHI_NS, "value");
+                if (valueNodes.getLength() > 0) {
+                    Element valueNode = (Element) valueNodes.item(0);
+                    String value = valueNode.getTextContent();
 
-            String propName = propertyMapping.getOrDefault(propRef, propRef);
+                    String lang = valueNode.getAttributeNS("http://www.w3.org/XML/1998/namespace", "lang");
 
-            NodeList valueNodes = property.getElementsByTagNameNS(ARCHI_NS, "value");
-            if (valueNodes.getLength() > 0) {
-                String value = valueNodes.item(0).getTextContent();
-                result.put(propName, value);
-
-                if (COMMON_PROPERTY_NAMES.contains(propName)) {
-                    String dashedName = propName.replace(" ", "-");
-                    if (!dashedName.equals(propName)) {
-                        result.put(dashedName, value);
-                    }
+                    checkNonCSProperties(lang, result, value, propName);
                 }
             }
         }
 
+        NodeList nameNodes = element.getElementsByTagNameNS(ARCHI_NS, "name");
+        for (int i = 0; i < nameNodes.getLength(); i++) {
+            Element nameElement = (Element) nameNodes.item(i);
+            String lang = nameElement.getAttributeNS("http://www.w3.org/XML/1998/namespace", "lang");
+
+            if (!lang.isEmpty() && !lang.equals("cs")) {
+                result.put("lang=" + lang, nameElement.getTextContent());
+                log.debug("Found {} name: {}", lang, nameElement.getTextContent());
+            }
+        }
+
         return result;
+    }
+
+    private void checkNonCSProperties(String lang, Map<String, String> result, String value, String propName) {
+        if (!lang.isEmpty() && !lang.equals("cs")) {
+            result.put("lang=" + lang, value);
+            log.debug("Found {} label for property {}: {}", lang, propName, value);
+        } else {
+            result.put(propName, value);
+
+            if (COMMON_PROPERTY_NAMES.contains(propName)) {
+                String dashedName = propName.replace(" ", "-");
+                if (!dashedName.equals(propName)) {
+                    result.put(dashedName, value);
+                }
+            }
+        }
     }
 
     private String getLocalName(Resource resource) {
