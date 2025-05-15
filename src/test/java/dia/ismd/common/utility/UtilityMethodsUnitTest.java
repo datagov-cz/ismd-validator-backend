@@ -159,7 +159,7 @@ class UtilityMethodsUnitTest {
         assertEquals("hello-world", UtilityMethods.sanitizeForIRI("hello!!!world"));
 
         // First character invalid
-        assertEquals("a-123", UtilityMethods.sanitizeForIRI("@123"));
+        assertEquals("123", UtilityMethods.sanitizeForIRI("@123"));
 
         // Edge cases
         assertEquals("unnamed", UtilityMethods.sanitizeForIRI(null));

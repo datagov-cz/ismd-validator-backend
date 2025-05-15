@@ -55,11 +55,11 @@ class TurtleExporter {
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties) {
-            this.ontModel = ontModel;
-            this.resourceMap = new HashMap<>(resourceMap);
-            this.modelName = modelName;
-            this.modelProperties = modelProperties;
-            this.effectiveNamespace = determineEffectiveNamespace();
+        this.ontModel = ontModel;
+        this.resourceMap = new HashMap<>(resourceMap);
+        this.modelName = modelName;
+        this.modelProperties = modelProperties;
+        this.effectiveNamespace = determineEffectiveNamespace();
     }
 
     public String exportToTurtle() throws TurtleExportException {
@@ -81,9 +81,70 @@ class TurtleExporter {
         });
     }
 
+    private boolean isEmptyLiteralStatement(Statement stmt) {
+        if (stmt.getObject().isLiteral()) {
+            Literal lit = stmt.getObject().asLiteral();
+            String value = lit.getString();
+            return value == null || value.trim().isEmpty();
+        }
+        return false;
+    }
+
+    private void removeEmptyLiterals(OntModel model) {
+        List<Statement> toRemove = new ArrayList<>();
+
+        StmtIterator stmtIter = model.listStatements();
+        while (stmtIter.hasNext()) {
+            Statement stmt = stmtIter.next();
+            if (isEmptyLiteralStatement(stmt)) {
+                toRemove.add(stmt);
+                log.debug("Post-processing: removing empty literal statement: {}", stmt);
+            }
+        }
+
+        model.remove(toRemove);
+    }
+
+    private void cleanupSKOSProperties(OntModel model) {
+        removeEmptyPropertyValues(model, SKOS.definition);
+
+        removeEmptyPropertyValues(model, SKOS.prefLabel);
+    }
+
+    private void removeEmptyPropertyValues(OntModel model, Property property) {
+        List<Statement> toRemove = new ArrayList<>();
+
+        StmtIterator stmts = model.listStatements(null, property, (RDFNode)null);
+        while (stmts.hasNext()) {
+            Statement stmt = stmts.next();
+            if (isEmptyLiteralStatement(stmt)) {
+                toRemove.add(stmt);
+                log.debug("Removing empty {} statement: {}", property.getLocalName(), stmt);
+            }
+        }
+
+        model.remove(toRemove);
+    }
+
+    private void cleanupNamespaceProperties(OntModel model) {
+       for (String propName : LABELS) {
+            Property property = model.createProperty(effectiveNamespace + propName);
+            removeEmptyPropertyValues(model, property);
+        }
+    }
+
     private OntModel createTransformedModel() {
         OntModel newModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-        newModel.add(ontModel.listStatements());
+
+        StmtIterator stmtIter = ontModel.listStatements();
+        while (stmtIter.hasNext()) {
+            Statement stmt = stmtIter.next();
+            if (!isEmptyLiteralStatement(stmt)) {
+                newModel.add(stmt);
+            } else {
+                log.debug("Filtering out empty literal statement: {}", stmt);
+            }
+        }
 
         return newModel;
     }
@@ -102,6 +163,12 @@ class TurtleExporter {
         mapCustomPropertiesToStandard(transformedModel);
 
         addInSchemeRelationships(transformedModel);
+
+        cleanupSKOSProperties(transformedModel);
+
+        cleanupNamespaceProperties(transformedModel);
+
+        removeEmptyLiterals(transformedModel);
     }
 
     private String determineEffectiveNamespace() {
@@ -190,7 +257,7 @@ class TurtleExporter {
 
     private void mapResourceTypes(Resource resource, OntModel transformedModel) {
         String baseNamespace = NS;
-        String verejnySektorNamespace = baseNamespace + "veřejný-sektor/pojem/";
+        String verejnySektorNamespace = baseNamespace + VS_POJEM;
 
         if (hasResourceType(resource, transformedModel, TYP_TRIDA)) {
             addResourceType(resource, OWL2.Class);
@@ -217,9 +284,9 @@ class TurtleExporter {
 
     private void mapSubjectOrObjectType(Resource resource, OntModel model, String vsNamespace) {
         if (hasResourceType(resource, model, TYP_TSP)) {
-            addResourceType(resource, model.createResource(vsNamespace + "typ-subjektu-práva"));
+            addResourceType(resource, model.createResource(vsNamespace + LABEL_TSP));
         } else if (hasResourceType(resource, model, TYP_TOP)) {
-            addResourceType(resource, model.createResource(vsNamespace + "typ-objektu-práva"));
+            addResourceType(resource, model.createResource(vsNamespace + LABEL_TOP));
         }
     }
 
@@ -242,10 +309,10 @@ class TurtleExporter {
 
     private void mapDataAccessType(Resource resource, OntModel model, String baseNamespace) {
         if (hasResourceType(resource, model, TYP_VEREJNY_UDAJ)) {
-            String publicDataUri = baseNamespace + "legislativní/sbírka/111/2009/pojem/veřejný-údaj";
+            String publicDataUri = baseNamespace + LEGISLATIVNI_111_VU;
             addResourceType(resource, model.createResource(publicDataUri));
         } else if (hasResourceType(resource, model, TYP_NEVEREJNY_UDAJ)) {
-            String nonPublicDataUri = baseNamespace + "legislativní/sbírka/111/2009/pojem/neveřejný-údaj";
+            String nonPublicDataUri = baseNamespace + LEGISLATIVNI_111_NVU;
             addResourceType(resource, model.createResource(nonPublicDataUri));
         }
     }
@@ -261,6 +328,10 @@ class TurtleExporter {
                 Literal lit = stmt.getObject().asLiteral();
                 String lang = lit.getLanguage();
                 String text = lit.getString();
+
+                if (text == null || text.isEmpty()) {
+                    continue;
+                }
 
                 if (lang == null || lang.isEmpty()) {
                     lang = "cs";
@@ -296,19 +367,26 @@ class TurtleExporter {
             Statement stmt = defStmts.next();
             if (stmt.getObject().isLiteral()) {
                 Literal lit = stmt.getObject().asLiteral();
+                String value = lit.getString();
+
+                if (value == null || value.isEmpty()) {
+                    toRemove.add(stmt);
+                    continue;
+                }
+
                 String lang = lit.getLanguage();
 
                 if (lang != null && !lang.isEmpty()) {
                     toAdd.add(transformedModel.createStatement(
                             stmt.getSubject(),
                             SKOS.definition,
-                            transformedModel.createLiteral(lit.getString(), lang)
+                            transformedModel.createLiteral(value, lang)
                     ));
                 } else {
                     toAdd.add(transformedModel.createStatement(
                             stmt.getSubject(),
                             SKOS.definition,
-                            transformedModel.createLiteral(lit.getString(), "cs")
+                            transformedModel.createLiteral(value, "cs")
                     ));
                 }
             }
@@ -366,9 +444,9 @@ class TurtleExporter {
     }
 
     private void mapCustomPropertiesToStandard(OntModel transformedModel) {
-        String baseNamespace = "https://slovník.gov.cz/";
-        String agendovyNamespace = baseNamespace + "agendový/104/pojem/";
-        String legislativniNamespace = baseNamespace + "legislativní/sbírka/111/2009/pojem/";
+        String baseNamespace = NS;
+        String agendovyNamespace = baseNamespace + AGENDOVY_104;
+        String legislativniNamespace = baseNamespace + LEGISLATIVNI_111;
 
         mapProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + LABEL_ZDROJ),
@@ -376,11 +454,11 @@ class TurtleExporter {
 
         mapBooleanProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + LABEL_JE_PPDF),
-                transformedModel.createProperty(agendovyNamespace + "je-sdílen-v-propojeném-datovém-fondu"));
+                transformedModel.createProperty(agendovyNamespace + LABEL_JE_PPDF_LONG));
 
         mapProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + LABEL_SUPP),
-                transformedModel.createProperty(legislativniNamespace + "je-vymezen-ustanovení-stanovujícím-jeho-neveřejnost"));
+                transformedModel.createProperty(legislativniNamespace + LABEL_SUPP_LONG));
 
         mapProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + LABEL_NT),
@@ -388,11 +466,24 @@ class TurtleExporter {
 
         mapProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + LABEL_AIS),
-                transformedModel.createProperty(agendovyNamespace + "údaje-jsou-v-ais"));
+                transformedModel.createProperty(agendovyNamespace + LABEL_UDAJE_AIS));
 
         mapProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + LABEL_AGENDA),
-                transformedModel.createProperty(agendovyNamespace + "sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy"));
+                transformedModel.createProperty(agendovyNamespace + AGENDA_LONG));
+
+        Property opisProperty = transformedModel.createProperty(effectiveNamespace + LABEL_POPIS);
+        StmtIterator opisStmts = transformedModel.listStatements(null, opisProperty, (RDFNode)null);
+        List<Statement> toRemove = new ArrayList<>();
+
+        while (opisStmts.hasNext()) {
+            Statement stmt = opisStmts.next();
+            if (isEmptyLiteralStatement(stmt)) {
+                toRemove.add(stmt);
+            }
+        }
+
+        transformedModel.remove(toRemove);
     }
 
     private void mapBooleanProperty(OntModel model, Property sourceProperty, Property targetProperty) {
@@ -429,6 +520,11 @@ class TurtleExporter {
 
         while (stmts.hasNext()) {
             Statement stmt = stmts.next();
+            if (isEmptyLiteralStatement(stmt)) {
+                toRemove.add(stmt);
+                continue;
+            }
+
             toAdd.add(transformedModel.createStatement(
                     stmt.getSubject(),
                     targetProperty,
