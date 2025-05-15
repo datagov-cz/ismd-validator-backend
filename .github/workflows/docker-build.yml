@@ -26,13 +26,14 @@ jobs:
 
       - name: Set IMAGE_TAG
         run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           if [ "${{ github.ref_name }}" = "main" ]; then
-            IMAGE_TAG=ghcr.io/${{ github.repository}}:${VERSION}
-            LATEST_TAG=ghcr.io/${{ github.repository}}:latest
+            IMAGE_TAG=ghcr.io/${REPO_LOWER}:${VERSION}
+            LATEST_TAG=ghcr.io/${REPO_LOWER}:latest
           else
             SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-            IMAGE_TAG=ghcr.io/${{ github.repository}}-dev:${{ github.ref_name }}-${VERSION}-${SHORT_SHA}
-            LATEST_TAG=ghcr.io/${{ github.repository}}-dev:${{ github.ref_name }}-latest
+            IMAGE_TAG=ghcr.io/${REPO_LOWER}-dev:${{ github.ref_name }}-${VERSION}-${SHORT_SHA}
+            LATEST_TAG=ghcr.io/${REPO_LOWER}-dev:${{ github.ref_name }}-latest
           fi
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
           echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
