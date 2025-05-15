@@ -30,8 +30,8 @@ public class UtilityMethods {
 
     public boolean isValidUrl(String url) {
         try {
-            new java.net.URL(url);
-            return true;
+            java.net.URI uri = new java.net.URI(url);
+            return uri.getScheme() != null && uri.getHost() != null;
         } catch (Exception e) {
             return false;
         }
