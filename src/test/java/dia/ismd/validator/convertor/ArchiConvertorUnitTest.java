@@ -179,6 +179,7 @@ class ArchiConvertorUnitTest {
         @SuppressWarnings("unchecked")
         Map<String, Resource> resourceMap = (Map<String, Resource>) resourceMapField.get(convertor);
 
+        // Verify real element ID exists (complete-archi.xml, line 12 identifier)
         assertTrue(resourceMap.containsKey("id-cd39b4fc55534b9ca590187588b9d082"), "Expected element should exist");
 
         // Check model contains expected triples
