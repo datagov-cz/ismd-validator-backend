@@ -14,6 +14,7 @@ import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
+import org.slf4j.MDC;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -26,6 +27,7 @@ import java.util.Map;
 
 import static dia.ismd.validator.constants.ArchiOntologyConstants.*;
 import static dia.ismd.validator.constants.JsonExportConstants.*;
+import static dia.ismd.validator.constants.ConvertorControllerConstants.*;
 
 @Slf4j
 class JSONExporter {
@@ -47,10 +49,19 @@ class JSONExporter {
     }
 
     public String exportToJson() {
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        log.info("Starting JSON export operation: requestId={}, modelName={}", requestId, modelName);
         return handleJsonOperation(() -> {
+            log.debug("Building JSON structure: requestId={}", requestId);
             JSONObject unorderedRoot = new JSONObject();
+
+            log.debug("Adding model metadata: requestId={}", requestId);
             addModelMetadata(unorderedRoot);
+
+            log.debug("Creating concepts array: requestId={}", requestId);
             unorderedRoot.put(JSON_FIELD_POJMY, createConceptsArray());
+
+            log.debug("Formatting and ordering JSON: requestId={}", requestId);
             return formatJsonWithOrderedFields(unorderedRoot);
         });
     }
@@ -470,13 +481,15 @@ class JSONExporter {
     }
 
     private <T> T handleJsonOperation(JsonSupplier<T> operation) throws JsonExportException {
+        String requestId = MDC.get(LOG_REQUEST_ID);
         try {
             return operation.get();
         } catch (JsonExportException e) {
-            log.error("{}: {}", "Error exporting to JSON", e.getMessage(), e);
+            log.error("JSON export error: requestId={}, message={}", requestId, e.getMessage(), e);
             throw new JsonExportException("Při exportu do JSON došlo k chybě" + ": " + e.getMessage());
         } catch (Exception e) {
-            log.error("Unexpected error during JSON operation: {}", e.getMessage(), e);
+            log.error("Unexpected error during JSON operation: requestId={}, error={}, type={}",
+                    requestId, e.getMessage(), e.getClass().getName(), e);
             throw new JsonExportException("Během zpracovávání JSON došlo k chybě: " + e.getMessage());
         }
     }

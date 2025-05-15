@@ -21,6 +21,7 @@ import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.SKOS;
+import org.slf4j.MDC;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import static dia.ismd.validator.constants.ArchiOntologyConstants.*;
+import static dia.ismd.validator.constants.ConvertorControllerConstants.*;
 
 @Slf4j
 class TurtleExporter {
@@ -61,14 +63,20 @@ class TurtleExporter {
     }
 
     public String exportToTurtle() throws TurtleExportException {
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        log.info("Starting Turtle export operation: requestId={}, modelName={}", requestId, modelName);
         return handleTurtleOperation(()-> {
+            log.debug("Creating transformed model: requestId={}", requestId);
             OntModel transformedModel = createTransformedModel();
 
+            log.debug("Applying transformations: requestId={}", requestId);
             applyTransformations(transformedModel);
 
+            log.debug("Serializing model to Turtle: requestId={}", requestId);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             RDFDataMgr.write(outputStream, transformedModel, RDFFormat.TURTLE_PRETTY);
 
+            log.debug("Turtle serialization completed: requestId={}", requestId);
             return outputStream.toString(StandardCharsets.UTF_8);
         });
     }
@@ -451,13 +459,15 @@ class TurtleExporter {
     }
 
     private <T> T handleTurtleOperation(TurtleExporter.TurtleSupplier<T> operation) throws TurtleExportException {
+        String requestId = MDC.get(LOG_REQUEST_ID);
         try {
             return operation.get();
         } catch (TurtleExportException e) {
-            log.error("{}: {}", "Error exporting to Turtle", e.getMessage(), e);
+            log.error("Turtle export error: requestId={}, message={}", requestId, e.getMessage(), e);
             throw new TurtleExportException("Při exportu do Turtle došlo k chybě" + ": " + e.getMessage());
         } catch (Exception e) {
-            log.error("Unexpected error during Turtle operation: {}", e.getMessage(), e);
+            log.error("Unexpected error during Turtle operation: requestId={}, error={}, type={}",
+                    requestId, e.getMessage(), e.getClass().getName(), e);
             throw new TurtleExportException("Během zpracovávání Turtle došlo k chybě: " + e.getMessage());
         }
     }
