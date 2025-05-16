@@ -10,10 +10,7 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -36,9 +33,13 @@ public class ConvertorController {
     @PostMapping("/prevod")
     public ResponseEntity<String> convertFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "output", defaultValue = "json") String output) {
+            @RequestParam(value = "output", defaultValue = "json", required = false) String output,
+            @RequestHeader(value = "Accept", required = false) String acceptHeader
+    ) {
         String requestId = UUID.randomUUID().toString();
         MDC.put(LOG_REQUEST_ID, requestId);
+
+        String outputFormat = determineOutputFormat(output, acceptHeader);
 
         log.info("File conversion requested: filename={}, size={}, outputFormat={}",
                 file.getOriginalFilename(), file.getSize(), output);
@@ -88,7 +89,7 @@ public class ConvertorController {
                 }
             }
 
-            ResponseEntity<String> response = getResponseEntity(output);
+            ResponseEntity<String> response = getResponseEntity(outputFormat);
             log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, fileFormat, output);
             return response;
@@ -200,5 +201,21 @@ public class ConvertorController {
                 throw new UnsupportedFormatException("Nepodporovaný výstupní formát: " + output);
             }
         };
+    }
+
+    private String determineOutputFormat(String output, String acceptHeader) {
+        if (output != null && !output.isEmpty()) {
+            return output.toLowerCase();
+        }
+
+        if (acceptHeader != null && !acceptHeader.isEmpty()) {
+            if (acceptHeader.contains("application/json")) {
+                return "json";
+            } else if (acceptHeader.contains("text/turtle") || acceptHeader.contains("application/x-turtle")) {
+                return "ttl";
+            }
+        }
+
+        return "json";
     }
 }
