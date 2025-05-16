@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.test.context.ContextConfiguration;
@@ -15,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import static org.mockito.ArgumentMatchers.anyString;
@@ -33,10 +35,14 @@ class ConvertorControllerIntegrationTest {
     private ConvertorService convertorService;
 
     private MockMvc mockMvc;
+    private String minimalArchiXML;
 
     @BeforeEach
-    public void setup() {
+    public void setup() throws IOException {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+
+        minimalArchiXML = loadTestFile();
+
         reset(convertorService);
     }
 
@@ -49,31 +55,10 @@ class ConvertorControllerIntegrationTest {
         }
     }
 
-    private static final String ARCHI_XML_CONTENT = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://www.opengroup.org/xsd/archimate/3.0/ http://www.opengroup.org/xsd/archimate/3.1/archimate3_Diagram.xsd"
-            identifier="id-1a2b89ddbd634df6a46af504ebebfea8">
-            " +
-            "<name xml:lang="cs">DEMO Šablona pro popis dat Archi v1</name>
-            " +
-            "<properties>
-            " +
-            "<property propertyDefinitionRef="propid-2">
-            " +
-            "<value xml:lang="cs"/>
-            " +
-            "</property>
-            " +
-            "<property propertyDefinitionRef="propid-15">
-            " +
-            "<value xml:lang="cs">https://data.dia.gov.cz</value>
-            " +
-            "</property>
-            " +
-            "</properties>" +
-            "<folder></folder></archimate:model>
-            """;
+    private String loadTestFile() throws IOException {
+        ClassPathResource resource = new ClassPathResource("convertor/minimal-archi.xml", getClass());
+        return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+    }
 
     private static final String JSON_OUTPUT = "{\"result\":\"success\"}";
     private static final String TTL_OUTPUT = "@prefix : <http://example.org/> .\n:subject :predicate :object .";
@@ -87,7 +72,7 @@ class ConvertorControllerIntegrationTest {
                 "file",
                 "test.xml",
                 "application/xml",
-                ARCHI_XML_CONTENT.getBytes(StandardCharsets.UTF_8)
+                minimalArchiXML.getBytes(StandardCharsets.UTF_8)
         );
 
         // Configure mock service behavior
@@ -116,7 +101,7 @@ class ConvertorControllerIntegrationTest {
                 "file",
                 "test.xml",
                 "application/xml",
-                ARCHI_XML_CONTENT.getBytes(StandardCharsets.UTF_8)
+                minimalArchiXML.getBytes(StandardCharsets.UTF_8)
         );
 
         // Configure mock service behavior
@@ -194,7 +179,7 @@ class ConvertorControllerIntegrationTest {
                 "file",
                 "test.xml",
                 "application/xml",
-                ARCHI_XML_CONTENT.getBytes(StandardCharsets.UTF_8)
+                minimalArchiXML.getBytes(StandardCharsets.UTF_8)
         );
 
         doNothing().when(convertorService).parseArchiFromString(anyString());
@@ -215,7 +200,7 @@ class ConvertorControllerIntegrationTest {
                 "file",
                 "test.xml",
                 "application/xml",
-                ARCHI_XML_CONTENT.getBytes(StandardCharsets.UTF_8)
+                minimalArchiXML.getBytes(StandardCharsets.UTF_8)
         );
 
         // Configure service to throw exception
@@ -236,7 +221,7 @@ class ConvertorControllerIntegrationTest {
                 "file",
                 "test.xml",
                 "application/xml",
-                ARCHI_XML_CONTENT.getBytes(StandardCharsets.UTF_8)
+                minimalArchiXML.getBytes(StandardCharsets.UTF_8)
         );
 
         doNothing().when(convertorService).parseArchiFromString(anyString());
@@ -259,7 +244,7 @@ class ConvertorControllerIntegrationTest {
                 "file",
                 "test.xml",
                 "application/xml",
-                ARCHI_XML_CONTENT.getBytes(StandardCharsets.UTF_8)
+                minimalArchiXML.getBytes(StandardCharsets.UTF_8)
         );
 
         doNothing().when(convertorService).parseArchiFromString(anyString());
@@ -282,7 +267,7 @@ class ConvertorControllerIntegrationTest {
                 "file",
                 "test.xml",
                 "application/xml",
-                ARCHI_XML_CONTENT.getBytes(StandardCharsets.UTF_8)
+                minimalArchiXML.getBytes(StandardCharsets.UTF_8)
         );
 
         doNothing().when(convertorService).parseArchiFromString(anyString());

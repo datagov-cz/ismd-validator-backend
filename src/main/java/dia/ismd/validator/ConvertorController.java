@@ -65,6 +65,14 @@ public class ConvertorController {
             log.info("File format determined: requestId={}, format={}", requestId, fileFormat);
 
             switch (fileFormat) {
+                case TURTLE -> {
+                    log.debug("Processing Turtle file: requestId={}", requestId);
+                    byte[] fileContent = file.getBytes();
+                    log.info("Returning Turtle file without conversion: requestId={}", requestId);
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.TEXT_PLAIN)
+                            .body(new String(fileContent, StandardCharsets.UTF_8));
+                }
                 case ARCHI_XML -> {
                     log.debug("Processing Archi XML file: requestId={}", requestId);
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
@@ -104,13 +112,14 @@ public class ConvertorController {
         if (checkForXlsx(file)) {
             log.debug("XLSX format detected: filename={}", filename);
             return FileFormat.XLSX;
-        }
-        if (checkForXmlOrXmi(file) == FileFormat.ARCHI_XML) {
+        } else if (checkForXmlOrXmi(file) == FileFormat.ARCHI_XML) {
             log.debug("Archi XML format detected: filename={}", filename);
             return FileFormat.ARCHI_XML;
         } else if (checkForXmlOrXmi(file) == FileFormat.XMI) {
             log.debug("XMI format detected: filename={}", filename);
             return FileFormat.XMI;
+        } else if (checkForTurtle(file) == FileFormat.TURTLE) {
+            log.debug("Turtle format detected: filename={}", filename);
         }
 
         log.debug("Unsupported format detected: filename={}, contentType={}",
@@ -152,6 +161,15 @@ public class ConvertorController {
                 }
             }
         }
+        return FileFormat.UNSUPPORTED;
+    }
+
+    private FileFormat checkForTurtle(MultipartFile file) {
+        String contentType = file.getContentType();
+        if (contentType != null && contentType.equals("text/turtle")) {
+            return FileFormat.TURTLE;
+        }
+
         return FileFormat.UNSUPPORTED;
     }
 
