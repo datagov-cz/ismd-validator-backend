@@ -224,7 +224,7 @@ class JSONExporter {
     private Map<String, Object> orderPojemFields(Map<String, Object> pojemMap) {
         Map<String, Object> orderedPojem = new LinkedHashMap<>();
 
-        String[] orderedFields = {"iri", "typ", "název", "popis", "definice"};
+        String[] orderedFields = {"iri", "typ", "název", "alternativní název", "popis", "definice"};
 
         for (String field : orderedFields) {
             addFieldIfExists(pojemMap, orderedPojem, field);
@@ -298,6 +298,8 @@ class JSONExporter {
 
         addMultilingualProperty(concept, RDFS.label, JSON_FIELD_NAZEV, pojemObj);
 
+        addAlternativeNamesFromEitherNamespace(concept, pojemObj, namespace);
+
         addMultilingualPropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_DEF);
 
         addMultilingualPropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_POPIS);
@@ -338,6 +340,32 @@ class JSONExporter {
             addMultilingualProperty(concept, langDefault, labelDef, pojemObj);
         } else if (concept.hasProperty(langCustom)) {
             addMultilingualProperty(concept, langCustom, labelDef, pojemObj);
+        }
+    }
+
+    private void addAlternativeNamesFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+        Property anPropDefault = ontModel.getProperty(NS + LABEL_AN);
+        Property anPropCustom = ontModel.getProperty(namespace + LABEL_AN);
+
+        StmtIterator stmtIter = concept.listProperties(anPropDefault);
+        if (!stmtIter.hasNext()) {
+            stmtIter = concept.listProperties(anPropCustom);
+        }
+
+        if (stmtIter.hasNext()) {
+            JSONArray altNamesArray = new JSONArray();
+
+            while (stmtIter.hasNext()) {
+                Statement stmt = stmtIter.next();
+                String value = stmt.getString();
+                if (value != null && !value.isEmpty()) {
+                    altNamesArray.put(value);
+                }
+            }
+
+            if (altNamesArray.length() > 0) {
+                pojemObj.put(LABEL_AN, altNamesArray);
+            }
         }
     }
 
