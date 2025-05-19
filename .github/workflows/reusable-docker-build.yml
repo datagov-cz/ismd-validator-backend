@@ -1,0 +1,48 @@
+name: Reusable Docker Build Workflow
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'Branch name (main or dev)'
+        required: true
+        type: string
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Maven project version
+        run: echo "VERSION=$(./mvnw help:evaluate -DforceStdout -q -Dexpression=project.version)" >> $GITHUB_ENV
+      
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with: 
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set IMAGE_TAG
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          if [ "${{ inputs.branch }}" = "main" ]; then
+            IMAGE_TAG=ghcr.io/${REPO_LOWER}:${VERSION}
+            LATEST_TAG=ghcr.io/${REPO_LOWER}:latest
+          else
+            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+            IMAGE_TAG=ghcr.io/${REPO_LOWER}-dev:${{ inputs.branch }}-${VERSION}-${SHORT_SHA}
+            LATEST_TAG=ghcr.io/${REPO_LOWER}-dev:${{ inputs.branch }}-latest
+          fi
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_TAG -t $LATEST_TAG .
+
+      - name: Push Docker images
+        run: |
+          docker push $IMAGE_TAG
+          docker push $LATEST_TAG
