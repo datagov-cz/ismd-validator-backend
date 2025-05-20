@@ -1,0 +1,20 @@
+name: Build Docker on Dev
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  run-tests:
+    uses: ./.github/workflows/reusable-test.yml
+
+  build-docker:
+    needs: run-tests
+    uses: ./.github/workflows/reusable-docker-build.yml
+    with:
+      branch: dev
