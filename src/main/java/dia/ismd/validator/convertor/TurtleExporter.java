@@ -453,7 +453,11 @@ class TurtleExporter {
 
         mapProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + LABEL_ZDROJ),
-                DCTerms.relation);
+                DCTerms.source);
+
+        mapProperty(transformedModel,
+                transformedModel.createProperty(effectiveNamespace + LABEL_SZ),
+                DCTerms.references);
 
         mapBooleanProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + LABEL_JE_PPDF),
