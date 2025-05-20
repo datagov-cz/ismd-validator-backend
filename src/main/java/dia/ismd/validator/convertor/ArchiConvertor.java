@@ -40,6 +40,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static dia.ismd.validator.constants.ArchiOntologyConstants.*;
 import static dia.ismd.validator.constants.ConvertorControllerConstants.*;
@@ -771,8 +773,9 @@ class ArchiConvertor {
     }
 
     private void addSingleSourceUrl(Resource resource, String url) {
+        String transformedUrl = transformEliUrl(url);
         Property sourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ);
-        resource.addProperty(sourceProp, ontModel.createResource(url));
+        resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
     }
 
     private void addRelatedSourceReferences(Resource resource, Map<String, String> properties) {
@@ -782,8 +785,9 @@ class ArchiConvertor {
 
         String relatedSourceUrl = properties.get(LABEL_SZ);
         if (relatedSourceUrl != null && !relatedSourceUrl.isEmpty()) {
+            String transformedUrl = transformEliUrl(relatedSourceUrl);
             Property relatedSourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SZ);
-            resource.addProperty(relatedSourceProp, ontModel.createResource(relatedSourceUrl));
+            resource.addProperty(relatedSourceProp, ontModel.createResource(transformedUrl));
         }
     }
 
@@ -822,9 +826,22 @@ class ArchiConvertor {
     private void addLegalSources(Resource resource, Map<String, String> properties) {
         if (properties.containsKey(LABEL_SUPP)) {
             String provision = properties.get(LABEL_SUPP);
+            String transformedProvision = transformEliUrl(provision);
             resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SUPP),
-                    ontModel.createResource(provision));
+                    ontModel.createResource(transformedProvision));
         }
+    }
+
+    private String transformEliUrl(String url) {
+        Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
+        Matcher matcher = eliPattern.matcher(url);
+
+        if (matcher.matches()) {
+            String eliPart = matcher.group(1);
+            return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+        }
+
+        return url;
     }
 
     private void addPurpleLayerProperties(Resource resource, Map<String, String> properties) {
