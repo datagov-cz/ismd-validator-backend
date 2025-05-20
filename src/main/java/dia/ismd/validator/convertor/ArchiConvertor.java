@@ -11,7 +11,11 @@ import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.ontology.OntClass;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntProperty;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
@@ -32,6 +36,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -348,7 +353,7 @@ class ArchiConvertor {
             Element element = (Element) elements.item(i);
 
             String name = getElementName(element);
-            if (name.equals("Subjekt") || name.equals("Objekt") || name.equals(TYP_VLASTNOST)) {
+            if (name.equals("Subjekt") || name.equals("Objekt") || name.equals("Vlastnost")) {
                 continue;
             }
 
@@ -374,10 +379,19 @@ class ArchiConvertor {
     }
 
     private void mapStandardizedLabel(String propId, String propName) {
-        Map<String, String> labelPatterns = new HashMap<>();
+        Map<String, String> labelPatterns = new LinkedHashMap<>();
+
+        if (propName.equals("související zdroj")) {
+            propertyMapping.put(propId, LABEL_SZ);
+            return;
+        }
+        if (propName.equals("zdroj")) {
+            propertyMapping.put(propId, LABEL_ZDROJ);
+            return;
+        }
+
         labelPatterns.put(LABEL_POPIS, LABEL_POPIS);
         labelPatterns.put(LABEL_DEF, LABEL_DEF);
-        labelPatterns.put(LABEL_ZDROJ, LABEL_ZDROJ);
         labelPatterns.put(LABEL_ID, LABEL_ID);
         labelPatterns.put("ustanovení dokládající neveřejnost", LABEL_SUPP);
         labelPatterns.put(LABEL_AGENDA, LABEL_AGENDA);
@@ -729,9 +743,47 @@ class ArchiConvertor {
     }
 
     private void addSourceReferences(Resource resource, Map<String, String> properties) {
-        if (properties.containsKey(LABEL_ZDROJ)) {
-            resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ),
-                    ontModel.createResource(properties.get(LABEL_ZDROJ)));
+        addMainSourceReferences(resource, properties);
+
+        addRelatedSourceReferences(resource, properties);
+    }
+
+    private void addMainSourceReferences(Resource resource, Map<String, String> properties) {
+        if (!properties.containsKey(LABEL_ZDROJ)) {
+            return;
+        }
+
+        String sourceUrl = properties.get(LABEL_ZDROJ);
+        if (sourceUrl.contains(";")) {
+            addMultipleSourceUrls(resource, sourceUrl);
+        } else {
+            addSingleSourceUrl(resource, sourceUrl);
+        }
+    }
+
+    private void addMultipleSourceUrls(Resource resource, String sourceUrlString) {
+        String[] urls = sourceUrlString.split(";");
+        for (String url : urls) {
+            if (url != null && !url.trim().isEmpty()) {
+                addSingleSourceUrl(resource, url.trim());
+            }
+        }
+    }
+
+    private void addSingleSourceUrl(Resource resource, String url) {
+        Property sourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ);
+        resource.addProperty(sourceProp, ontModel.createResource(url));
+    }
+
+    private void addRelatedSourceReferences(Resource resource, Map<String, String> properties) {
+        if (!properties.containsKey(LABEL_SZ)) {
+            return;
+        }
+
+        String relatedSourceUrl = properties.get(LABEL_SZ);
+        if (relatedSourceUrl != null && !relatedSourceUrl.isEmpty()) {
+            Property relatedSourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SZ);
+            resource.addProperty(relatedSourceProp, ontModel.createResource(relatedSourceUrl));
         }
     }
 

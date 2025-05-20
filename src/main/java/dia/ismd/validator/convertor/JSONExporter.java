@@ -308,6 +308,8 @@ class JSONExporter {
 
         addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_ZDROJ);
 
+        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_SZ);
+
         addDomainAndRangeWithBothNamespaces(concept, pojemObj, namespace);
 
         addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, LABEL_NT);
