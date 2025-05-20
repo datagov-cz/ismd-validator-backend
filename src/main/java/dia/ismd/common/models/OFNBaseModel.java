@@ -113,5 +113,20 @@ public class OFNBaseModel {
 
         OntProperty souvisejiciUstanoveni = ontModel.createOntProperty(NS + LABEL_SUPP);
         souvisejiciUstanoveni.addLabel(LABEL_SUPP, "cs");
+
+        OntProperty zpusobSdileniProp = ontModel.createOntProperty(NS + LABEL_ZPUSOB_SDILENI);
+        zpusobSdileniProp.addLabel("Způsob sdílení údaje", "cs");
+        zpusobSdileniProp.addDomain(pojemClass);
+        zpusobSdileniProp.addRange(RDFS.Resource);
+
+        OntProperty zpusobZiskaniProp = ontModel.createOntProperty(NS + LABEL_ZPUSOB_ZISKANI);
+        zpusobZiskaniProp.addLabel("Způsob získání údaje", "cs");
+        zpusobZiskaniProp.addDomain(pojemClass);
+        zpusobZiskaniProp.addRange(RDFS.Resource);
+
+        OntProperty typObsahuProp = ontModel.createOntProperty(NS + LABEL_TYP_OBSAHU);
+        typObsahuProp.addLabel("Typ obsahu údaje", "cs");
+        typObsahuProp.addDomain(pojemClass);
+        typObsahuProp.addRange(RDFS.Resource);
     }
 }

@@ -50,6 +50,9 @@ public class ArchiOntologyConstants {
     public static final String LABEL_VZTAH = "vztah";
     public static final String LABEL_VLASTNOST = "vlastnost";
     public static final String LABEL_TRIDA = "třída";
+    public static final String LABEL_ZPUSOB_SDILENI = "má-způsob-sdílení-údaje";
+    public static final String LABEL_ZPUSOB_ZISKANI = "má-kategorii-údaje";
+    public static final String LABEL_TYP_OBSAHU = "má-typ-obsahu-údaje";
     public static final String AGENDOVY_104 = "agendový/104/pojem/";
     public static final String LEGISLATIVNI_111 = "legislativní/sbírka/111/2009/pojem/";
     public static final String LEGISLATIVNI_111_VU = "legislativní/sbírka/111/2009/pojem/veřejný-údaj";
@@ -62,7 +65,7 @@ public class ArchiOntologyConstants {
             LABEL_UDN, LABEL_ALKD, LABEL_DEF_O, LABEL_OBOR_HODNOT, LABEL_VU, LABEL_NVU, LABEL_NT, LABEL_NAZEV,
             LABEL_POJEM, LABEL_SUPP, LABEL_SUPP_LONG,LABEL_TOP, LABEL_TSP, LABEL_VZTAH, LABEL_VLASTNOST, LABEL_TRIDA,
             AGENDOVY_104, LEGISLATIVNI_111, LEGISLATIVNI_111_VU,
-            LEGISLATIVNI_111_NVU, VS_POJEM
+            LEGISLATIVNI_111_NVU, VS_POJEM, LABEL_ZPUSOB_SDILENI, LABEL_ZPUSOB_ZISKANI, LABEL_TYP_OBSAHU
     };
 
     private ArchiOntologyConstants() {

@@ -627,7 +627,7 @@ class ArchiConvertor {
 
         addLegalSources(resource, properties);
 
-        addPurpleLayerProperties(resource, properties);
+        addDataProperties(resource, properties);
 
         addSchemeRelationship(resource);
 
@@ -844,11 +844,85 @@ class ArchiConvertor {
         return url;
     }
 
-    private void addPurpleLayerProperties(Resource resource, Map<String, String> properties) {
+    private void addDataProperties(Resource resource, Map<String, String> properties) {
         addPpdfSharing(resource, properties);
         addPublicFlag(resource, properties);
         addNonPublicData(resource, properties);
         addAgendaSystem(resource, properties);
+        addDataSharingWays(resource, properties);
+        addDataAcquisitionWay(resource, properties);
+        addDataContentType(resource, properties);
+    }
+
+    private void addDataSharingWays(Resource resource, Map<String, String> properties) {
+        if (properties.containsKey(LABEL_ZPUSOB_SDILENI)) {
+            String sharingWays = properties.get(LABEL_ZPUSOB_SDILENI);
+            if (sharingWays != null && !sharingWays.isEmpty()) {
+                if (sharingWays.contains(";")) {
+                    String[] ways = sharingWays.split(";");
+                    for (String way : ways) {
+                        addSingleSharingWay(resource, way.trim());
+                    }
+                } else {
+                    addSingleSharingWay(resource, sharingWays.trim());
+                }
+            }
+        }
+    }
+
+    private void addSingleSharingWay(Resource resource, String sharingWay) {
+        String formattedSharingWay;
+        if (sharingWay.startsWith("http")) {
+            formattedSharingWay = sharingWay;
+        } else {
+            formattedSharingWay = "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/"
+                    + sharingWay;
+        }
+
+        resource.addProperty(
+                ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZPUSOB_SDILENI),
+                ontModel.createResource(formattedSharingWay)
+        );
+    }
+
+    private void addDataAcquisitionWay(Resource resource, Map<String, String> properties) {
+        if (properties.containsKey(LABEL_ZPUSOB_ZISKANI)) {
+            String acquisitionWay = properties.get(LABEL_ZPUSOB_ZISKANI);
+            if (acquisitionWay != null && !acquisitionWay.isEmpty()) {
+                String formattedAcquisitionWay;
+                if (acquisitionWay.startsWith("http")) {
+                    formattedAcquisitionWay = acquisitionWay;
+                } else {
+                    formattedAcquisitionWay = "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/"
+                            + acquisitionWay;
+                }
+
+                resource.addProperty(
+                        ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZPUSOB_ZISKANI),
+                        ontModel.createResource(formattedAcquisitionWay)
+                );
+            }
+        }
+    }
+
+    private void addDataContentType(Resource resource, Map<String, String> properties) {
+        if (properties.containsKey(LABEL_TYP_OBSAHU)) {
+            String contentType = properties.get(LABEL_TYP_OBSAHU);
+            if (contentType != null && !contentType.isEmpty()) {
+                String formattedContentType;
+                if (contentType.startsWith("http")) {
+                    formattedContentType = contentType;
+                } else {
+                    formattedContentType = "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/"
+                            + contentType;
+                }
+
+                resource.addProperty(
+                        ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_TYP_OBSAHU),
+                        ontModel.createResource(formattedContentType)
+                );
+            }
+        }
     }
 
     private void addPpdfSharing(Resource resource, Map<String, String> properties) {
@@ -1024,10 +1098,8 @@ class ArchiConvertor {
     private void checkAltNameProperties(Map<String, String> result, String value) {
         if (result.containsKey(LABEL_AN)) {
             result.put(LABEL_AN, result.get(LABEL_AN) + ";" + value);
-            log.debug("Appending alternativní název: {}", value);
         } else {
             result.put(LABEL_AN, value);
-            log.debug("Setting first alternativní název: {}", value);
         }
     }
 
