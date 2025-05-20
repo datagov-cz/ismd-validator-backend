@@ -871,6 +871,8 @@ class ArchiConvertor {
             String value = properties.get(LABEL_JE_VEREJNY);
             if ("true".equalsIgnoreCase(value) || "ano".equalsIgnoreCase(value)) {
                 resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + LABEL_VU));
+            } else if ("false".equalsIgnoreCase(value) || "ne".equalsIgnoreCase(value)) {
+                resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + TYP_NEVEREJNY_UDAJ));
             }
         }
     }
