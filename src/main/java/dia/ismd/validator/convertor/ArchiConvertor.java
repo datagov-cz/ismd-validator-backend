@@ -876,25 +876,58 @@ class ArchiConvertor {
     private void addAgendaSystem(Resource resource, Map<String, String> properties) {
         String namespace = getEffectiveOntologyNamespace();
 
+        addAgendaInformationSystem(resource, properties, namespace);
+        addAgenda(resource, properties, namespace);
+    }
+
+    private void addAgendaInformationSystem(Resource resource, Map<String, String> properties, String namespace) {
         if (properties.containsKey(LABEL_AIS)) {
             String ais = properties.get(LABEL_AIS);
             if (ais != null && !ais.isEmpty()) {
+                String formattedAis;
+                if (ais.matches("^\\d+$")) {
+                    formattedAis = "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/" + ais;
+                } else if (ais.matches("^https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/\\d+$")) {
+                    formattedAis = ais;
+                } else {
+                    formattedAis = ais;
+                }
+
                 resource.addProperty(
                         ontModel.getProperty(namespace + LABEL_AIS),
-                        ontModel.createResource(ais)
+                        ontModel.createResource(formattedAis)
                 );
             }
         }
+    }
 
+    private void addAgenda(Resource resource, Map<String, String> properties, String namespace) {
         if (properties.containsKey(LABEL_AGENDA)) {
             String agenda = properties.get(LABEL_AGENDA);
             if (agenda != null && !agenda.isEmpty()) {
+
+                String formattedAgenda = getFormattedAgenda(agenda);
+
                 resource.addProperty(
                         ontModel.getProperty(namespace + LABEL_AGENDA),
-                        ontModel.createResource(agenda)
+                        ontModel.createResource(formattedAgenda)
                 );
             }
         }
+    }
+
+    private static String getFormattedAgenda(String agenda) {
+        String formattedAgenda;
+        if (agenda.matches("^\\d+$")) {
+            formattedAgenda = "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A" + agenda;
+        } else if (agenda.matches("^A\\d+$")) {
+            formattedAgenda = "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/" + agenda;
+        } else if (agenda.matches("^https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A\\d+$")) {
+            formattedAgenda = agenda;
+        } else {
+            formattedAgenda = agenda;
+        }
+        return formattedAgenda;
     }
 
     private void addSchemeRelationship(Resource resource) {
