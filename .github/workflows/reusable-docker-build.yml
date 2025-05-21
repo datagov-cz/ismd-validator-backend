@@ -33,8 +33,8 @@ jobs:
             LATEST_TAG=ghcr.io/${REPO_LOWER}:latest
           else
             SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-            IMAGE_TAG=ghcr.io/${REPO_LOWER}-dev:${{ inputs.branch }}-${VERSION}-${SHORT_SHA}
-            LATEST_TAG=ghcr.io/${REPO_LOWER}-dev:${{ inputs.branch }}-latest
+            IMAGE_TAG=ghcr.io/${REPO_LOWER}-${{ inputs.branch }}:${VERSION}-${SHORT_SHA}
+            LATEST_TAG=ghcr.io/${REPO_LOWER}-${{ inputs.branch }}:latest
           fi
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
           echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
