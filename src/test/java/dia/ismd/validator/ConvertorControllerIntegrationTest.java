@@ -81,7 +81,7 @@ class ConvertorControllerIntegrationTest {
         when(convertorService.exportArchiToJson()).thenReturn(JSON_OUTPUT);
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/prevodnik/prevod")
+        mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file)
                         .param("output", "json"))
                 .andExpect(status().isOk())
@@ -110,7 +110,7 @@ class ConvertorControllerIntegrationTest {
         when(convertorService.exportArchiToTurtle()).thenReturn(TTL_OUTPUT);
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/prevodnik/prevod")
+        mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file)
                         .param("output", "ttl"))
                 .andExpect(status().isOk())
@@ -134,7 +134,7 @@ class ConvertorControllerIntegrationTest {
         );
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/prevodnik/prevod")
+        mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file))
                 .andExpect(status().isBadRequest());
     }
@@ -151,7 +151,7 @@ class ConvertorControllerIntegrationTest {
         );
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/prevodnik/prevod")
+        mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file))
                 .andExpect(status().isPayloadTooLarge());
     }
@@ -167,7 +167,7 @@ class ConvertorControllerIntegrationTest {
         );
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/prevodnik/prevod")
+        mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file))
                 .andExpect(status().isUnsupportedMediaType());
     }
@@ -186,7 +186,7 @@ class ConvertorControllerIntegrationTest {
         doNothing().when(convertorService).convertArchi(false);
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/prevodnik/prevod")
+        mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file)
                         .param("output", "csv"))  // Unsupported format
                 .andExpect(status().isUnsupportedMediaType())
@@ -208,7 +208,7 @@ class ConvertorControllerIntegrationTest {
                 .when(convertorService).parseArchiFromString(anyString());
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/prevodnik/prevod")
+        mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string("Service processing error"));
@@ -230,7 +230,7 @@ class ConvertorControllerIntegrationTest {
                 .thenThrow(new JsonExportException("Error exporting to JSON"));
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/prevodnik/prevod")
+        mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file)
                         .param("output", "json"))
                 .andExpect(status().isInternalServerError())
@@ -253,7 +253,7 @@ class ConvertorControllerIntegrationTest {
                 .thenThrow(new JsonExportException("Error exporting to Turtle"));
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/prevodnik/prevod")
+        mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file)
                         .param("output", "ttl"))
                 .andExpect(status().isInternalServerError())
@@ -275,7 +275,7 @@ class ConvertorControllerIntegrationTest {
         when(convertorService.exportArchiToJson()).thenReturn(JSON_OUTPUT);
 
         // Act & Assert - Don't specify output param, should default to JSON
-        mockMvc.perform(multipart("/api/prevodnik/prevod")
+        mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))

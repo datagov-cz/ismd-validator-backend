@@ -30,6 +30,10 @@ public class OFNBaseModel {
     }
 
     private void createBaseModel() {
+        OntClass xsdString = ontModel.createClass(XSD + "string");
+        OntClass xsdBoolean = ontModel.createClass(XSD + "boolean");
+        OntClass xsdAnyURI = ontModel.createClass(XSD + "anyURI");
+
         OntClass pojemClass = ontModel.createClass(NS + TYP_POJEM);
         pojemClass.addLabel(LABEL_POJEM, "cs");
 
@@ -65,27 +69,27 @@ public class OFNBaseModel {
         OntProperty nazevProp = ontModel.createOntProperty(NS + LABEL_NAZEV);
         nazevProp.addLabel(LABEL_NAZEV, "cs");
         nazevProp.addDomain(pojemClass);
-        nazevProp.addRange(ontModel.createClass(XSD));
+        nazevProp.addRange(xsdString);
 
         OntProperty popisProp = ontModel.createOntProperty(NS + LABEL_POPIS);
         popisProp.addLabel(LABEL_POPIS, "cs");
         popisProp.addDomain(pojemClass);
-        popisProp.addRange(ontModel.createClass("http://www.w3.org/2001/XMLSchema#string"));
+        popisProp.addRange(xsdString);
 
         OntProperty definiceProp = ontModel.createOntProperty(NS + LABEL_DEF);
         definiceProp.addLabel(LABEL_DEF, "cs");
         definiceProp.addDomain(pojemClass);
-        definiceProp.addRange(ontModel.createClass("http://www.w3.org/2001/XMLSchema#string"));
+        definiceProp.addRange(xsdString);
 
         OntProperty zdrojProp = ontModel.createOntProperty(NS + LABEL_ZDROJ);
         zdrojProp.addLabel(LABEL_ZDROJ, "cs");
         zdrojProp.addDomain(pojemClass);
-        zdrojProp.addRange(ontModel.createClass("http://www.w3.org/2001/XMLSchema#anyURI"));
+        zdrojProp.addRange(xsdAnyURI);
 
         OntProperty jeSdilenVPpdfProp = ontModel.createOntProperty(NS + LABEL_JE_PPDF);
         jeSdilenVPpdfProp.addLabel(LABEL_JE_PPDF, "cs");
         jeSdilenVPpdfProp.addDomain(pojemClass);
-        jeSdilenVPpdfProp.addRange(ontModel.createClass("http://www.w3.org/2001/XMLSchema#boolean"));
+        jeSdilenVPpdfProp.addRange(xsdBoolean);
 
         OntProperty agendaProp = ontModel.createOntProperty(NS + LABEL_AGENDA);
         agendaProp.addLabel(LABEL_AGENDA, "cs");

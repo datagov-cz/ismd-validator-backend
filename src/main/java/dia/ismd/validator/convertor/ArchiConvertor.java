@@ -5,11 +5,11 @@ import dia.ismd.common.exceptions.FileParsingException;
 import dia.ismd.common.exceptions.JsonExportException;
 import dia.ismd.common.exceptions.TurtleExportException;
 import dia.ismd.common.models.OFNBaseModel;
+import dia.ismd.common.utility.DataTypeConvertor;
 import dia.ismd.common.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.ontology.OntClass;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntProperty;
@@ -592,8 +592,8 @@ class ArchiConvertor {
         if (relProps.containsKey(LABEL_ZDROJ)) {
             String sourceUrl = relProps.get(LABEL_ZDROJ);
             if (!sourceUrl.isEmpty()) {
-                relResource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ),
-                        ontModel.createResource(sourceUrl));
+                Property zdrojProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ);
+                DataTypeConvertor.addTypedProperty(relResource, zdrojProp, sourceUrl, null, ontModel);
             }
         }
 
@@ -611,7 +611,8 @@ class ArchiConvertor {
         if (props.containsKey(propKey)) {
             String value = props.get(propKey);
             if (!value.isEmpty()) {
-                resource.addProperty(ontModel.getProperty(NS + ontPropLabel), value, "cs");
+                Property prop = ontModel.getProperty(NS + ontPropLabel);
+                DataTypeConvertor.addTypedProperty(resource, prop, value, "cs", ontModel);
             }
         }
     }
@@ -647,8 +648,8 @@ class ArchiConvertor {
         if (properties.containsKey(LABEL_ID)) {
             String iri = properties.get(LABEL_ID);
             if (iri != null && !iri.isEmpty() && UtilityMethods.isValidUrl(iri)) {
-                    return ontModel.createResource(iri);
-                }
+                return ontModel.createResource(iri);
+            }
 
         }
 
@@ -708,11 +709,14 @@ class ArchiConvertor {
         String namespace = getEffectiveOntologyNamespace();
 
         if (properties.containsKey(LABEL_POPIS)) {
-            resource.addProperty(ontModel.getProperty(namespace + LABEL_POPIS), properties.get(LABEL_POPIS), "cs");
+            Property popisProp = ontModel.getProperty(namespace + LABEL_POPIS);
+            DataTypeConvertor.addTypedProperty(resource, popisProp, properties.get(LABEL_POPIS), "cs", ontModel);
         }
 
         if (properties.containsKey(LABEL_DEF)) {
-            resource.addProperty(ontModel.getProperty(namespace + LABEL_DEF), properties.get(LABEL_DEF), "cs");
+            Property defProp = ontModel.getProperty(namespace + LABEL_DEF);
+            DataTypeConvertor.addTypedProperty(resource, defProp, properties.get(LABEL_DEF), "cs", ontModel);
+
         }
 
         for (Map.Entry<String, String> entry : properties.entrySet()) {
@@ -724,7 +728,8 @@ class ArchiConvertor {
                     String lang = parts[1];
 
                     if (propName.equals(LABEL_POPIS) || propName.equals(LABEL_DEF)) {
-                        resource.addProperty(ontModel.getProperty(namespace + propName), entry.getValue(), lang);
+                        Property defProp = ontModel.getProperty(namespace + propName);
+                        DataTypeConvertor.addTypedProperty(resource, defProp, entry.getValue(), lang, ontModel);
                     }
                 }
             }
@@ -743,14 +748,14 @@ class ArchiConvertor {
 
         Property altNameProperty = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_AN);
         if (!altNamesValue.contains(";")) {
-            resource.addProperty(altNameProperty, altNamesValue, "cs");
+            DataTypeConvertor.addTypedProperty(resource, altNameProperty, altNamesValue, "cs", ontModel);
             return;
         }
 
         Arrays.stream(altNamesValue.split(";"))
                 .map(String::trim)
                 .filter(name -> !name.isEmpty())
-                .forEach(name -> resource.addProperty(altNameProperty, name, "cs"));
+                .forEach(name -> DataTypeConvertor.addTypedProperty(resource, altNameProperty, name, "cs", ontModel));
     }
 
     private void addSourceReferences(Resource resource, Map<String, String> properties) {
@@ -782,9 +787,19 @@ class ArchiConvertor {
     }
 
     private void addSingleSourceUrl(Resource resource, String url) {
-        String transformedUrl = transformEliUrl(url);
-        Property sourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ);
-        resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
+        if (url == null || url.trim().isEmpty()) {
+            return;
+        }
+
+        try {
+            String transformedUrl = transformEliUrl(url);
+            Property sourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ);
+            resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
+        } catch (Exception e) {
+            log.warn("Failed to add source URL '{}': {}. Adding as plain literal.", url, e.getMessage());
+            Property sourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ);
+            resource.addProperty(sourceProp, url);
+        }
     }
 
     private void addRelatedSourceReferences(Resource resource, Map<String, String> properties) {
@@ -891,10 +906,8 @@ class ArchiConvertor {
                     + sharingWay;
         }
 
-        resource.addProperty(
-                ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZPUSOB_SDILENI),
-                ontModel.createResource(formattedSharingWay)
-        );
+        Property sdileniProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZPUSOB_SDILENI);
+        DataTypeConvertor.addTypedProperty(resource, sdileniProp, formattedSharingWay, null, ontModel);
     }
 
     private void addDataAcquisitionWay(Resource resource, Map<String, String> properties) {
@@ -909,10 +922,8 @@ class ArchiConvertor {
                             + acquisitionWay;
                 }
 
-                resource.addProperty(
-                        ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZPUSOB_ZISKANI),
-                        ontModel.createResource(formattedAcquisitionWay)
-                );
+                Property acquisitionProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZPUSOB_ZISKANI);
+                DataTypeConvertor.addTypedProperty(resource, acquisitionProp, formattedAcquisitionWay, null, ontModel);
             }
         }
     }
@@ -928,11 +939,8 @@ class ArchiConvertor {
                     formattedContentType = "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/"
                             + contentType;
                 }
-
-                resource.addProperty(
-                        ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_TYP_OBSAHU),
-                        ontModel.createResource(formattedContentType)
-                );
+                Property contentTypeProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_TYP_OBSAHU);
+                DataTypeConvertor.addTypedProperty(resource, contentTypeProp, formattedContentType, null, ontModel);
             }
         }
     }
@@ -943,23 +951,38 @@ class ArchiConvertor {
         if (properties.containsKey(LABEL_JE_PPDF)) {
             String value = properties.get(LABEL_JE_PPDF);
             if ("true".equalsIgnoreCase(value) || "ano".equalsIgnoreCase(value)) {
-                resource.addProperty(ontModel.getProperty(namespace + LABEL_JE_PPDF)
-                        ,"true", XSDDatatype.XSDboolean);
+                Property ppdfProp = ontModel.getProperty(namespace + LABEL_JE_PPDF);
+                DataTypeConvertor.addTypedProperty(resource, ppdfProp, "true", null, ontModel);
             } else if ("false".equalsIgnoreCase(value) || "ne".equalsIgnoreCase(value)) {
-                resource.addProperty(ontModel.getProperty(namespace + LABEL_JE_PPDF)
-                        ,"false", XSDDatatype.XSDboolean);
+                Property ppdfProp = ontModel.getProperty(namespace + LABEL_JE_PPDF);
+                DataTypeConvertor.addTypedProperty(resource, ppdfProp, "false", null, ontModel);
             }
         }
     }
 
     private void addPublicFlag(Resource resource, Map<String, String> properties) {
-        if (properties.containsKey(LABEL_JE_VEREJNY)) {
-            String value = properties.get(LABEL_JE_VEREJNY);
-            if ("true".equalsIgnoreCase(value) || "ano".equalsIgnoreCase(value)) {
+        if (!properties.containsKey(LABEL_JE_VEREJNY)) {
+            return;
+        }
+
+        String value = properties.get(LABEL_JE_VEREJNY);
+        if (value == null || value.trim().isEmpty()) {
+            return;
+        }
+
+        if (DataTypeConvertor.isBooleanValue(value)) {
+            boolean isPublic = "true".equalsIgnoreCase(value) ||
+                    "ano".equalsIgnoreCase(value) ||
+                    "yes".equalsIgnoreCase(value);
+
+            if (isPublic) {
                 resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + LABEL_VU));
-            } else if ("false".equalsIgnoreCase(value) || "ne".equalsIgnoreCase(value)) {
+            } else {
                 resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + TYP_NEVEREJNY_UDAJ));
             }
+        } else {
+            log.warn("Unrecognized boolean value for {} property: '{}'. Expected true/false, ano/ne, or yes/no.",
+                    LABEL_JE_VEREJNY, value);
         }
     }
 
@@ -970,10 +993,8 @@ class ArchiConvertor {
             resource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_NEVEREJNY_UDAJ));
             String legalProvision = properties.get(LABEL_UDN);
             if (legalProvision != null && !legalProvision.isEmpty()) {
-                resource.addProperty(
-                        ontModel.getProperty(namespace + LABEL_UDN),
-                        ontModel.createResource(legalProvision)
-                );
+                Property udnProp = ontModel.getProperty(namespace + LABEL_UDN);
+                DataTypeConvertor.addTypedProperty(resource, udnProp, legalProvision, null, ontModel);
             }
         }
     }
@@ -1077,7 +1098,7 @@ class ArchiConvertor {
                     Element valueNode = (Element) valueNodes.item(0);
                     String value = valueNode.getTextContent();
                     String lang = valueNode.getAttributeNS("http://www.w3.org/XML/1998/namespace"
-                            ,"lang");
+                            , "lang");
 
                     if (propName.equals(LABEL_AN) && (lang.isEmpty() || lang.equals("cs"))) {
                         checkAltNameProperties(result, value);
@@ -1098,7 +1119,7 @@ class ArchiConvertor {
         for (int i = 0; i < nameNodes.getLength(); i++) {
             Element nameElement = (Element) nameNodes.item(i);
             String lang = nameElement.getAttributeNS("http://www.w3.org/XML/1998/namespace"
-                    ,"lang");
+                    , "lang");
 
             if (!lang.isEmpty() && !lang.equals("cs")) {
                 result.put("lang=" + lang, nameElement.getTextContent());
@@ -1141,5 +1162,17 @@ class ArchiConvertor {
             return uri.substring(pos + 1);
         }
         return uri;
+    }
+
+    // TODO implement this check
+    private boolean isResourceProperty(Property property) {
+        StmtIterator rangeStmts = property.listProperties(RDFS.range);
+        while (rangeStmts.hasNext()) {
+            Statement stmt = rangeStmts.next();
+            if (stmt.getObject().equals(RDFS.Resource)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

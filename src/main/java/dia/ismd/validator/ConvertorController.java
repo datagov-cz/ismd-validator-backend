@@ -21,7 +21,7 @@ import java.util.UUID;
 import static dia.ismd.validator.constants.ConvertorControllerConstants.*;
 
 @RestController
-@RequestMapping("/api/prevodnik")
+@RequestMapping("/api/convertor")
 @RequiredArgsConstructor
 @Slf4j
 public class ConvertorController {
@@ -30,7 +30,7 @@ public class ConvertorController {
 
     private final ConvertorService convertorService;
 
-    @PostMapping("/prevod")
+    @PostMapping("/convert")
     public ResponseEntity<String> convertFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "output", defaultValue = "json", required = false) String output,

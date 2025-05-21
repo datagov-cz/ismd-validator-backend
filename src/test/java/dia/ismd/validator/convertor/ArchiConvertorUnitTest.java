@@ -188,7 +188,7 @@ class ArchiConvertorUnitTest {
         OntModel ontModel = (OntModel) ontModelField.get(convertor);
 
         // Verify the model contains expected patterns
-        assertTrue(ontModel.contains((Resource) null, RDF.type, (RDFNode) null), "Model should contain type statements");
+        assertTrue(ontModel.contains(null, RDF.type, (RDFNode) null), "Model should contain type statements");
     }
 
     @Test
