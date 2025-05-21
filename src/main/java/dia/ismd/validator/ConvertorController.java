@@ -34,6 +34,7 @@ public class ConvertorController {
     public ResponseEntity<String> convertFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "output", defaultValue = "json", required = false) String output,
+            @RequestParam(value= "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestHeader(value = "Accept", required = false) String acceptHeader
     ) {
         String requestId = UUID.randomUUID().toString();
@@ -41,8 +42,8 @@ public class ConvertorController {
 
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
-        log.info("File conversion requested: filename={}, size={}, outputFormat={}",
-                file.getOriginalFilename(), file.getSize(), output);
+        log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}",
+                file.getOriginalFilename(), file.getSize(), output, removeInvalidSources);
 
         try {
             if (file.isEmpty()) {
@@ -78,7 +79,7 @@ public class ConvertorController {
                     log.debug("Processing Archi XML file: requestId={}", requestId);
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
                     convertorService.parseArchiFromString(xmlContent);
-                    convertorService.convertArchi();
+                    convertorService.convertArchi(removeInvalidSources != null && removeInvalidSources);
                     log.info("Archi XML file successfully processed: requestId={}", requestId);
                 }
                 case XMI -> log.debug("Processing XMI file: requestId={}", requestId);

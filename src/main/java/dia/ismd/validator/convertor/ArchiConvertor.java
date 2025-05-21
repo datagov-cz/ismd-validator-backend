@@ -6,6 +6,8 @@ import dia.ismd.common.exceptions.JsonExportException;
 import dia.ismd.common.exceptions.TurtleExportException;
 import dia.ismd.common.models.OFNBaseModel;
 import dia.ismd.common.utility.UtilityMethods;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.ontology.OntClass;
@@ -73,6 +75,9 @@ class ArchiConvertor {
 
     private Document archiDoc;
     private String modelName;
+    @Getter
+    @Setter
+    private Boolean removeELI;
 
     public ArchiConvertor() {
         this.resourceMap = new HashMap<>();
@@ -153,6 +158,10 @@ class ArchiConvertor {
 
             log.debug("Processing relationships: requestId={}", requestId);
             processRelationships();
+
+            if (Boolean.TRUE.equals(removeELI)) {
+                log.debug("Removing invalid source URLs: requestId={}", requestId);
+            }
 
             log.info("Archi model conversion completed successfully: requestId={}, modelName={}",
                     requestId, modelName);
@@ -833,6 +842,9 @@ class ArchiConvertor {
     }
 
     private String transformEliUrl(String url) {
+        if (Boolean.FALSE.equals(removeELI)) {
+            return url;
+        }
         Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
         Matcher matcher = eliPattern.matcher(url);
 

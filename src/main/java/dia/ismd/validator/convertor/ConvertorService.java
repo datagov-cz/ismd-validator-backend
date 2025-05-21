@@ -8,7 +8,7 @@ import dia.ismd.common.exceptions.TurtleExportException;
 public interface ConvertorService {
     void parseArchiFromString(String value) throws FileParsingException;
 
-    void convertArchi() throws ConversionException;
+    void convertArchi(Boolean removeInvalidSources) throws ConversionException;
 
     String exportArchiToJson() throws JsonExportException;
 

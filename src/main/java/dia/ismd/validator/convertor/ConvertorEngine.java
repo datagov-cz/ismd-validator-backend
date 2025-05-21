@@ -43,12 +43,14 @@ class ConvertorEngine {
         }
     }
 
-    public void convertArchi() throws ConversionException {
+    public void convertArchi(Boolean removeInvalidSources) throws ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Archi model conversion: requestId={}", requestId);
+        log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
 
         try {
             long startTime = System.currentTimeMillis();
+            archiConvertor.setRemoveELI(removeInvalidSources);
             archiConvertor.convert();
             long duration = System.currentTimeMillis() - startTime;
 

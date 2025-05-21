@@ -19,8 +19,8 @@ class ConvertorServiceImpl implements ConvertorService {
     }
 
     @Override
-    public void convertArchi() throws ConversionException {
-        convertorEngine.convertArchi();
+    public void convertArchi(Boolean removeInvalidSources) throws ConversionException {
+        convertorEngine.convertArchi(removeInvalidSources);
     }
 
     @Override

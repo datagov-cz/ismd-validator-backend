@@ -77,7 +77,7 @@ class ConvertorControllerIntegrationTest {
 
         // Configure mock service behavior
         doNothing().when(convertorService).parseArchiFromString(anyString());
-        doNothing().when(convertorService).convertArchi();
+        doNothing().when(convertorService).convertArchi(false);
         when(convertorService.exportArchiToJson()).thenReturn(JSON_OUTPUT);
 
         // Act & Assert
@@ -90,7 +90,7 @@ class ConvertorControllerIntegrationTest {
 
         // Verify service interactions
         verify(convertorService).parseArchiFromString(anyString());
-        verify(convertorService).convertArchi();
+        verify(convertorService).convertArchi(false);
         verify(convertorService).exportArchiToJson();
     }
 
@@ -106,7 +106,7 @@ class ConvertorControllerIntegrationTest {
 
         // Configure mock service behavior
         doNothing().when(convertorService).parseArchiFromString(anyString());
-        doNothing().when(convertorService).convertArchi();
+        doNothing().when(convertorService).convertArchi(false);
         when(convertorService.exportArchiToTurtle()).thenReturn(TTL_OUTPUT);
 
         // Act & Assert
@@ -119,7 +119,7 @@ class ConvertorControllerIntegrationTest {
 
         // Verify service interactions
         verify(convertorService).parseArchiFromString(anyString());
-        verify(convertorService).convertArchi();
+        verify(convertorService).convertArchi(false);
         verify(convertorService).exportArchiToTurtle();
     }
 
@@ -183,7 +183,7 @@ class ConvertorControllerIntegrationTest {
         );
 
         doNothing().when(convertorService).parseArchiFromString(anyString());
-        doNothing().when(convertorService).convertArchi();
+        doNothing().when(convertorService).convertArchi(false);
 
         // Act & Assert
         mockMvc.perform(multipart("/api/prevodnik/prevod")
@@ -225,7 +225,7 @@ class ConvertorControllerIntegrationTest {
         );
 
         doNothing().when(convertorService).parseArchiFromString(anyString());
-        doNothing().when(convertorService).convertArchi();
+        doNothing().when(convertorService).convertArchi(false);
         when(convertorService.exportArchiToJson())
                 .thenThrow(new JsonExportException("Error exporting to JSON"));
 
@@ -248,7 +248,7 @@ class ConvertorControllerIntegrationTest {
         );
 
         doNothing().when(convertorService).parseArchiFromString(anyString());
-        doNothing().when(convertorService).convertArchi();
+        doNothing().when(convertorService).convertArchi(false);
         when(convertorService.exportArchiToTurtle())
                 .thenThrow(new JsonExportException("Error exporting to Turtle"));
 
@@ -271,7 +271,7 @@ class ConvertorControllerIntegrationTest {
         );
 
         doNothing().when(convertorService).parseArchiFromString(anyString());
-        doNothing().when(convertorService).convertArchi();
+        doNothing().when(convertorService).convertArchi(false);
         when(convertorService.exportArchiToJson()).thenReturn(JSON_OUTPUT);
 
         // Act & Assert - Don't specify output param, should default to JSON
