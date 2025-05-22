@@ -862,9 +862,11 @@ class ArchiConvertor {
     private void addLegalSources(Resource resource, Map<String, String> properties) {
         if (properties.containsKey(LABEL_SUPP)) {
             String provision = properties.get(LABEL_SUPP);
-            String transformedProvision = transformEliUrl(provision);
-            resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SUPP),
-                    ontModel.createResource(transformedProvision));
+            if (provision != null && !provision.trim().isEmpty()) {
+                String transformedProvision = transformEliUrl(provision);
+                resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SUPP),
+                        ontModel.createResource(transformedProvision));
+            }
         }
     }
 

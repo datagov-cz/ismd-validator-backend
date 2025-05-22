@@ -110,7 +110,6 @@ class TurtleExporter {
 
     private void cleanupSKOSProperties(OntModel model) {
         removeEmptyPropertyValues(model, SKOS.definition);
-
         removeEmptyPropertyValues(model, SKOS.prefLabel);
     }
 
