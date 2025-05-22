@@ -871,18 +871,17 @@ class ArchiConvertor {
     }
 
     private String transformEliUrl(String url) {
-        if (Boolean.FALSE.equals(removeELI)) {
-            return url;
-        }
         Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
         Matcher matcher = eliPattern.matcher(url);
 
+        String eliPart = null;
         if (matcher.matches()) {
-            String eliPart = matcher.group(1);
-            return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+            eliPart = matcher.group(1);
         }
-
-        return url;
+        if (Boolean.FALSE.equals(removeELI)) {
+            return url;
+        }
+        return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
     }
 
     private void addDataProperties(Resource resource, Map<String, String> properties) {
