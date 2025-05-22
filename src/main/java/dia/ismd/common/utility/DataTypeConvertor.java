@@ -218,6 +218,7 @@ public class DataTypeConvertor {
                 LocalDate.parse(value, formatter);
                 return true;
             } catch (DateTimeParseException e) {
+                // continue to next check
             }
         }
         return false;
@@ -229,6 +230,7 @@ public class DataTypeConvertor {
                 LocalTime.parse(value, formatter);
                 return true;
             } catch (DateTimeParseException e) {
+                // continue to next check
             }
         }
         return false;
@@ -240,6 +242,7 @@ public class DataTypeConvertor {
                 LocalDateTime.parse(value, formatter);
                 return true;
             } catch (DateTimeParseException e) {
+                // continue to next check
             }
         }
         return false;
