@@ -1011,7 +1011,7 @@ class ArchiConvertor {
                     "yes".equalsIgnoreCase(value);
 
             if (isPublic) {
-                resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + LABEL_VU));
+                resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + TYP_VEREJNY_UDAJ));
             } else {
                 resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + TYP_NEVEREJNY_UDAJ));
             }
@@ -1021,6 +1021,8 @@ class ArchiConvertor {
             resource.addProperty(RDF.type, "");
         }
     }
+
+
 
     private void addNonPublicData(Resource resource, Map<String, String> properties) {
         String namespace = getEffectiveOntologyNamespace();
