@@ -35,9 +35,6 @@ import static dia.ismd.validator.constants.ConvertorControllerConstants.*;
 
 @Slf4j
 class TurtleExporter {
-    // TODO fix empty field:
-    //  <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/je-vymezen-ustanovení-stanovujícím-jeho-neveřejnost>
-    //  <> .
 
     private final OntModel ontModel;
     @Getter

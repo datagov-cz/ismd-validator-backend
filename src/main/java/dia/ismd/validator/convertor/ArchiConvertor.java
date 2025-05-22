@@ -960,16 +960,37 @@ class ArchiConvertor {
     }
 
     private void addPpdfSharing(Resource resource, Map<String, String> properties) {
-        String namespace = getEffectiveOntologyNamespace();
+        if (!properties.containsKey(LABEL_JE_PPDF)) {
+            return;
+        }
 
-        if (properties.containsKey(LABEL_JE_PPDF)) {
-            String value = properties.get(LABEL_JE_PPDF);
-            if ("true".equalsIgnoreCase(value) || "ano".equalsIgnoreCase(value)) {
-                Property ppdfProp = ontModel.getProperty(namespace + LABEL_JE_PPDF);
-                DataTypeConvertor.addTypedProperty(resource, ppdfProp, "true", null, ontModel);
-            } else if ("false".equalsIgnoreCase(value) || "ne".equalsIgnoreCase(value)) {
-                Property ppdfProp = ontModel.getProperty(namespace + LABEL_JE_PPDF);
-                DataTypeConvertor.addTypedProperty(resource, ppdfProp, "false", null, ontModel);
+        String value = properties.get(LABEL_JE_PPDF);
+        if (value == null || value.trim().isEmpty()) {
+            return;
+        }
+
+        String namespace = getEffectiveOntologyNamespace();
+        Property ppdfProp = ontModel.getProperty(namespace + LABEL_JE_PPDF);
+
+        if (isResourceProperty(ppdfProp)) {
+            try {
+                resource.addProperty(ppdfProp, ontModel.createResource(value));
+                log.debug("Added PPDF resource: {} to resource {}", value, resource.getURI());
+            } catch (Exception e) {
+                log.warn("Failed to add PPDF value '{}': {}. Adding as literal.", value, e.getMessage());
+                resource.addProperty(ppdfProp, value);
+            }
+        } else {
+            if (DataTypeConvertor.isBooleanValue(value)) {
+                boolean boolValue = "true".equalsIgnoreCase(value) ||
+                        "ano".equalsIgnoreCase(value) ||
+                        "yes".equalsIgnoreCase(value);
+                DataTypeConvertor.addTypedProperty(resource, ppdfProp,
+                        boolValue ? "true" : "false", null, ontModel);
+            } else {
+                log.warn("Unrecognized boolean value for {} property: '{}'. Expected true/false, ano/ne, or yes/no.",
+                        LABEL_JE_PPDF, value);
+                DataTypeConvertor.addTypedProperty(resource, ppdfProp, "", null, ontModel);
             }
         }
     }
@@ -997,6 +1018,7 @@ class ArchiConvertor {
         } else {
             log.warn("Unrecognized boolean value for {} property: '{}'. Expected true/false, ano/ne, or yes/no.",
                     LABEL_JE_VEREJNY, value);
+            resource.addProperty(RDF.type, "");
         }
     }
 

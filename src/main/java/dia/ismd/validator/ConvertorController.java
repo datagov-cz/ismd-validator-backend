@@ -33,7 +33,7 @@ public class ConvertorController {
     @PostMapping("/convert")
     public ResponseEntity<String> convertFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "output", defaultValue = "json", required = false) String output,
+            @RequestParam(value = "output", required = false) String output,
             @RequestParam(value= "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestHeader(value = "Accept", required = false) String acceptHeader
     ) {
