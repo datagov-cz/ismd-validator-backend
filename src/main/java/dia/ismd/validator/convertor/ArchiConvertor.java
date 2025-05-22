@@ -611,8 +611,20 @@ class ArchiConvertor {
         if (props.containsKey(propKey)) {
             String value = props.get(propKey);
             if (!value.isEmpty()) {
-                Property prop = ontModel.getProperty(NS + ontPropLabel);
-                DataTypeConvertor.addTypedProperty(resource, prop, value, "cs", ontModel);
+                String namespace = getEffectiveOntologyNamespace();
+                Property prop = ontModel.getProperty(namespace + ontPropLabel);
+
+                if (isResourceProperty(prop)) {
+                    try {
+                        resource.addProperty(prop, ontModel.createResource(value));
+                        log.debug("Added resource property {} with value {}", prop.getLocalName(), value);
+                    } catch (Exception e) {
+                        log.warn("Failed to add resource property '{}': {}. Adding as literal.", value, e.getMessage());
+                        resource.addProperty(prop, value);
+                    }
+                } else {
+                    DataTypeConvertor.addTypedProperty(resource, prop, value, "cs", ontModel);
+                }
             }
         }
     }
@@ -1164,7 +1176,6 @@ class ArchiConvertor {
         return uri;
     }
 
-    // TODO implement this check
     private boolean isResourceProperty(Property property) {
         StmtIterator rangeStmts = property.listProperties(RDFS.range);
         while (rangeStmts.hasNext()) {
