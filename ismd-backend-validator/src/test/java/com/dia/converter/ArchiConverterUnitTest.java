@@ -48,7 +48,7 @@ class ArchiConverterUnitTest {
     }
 
     private String loadTestFile(String filename) throws IOException {
-        ClassPathResource resource = new ClassPathResource(filename, getClass());
+        ClassPathResource resource = new ClassPathResource("/com/dia/" + filename, getClass());
         return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     }
 

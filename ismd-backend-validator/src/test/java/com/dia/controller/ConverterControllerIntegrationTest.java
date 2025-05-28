@@ -57,7 +57,7 @@ class ConverterControllerIntegrationTest {
     }
 
     private String loadTestFile() throws IOException {
-        ClassPathResource resource = new ClassPathResource("convertor/minimal-archi.xml", getClass());
+        ClassPathResource resource = new ClassPathResource("/com/dia/minimal-archi.xml", getClass());
         return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     }
 
