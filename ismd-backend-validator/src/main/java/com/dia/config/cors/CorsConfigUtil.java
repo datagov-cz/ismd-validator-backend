@@ -24,12 +24,13 @@ public class CorsConfigUtil {
 
     public CorsConfiguration createProductionCorsConfiguration() {
         var config = new CorsConfiguration();
+        // TODO: change to relevant domain before production release
         config.setAllowedOrigins(List.of("https://www.domain.com"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
-        // TODO: switch to 1 day when we this setting is verified
+        // TODO: switch to 1 day when this setting is verified
         // 1 day
         // config.setMaxAge(86400L);
 
