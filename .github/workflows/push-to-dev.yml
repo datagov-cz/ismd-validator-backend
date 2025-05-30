@@ -76,9 +76,9 @@ jobs:
             exit 0
           fi
           
-          # Check for workflow changes that require both modules to be rebuilt
-          if grep -q '^\.github/workflows/' relevant_changes.txt; then
-            echo "Workflow files changed, rebuilding both modules"
+          # Check for changes that require both modules to be rebuilt
+          if grep -q '^\.github/workflows/' relevant_changes.txt || grep -q '^pom\.xml$' relevant_changes.txt; then
+            echo "Workflow files or root POM changed, rebuilding both modules"
             echo "build-common=true" >> $GITHUB_OUTPUT
             echo "build-validator=true" >> $GITHUB_OUTPUT
           else
