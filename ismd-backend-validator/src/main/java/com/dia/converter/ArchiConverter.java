@@ -42,13 +42,6 @@ public class ArchiConverter {
 
     private String ontologyNamespace;
 
-    private static final Set<String> COMMON_PROPERTY_NAMES = new HashSet<>(Arrays.asList(
-            LABEL_TYP, LABEL_POPIS, LABEL_DEF, LABEL_ZDROJ, LABEL_SZ, LABEL_AN,
-            LABEL_EP, LABEL_ID, LABEL_AIS, LABEL_AGENDA,
-            LABEL_DT, LABEL_JE_PPDF, LABEL_JE_VEREJNY,
-            LABEL_UDN, LABEL_ALKD, LABEL_DEF_O, LABEL_OBOR_HODNOT, LABEL_VU, LABEL_NVU, LABEL_NT
-    ));
-
     private static final Map<String, String> TYPE_MAPPINGS = new HashMap<>();
 
     static {
@@ -217,10 +210,13 @@ public class ArchiConverter {
         Map<String, String> properties = getModelProperties();
 
         for (Map.Entry<String, String> entry : properties.entrySet()) {
-            if (entry.getKey().contains("adresa lokálního katalogu dat")) {
+            String key = entry.getKey();
+            if (key.equals(LABEL_ALKD) ||
+                    key.contains("adresa") && (key.contains("lokální") || key.contains("lokálního"))) {
                 String ns = entry.getValue();
                 if (ns != null && !ns.isEmpty() && UtilityMethods.isValidUrl(ns)) {
                     this.ontologyNamespace = ns;
+                    break;
                 }
             }
         }
@@ -267,8 +263,6 @@ public class ArchiConverter {
             propertyMapping.put(propId, propName);
 
             mapStandardizedLabel(propId, propName);
-
-            createNormalizedNameMapping(propId, propName);
         }
 
         logPropertyMappings();
@@ -400,6 +394,7 @@ public class ArchiConverter {
         labelPatterns.put("alternativní název", LABEL_AN);
         labelPatterns.put("datový typ", LABEL_DT);
         labelPatterns.put("typ", LABEL_TYP);
+        labelPatterns.put("adresa lokálního katalogu dat", LABEL_ALKD);
 
         for (Map.Entry<String, String> pattern : labelPatterns.entrySet()) {
             if (propName.contains(pattern.getKey())) {
@@ -414,11 +409,6 @@ public class ArchiConverter {
         for (Map.Entry<String, String> entry : propertyMapping.entrySet()) {
             log.debug("  {} -> {}", entry.getKey(), entry.getValue());
         }
-    }
-
-    private void createNormalizedNameMapping(String propId, String propName) {
-        String normalizedName = propName.toLowerCase().replace(" ", "-");
-        propertyMapping.put("name:" + normalizedName, propId);
     }
 
     private void createNamespacedResource(String resourceName) {
@@ -481,16 +471,18 @@ public class ArchiConverter {
     }
 
     private void processSpecializationRelationship(Resource source, Resource target) {
+        source.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_NT), target);
+
         if (source instanceof OntClass sourceClass && target instanceof OntClass targetClass) {
             sourceClass.addSuperClass(targetClass);
-            source.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_NT), target);
         }
     }
 
     private void processCompositionRelationship(Resource source, Resource target) {
-        String relName = UtilityMethods.capitalize(getLocalName(target));
+        String relName = getLocalName(target);
+        String propertyUri = getEffectiveOntologyNamespace() + relName;
 
-        OntProperty property = ontModel.createOntProperty(getEffectiveOntologyNamespace() + relName);
+        OntProperty property = ontModel.createObjectProperty(propertyUri);
 
         property.addDomain(source);
         property.addRange(target);
@@ -859,17 +851,19 @@ public class ArchiConverter {
     }
 
     private String transformEliUrl(String url) {
-        Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
-        Matcher matcher = eliPattern.matcher(url);
-
-        String eliPart = null;
-        if (matcher.matches()) {
-            eliPart = matcher.group(1);
-        }
         if (Boolean.FALSE.equals(removeELI)) {
             return url;
         }
-        return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+
+        Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
+        Matcher matcher = eliPattern.matcher(url);
+
+        if (matcher.matches()) {
+            String eliPart = matcher.group(1);
+            return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+        } else {
+            return url;
+        }
     }
 
     private void addDataProperties(Resource resource, Map<String, String> properties) {
@@ -1009,8 +1003,6 @@ public class ArchiConverter {
         }
     }
 
-
-
     private void addNonPublicData(Resource resource, Map<String, String> properties) {
         String namespace = getEffectiveOntologyNamespace();
 
@@ -1111,68 +1103,23 @@ public class ArchiConverter {
         NodeList propertiesNodes = element.getElementsByTagNameNS(ARCHI_NS, "properties");
         if (propertiesNodes.getLength() > 0) {
             Element propertiesElement = (Element) propertiesNodes.item(0);
-            NodeList propertyNodes = propertiesElement.getElementsByTagNameNS(ARCHI_NS, "property");
-
-            for (int i = 0; i < propertyNodes.getLength(); i++) {
-                Element property = (Element) propertyNodes.item(i);
-                String propRef = property.getAttribute("propertyDefinitionRef");
-                String propName = propertyMapping.getOrDefault(propRef, propRef);
-
-                NodeList valueNodes = property.getElementsByTagNameNS(ARCHI_NS, "value");
-                if (valueNodes.getLength() > 0) {
-                    Element valueNode = (Element) valueNodes.item(0);
-                    String value = valueNode.getTextContent();
-                    String lang = valueNode.getAttributeNS("http://www.w3.org/XML/1998/namespace"
-                            , "lang");
-
-                    if (propName.equals(LABEL_AN) && (lang.isEmpty() || lang.equals("cs"))) {
-                        checkAltNameProperties(result, value);
-                    } else {
-                        checkNonCSProperties(lang, result, value, propName);
-                    }
-                }
-            }
+            extractPropertiesFromElement(propertiesElement, result);
         }
 
-        processNameNodes(element, result);
+        processNameNodesForLabels(element, result);
 
         return result;
     }
 
-    private void processNameNodes(Element element, Map<String, String> result) {
+    private void processNameNodesForLabels(Element element, Map<String, String> result) {
         NodeList nameNodes = element.getElementsByTagNameNS(ARCHI_NS, "name");
         for (int i = 0; i < nameNodes.getLength(); i++) {
             Element nameElement = (Element) nameNodes.item(i);
-            String lang = nameElement.getAttributeNS("http://www.w3.org/XML/1998/namespace"
-                    , "lang");
+            String lang = nameElement.getAttributeNS("http://www.w3.org/XML/1998/namespace", "lang");
 
             if (!lang.isEmpty() && !lang.equals("cs")) {
                 result.put("lang=" + lang, nameElement.getTextContent());
-                log.debug("Found {} name: {}", lang, nameElement.getTextContent());
-            }
-        }
-    }
-
-    private void checkAltNameProperties(Map<String, String> result, String value) {
-        if (result.containsKey(LABEL_AN)) {
-            result.put(LABEL_AN, result.get(LABEL_AN) + ";" + value);
-        } else {
-            result.put(LABEL_AN, value);
-        }
-    }
-
-    private void checkNonCSProperties(String lang, Map<String, String> result, String value, String propName) {
-        if (!lang.isEmpty() && !lang.equals("cs")) {
-            result.put("lang=" + lang, value);
-            log.debug("Found {} label for property {}: {}", lang, propName, value);
-        } else {
-            result.put(propName, value);
-
-            if (COMMON_PROPERTY_NAMES.contains(propName)) {
-                String dashedName = propName.replace(" ", "-");
-                if (!dashedName.equals(propName)) {
-                    result.put(dashedName, value);
-                }
+                log.debug("Found {} name for multilingual labeling: {}", lang, nameElement.getTextContent());
             }
         }
     }
