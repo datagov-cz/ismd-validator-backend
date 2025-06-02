@@ -25,6 +25,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Test for {@link ConverterController}.
+ * @see ConverterController
+ */
 @SpringBootTest()
 @ContextConfiguration(classes = ConverterControllerIntegrationTest.TestConfig.class)
 class ConverterControllerIntegrationTest {

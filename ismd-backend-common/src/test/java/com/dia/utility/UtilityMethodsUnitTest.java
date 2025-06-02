@@ -8,6 +8,10 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Test for {@link UtilityMethods}.
+ * @see UtilityMethods
+ */
 class UtilityMethodsUnitTest {
 
     @Test
