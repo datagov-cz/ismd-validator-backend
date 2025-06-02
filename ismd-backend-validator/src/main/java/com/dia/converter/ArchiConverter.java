@@ -308,12 +308,8 @@ public class ArchiConverter {
         String propName = propertyMapping.getOrDefault(propRef, propRef);
 
         String value = getPropertyValue(property);
-        if (value != null) {
+        if (value != null && !value.isEmpty()) {
             modelProperties.put(propName, value);
-
-            if (isOntologyNamespaceProperty(propRef)) {
-                ontologyNamespace = value;
-            }
         }
     }
 
@@ -436,11 +432,6 @@ public class ArchiConverter {
             return nodeList.item(0).getTextContent();
         }
         return null;
-    }
-
-    private boolean isOntologyNamespaceProperty(String propRef) {
-        String propertyName = propertyMapping.getOrDefault(propRef, "");
-        return propertyName.contains("adresa lokálního katalogu dat");
     }
 
     private void processIndividualRelationship(Element relationship) {

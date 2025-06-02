@@ -441,8 +441,6 @@ class ArchiConverterUnitTest {
         invokePrivateMethod("processElements", new Class<?>[0]);
 
         // Assert - Verify that template elements are NOT in the resourceMap
-        // These should be skipped per the logic:
-        // if (name.equals("Subjekt") || name.equals("Objekt") || name.equals("Vlastnost"))
         assertFalse(resourceMap.values().stream().anyMatch(resource -> {
             if (resource.hasProperty(RDFS.label)) {
                 String label = resource.getProperty(RDFS.label).getString();
@@ -1048,36 +1046,6 @@ class ArchiConverterUnitTest {
         assertTrue(result.contains("test"), "IRI should contain sanitized model name");
     }
 
-    @Test
-    void isOntologyNamespaceProperty_WithNamespaceProperty_ReturnsTrue() throws Exception {
-        // Arrange
-        propertyMapping.put("prop-1", "adresa lokálního katalogu dat");
-        Method isOntologyNamespaceProperty = ArchiConverter.class.getDeclaredMethod(
-                "isOntologyNamespaceProperty", String.class);
-        isOntologyNamespaceProperty.setAccessible(true);
-
-        // Act
-        boolean result = (boolean) isOntologyNamespaceProperty.invoke(converter, "prop-1");
-
-        // Assert
-        assertTrue(result, "Should return true for namespace property");
-    }
-
-    @Test
-    void isOntologyNamespaceProperty_WithNonNamespaceProperty_ReturnsFalse() throws Exception {
-        // Arrange
-        propertyMapping.put("prop-1", "popis");
-        Method isOntologyNamespaceProperty = ArchiConverter.class.getDeclaredMethod(
-                "isOntologyNamespaceProperty", String.class);
-        isOntologyNamespaceProperty.setAccessible(true);
-
-        // Act
-        boolean result = (boolean) isOntologyNamespaceProperty.invoke(converter, "prop-1");
-
-        // Assert
-        assertFalse(result, "Should return false for non-namespace property");
-    }
-
     // Integration test for complete element processing
     @Test
     void completeElementProcessing_WithComplexXML_CreatesCorrectStructure() throws Exception {
@@ -1178,4 +1146,603 @@ class ArchiConverterUnitTest {
             modelNameField.set(converter, "Untitled Model");
         }
     }
+
+    // Property processing
+    @Test
+    void getModelProperties_WithValidProperties_ExtractsCorrectly() throws Exception {
+        // Arrange
+        String xmlWithModelProperties = """
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <name>Test Model</name>
+                    <properties>
+                        <property propertyDefinitionRef="prop-def-1">
+                            <value>Test Description</value>
+                        </property>
+                        <property propertyDefinitionRef="prop-def-2">
+                            <value>https://data.dia.gov.cz</value>
+                        </property>
+                        <property propertyDefinitionRef="prop-def-3">
+                            <value>Test Agenda</value>
+                        </property>
+                    </properties>
+                    <propertyDefinitions>
+                        <propertyDefinition identifier="prop-def-1" type="string">
+                            <name>popis</name>
+                        </propertyDefinition>
+                        <propertyDefinition identifier="prop-def-2" type="string">
+                            <name>adresa lokálního katalogu dat</name>
+                        </propertyDefinition>
+                        <propertyDefinition identifier="prop-def-3" type="string">
+                            <name>agenda</name>
+                        </propertyDefinition>
+                    </propertyDefinitions>
+                </model>
+                """;
+
+        setupArchiDocument(xmlWithModelProperties);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+
+        // Act
+        @SuppressWarnings("unchecked")
+        Map<String, String> properties = (Map<String, String>) invokePrivateMethod("getModelProperties", new Class<?>[0]);
+
+        // Assert
+        assertNotNull(properties, "Properties map should not be null");
+        assertFalse(properties.isEmpty(), "Properties map should not be empty");
+        assertEquals("Test Description", properties.get("popis"), "Should extract description property");
+        assertEquals("https://data.dia.gov.cz", properties.get("adresa-lokálního-katalogu-dat-ve-kterém-bude-slovník-registrován"), "Should extract namespace property");
+        assertEquals("Test Agenda", properties.get("agenda"), "Should extract agenda property");
+    }
+
+    @Test
+    void getModelProperties_WithNoModelProperties_ReturnsEmptyMap() throws Exception {
+        // Arrange
+        String xmlWithoutModelProperties = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <name>Test Model</name>
+                <elements>
+                    <element identifier="element-1" xsi:type="BusinessActor">
+                        <name>Test Actor</name>
+                    </element>
+                </elements>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithoutModelProperties);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+
+        // Act
+        @SuppressWarnings("unchecked")
+        Map<String, String> properties = (Map<String, String>) invokePrivateMethod("getModelProperties", new Class<?>[0]);
+
+        // Assert
+        assertNotNull(properties, "Properties map should not be null");
+        assertTrue(properties.isEmpty(), "Properties map should be empty when no model properties exist");
+    }
+
+    @Test
+    void getModelProperties_WithEmptyPropertiesElement_ReturnsEmptyMap() throws Exception {
+        // Arrange
+        String xmlWithEmptyProperties = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <name>Test Model</name>
+                <properties>
+                    <!-- Empty properties element -->
+                </properties>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithEmptyProperties);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+
+        // Act
+        @SuppressWarnings("unchecked")
+        Map<String, String> properties = (Map<String, String>) invokePrivateMethod("getModelProperties", new Class<?>[0]);
+
+        // Assert
+        assertNotNull(properties, "Properties map should not be null");
+        assertTrue(properties.isEmpty(), "Properties map should be empty when properties element is empty");
+    }
+
+    @Test
+    void findModelPropertiesElement_WithValidModelProperties_ReturnsElement() throws Exception {
+        // Arrange
+        String xmlWithModelProperties = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <name>Test Model</name>
+                <properties>
+                    <property propertyDefinitionRef="prop-def-1">
+                        <value>Test Value</value>
+                    </property>
+                </properties>
+                <elements>
+                    <element identifier="element-1" xsi:type="BusinessActor">
+                        <name>Test Actor</name>
+                        <properties>
+                            <!-- This should NOT be returned - it's element properties, not model properties -->
+                            <property propertyDefinitionRef="prop-def-2">
+                                <value>Element Value</value>
+                            </property>
+                        </properties>
+                    </element>
+                </elements>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithModelProperties);
+
+        // Act
+        Element result = (Element) invokePrivateMethod("findModelPropertiesElement", new Class<?>[0]);
+
+        // Assert
+        assertNotNull(result, "Should find model properties element");
+        assertEquals("properties", result.getLocalName(), "Should return properties element");
+
+        // Verify it's the model-level properties, not element-level
+        assertEquals("model", result.getParentNode().getLocalName(), "Should be child of model element");
+    }
+
+    @Test
+    void findModelPropertiesElement_WithNoModelProperties_ReturnsNull() throws Exception {
+        // Arrange
+        String xmlWithoutModelProperties = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <name>Test Model</name>
+                <elements>
+                    <element identifier="element-1" xsi:type="BusinessActor">
+                        <name>Test Actor</name>
+                        <properties>
+                            <!-- This is element properties, not model properties -->
+                            <property propertyDefinitionRef="prop-def-1">
+                                <value>Element Value</value>
+                            </property>
+                        </properties>
+                    </element>
+                </elements>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithoutModelProperties);
+
+        // Act
+        Element result = (Element) invokePrivateMethod("findModelPropertiesElement", new Class<?>[0]);
+
+        // Assert
+        assertNull(result, "Should return null when no model properties element exists");
+    }
+
+    @Test
+    void extractPropertiesFromElement_WithValidProperties_ExtractsAll() throws Exception {
+        // Arrange
+        String xmlWithProperties = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <property propertyDefinitionRef="prop-def-1">
+                        <value>First Value</value>
+                    </property>
+                    <property propertyDefinitionRef="prop-def-2">
+                        <value>Second Value</value>
+                    </property>
+                    <property propertyDefinitionRef="prop-def-3">
+                        <value>Third Value</value>
+                    </property>
+                </properties>
+                <propertyDefinitions>
+                    <propertyDefinition identifier="prop-def-1" type="string">
+                        <name>first property</name>
+                    </propertyDefinition>
+                    <propertyDefinition identifier="prop-def-2" type="string">
+                        <name>second property</name>
+                    </propertyDefinition>
+                    <propertyDefinition identifier="prop-def-3" type="string">
+                        <name>third property</name>
+                    </propertyDefinition>
+                </propertyDefinitions>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithProperties);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+
+        // Get the properties element
+        Element propertiesElement = (Element) invokePrivateMethod("findModelPropertiesElement", new Class<?>[0]);
+        assertNotNull(propertiesElement, "Properties element should exist");
+
+        Map<String, String> resultMap = new HashMap<>();
+
+        // Act
+        invokePrivateMethod("extractPropertiesFromElement",
+                new Class<?>[]{Element.class, Map.class},
+                propertiesElement, resultMap);
+
+        // Assert
+        assertEquals(3, resultMap.size(), "Should extract all 3 properties");
+        assertEquals("First Value", resultMap.get("first property"), "Should extract first property");
+        assertEquals("Second Value", resultMap.get("second property"), "Should extract second property");
+        assertEquals("Third Value", resultMap.get("third property"), "Should extract third property");
+    }
+
+    @Test
+    void extractPropertiesFromElement_WithEmptyProperties_ExtractsNothing() throws Exception {
+        // Arrange
+        String xmlWithEmptyProperties = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <!-- Empty properties element -->
+                </properties>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithEmptyProperties);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+
+        Element propertiesElement = (Element) invokePrivateMethod("findModelPropertiesElement", new Class<?>[0]);
+        Map<String, String> resultMap = new HashMap<>();
+
+        // Act
+        invokePrivateMethod("extractPropertiesFromElement",
+                new Class<?>[]{Element.class, Map.class},
+                propertiesElement, resultMap);
+
+        // Assert
+        assertTrue(resultMap.isEmpty(), "Should extract no properties from empty properties element");
+    }
+
+    @Test
+    void processProperty_WithValidProperty_ExtractsCorrectly() throws Exception {
+        // Arrange
+        String xmlWithProperty = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <property propertyDefinitionRef="prop-def-1">
+                        <value>Test Property Value</value>
+                    </property>
+                </properties>
+                <propertyDefinitions>
+                    <propertyDefinition identifier="prop-def-1" type="string">
+                        <name>test property</name>
+                    </propertyDefinition>
+                </propertyDefinitions>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithProperty);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+
+        // Get the property element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propertyNodes = doc.getElementsByTagNameNS(ARCHI_NS, "property");
+        Element propertyElement = (Element) propertyNodes.item(0);
+
+        Map<String, String> resultMap = new HashMap<>();
+
+        // Act
+        invokePrivateMethod("processProperty",
+                new Class<?>[]{Element.class, Map.class},
+                propertyElement, resultMap);
+
+        // Assert
+        assertEquals(1, resultMap.size(), "Should process one property");
+        assertEquals("Test Property Value", resultMap.get("test property"), "Should extract correct property value");
+    }
+
+    @Test
+    void processProperty_WithMissingPropertyDefinition_UsesPropertyRef() throws Exception {
+        // Arrange
+        String xmlWithMissingDef = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <property propertyDefinitionRef="unknown-prop-def">
+                        <value>Test Value</value>
+                    </property>
+                </properties>
+                <!-- Note: No propertyDefinitions for unknown-prop-def -->
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithMissingDef);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+
+        // Get the property element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propertyNodes = doc.getElementsByTagNameNS(ARCHI_NS, "property");
+        Element propertyElement = (Element) propertyNodes.item(0);
+
+        Map<String, String> resultMap = new HashMap<>();
+
+        // Act
+        invokePrivateMethod("processProperty",
+                new Class<?>[]{Element.class, Map.class},
+                propertyElement, resultMap);
+
+        // Assert
+        assertEquals(1, resultMap.size(), "Should process property even with missing definition");
+        assertEquals("Test Value", resultMap.get("unknown-prop-def"), "Should use property ref as key when definition missing");
+    }
+
+    @Test
+    void processProperty_WithEmptyValue_SkipsProperty() throws Exception {
+        // Arrange
+        String xmlWithEmptyValue = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <property propertyDefinitionRef="prop-def-1">
+                        <value></value>
+                    </property>
+                </properties>
+                <propertyDefinitions>
+                    <propertyDefinition identifier="prop-def-1" type="string">
+                        <name>empty property</name>
+                    </propertyDefinition>
+                </propertyDefinitions>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithEmptyValue);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+
+        // Get the property element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propertyNodes = doc.getElementsByTagNameNS(ARCHI_NS, "property");
+        Element propertyElement = (Element) propertyNodes.item(0);
+
+        Map<String, String> resultMap = new HashMap<>();
+
+        // Act
+        invokePrivateMethod("processProperty",
+                new Class<?>[]{Element.class, Map.class},
+                propertyElement, resultMap);
+
+        // Assert
+        assertTrue(resultMap.isEmpty(), "Should skip property with empty value");
+    }
+
+    @Test
+    void processProperty_WithNoValueElement_SkipsProperty() throws Exception {
+        // Arrange
+        String xmlWithNoValue = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <property propertyDefinitionRef="prop-def-1">
+                        <!-- No value element -->
+                    </property>
+                </properties>
+                <propertyDefinitions>
+                    <propertyDefinition identifier="prop-def-1" type="string">
+                        <name>no value property</name>
+                    </propertyDefinition>
+                </propertyDefinitions>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithNoValue);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+
+        // Get the property element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propertyNodes = doc.getElementsByTagNameNS(ARCHI_NS, "property");
+        Element propertyElement = (Element) propertyNodes.item(0);
+
+        Map<String, String> resultMap = new HashMap<>();
+
+        // Act
+        invokePrivateMethod("processProperty",
+                new Class<?>[]{Element.class, Map.class},
+                propertyElement, resultMap);
+
+        // Assert
+        assertTrue(resultMap.isEmpty(), "Should skip property with no value element");
+    }
+
+    @Test
+    void getPropertyValue_WithValidValue_ReturnsValue() throws Exception {
+        // Arrange
+        String xmlWithValue = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <property propertyDefinitionRef="prop-def-1">
+                        <value>Expected Value</value>
+                    </property>
+                </properties>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithValue);
+
+        // Get the property element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propertyNodes = doc.getElementsByTagNameNS(ARCHI_NS, "property");
+        Element propertyElement = (Element) propertyNodes.item(0);
+
+        // Act
+        String result = (String) invokePrivateMethod("getPropertyValue",
+                new Class<?>[]{Element.class},
+                propertyElement);
+
+        // Assert
+        assertEquals("Expected Value", result, "Should return the property value");
+    }
+
+    @Test
+    void getPropertyValue_WithNoValueElement_ReturnsNull() throws Exception {
+        // Arrange
+        String xmlWithoutValue = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <property propertyDefinitionRef="prop-def-1">
+                        <!-- No value element -->
+                    </property>
+                </properties>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithoutValue);
+
+        // Get the property element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propertyNodes = doc.getElementsByTagNameNS(ARCHI_NS, "property");
+        Element propertyElement = (Element) propertyNodes.item(0);
+
+        // Act
+        String result = (String) invokePrivateMethod("getPropertyValue",
+                new Class<?>[]{Element.class},
+                propertyElement);
+
+        // Assert
+        assertNull(result, "Should return null when no value element exists");
+    }
+
+    @Test
+    void getPropertyValue_WithEmptyValue_ReturnsEmptyString() throws Exception {
+        // Arrange
+        String xmlWithEmptyValue = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <property propertyDefinitionRef="prop-def-1">
+                        <value></value>
+                    </property>
+                </properties>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithEmptyValue);
+
+        // Get the property element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propertyNodes = doc.getElementsByTagNameNS(ARCHI_NS, "property");
+        Element propertyElement = (Element) propertyNodes.item(0);
+
+        // Act
+        String result = (String) invokePrivateMethod("getPropertyValue",
+                new Class<?>[]{Element.class},
+                propertyElement);
+
+        // Assert
+        assertEquals("", result, "Should return empty string for empty value element");
+    }
+
+    @Test
+    void getPropertyValue_WithWhitespaceValue_ReturnsWhitespace() throws Exception {
+        // Arrange
+        String xmlWithWhitespace = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <property propertyDefinitionRef="prop-def-1">
+                        <value>   </value>
+                    </property>
+                </properties>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithWhitespace);
+
+        // Get the property element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propertyNodes = doc.getElementsByTagNameNS(ARCHI_NS, "property");
+        Element propertyElement = (Element) propertyNodes.item(0);
+
+        // Act
+        String result = (String) invokePrivateMethod("getPropertyValue",
+                new Class<?>[]{Element.class},
+                propertyElement);
+
+        // Assert
+        assertEquals("   ", result, "Should return whitespace value as-is (trimming handled elsewhere)");
+    }
+
+    @Test
+    void processProperty_WithOntologyNamespaceProperty_SetsOntologyNamespace() throws Exception {
+        // Arrange
+        String xmlWithNamespaceProperty = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   identifier="test-model">
+                <properties>
+                    <property propertyDefinitionRef="prop-def-1">
+                        <value>https://example.org/custom-namespace</value>
+                    </property>
+                </properties>
+                <propertyDefinitions>
+                    <propertyDefinition identifier="prop-def-1" type="string">
+                        <name>adresa lokálního katalogu dat</name>
+                    </propertyDefinition>
+                </propertyDefinitions>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithNamespaceProperty);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+
+        // Get the property element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+
+        // Act
+        invokePrivateMethod("processModelNameProperty",
+                new Class<?>[]{});
+
+        // Verify ontologyNamespace field was set
+        Field namespaceField = ArchiConverter.class.getDeclaredField("ontologyNamespace");
+        namespaceField.setAccessible(true);
+        String namespace = (String) namespaceField.get(converter);
+        assertEquals("https://example.org/custom-namespace", namespace,
+                "Should set ontologyNamespace field when processing namespace property");
+    }
+
+
+
 }
