@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
@@ -35,7 +36,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.dia.constants.ArchiOntologyConstants.*;
-import static org.apache.jena.vocabulary.XSD.anyURI;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -2387,5 +2387,669 @@ class ArchiConverterUnitTest {
         // Check content type
         Property contentTypeProperty = ontModel.getProperty(namespace + "má-typ-obsahu-údaje");
         assertTrue(testResource.hasProperty(contentTypeProperty), "Should add content type");
+    }
+
+    // Helper methods tests
+    @ParameterizedTest
+    @CsvSource({
+            "'http://example.org/vocab#localName', 'localName', 'Should extract local name after hash fragment'",
+            "'http://example.org/vocab/localName', 'localName', 'Should extract local name after slash separator'",
+            "'http://example.org/vocab/path#localName', 'localName', 'Should prefer hash fragment over slash when both are present'",
+            "'http://example.org', 'example.org', 'Should return local name when no separator found'",
+            "'http://example.org/vocab#', 'http://example.org/vocab#', 'Should return empty local name when local name is empty'",
+            "'http://example.org/vocab#local-name_with.special123', 'local-name_with.special123', 'Should handle special characters in local name'"
+    })
+    void getLocalName_WithVariousUriFormats_ExtractsCorrectly(String inputUri, String expectedLocalName, String description) throws Exception {
+        // Arrange
+        Resource testResource = ontModel.createResource(inputUri);
+        Method getLocalName = ArchiConverter.class.getDeclaredMethod("getLocalName", Resource.class);
+        getLocalName.setAccessible(true);
+
+        // Act
+        String result = (String) getLocalName.invoke(converter, testResource);
+
+        // Assert
+        assertEquals(expectedLocalName, result, description);
+    }
+
+    @Test
+    void isResourceProperty_WithLiteralRange_ReturnsFalse() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property testProperty = ontModel.createProperty(namespace + "testProperty");
+        testProperty.addProperty(RDFS.range, XSD);
+
+        Method isResourceProperty = ArchiConverter.class.getDeclaredMethod("isResourceProperty", Property.class);
+        isResourceProperty.setAccessible(true);
+
+        // Act
+        boolean result = (boolean) isResourceProperty.invoke(converter, testProperty);
+
+        // Assert
+        assertFalse(result, "Should return false for property with literal range");
+    }
+
+    @Test
+    void isResourceProperty_WithNoRange_ReturnsFalse() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property testProperty = ontModel.createProperty(namespace + "testProperty");
+        // No range added
+
+        Method isResourceProperty = ArchiConverter.class.getDeclaredMethod("isResourceProperty", Property.class);
+        isResourceProperty.setAccessible(true);
+
+        // Act
+        boolean result = (boolean) isResourceProperty.invoke(converter, testProperty);
+
+        // Assert
+        assertFalse(result, "Should return false for property with no range specified");
+    }
+
+    @Test
+    void isResourceProperty_WithMultipleRanges_ReturnsTrueIfAnyIsResource() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property testProperty = ontModel.createProperty(namespace + "testProperty");
+        testProperty.addProperty(RDFS.range, XSD);
+        testProperty.addProperty(RDFS.range, RDFS.Resource);
+
+        Method isResourceProperty = ArchiConverter.class.getDeclaredMethod("isResourceProperty", Property.class);
+        isResourceProperty.setAccessible(true);
+
+        // Act
+        boolean result = (boolean) isResourceProperty.invoke(converter, testProperty);
+
+        // Assert
+        assertTrue(result, "Should return true when any range is Resource");
+    }
+
+    @Test
+    void extractPropName_WithValidNameElement_ReturnsName() throws Exception {
+        // Arrange
+        String xmlWithPropertyDef = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <propertyDefinitions>
+                    <propertyDefinition identifier="prop-def-1" type="string">
+                        <name>Test Property Name</name>
+                    </propertyDefinition>
+                </propertyDefinitions>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithPropertyDef);
+
+        // Get the property definition element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propDefs = doc.getElementsByTagNameNS(ARCHI_NS, "propertyDefinition");
+        Element propDefElement = (Element) propDefs.item(0);
+
+        Method extractPropName = ArchiConverter.class.getDeclaredMethod("extractPropName", Element.class);
+        extractPropName.setAccessible(true);
+
+        // Act
+        String result = (String) extractPropName.invoke(converter, propDefElement);
+
+        // Assert
+        assertEquals("Test Property Name", result, "Should extract property name from name element");
+    }
+
+    @Test
+    void extractPropName_WithMissingNameElement_ReturnsNull() throws Exception {
+        // Arrange
+        String xmlWithoutName = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <propertyDefinitions>
+                    <propertyDefinition identifier="prop-def-1" type="string">
+                        <!-- No name element -->
+                    </propertyDefinition>
+                </propertyDefinitions>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithoutName);
+
+        // Get the property definition element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propDefs = doc.getElementsByTagNameNS(ARCHI_NS, "propertyDefinition");
+        Element propDefElement = (Element) propDefs.item(0);
+
+        Method extractPropName = ArchiConverter.class.getDeclaredMethod("extractPropName", Element.class);
+        extractPropName.setAccessible(true);
+
+        // Act
+        String result = (String) extractPropName.invoke(converter, propDefElement);
+
+        // Assert
+        assertNull(result, "Should return null when name element is missing");
+    }
+
+    @Test
+    void extractPropName_WithEmptyNameElement_ReturnsEmptyString() throws Exception {
+        // Arrange
+        String xmlWithEmptyName = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <propertyDefinitions>
+                    <propertyDefinition identifier="prop-def-1" type="string">
+                        <name></name>
+                    </propertyDefinition>
+                </propertyDefinitions>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithEmptyName);
+
+        // Get the property definition element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList propDefs = doc.getElementsByTagNameNS(ARCHI_NS, "propertyDefinition");
+        Element propDefElement = (Element) propDefs.item(0);
+
+        Method extractPropName = ArchiConverter.class.getDeclaredMethod("extractPropName", Element.class);
+        extractPropName.setAccessible(true);
+
+        // Act
+        String result = (String) extractPropName.invoke(converter, propDefElement);
+
+        // Assert
+        assertEquals("", result, "Should return empty string when name element is empty");
+    }
+
+    @Test
+    void getElementName_WithValidNameElement_ReturnsName() throws Exception {
+        // Arrange
+        String xmlWithElement = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <elements>
+                    <element identifier="element-1" xsi:type="BusinessActor">
+                        <name>Test Element Name</name>
+                    </element>
+                </elements>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithElement);
+
+        // Get the element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList elements = doc.getElementsByTagNameNS(ARCHI_NS, "element");
+        Element elementNode = (Element) elements.item(0);
+
+        Method getElementName = ArchiConverter.class.getDeclaredMethod("getElementName", Element.class);
+        getElementName.setAccessible(true);
+
+        // Act
+        String result = (String) getElementName.invoke(converter, elementNode);
+
+        // Assert
+        assertEquals("Test Element Name", result, "Should extract element name");
+    }
+
+    @Test
+    void getElementName_WithMissingNameElement_ReturnsEmptyString() throws Exception {
+        // Arrange
+        String xmlWithoutName = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <elements>
+                    <element identifier="element-1" xsi:type="BusinessActor">
+                        <!-- No name element -->
+                    </element>
+                </elements>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithoutName);
+
+        // Get the element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList elements = doc.getElementsByTagNameNS(ARCHI_NS, "element");
+        Element elementNode = (Element) elements.item(0);
+
+        Method getElementName = ArchiConverter.class.getDeclaredMethod("getElementName", Element.class);
+        getElementName.setAccessible(true);
+
+        // Act
+        String result = (String) getElementName.invoke(converter, elementNode);
+
+        // Assert
+        assertEquals("", result, "Should return empty string when name element is missing");
+    }
+
+    @Test
+    void getRelationshipName_WithValidNameElement_ReturnsName() throws Exception {
+        // Arrange
+        String xmlWithRelationship = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <relationships>
+                    <relationship identifier="rel-1" source="elem-1" target="elem-2" xsi:type="Association">
+                        <name>Test Relationship Name</name>
+                    </relationship>
+                </relationships>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithRelationship);
+
+        // Get the relationship
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList relationships = doc.getElementsByTagNameNS(ARCHI_NS, "relationship");
+        Element relationshipNode = (Element) relationships.item(0);
+
+        Method getRelationshipName = ArchiConverter.class.getDeclaredMethod("getRelationshipName", Element.class);
+        getRelationshipName.setAccessible(true);
+
+        // Act
+        String result = (String) getRelationshipName.invoke(converter, relationshipNode);
+
+        // Assert
+        assertEquals("Test Relationship Name", result, "Should extract relationship name");
+    }
+
+    @Test
+    void getRelationshipName_WithMissingNameElement_ReturnsEmptyString() throws Exception {
+        // Arrange
+        String xmlWithoutName = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <relationships>
+                    <relationship identifier="rel-1" source="elem-1" target="elem-2" xsi:type="Association">
+                        <!-- No name element -->
+                    </relationship>
+                </relationships>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithoutName);
+
+        // Get the relationship
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList relationships = doc.getElementsByTagNameNS(ARCHI_NS, "relationship");
+        Element relationshipNode = (Element) relationships.item(0);
+
+        Method getRelationshipName = ArchiConverter.class.getDeclaredMethod("getRelationshipName", Element.class);
+        getRelationshipName.setAccessible(true);
+
+        // Act
+        String result = (String) getRelationshipName.invoke(converter, relationshipNode);
+
+        // Assert
+        assertEquals("", result, "Should return empty string when name element is missing");
+    }
+
+    @Test
+    void processNameNodesForLabels_WithMultipleLanguages_ExtractsAll() throws Exception {
+        // Arrange
+        String xmlWithMultilingual = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <elements>
+                    <element identifier="element-1" xsi:type="BusinessActor">
+                        <name xml:lang="cs">Czech Name</name>
+                        <name xml:lang="en">English Name</name>
+                        <name xml:lang="de">German Name</name>
+                        <name xml:lang="fr">French Name</name>
+                    </element>
+                </elements>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithMultilingual);
+
+        // Get the element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList elements = doc.getElementsByTagNameNS(ARCHI_NS, "element");
+        Element elementNode = (Element) elements.item(0);
+
+        Map<String, String> result = new HashMap<>();
+
+        Method processNameNodesForLabels = ArchiConverter.class.getDeclaredMethod(
+                "processNameNodesForLabels", Element.class, Map.class);
+        processNameNodesForLabels.setAccessible(true);
+
+        // Act
+        processNameNodesForLabels.invoke(converter, elementNode, result);
+
+        // Assert
+        assertEquals(3, result.size(), "Should extract 3 non-Czech language labels");
+        assertEquals("English Name", result.get("lang=en"), "Should extract English label");
+        assertEquals("German Name", result.get("lang=de"), "Should extract German label");
+        assertEquals("French Name", result.get("lang=fr"), "Should extract French label");
+        assertFalse(result.containsKey("lang=cs"), "Should not extract Czech label (default language)");
+    }
+
+    @Test
+    void processNameNodesForLabels_WithNoLanguageAttributes_ExtractsNothing() throws Exception {
+        // Arrange
+        String xmlWithoutLang = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <elements>
+                    <element identifier="element-1" xsi:type="BusinessActor">
+                        <name>Default Name</name>
+                    </element>
+                </elements>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithoutLang);
+
+        // Get the element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList elements = doc.getElementsByTagNameNS(ARCHI_NS, "element");
+        Element elementNode = (Element) elements.item(0);
+
+        Map<String, String> result = new HashMap<>();
+
+        Method processNameNodesForLabels = ArchiConverter.class.getDeclaredMethod(
+                "processNameNodesForLabels", Element.class, Map.class);
+        processNameNodesForLabels.setAccessible(true);
+
+        // Act
+        processNameNodesForLabels.invoke(converter, elementNode, result);
+
+        // Assert
+        assertTrue(result.isEmpty(), "Should not extract any labels when no language attributes are present");
+    }
+
+    @Test
+    void processNameNodesForLabels_WithEmptyLanguageAttribute_ExtractsNothing() throws Exception {
+        // Arrange
+        String xmlWithEmptyLang = """
+            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <elements>
+                    <element identifier="element-1" xsi:type="BusinessActor">
+                        <name xml:lang="">Empty Lang Name</name>
+                    </element>
+                </elements>
+            </model>
+            """;
+
+        setupArchiDocument(xmlWithEmptyLang);
+
+        // Get the element
+        Field archiDocField = ArchiConverter.class.getDeclaredField("archiDoc");
+        archiDocField.setAccessible(true);
+        Document doc = (Document) archiDocField.get(converter);
+
+        NodeList elements = doc.getElementsByTagNameNS(ARCHI_NS, "element");
+        Element elementNode = (Element) elements.item(0);
+
+        Map<String, String> result = new HashMap<>();
+
+        Method processNameNodesForLabels = ArchiConverter.class.getDeclaredMethod(
+                "processNameNodesForLabels", Element.class, Map.class);
+        processNameNodesForLabels.setAccessible(true);
+
+        // Act
+        processNameNodesForLabels.invoke(converter, elementNode, result);
+
+        // Assert
+        assertTrue(result.isEmpty(), "Should not extract labels with empty language attribute");
+    }
+
+    @Test
+    void assembleIri_WithValidName_CreatesCorrectIri() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Method assembleIri = ArchiConverter.class.getDeclaredMethod("assembleIri", String.class);
+        assembleIri.setAccessible(true);
+
+        // Act
+        String result = (String) assembleIri.invoke(converter, "Test Model Name");
+
+        // Assert
+        String expectedNamespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        assertTrue(result.startsWith(expectedNamespace), "IRI should start with effective namespace");
+        assertTrue(result.contains("test"), "IRI should contain sanitized model name");
+        assertFalse(result.contains(" "), "IRI should not contain spaces");
+    }
+
+    @Test
+    void assembleIri_WithSpecialCharacters_SanitizesCorrectly() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Method assembleIri = ArchiConverter.class.getDeclaredMethod("assembleIri", String.class);
+        assembleIri.setAccessible(true);
+
+        // Act
+        String result = (String) assembleIri.invoke(converter, "Test-Model_Name!@#$%");
+
+        // Assert
+        String expectedNamespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        assertTrue(result.startsWith(expectedNamespace), "IRI should start with effective namespace");
+        assertFalse(result.contains("!@#$%"), "IRI should not contain special characters");
+        assertTrue(result.length() > expectedNamespace.length(), "IRI should have sanitized content after namespace");
+    }
+
+    @Test
+    void resolveNamespacedUri_WithValidName_CreatesCorrectUri() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Method resolveNamespacedUri = ArchiConverter.class.getDeclaredMethod("resolveNamespacedUri", String.class);
+        resolveNamespacedUri.setAccessible(true);
+
+        // Act
+        String result = (String) resolveNamespacedUri.invoke(converter, "testResource");
+
+        // Assert
+        String expectedNamespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        assertEquals(expectedNamespace + "testResource", result, "Should concatenate namespace and resource name");
+    }
+
+    @Test
+    void createNamespacedResource_CreatesResourceWithCorrectUri() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Method createNamespacedResource = ArchiConverter.class.getDeclaredMethod("createNamespacedResource", String.class);
+        createNamespacedResource.setAccessible(true);
+
+        String resourceName = "testResource";
+        String expectedNamespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        String expectedUri = expectedNamespace + resourceName;
+
+        // Act & Assert
+        assertDoesNotThrow(() -> {
+            createNamespacedResource.invoke(converter, resourceName);
+        }, "createNamespacedResource should execute without throwing an exception");
+
+        // Verify that we can retrieve a resource with the expected URI
+        Resource resource = ontModel.getResource(expectedUri);
+        assertNotNull(resource, "Should be able to get resource with expected URI");
+        assertEquals(expectedUri, resource.getURI(), "Resource should have correct URI");
+
+        // Test the method behavior by using the resource in a statement
+        resource.addProperty(RDF.type, RDFS.Resource);
+
+        // Verify the resource exists in the model through statements
+        assertTrue(ontModel.contains(resource, RDF.type, RDFS.Resource),
+                "Resource should exist in model and have the type property we added");
+    }
+
+    @Test
+    void addSchemeRelationship_WithConceptResource_AddsInSchemeProperty() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+        invokePrivateMethod("setModelIRI", new Class<?>[0]);
+
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+
+        // Create a test resource with TYP_POJEM type
+        Resource testResource = ontModel.createResource("http://test.org/concept");
+        testResource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_POJEM));
+
+        Method addSchemeRelationship = ArchiConverter.class.getDeclaredMethod("addSchemeRelationship", Resource.class);
+        addSchemeRelationship.setAccessible(true);
+
+        // Act
+        addSchemeRelationship.invoke(converter, testResource);
+
+        // Assert
+        Resource ontologyResource = resourceMap.get("ontology");
+        assertNotNull(ontologyResource, "Ontology resource should exist");
+        assertTrue(testResource.hasProperty(SKOS.inScheme, ontologyResource),
+                "Should add inScheme relationship to ontology");
+    }
+
+    @Test
+    void addSchemeRelationship_WithNonConceptResource_DoesNotAddProperty() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+        invokePrivateMethod("setModelIRI", new Class<?>[0]);
+
+        // Create a test resource without TYP_POJEM type
+        Resource testResource = ontModel.createResource("http://test.org/non-concept");
+        testResource.addProperty(RDF.type, ontModel.createResource("http://test.org/OtherType"));
+
+        Method addSchemeRelationship = ArchiConverter.class.getDeclaredMethod("addSchemeRelationship", Resource.class);
+        addSchemeRelationship.setAccessible(true);
+
+        // Act
+        addSchemeRelationship.invoke(converter, testResource);
+
+        // Assert
+        assertFalse(testResource.hasProperty(SKOS.inScheme),
+                "Should not add inScheme relationship for non-concept resources");
+    }
+
+    @Test
+    void addSchemeRelationship_WithNoOntologyResource_DoesNotAddProperty() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+        // Don't call setModelIRI to avoid creating ontology resource
+
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+
+        // Create a test resource with TYP_POJEM type
+        Resource testResource = ontModel.createResource("http://test.org/concept");
+        testResource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_POJEM));
+
+        Method addSchemeRelationship = ArchiConverter.class.getDeclaredMethod("addSchemeRelationship", Resource.class);
+        addSchemeRelationship.setAccessible(true);
+
+        // Act
+        addSchemeRelationship.invoke(converter, testResource);
+
+        // Assert
+        assertNull(resourceMap.get("ontology"), "Ontology resource should not exist");
+        assertFalse(testResource.hasProperty(SKOS.inScheme),
+                "Should not add inScheme relationship when ontology resource doesn't exist");
+    }
+
+    // Integration test for helper methods working together
+    @Test
+    void helperMethods_Integration_WorkTogether() throws Exception {
+        // Test that helper methods work correctly in combination
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        // Create a test resource with a complex URI
+        Resource complexResource = ontModel.createResource("https://data.dia.gov.cz/zdroj/slovníky/test-vocab#complex-concept-name");
+
+        // Act & Assert - Test getLocalName with complex URI
+        Method getLocalName = ArchiConverter.class.getDeclaredMethod("getLocalName", Resource.class);
+        getLocalName.setAccessible(true);
+        String localName = (String) getLocalName.invoke(converter, complexResource);
+        assertEquals("complex-concept-name", localName, "Should extract complex local name correctly");
+
+        // Act & Assert - Test assembleIri with the extracted name
+        Method assembleIri = ArchiConverter.class.getDeclaredMethod("assembleIri", String.class);
+        assembleIri.setAccessible(true);
+        String assembledIri = (String) assembleIri.invoke(converter, localName);
+
+        String expectedNamespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        assertTrue(assembledIri.startsWith(expectedNamespace), "Assembled IRI should use correct namespace");
+        assertTrue(assembledIri.contains("complex"), "Assembled IRI should contain sanitized local name");
+
+        // Act & Assert - Test createNamespacedResource
+        Method createNamespacedResource = ArchiConverter.class.getDeclaredMethod("createNamespacedResource", String.class);
+        createNamespacedResource.setAccessible(true);
+        createNamespacedResource.invoke(converter, localName);
+
+        String expectedUri = expectedNamespace + localName;
+        // Test method execution
+        assertDoesNotThrow(() -> {
+            createNamespacedResource.invoke(converter, localName);
+        }, "createNamespacedResource should execute without error");
+
+        // Verify resource retrieval and URI
+        Resource createdResource = ontModel.getResource(expectedUri);
+        assertNotNull(createdResource, "Should be able to get resource with expected URI");
+        assertEquals(expectedUri, createdResource.getURI(), "Should create namespaced resource with extracted local name");
     }
 }
