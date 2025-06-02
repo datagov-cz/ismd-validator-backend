@@ -20,21 +20,14 @@ permissions:
   packages: write
 
 jobs:
-  # Build Docker images for main branch
-  build-common:
-    uses: ./.github/workflows/reusable-docker-build.yml
-    with:
-      branch: main
-      module: common
-
+  # Build Docker image for main branch
   build-validator:
-    needs: build-common
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       branch: main
       module: validator
       
-  # Sync dev with main after Docker builds
+  # Sync dev with main after Docker build
   sync-dev:
     needs: build-validator
     runs-on: ubuntu-latest
