@@ -42,7 +42,6 @@ jobs:
     if: needs.check-version-bump.outputs.skip-build != 'true'
     runs-on: ubuntu-latest
     outputs:
-      build-common: ${{ steps.check-files.outputs.build-common }}
       build-validator: ${{ steps.check-files.outputs.build-validator }}
     steps:
       - uses: actions/checkout@v4
@@ -71,24 +70,20 @@ jobs:
           # If no relevant files changed, skip builds
           if [ ! -s relevant_changes.txt ]; then
             echo "No relevant files changed, skipping builds"
-            echo "build-common=false" >> $GITHUB_OUTPUT
             echo "build-validator=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           
           # Check for changes that require both modules to be rebuilt
           if grep -q '^\.github/workflows/' relevant_changes.txt || grep -q '^pom\.xml$' relevant_changes.txt; then
-            echo "Workflow files or root POM changed, rebuilding both modules"
-            echo "build-common=true" >> $GITHUB_OUTPUT
+            echo "Workflow files or root POM changed, rebuilding validator module"
             echo "build-validator=true" >> $GITHUB_OUTPUT
           else
             # Check for module-specific changes if no workflow changes
-            if grep -q '^ismd-backend-common/' relevant_changes.txt; then
-              echo "Common module files changed"
-              echo "build-common=true" >> $GITHUB_OUTPUT
-            else
-              echo "No common module changes"
-              echo "build-common=false" >> $GITHUB_OUTPUT
+            # Only rebuild validator if common module's POM changed (version change)
+            if grep -q '^ismd-backend-common/pom.xml' relevant_changes.txt; then
+              echo "Common module POM changed, need to rebuild validator"
+              echo "build-validator=true" >> $GITHUB_OUTPUT
             fi
             
             if grep -q '^ismd-backend-validator/' relevant_changes.txt; then
@@ -100,14 +95,6 @@ jobs:
             fi
           fi
 
-  # Build common module if changed
-  build-common:
-    needs: [run-tests, check-changes]
-    if: needs.check-changes.outputs.build-common == 'true'
-    uses: ./.github/workflows/reusable-docker-build.yml
-    with:
-      branch: dev
-      module: common
 
   # Build validator module if changed
   build-validator:

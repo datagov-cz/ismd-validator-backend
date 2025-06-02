@@ -74,8 +74,8 @@ jobs:
           
           # Determine which modules to build
           if [ -z "${{ inputs.module }}" ]; then
-            # Build all modules
-            MODULES=("common" "validator")
+            # Build only the validator module as common is just a library
+            MODULES=("validator")
             MODULE_ARG="."  # Build everything
           else
             # Build specific module
