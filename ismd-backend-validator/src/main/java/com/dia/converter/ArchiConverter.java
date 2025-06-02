@@ -962,7 +962,6 @@ public class ArchiConverter {
             } else {
                 log.warn("Unrecognized boolean value for {} property: '{}'. Expected true/false, ano/ne, or yes/no.",
                         LABEL_JE_PPDF, value);
-                DataTypeConverter.addTypedProperty(resource, ppdfProp, "", null, ontModel);
             }
         }
     }
@@ -990,20 +989,17 @@ public class ArchiConverter {
         } else {
             log.warn("Unrecognized boolean value for {} property: '{}'. Expected true/false, ano/ne, or yes/no.",
                     LABEL_JE_VEREJNY, value);
-            resource.addProperty(RDF.type, "");
         }
     }
 
     private void addNonPublicData(Resource resource, Map<String, String> properties) {
         String namespace = getEffectiveOntologyNamespace();
 
-        if (properties.containsKey(LABEL_UDN)) {
+        if (properties.containsKey(LABEL_UDN) && !properties.get(LABEL_UDN).isBlank()) {
             resource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_NEVEREJNY_UDAJ));
             String legalProvision = properties.get(LABEL_UDN);
-            if (legalProvision != null && !legalProvision.isEmpty()) {
-                Property udnProp = ontModel.getProperty(namespace + LABEL_UDN);
-                DataTypeConverter.addTypedProperty(resource, udnProp, legalProvision, null, ontModel);
-            }
+            Property udnProp = ontModel.getProperty(namespace + LABEL_UDN);
+            DataTypeConverter.addTypedProperty(resource, udnProp, legalProvision, null, ontModel);
         }
     }
 

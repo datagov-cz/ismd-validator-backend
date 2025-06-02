@@ -32,8 +32,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.dia.constants.ArchiOntologyConstants.*;
+import static org.apache.jena.vocabulary.XSD.anyURI;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -1743,6 +1745,647 @@ class ArchiConverterUnitTest {
                 "Should set ontologyNamespace field when processing namespace property");
     }
 
+    // Data properties tests
+    @Test
+    void addPpdfSharing_WithTrueValue_AddsProperty() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
 
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("je-sdílen-v-ppdf", "true");
 
+        Method addPpdfSharing = ArchiConverter.class.getDeclaredMethod(
+                "addPpdfSharing", Resource.class, Map.class);
+        addPpdfSharing.setAccessible(true);
+
+        // Act
+        addPpdfSharing.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property ppdfProperty = ontModel.getProperty(namespace + "je-sdílen-v-ppdf");
+        assertTrue(testResource.hasProperty(ppdfProperty), "Should have PPDF property");
+
+        // Check the value - could be boolean true or string "true"
+        Statement ppdfStmt = testResource.getProperty(ppdfProperty);
+        assertNotNull(ppdfStmt, "PPDF statement should exist");
+    }
+
+    @Test
+    void addPpdfSharing_WithFalseValue_AddsProperty() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("je-sdílen-v-ppdf", "false");
+
+        Method addPpdfSharing = ArchiConverter.class.getDeclaredMethod(
+                "addPpdfSharing", Resource.class, Map.class);
+        addPpdfSharing.setAccessible(true);
+
+        // Act
+        addPpdfSharing.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property ppdfProperty = ontModel.getProperty(namespace + "je-sdílen-v-ppdf");
+        assertTrue(testResource.hasProperty(ppdfProperty), "Should have PPDF property");
+    }
+
+    @Test
+    void addPpdfSharing_WithCzechValues_HandlesCorrectly() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("je-sdílen-v-ppdf", "ano");
+
+        Method addPpdfSharing = ArchiConverter.class.getDeclaredMethod(
+                "addPpdfSharing", Resource.class, Map.class);
+        addPpdfSharing.setAccessible(true);
+
+        // Act
+        addPpdfSharing.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property ppdfProperty = ontModel.getProperty(namespace + "je-sdílen-v-ppdf");
+        assertTrue(testResource.hasProperty(ppdfProperty), "Should handle Czech 'ano' value");
+    }
+
+    @Test
+    void addPpdfSharing_WithInvalidValue_SkipsProperty() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("je-sdílen-v-ppdf", "maybe");
+
+        Method addPpdfSharing = ArchiConverter.class.getDeclaredMethod(
+                "addPpdfSharing", Resource.class, Map.class);
+        addPpdfSharing.setAccessible(true);
+
+        // Act
+        addPpdfSharing.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property ppdfProperty = ontModel.getProperty(namespace + "je-sdílen-v-ppdf");
+        assertFalse(testResource.hasProperty(ppdfProperty), "Should not add property with invalid boolean value");
+    }
+
+    @Test
+    void addPpdfSharing_WithEmptyValue_SkipsProperty() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("je-sdílen-v-ppdf", "");
+
+        Method addPpdfSharing = ArchiConverter.class.getDeclaredMethod(
+                "addPpdfSharing", Resource.class, Map.class);
+        addPpdfSharing.setAccessible(true);
+
+        // Act
+        addPpdfSharing.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property ppdfProperty = ontModel.getProperty(namespace + "je-sdílen-v-ppdf");
+        assertFalse(testResource.hasProperty(ppdfProperty), "Should skip property with empty value");
+    }
+
+    @Test
+    void addPublicFlag_WithTrueValue_AddsPublicDataType() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("je-pojem-veřejný", "true");
+
+        Method addPublicFlag = ArchiConverter.class.getDeclaredMethod(
+                "addPublicFlag", Resource.class, Map.class);
+        addPublicFlag.setAccessible(true);
+
+        // Act
+        addPublicFlag.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Resource publicDataType = ontModel.getResource(namespace + TYP_VEREJNY_UDAJ);
+        assertTrue(testResource.hasProperty(RDF.type, publicDataType), "Should add public data type");
+    }
+
+    @Test
+    void addPublicFlag_WithFalseValue_AddsNonPublicDataType() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("je-pojem-veřejný", "false");
+
+        Method addPublicFlag = ArchiConverter.class.getDeclaredMethod(
+                "addPublicFlag", Resource.class, Map.class);
+        addPublicFlag.setAccessible(true);
+
+        // Act
+        addPublicFlag.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Resource nonPublicDataType = ontModel.getResource(namespace + TYP_NEVEREJNY_UDAJ);
+        assertTrue(testResource.hasProperty(RDF.type, nonPublicDataType), "Should add non-public data type");
+    }
+
+    @Test
+    void addPublicFlag_WithCzechAno_AddsPublicDataType() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("je-pojem-veřejný", "ano");
+
+        Method addPublicFlag = ArchiConverter.class.getDeclaredMethod(
+                "addPublicFlag", Resource.class, Map.class);
+        addPublicFlag.setAccessible(true);
+
+        // Act
+        addPublicFlag.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Resource publicDataType = ontModel.getResource(namespace + TYP_VEREJNY_UDAJ);
+        assertTrue(testResource.hasProperty(RDF.type, publicDataType), "Should handle Czech 'ano' as true");
+    }
+
+    @Test
+    void addPublicFlag_WithInvalidValue_SkipsPublicFlag() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("je-pojem-veřejný", "invalid");
+
+        Method addPublicFlag = ArchiConverter.class.getDeclaredMethod(
+                "addPublicFlag", Resource.class, Map.class);
+        addPublicFlag.setAccessible(true);
+
+        // Act
+        addPublicFlag.invoke(converter, testResource, properties);
+
+        // Assert
+        assertFalse(testResource.hasProperty(RDF.type, ""), "Should not add empty type for invalid boolean value");
+    }
+
+    @Test
+    void addNonPublicData_WithValidProvision_AddsTypeAndProperty() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("ustanovení-dokládající-neveřejnost", "Legal provision text");
+
+        Method addNonPublicData = ArchiConverter.class.getDeclaredMethod(
+                "addNonPublicData", Resource.class, Map.class);
+        addNonPublicData.setAccessible(true);
+
+        // Act
+        addNonPublicData.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Resource nonPublicDataType = ontModel.getResource(namespace + TYP_NEVEREJNY_UDAJ);
+        assertTrue(testResource.hasProperty(RDF.type, nonPublicDataType), "Should add non-public data type");
+
+        Property udnProperty = ontModel.getProperty(namespace + "ustanovení-dokládající-neveřejnost");
+        assertTrue(testResource.hasProperty(udnProperty), "Should add UDN property");
+    }
+
+    @Test
+    void addNonPublicData_WithEmptyProvision_SkipsAddingData() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("ustanovení-dokládající-neveřejnost", "");
+
+        Method addNonPublicData = ArchiConverter.class.getDeclaredMethod(
+                "addNonPublicData", Resource.class, Map.class);
+        addNonPublicData.setAccessible(true);
+
+        // Act
+        addNonPublicData.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Resource nonPublicDataType = ontModel.getResource(namespace + TYP_NEVEREJNY_UDAJ);
+        assertFalse(testResource.hasProperty(RDF.type, nonPublicDataType), "Should not add non-public data type with empty provision");
+    }
+
+    @Test
+    void addAgenda_WithNumericId_FormatsCorrectly() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("agenda", "123");
+
+        Method addAgenda = ArchiConverter.class.getDeclaredMethod(
+                "addAgenda", Resource.class, Map.class, String.class);
+        addAgenda.setAccessible(true);
+
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+
+        // Act
+        addAgenda.invoke(converter, testResource, properties, namespace);
+
+        // Assert
+        Property agendaProperty = ontModel.getProperty(namespace + "agenda");
+        assertTrue(testResource.hasProperty(agendaProperty), "Should add agenda property");
+
+        Statement agendaStmt = testResource.getProperty(agendaProperty);
+        String expectedUrl = "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A123";
+        assertEquals(expectedUrl, agendaStmt.getObject().toString(), "Should format numeric ID to full URL");
+    }
+
+    @Test
+    void addAgenda_WithANumericId_FormatsCorrectly() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("agenda", "A456");
+
+        Method addAgenda = ArchiConverter.class.getDeclaredMethod(
+                "addAgenda", Resource.class, Map.class, String.class);
+        addAgenda.setAccessible(true);
+
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+
+        // Act
+        addAgenda.invoke(converter, testResource, properties, namespace);
+
+        // Assert
+        Property agendaProperty = ontModel.getProperty(namespace + "agenda");
+        Statement agendaStmt = testResource.getProperty(agendaProperty);
+        String expectedUrl = "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A456";
+        assertEquals(expectedUrl, agendaStmt.getObject().toString(), "Should format A-prefixed ID to full URL");
+    }
+
+    @Test
+    void addAgenda_WithFullUrl_KeepsOriginal() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        String fullUrl = "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A789";
+        properties.put("agenda", fullUrl);
+
+        Method addAgenda = ArchiConverter.class.getDeclaredMethod(
+                "addAgenda", Resource.class, Map.class, String.class);
+        addAgenda.setAccessible(true);
+
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+
+        // Act
+        addAgenda.invoke(converter, testResource, properties, namespace);
+
+        // Assert
+        Property agendaProperty = ontModel.getProperty(namespace + "agenda");
+        Statement agendaStmt = testResource.getProperty(agendaProperty);
+        assertEquals(fullUrl, agendaStmt.getObject().toString(), "Should keep full URL unchanged");
+    }
+
+    @Test
+    void addAgendaInformationSystem_WithNumericId_FormatsCorrectly() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("agendový-informační-systém", "987");
+
+        Method addAgendaInformationSystem = ArchiConverter.class.getDeclaredMethod(
+                "addAgendaInformationSystem", Resource.class, Map.class, String.class);
+        addAgendaInformationSystem.setAccessible(true);
+
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+
+        // Act
+        addAgendaInformationSystem.invoke(converter, testResource, properties, namespace);
+
+        // Assert
+        Property aisProperty = ontModel.getProperty(namespace + "agendový-informační-systém");
+        Statement aisStmt = testResource.getProperty(aisProperty);
+        String expectedUrl = "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/987";
+        assertEquals(expectedUrl, aisStmt.getObject().toString(), "Should format numeric AIS ID to full URL");
+    }
+
+    @Test
+    void addAgendaInformationSystem_WithFullUrl_KeepsOriginal() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        String fullUrl = "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/654";
+        properties.put("agendový-informační-systém", fullUrl);
+
+        Method addAgendaInformationSystem = ArchiConverter.class.getDeclaredMethod(
+                "addAgendaInformationSystem", Resource.class, Map.class, String.class);
+        addAgendaInformationSystem.setAccessible(true);
+
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+
+        // Act
+        addAgendaInformationSystem.invoke(converter, testResource, properties, namespace);
+
+        // Assert
+        Property aisProperty = ontModel.getProperty(namespace + "agendový-informační-systém");
+        Statement aisStmt = testResource.getProperty(aisProperty);
+        assertEquals(fullUrl, aisStmt.getObject().toString(), "Should keep full AIS URL unchanged");
+    }
+
+    // Helper method to extract actual value from RDFNode (handles anyURI literals)
+    private String getActualValue(RDFNode node) {
+        if (node.isLiteral()) {
+            return node.asLiteral().getString();
+        } else if (node.isResource()) {
+            return node.asResource().getURI();
+        } else {
+            return node.toString();
+        }
+    }
+
+    @Test
+    void addDataSharingWays_WithSingleWay_AddsSingleProperty() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("má-způsob-sdílení-údaje", "online");
+
+        Method addDataSharingWays = ArchiConverter.class.getDeclaredMethod(
+                "addDataSharingWays", Resource.class, Map.class);
+        addDataSharingWays.setAccessible(true);
+
+        // Act
+        addDataSharingWays.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property sharingProperty = ontModel.getProperty(namespace + "má-způsob-sdílení-údaje");
+        assertTrue(testResource.hasProperty(sharingProperty), "Should add data sharing way property");
+
+        List<Statement> sharingStmts = testResource.listProperties(sharingProperty).toList();
+        assertEquals(1, sharingStmts.size(), "Should add exactly one sharing way");
+
+        String expectedUrl = "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/online";
+        assertEquals(expectedUrl, getActualValue(sharingStmts.get(0).getObject()), "Should format sharing way URL");
+    }
+
+    @Test
+    void addDataSharingWays_WithMultipleWays_AddsMultipleProperties() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("má-způsob-sdílení-údaje", "online;offline;api");
+
+        Method addDataSharingWays = ArchiConverter.class.getDeclaredMethod(
+                "addDataSharingWays", Resource.class, Map.class);
+        addDataSharingWays.setAccessible(true);
+
+        // Act
+        addDataSharingWays.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property sharingProperty = ontModel.getProperty(namespace + "má-způsob-sdílení-údaje");
+
+        List<Statement> sharingStmts = testResource.listProperties(sharingProperty).toList();
+        assertEquals(3, sharingStmts.size(), "Should add three sharing ways");
+
+        // Verify all expected URLs are present
+        Set<String> actualUrls = sharingStmts.stream()
+                .map(stmt -> getActualValue(stmt.getObject()))
+                .collect(java.util.stream.Collectors.toSet());
+
+        assertTrue(actualUrls.contains("https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/online"));
+        assertTrue(actualUrls.contains("https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/offline"));
+        assertTrue(actualUrls.contains("https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/api"));
+    }
+
+    @Test
+    void addDataSharingWays_WithHttpUrl_KeepsOriginal() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        String httpUrl = "https://example.org/custom-sharing-way";
+        properties.put("má-způsob-sdílení-údaje", httpUrl);
+
+        Method addDataSharingWays = ArchiConverter.class.getDeclaredMethod(
+                "addDataSharingWays", Resource.class, Map.class);
+        addDataSharingWays.setAccessible(true);
+
+        // Act
+        addDataSharingWays.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property sharingProperty = ontModel.getProperty(namespace + "má-způsob-sdílení-údaje");
+
+        Statement sharingStmt = testResource.getProperty(sharingProperty);
+        assertEquals(httpUrl, getActualValue(sharingStmt.getObject()), "Should keep HTTP URL unchanged");
+    }
+
+    @Test
+    void addDataAcquisitionWay_WithSimpleValue_FormatsCorrectly() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("má-kategorii-údaje", "manual");
+
+        Method addDataAcquisitionWay = ArchiConverter.class.getDeclaredMethod(
+                "addDataAcquisitionWay", Resource.class, Map.class);
+        addDataAcquisitionWay.setAccessible(true);
+
+        // Act
+        addDataAcquisitionWay.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property acquisitionProperty = ontModel.getProperty(namespace + "má-kategorii-údaje");
+        Statement acquisitionStmt = testResource.getProperty(acquisitionProperty);
+
+        String expectedUrl = "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/manual";
+        assertEquals(expectedUrl, getActualValue(acquisitionStmt.getObject()), "Should format acquisition way URL");
+    }
+
+    @Test
+    void addDataContentType_WithSimpleValue_FormatsCorrectly() throws Exception {
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("má-typ-obsahu-údaje", "text");
+
+        Method addDataContentType = ArchiConverter.class.getDeclaredMethod(
+                "addDataContentType", Resource.class, Map.class);
+        addDataContentType.setAccessible(true);
+
+        // Act
+        addDataContentType.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+        Property contentTypeProperty = ontModel.getProperty(namespace + "má-typ-obsahu-údaje");
+        Statement contentTypeStmt = testResource.getProperty(contentTypeProperty);
+
+        String expectedUrl = "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/text";
+        assertEquals(expectedUrl, getActualValue(contentTypeStmt.getObject()), "Should format content type URL");
+    }
+
+    @Test
+    void addDataProperties_IntegrationTest_AddsAllProperties() throws Exception {
+        // Integration test for addDataProperties method
+        // Arrange
+        setupArchiDocument(minimalArchiXML);
+        invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
+        extractModelName();
+        invokePrivateMethod("processModelNameProperty", new Class<?>[0]);
+
+        Resource testResource = ontModel.createResource("http://test.org/resource");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("je-sdílen-v-ppdf", "true");
+        properties.put("je-pojem-veřejný", "ano");
+        properties.put("agendový-informační-systém", "123");
+        properties.put("agenda", "456");
+        properties.put("má-způsob-sdílení-údaje", "online;api");
+        properties.put("má-kategorii-údaje", "automatic");
+        properties.put("má-typ-obsahu-údaje", "structured");
+
+        Method addDataProperties = ArchiConverter.class.getDeclaredMethod(
+                "addDataProperties", Resource.class, Map.class);
+        addDataProperties.setAccessible(true);
+
+        // Act
+        addDataProperties.invoke(converter, testResource, properties);
+
+        // Assert
+        String namespace = (String) invokePrivateMethod("getEffectiveOntologyNamespace", new Class<?>[0]);
+
+        // Check PPDF property
+        Property ppdfProperty = ontModel.getProperty(namespace + "je-sdílen-v-ppdf");
+        assertTrue(testResource.hasProperty(ppdfProperty), "Should add PPDF property");
+
+        // Check public flag (should add public data type)
+        Resource publicDataType = ontModel.getResource(namespace + TYP_VEREJNY_UDAJ);
+        assertTrue(testResource.hasProperty(RDF.type, publicDataType), "Should add public data type");
+
+        // Check AIS property
+        Property aisProperty = ontModel.getProperty(namespace + "agendový-informační-systém");
+        assertTrue(testResource.hasProperty(aisProperty), "Should add AIS property");
+
+        // Check agenda property
+        Property agendaProperty = ontModel.getProperty(namespace + "agenda");
+        assertTrue(testResource.hasProperty(agendaProperty), "Should add agenda property");
+
+        // Check sharing ways (should have 2)
+        Property sharingProperty = ontModel.getProperty(namespace + "má-způsob-sdílení-údaje");
+        List<Statement> sharingStmts = testResource.listProperties(sharingProperty).toList();
+        assertEquals(2, sharingStmts.size(), "Should add both sharing ways");
+
+        // Check acquisition way
+        Property acquisitionProperty = ontModel.getProperty(namespace + "má-kategorii-údaje");
+        assertTrue(testResource.hasProperty(acquisitionProperty), "Should add acquisition way");
+
+        // Check content type
+        Property contentTypeProperty = ontModel.getProperty(namespace + "má-typ-obsahu-údaje");
+        assertTrue(testResource.hasProperty(contentTypeProperty), "Should add content type");
+    }
 }
