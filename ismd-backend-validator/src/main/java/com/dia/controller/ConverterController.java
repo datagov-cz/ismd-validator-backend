@@ -83,7 +83,9 @@ public class ConverterController {
                 }
                 case XMI -> log.debug("Processing XMI file: requestId={}", requestId);
                 case XLSX -> log.debug("Processing XLSX file: requestId={}", requestId);
-                case TURTLE -> {/* Returns directly */}
+                case TURTLE -> {/* Returns directly */
+                    return new ResponseEntity<>(HttpStatus.OK);
+                }
                 default -> {
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
