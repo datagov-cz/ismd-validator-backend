@@ -8,20 +8,22 @@ import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.ontology.OntProperty;
 import org.apache.jena.ontology.impl.OntModelImpl;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class OFNBaseModelTest {
+import java.lang.reflect.Method;
 
-    private OFNBaseModel baseModel;
+class OFNBaseModelTest {
+
     private OntModel ontModel;
 
     @BeforeEach
     void setUp () {
-        baseModel = new OFNBaseModel();
+        OFNBaseModel baseModel = new OFNBaseModel();
         ontModel = baseModel.getOntModel();
     }
 
@@ -30,7 +32,7 @@ public class OFNBaseModelTest {
     void testConstructor_initializeModelAndPrefixes() {
         assertNotNull(ontModel, "OntModel by měl být inicializován konstruktorem" );
 
-        assertTrue(ontModel instanceof OntModelImpl, "ontModel musí být instancí OntModelImpl");
+        assertInstanceOf(OntModelImpl.class, ontModel, "ontModel musí být instancí OntModelImpl");
         assertEquals(OntModelSpec.OWL_MEM, ((OntModelImpl) ontModel).getSpecification(), "Specifikace modelu musí být OWL_MEM");
 
         assertEquals(NS, ontModel.getNsPrefixURI("cz"), "Prefix 'cz' by měl odpovídat NS");
@@ -57,7 +59,6 @@ public class OFNBaseModelTest {
     // Test createBaseModel(): ověření existence XSD tříd a základních ontologických tříd s popisky a hierarchií
     @Test
     void testCreateBaseModel_classesWithLabels() {
-
         assertNotNull(ontModel.getOntClass(XSD + "string"), "XSD:string by měl existovat");
         assertNotNull(ontModel.getOntClass(XSD + "boolean"), "XSD:boolean by měl existovat");
         assertNotNull(ontModel.getOntClass(XSD + "anyURI"), "XSD:anyURI by měl existovat");
@@ -219,9 +220,42 @@ public class OFNBaseModelTest {
         // Negative cases pro neexistující resources
         assertNull(ontModel.getOntProperty(NS + "neexistujiciVlastnost"), "Neexistující vlastnost by měla vracel null");
         assertNull(ontModel.getOntClass(NS + "NeexistujiciTrida"), "Neexistující třída by měla vracet null");
-
     }
 
+    @Test
+    void testCreateBaseModel_Isolated() throws Exception {
+        // Create an instance of OFNBaseModel but we'll manually invoke createBaseModel
+        OFNBaseModel model = new OFNBaseModel();
+
+        // Get a blank OntModel to replace the one created and populated in the constructor
+        OntModel freshOntModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+
+        // Use reflection to access the private ontModel field and set it to our fresh model
+        java.lang.reflect.Field ontModelField = OFNBaseModel.class.getDeclaredField("ontModel");
+        ontModelField.setAccessible(true);
+        ontModelField.set(model, freshOntModel);
+
+        // Use reflection to access the private createBaseModel method
+        Method createBaseModelMethod = OFNBaseModel.class.getDeclaredMethod("createBaseModel");
+        createBaseModelMethod.setAccessible(true);
+
+        // Assert that model is empty before calling createBaseModel
+        assertEquals(0, freshOntModel.listClasses().toList().size(),
+                "OntModel should be empty before calling createBaseModel");
+
+        // Invoke the createBaseModel method
+        createBaseModelMethod.invoke(model);
+
+        // Verify that the model was populated correctly
+        assertNotNull(freshOntModel.getOntClass(XSD + "string"),
+                "XSD:string should be created by createBaseModel");
+
+        // Verify one class to prove the method executed successfully
+        OntClass pojemClass = freshOntModel.getOntClass(NS + TYP_POJEM);
+        assertNotNull(pojemClass, "Class TYP_POJEM should be created by createBaseModel");
+        assertEquals("pojem", pojemClass.getLabel("cs"),
+                "Class TYP_POJEM should have the correct Czech label");
+    }
 }
 
 
