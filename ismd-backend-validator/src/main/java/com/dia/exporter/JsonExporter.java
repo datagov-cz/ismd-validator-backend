@@ -270,6 +270,9 @@ public class JsonExporter {
     }
 
     private JSONArray createConceptsArray() {
+        if (ontModel == null || ontModel.isEmpty()) {
+            throw new JsonExportException("Ontology model is null or empty.");
+        }
         JSONArray pojmy = new JSONArray();
         Resource pojemType = ontModel.getResource(effectiveNamespace + TYP_POJEM);
 
@@ -521,7 +524,7 @@ public class JsonExporter {
     }
 
     @FunctionalInterface
-    private interface JsonSupplier<T> {
+    interface JsonSupplier<T> {
         T get() throws JsonExportException, JSONException;
     }
 }
