@@ -20,6 +20,10 @@ import org.mockito.quality.Strictness;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Test for {@link DataTypeConverter}.
+ * @see DataTypeConverter
+ */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class DataTypeConverterUnitTest {
