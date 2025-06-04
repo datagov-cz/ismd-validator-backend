@@ -132,4 +132,48 @@ public class ConverterServiceImplTest {
                 "Při chybě exportu Turtle by měla služba propagovat TurtleExportException");
     }
 
+    @Test
+    void testParseArchiFromString_withNullInput() throws FileParsingException {
+        // Test behavior with null input
+        converterService.parseArchiFromString(null);
+        verify(converterEngine, times(1)).parseArchiFromString(null);
+    }
+
+    @Test
+    void testParseArchiFromString_withEmptyString() throws FileParsingException {
+        // Test behavior with empty string
+        String emptyContent = "";
+        converterService.parseArchiFromString(emptyContent);
+        verify(converterEngine, times(1)).parseArchiFromString(emptyContent);
+    }
+
+    @Test
+    void testConvertArchi_withNullInput() throws ConversionException {
+        // Test behavior with null Boolean
+        converterService.convertArchi(null);
+        verify(converterEngine, times(1)).convertArchi(null);
+    }
+
+    @Test
+    void testExportArchiToJson_withNullReturn() throws JsonExportException {
+        // Test when engine returns null
+        when(converterEngine.exportToJson()).thenReturn(null);
+
+        String result = converterService.exportArchiToJson();
+
+        assertNull(result, "Service should return null when engine returns null");
+        verify(converterEngine, times(1)).exportToJson();
+    }
+
+    @Test
+    void testExportArchiToTurtle_withEmptyReturn() throws TurtleExportException {
+        // Test when engine returns empty string
+        when(converterEngine.exportToTurtle()).thenReturn("");
+
+        String result = converterService.exportArchiToTurtle();
+
+        assertEquals("", result, "Service should return empty string when engine returns empty string");
+        verify(converterEngine, times(1)).exportToTurtle();
+    }
+
 }
