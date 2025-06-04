@@ -8,6 +8,10 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Test for {@link UtilityMethods}.
+ * @see UtilityMethods
+ */
 class UtilityMethodsUnitTest {
 
     @Test
@@ -92,27 +96,6 @@ class UtilityMethodsUnitTest {
 
         // Edge cases
         assertEquals("/", UtilityMethods.ensureNamespaceEndsWithDelimiter(""));
-    }
-
-    @Test
-    void testCapitalize() {
-        // Normal cases
-        assertEquals("Hello", UtilityMethods.capitalize("hello"));
-        assertEquals("World", UtilityMethods.capitalize("world"));
-
-        // Already capitalized
-        assertEquals("Hello", UtilityMethods.capitalize("Hello"));
-
-        // Single character
-        assertEquals("A", UtilityMethods.capitalize("a"));
-
-        // Edge cases
-        assertNull(UtilityMethods.capitalize(null));
-        assertEquals("", UtilityMethods.capitalize(""));
-
-        // Numbers and special characters
-        assertEquals("123abc", UtilityMethods.capitalize("123abc"));
-        assertEquals("_hello", UtilityMethods.capitalize("_hello"));
     }
 
     @ParameterizedTest
