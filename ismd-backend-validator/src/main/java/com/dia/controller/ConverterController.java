@@ -4,6 +4,7 @@ import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.UnsupportedFormatException;
 import com.dia.service.ConverterService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -12,10 +13,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.dia.constants.ConvertorControllerConstants.*;
@@ -35,7 +39,8 @@ public class ConverterController {
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value= "removeInvalidSources", required = false) Boolean removeInvalidSources,
-            @RequestHeader(value = "Accept", required = false) String acceptHeader
+            @RequestHeader(value = "Accept", required = false) String acceptHeader,
+            HttpServletRequest request
     ) {
         String requestId = UUID.randomUUID().toString();
         MDC.put(LOG_REQUEST_ID, requestId);
@@ -46,6 +51,10 @@ public class ConverterController {
                 file.getOriginalFilename(), file.getSize(), output, removeInvalidSources);
 
         try {
+            if (!validateSingleFileUpload(request, requestId)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Můžete nahrát pouze jeden soubor.");
+            }
+
             if (file.isEmpty()) {
                 log.warn("Empty file upload attempt");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nebyl vložen žádný soubor.");
@@ -67,25 +76,17 @@ public class ConverterController {
             log.info("File format determined: requestId={}, format={}", requestId, fileFormat);
 
             switch (fileFormat) {
-                case TURTLE -> {
-                    log.debug("Processing Turtle file: requestId={}", requestId);
-                    byte[] fileContent = file.getBytes();
-                    log.info("Returning Turtle file without conversion: requestId={}", requestId);
-                    return ResponseEntity.ok()
-                            .contentType(MediaType.TEXT_PLAIN)
-                            .body(new String(fileContent, StandardCharsets.UTF_8));
-                }
                 case ARCHI_XML -> {
-                    log.debug("Processing Archi XML file: requestId={}", requestId);
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
                     converterService.parseArchiFromString(xmlContent);
                     converterService.convertArchi(removeInvalidSources != null && removeInvalidSources);
-                    log.info("Archi XML file successfully processed: requestId={}", requestId);
                 }
                 case XMI -> log.debug("Processing XMI file: requestId={}", requestId);
-                case XLSX -> log.debug("Processing XLS file: requestId={}", requestId);
+                case XLSX -> log.debug("Processing XLSX file: requestId={}", requestId);
+                case TURTLE -> {/* Returns directly */
+                    return new ResponseEntity<>(HttpStatus.OK);
+                }
                 default -> {
-                    log.warn("Unhandled file format: requestId={}, format={}", requestId, fileFormat);
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
@@ -107,6 +108,26 @@ public class ConverterController {
         }
     }
 
+    private boolean validateSingleFileUpload(HttpServletRequest request, String requestId) {
+        if (request instanceof MultipartHttpServletRequest multipartRequest) {
+
+            int totalFiles = 0;
+            Map<String, List<MultipartFile>> fileMap = multipartRequest.getMultiFileMap();
+
+            for (Map.Entry<String, List<MultipartFile>> entry : fileMap.entrySet()) {
+                totalFiles += entry.getValue().size();
+            }
+
+            if (totalFiles > 1) {
+                log.warn("Multiple files upload rejected: requestId={}, fileCount={}", requestId, totalFiles);
+                return false;
+            }
+
+            log.debug("Single file validation passed: requestId={}", requestId);
+        }
+        return true;
+    }
+
     private FileFormat checkFileFormat(MultipartFile file) throws IOException {
         String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown";
         log.debug("Checking file format: filename={}", filename);
@@ -122,6 +143,7 @@ public class ConverterController {
             return FileFormat.XMI;
         } else if (checkForTurtle(file) == FileFormat.TURTLE) {
             log.debug("Turtle format detected: filename={}", filename);
+            return FileFormat.TURTLE;
         }
 
         log.debug("Unsupported format detected: filename={}, contentType={}",
@@ -158,7 +180,10 @@ public class ConverterController {
                 }
 
                 if (xmlHeader.contains(XMI_HEADER)
-                        || xmlHeader.contains("XMI.version=\"2.1\"")) {
+                        || xmlHeader.contains("xmi:version=\"2.1\"")
+                        || xmlHeader.contains("xmi:version=\"2.0\"")
+                        || xmlHeader.contains("xmi:XMI")
+                        || xmlHeader.contains("<xmi:XMI")) {
                     return FileFormat.XMI;
                 }
             }
