@@ -187,18 +187,69 @@ public class TurtleExporter {
         }
 
         String domain = namespace
-                .replaceAll("https?://", "")
-                .replace("www\\.", "");
+                .replaceAll("^https?://", "")
+                .replaceAll("^www\\.", "");
 
-        String[] parts = domain.split("[./]");
+        if (domain.startsWith("urn:")) {
+            String[] urnParts = domain.split(":");
+            if (urnParts.length > 1) {
+                domain = urnParts[1];
+            }
+        }
+
+        String[] parts = domain.split("[./:#-]");
 
         for (String part : parts) {
             if (!part.isEmpty()) {
-                return part.toLowerCase();
+                String cleanedPart = cleanForXMLName(part);
+                if (isValidXMLNameStart(cleanedPart)) {
+                    return cleanedPart.toLowerCase();
+                }
             }
         }
 
         return "domain";
+    }
+
+    /**
+     * Cleans a string to make it suitable for an XML name
+     * - Removes non-alphanumeric characters
+     * - Ensures it starts with a letter
+     */
+    private String cleanForXMLName(String input) {
+        if (input == null || input.isEmpty()) {
+            return "";
+        }
+
+        String cleaned = input.replaceAll("[^a-zA-Z0-9]", "");
+
+        if (!cleaned.isEmpty() && Character.isDigit(cleaned.charAt(0))) {
+            cleaned = "n" + cleaned;
+        }
+
+        return cleaned;
+    }
+
+    /**
+     * Checks if a string would be a valid start for an XML name
+     * (starts with letter, contains only letters and digits)
+     */
+    private boolean isValidXMLNameStart(String name) {
+        if (name == null || name.isEmpty()) {
+            return false;
+        }
+
+        if (!Character.isLetter(name.charAt(0))) {
+            return false;
+        }
+
+        for (char c : name.toCharArray()) {
+            if (!Character.isLetterOrDigit(c)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void createConceptScheme(OntModel transformedModel) {
