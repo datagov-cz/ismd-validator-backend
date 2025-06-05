@@ -287,6 +287,29 @@ class TurtleExporterUnitTest {
         });
     }
 
+    @ParameterizedTest(name = "Model validation: {0}")
+    @MethodSource("invalidModelScenarios")
+    void exportToTurtle_WithInvalidModel_ThrowsTurtleExportException(
+            String scenarioName,
+            OntModel model) {
+
+        // Arrange
+        TurtleExporter testExporter = new TurtleExporter(model, resourceMap, modelName, modelProperties);
+
+        // Act & Assert
+        assertThrows(TurtleExportException.class,
+                testExporter::exportToTurtle,
+                "Should throw TurtleExportException for: " + scenarioName
+        );
+    }
+
+    static Stream<Arguments> invalidModelScenarios() {
+        return Stream.of(
+                Arguments.of("null model", null),
+                Arguments.of("empty model", ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM))
+        );
+    }
+
     // ================= HELPER METHODS =================
 
     private Model exportAndParseModel() {

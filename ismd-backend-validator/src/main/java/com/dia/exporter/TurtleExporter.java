@@ -122,6 +122,10 @@ public class TurtleExporter {
     }
 
     private OntModel createTransformedModel() {
+        if (ontModel == null || ontModel.isEmpty()) {
+            throw new TurtleExportException("Ontology model is null or empty.");
+        }
+
         OntModel newModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
 
         StmtIterator stmtIter = ontModel.listStatements();
