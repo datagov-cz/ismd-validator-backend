@@ -1,6 +1,6 @@
 package com.dia.engine;
 
-import com.dia.converter.ArchiConverter;
+import com.dia.converter.archi.ArchiConverter;
 import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.FileParsingException;
 import com.dia.exceptions.JsonExportException;

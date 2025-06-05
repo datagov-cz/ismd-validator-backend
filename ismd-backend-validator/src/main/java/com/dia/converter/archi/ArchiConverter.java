@@ -1,4 +1,4 @@
-package com.dia.converter;
+package com.dia.converter.archi;
 
 import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.FileParsingException;
