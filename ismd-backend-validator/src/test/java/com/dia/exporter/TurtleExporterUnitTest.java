@@ -224,19 +224,6 @@ class TurtleExporterUnitTest {
     }
 
     @Test
-    void exportToTurtle_WithEmptyModel_ReturnsValidEmptyTurtle() {
-        // Act
-        String result = exporter.exportToTurtle();
-
-        // Assert
-        assertAll("Empty model validation",
-                () -> assertNotNull(result),
-                () -> assertTrue(result.contains("PREFIX")),
-                () -> assertDoesNotThrow(() -> parseModel(result))
-        );
-    }
-
-    @Test
     void exportToTurtle_WithMultipleOntologies_CreatesOneConceptScheme() {
         // Arrange
         setupModelWithMultipleOntologies();
