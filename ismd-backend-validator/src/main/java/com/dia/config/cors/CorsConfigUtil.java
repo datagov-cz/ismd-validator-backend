@@ -1,6 +1,7 @@
 package com.dia.config.cors;
 
 import org.springframework.web.cors.CorsConfiguration;
+
 import java.util.List;
 
 public class CorsConfigUtil {
@@ -19,7 +20,15 @@ public class CorsConfigUtil {
 
             // tunnel from localhost
             // via cloudflare https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-remote-tunnel/
-            "https://*.domain.org"
+            "https://*.domain.org",
+
+            // Docker container/service names (aligned in docker-compose.yml)
+            "http://ismd-validator-frontend:[*]",
+            "http://ismd-validator-backend:[*]",
+            
+            // Docker host.docker.internal (for standalone Docker containers)
+            "http://host.docker.internal:[*]",
+            "https://host.docker.internal:[*]"
     );
 
     public CorsConfiguration createProductionCorsConfiguration() {
@@ -55,6 +64,16 @@ public class CorsConfigUtil {
 
     public CorsConfiguration createLocalCorsConfiguration() {
         var config = new CorsConfiguration();
+        
+        // Get allowed origins from environment variable
+        String corsAllowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
+        if (corsAllowedOrigins != null && !corsAllowedOrigins.isEmpty()) {
+            // Add the specific allowed origin from environment variable
+            System.out.println("CORS allowed origins set from environment: " + corsAllowedOrigins);
+            config.setAllowedOrigins(List.of(corsAllowedOrigins));
+        }
+        
+        // Always include development patterns for local environment
         config.setAllowedOriginPatterns(DEV_PATTERNS);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
         config.setAllowedHeaders(List.of("*"));
