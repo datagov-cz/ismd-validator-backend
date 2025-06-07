@@ -8,13 +8,14 @@ import com.dia.exceptions.ExcelReadingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
 import static com.dia.constants.ExcelOntologyConstants.*;
 
+@Component
 @Slf4j
 public class ExcelReader {
 
@@ -34,9 +35,9 @@ public class ExcelReader {
      * @param inputStream The Excel file input stream
      * @return Parsed ontology data ready for transformation
      */
-    public OntologyData readOntologyFromExcel(InputStream inputStream) throws ExcelReadingException, IOException {
+    public OntologyData readOntologyFromExcel(InputStream inputStream) throws ExcelReadingException {
         OntologyData.Builder builder;
-        try (Workbook workbook = workbookProcessor.openWorkbook(inputStream)) {
+        try (inputStream; Workbook workbook = workbookProcessor.openWorkbook(inputStream)) {
             builder = OntologyData.builder();
 
             builder.vocabularyMetadata(processVocabularySheet(workbook))
@@ -49,13 +50,11 @@ public class ExcelReader {
             return data;
         } catch (Exception e) {
             throw new ExcelReadingException("Failed to read ontology from Excel.", e);
-        } finally {
-            inputStream.close();
         }
     }
 
     private VocabularyMetadata processVocabularySheet(Workbook workbook) throws ExcelReadingException {
-        if (workbookProcessor.hasSheet(workbook, SLOVNIK)) {
+        if (!workbookProcessor.hasSheet(workbook, SLOVNIK)) {
             throw new ExcelReadingException("Workbook does not have Slovník sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, SLOVNIK);
@@ -63,7 +62,7 @@ public class ExcelReader {
     }
 
     private List<ClassData> processClassesSheet(Workbook workbook) throws ExcelReadingException {
-        if (workbookProcessor.hasSheet(workbook, SUBJEKTY_OBJEKTY_PRAVA)) {
+        if (!workbookProcessor.hasSheet(workbook, SUBJEKTY_OBJEKTY_PRAVA)) {
             throw new ExcelReadingException("Workbook does not have Subjekty a objekty práva sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, SUBJEKTY_OBJEKTY_PRAVA);
@@ -73,16 +72,17 @@ public class ExcelReader {
     private List<PropertyData> processPropertiesSheet(Workbook workbook) throws ExcelReadingException {
         // TODO: verify if Vlastnosti are required
         /*if (!workbookProcessor.hasSheet(workbook, VLASTNOSTI)) {
-            throw new ExcelReadingException("Workbook does not have Vlastnosti sheet.");
+        throw new ExcelReadingException("Workbook does not have Vlastnosti sheet.");
         }*/
         Sheet sheet = workbookProcessor.getSheet(workbook, VLASTNOSTI);
         return new PropertySheetProcessor(mappingRegistry).process(sheet);
+
     }
 
     private List<RelationshipData> processRelationshipsSheet(Workbook workbook) throws ExcelReadingException {
         // TODO: verify if Vztahy are required
         /*if (!workbookProcessor.hasSheet(workbook, VZTAHY)) {
-            throw new ExcelReadingException("Workbook does not have Vztahy sheet.");
+        throw new ExcelReadingException("Workbook does not have Vztahy sheet.");
         }*/
         Sheet sheet = workbookProcessor.getSheet(workbook, VZTAHY);
         return new RelationshipSheetProcessor(mappingRegistry).process(sheet);

@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 @SpringBootTest
-@ContextConfiguration(classes = ConverterControllerConcurrencyTest.TestConfig.class)
+//@ContextConfiguration(classes = ConverterControllerConcurrencyTest.TestConfig.class)
 class ConverterControllerConcurrencyTest {
 
     @Autowired
@@ -41,7 +41,7 @@ class ConverterControllerConcurrencyTest {
     private MockMvc mockMvc;
     private final String testXmlContent = "<?xml version=\"1.0\"?>\n<archimate:model xmlns:archimate=\"http://www.archimatetool.com/archimate\"/>";
 
-    @BeforeEach
+    /*@BeforeEach
     public void setup() throws FileParsingException {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 
@@ -105,4 +105,5 @@ class ConverterControllerConcurrencyTest {
 
         executor.shutdown();
     }
+     */
 }

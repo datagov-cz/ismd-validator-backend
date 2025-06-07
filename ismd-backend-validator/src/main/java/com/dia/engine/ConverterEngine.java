@@ -1,14 +1,18 @@
 package com.dia.engine;
 
 import com.dia.converter.archi.ArchiConverter;
-import com.dia.exceptions.ConversionException;
-import com.dia.exceptions.FileParsingException;
-import com.dia.exceptions.JsonExportException;
-import com.dia.exceptions.TurtleExportException;
+import com.dia.converter.excel.data.OntologyData;
+import com.dia.converter.excel.reader.ExcelReader;
+import com.dia.converter.excel.transformer.ExcelDataTransformer;
+import com.dia.enums.FileFormat;
+import com.dia.exceptions.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
@@ -18,6 +22,11 @@ import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 public class ConverterEngine {
 
     private final ArchiConverter archiConverter;
+    private final ExcelReader excelReader;
+    private final ExcelDataTransformer excelDataTransformer;
+
+    private com.dia.converter.excel.transformer.ExcelDataTransformer.TransformationResult excelTransformationResult;
+    private OntologyData  excelOntologyData;
 
     public void parseArchiFromString(String content) throws FileParsingException {
         String requestId = MDC.get(LOG_REQUEST_ID);
@@ -68,18 +77,30 @@ public class ConverterEngine {
         }
     }
 
-    public String exportToJson() throws JsonExportException {
+    public String exportToJson(FileFormat fileFormat) throws JsonExportException {
         String requestId = MDC.get("requestId");
         log.info("Starting JSON export: requestId={}", requestId);
 
         try {
-            long startTime = System.currentTimeMillis();
-            String result = archiConverter.exportToJson();
-            long duration = System.currentTimeMillis() - startTime;
-
-            log.info("JSON export completed: requestId={}, outputSize={}, durationMs={}",
-                    requestId, result.length(), duration);
-            return result;
+            switch (fileFormat) {
+                case ARCHI_XML -> {
+                    long startTime = System.currentTimeMillis();
+                    String result = archiConverter.exportToJson();
+                    long duration = System.currentTimeMillis() - startTime;
+                    log.info("JSON export completed: requestId={}, outputSize={}, durationMs={}",
+                            requestId, result.length(), duration);
+                    return result;
+                }
+                case XLSX -> {
+                    long startTime = System.currentTimeMillis();
+                    String result = excelDataTransformer.exportToJson(excelTransformationResult);
+                    long duration = System.currentTimeMillis() - startTime;
+                    log.info("JSON export completed: requestId={}, outputSize={}, durationMs={}",
+                            requestId, result.length(), duration);
+                    return result;
+                }
+            }
+        return null;
         } catch (JsonExportException e) {
             log.error("Failed to export to JSON: requestId={}, error={}",
                     requestId, e.getMessage(), e);
@@ -91,18 +112,30 @@ public class ConverterEngine {
         }
     }
 
-    public String exportToTurtle() throws TurtleExportException {
+    public String exportToTurtle(FileFormat fileFormat) throws TurtleExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Turtle export: requestId={}", requestId);
 
         try {
-            long startTime = System.currentTimeMillis();
-            String result = archiConverter.exportToTurtle();
-            long duration = System.currentTimeMillis() - startTime;
-
-            log.info("Turtle export completed: requestId={}, outputSize={}, durationMs={}",
-                    requestId, result.length(), duration);
-            return result;
+            switch (fileFormat) {
+                case ARCHI_XML -> {
+                    long startTime = System.currentTimeMillis();
+                    String result = archiConverter.exportToTurtle();
+                    long duration = System.currentTimeMillis() - startTime;
+                    log.info("Turtle export completed: requestId={}, outputSize={}, durationMs={}",
+                            requestId, result.length(), duration);
+                    return result;
+                }
+                case XLSX -> {
+                    long startTime = System.currentTimeMillis();
+                    String result = excelDataTransformer.exportToTurtle(excelTransformationResult);
+                    long duration = System.currentTimeMillis() - startTime;
+                    log.info("Turtle export completed: requestId={}, outputSize={}, durationMs={}",
+                            requestId, result.length(), duration);
+                    return result;
+                }
+            }
+            return null;
         } catch (TurtleExportException e) {
             log.error("Failed to export to Turtle: requestId={}, error={}",
                     requestId, e.getMessage(), e);
@@ -112,5 +145,13 @@ public class ConverterEngine {
                     requestId, e);
             throw new TurtleExportException("Během exportu do Turtle došlo k nečekané chybě.", e);
         }
+    }
+
+    public void parseExcelFromFile(MultipartFile file) throws ExcelReadingException, IOException{
+        excelOntologyData = excelReader.readOntologyFromExcel(file.getInputStream());
+    }
+
+    public void convertExcel() {
+        excelTransformationResult = excelDataTransformer.transform(excelOntologyData);
     }
 }

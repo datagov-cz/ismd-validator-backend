@@ -6,7 +6,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
 
 public class WorkbookProcessor {
 
@@ -33,17 +32,6 @@ public class WorkbookProcessor {
      * Checks if a sheet exists without throwing exceptions
      */
     public boolean hasSheet(Workbook workbook, String sheetName) {
-        return workbook.getSheet(sheetName) == null;
-    }
-
-    /**
-     * Gets all sheet names for discovery and validation
-     */
-    public List<String> getSheetNames(Workbook workbook) {
-        List<String> names = new ArrayList<>();
-        for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-            names.add(workbook.getSheetName(i));
-        }
-        return names;
+        return workbook.getSheet(sheetName) != null;
     }
 }
