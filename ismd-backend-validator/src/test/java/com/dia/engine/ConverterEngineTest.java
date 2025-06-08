@@ -34,7 +34,7 @@ class ConverterEngineTest {
 
     @BeforeEach
     void setUp() {
-        // Vyčištění MDC a nastavení ListAppender pro zachycení logů
+        // Vyčištění MDC a přidání ListAppender pro zachycení logů
         MDC.clear();
         testLogger = (Logger) LoggerFactory.getLogger(ConverterEngine.class);
         listAppender = new ListAppender<>();
@@ -49,14 +49,15 @@ class ConverterEngineTest {
         MDC.clear();
     }
 
-    //Test parseArchiFromString: pozitivní scénář, správné logování startu a dokončení s timingem
+    // ----- parseArchiFromString -------------------------------------------------------
     @Nested
     class ParseArchiFromStringTests {
+
         @Test
-        void testParseArchiFromString_happyPath() throws Exception {
+        void testParseArchiFromString_happyPath_logsAndVerify() throws Exception {
             // Nastavení MDC a stub pro parseFromString()
             MDC.put(LOG_REQUEST_ID, "req-1");
-            String content = "<xml>data</xml>";
+            String content = "<xml>valid content</xml>";
             doNothing().when(archiConverter).parseFromString(content);
 
             // Volání parseArchiFromString()
@@ -70,236 +71,283 @@ class ConverterEngineTest {
             assertTrue(start.getFormattedMessage()
                     .contains("Starting Archi XML parsing: requestId=req-1, contentLength=" + content.length()));
             ILoggingEvent end = listAppender.list.get(1);
+
+            // Ověření dokončení parsing
             assertTrue(end.getFormattedMessage()
                     .startsWith("Archi XML parsing completed: requestId=req-1, durationMs="));
         }
 
-
         @Test
-        void testParseArchiFromString_fileParsingExceptionIsPropagated() throws Exception {
-            String xmlContent = "<xml>invalid content</xml>";
+        void testParseArchiFromString_fileParsingException_propagated() throws Exception {
+            // Nastavení MDC a stub pro parseFromString() vyhazující FileParsingException
+            MDC.put(LOG_REQUEST_ID, "req-2");
+            String content = "<xml>invalid</xml>";
+            FileParsingException fpe = new FileParsingException("chyba parsování");
+            doThrow(fpe).when(archiConverter).parseFromString(content);
 
-            // Připravíme, aby archiConverter.parseFromString vyhodil FileParsingException
-            FileParsingException fpe = new FileParsingException("Chyba při parsování!");
-            doThrow(fpe).when(archiConverter).parseFromString(xmlContent);
+            // Volání parseArchiFromString() a zachycení FileParsingException
+            FileParsingException thrown = assertThrows(FileParsingException.class,
+                    () -> converterEngine.parseArchiFromString(content));
 
-            // Očekává se, že se propadne stejná FileParsingException
-            FileParsingException thrown = assertThrows(
-                    FileParsingException.class, () -> converterEngine.parseArchiFromString(xmlContent));
+            // Ověření textu výjimky
+            assertEquals("chyba parsování", thrown.getMessage());
 
-            // Oveření textu výjimky a že metoda parseFromString byla zavolána právě jednou
-            assertEquals("Chyba při parsování!", thrown.getMessage());
-            verify(archiConverter, times(1)).parseFromString(xmlContent);
+            // Kontrola ERROR logu s requestId a chybovou zprávou
+            assertEquals(2, listAppender.list.size());
+            ILoggingEvent error = listAppender.list.get(1);
+            assertTrue(error.getFormattedMessage()
+                    .contains("Failed to parse Archi XML: requestId=req-2, error=chyba parsování"));
         }
 
         @Test
-        void testParseArchiFromString_genericExceptionIsWrapped() throws Exception {
-            String xmlContent = "<xml>some content</xml>";
+        void testParseArchiFromString_unexpectedException_wrapped() throws Exception {
+            // Nastavení MDC a stub pro parseFromString() vyhazující RuntimeException
+            MDC.put(LOG_REQUEST_ID, "req-3");
+            String content = "<xml>some content</xml>";
+            RuntimeException re = new RuntimeException("nečekaná chyba");
+            doThrow(re).when(archiConverter).parseFromString(content);
 
-            // Připravíme, aby archiConverter.parseFromString vyhodil obecnou RuntimeException
-            RuntimeException re = new RuntimeException("Neočekávaná chyba");
-            doThrow(re).when(archiConverter).parseFromString(xmlContent);
+            // Volání parseArchiFromString() a zachycení FileParsingException
+            FileParsingException thrown = assertThrows(FileParsingException.class,
+                    () -> converterEngine.parseArchiFromString(content));
 
-            // Očekává se, že se chytí a vloží do FileParsingException se zprávou
-            FileParsingException thrown = assertThrows(
-                    FileParsingException.class, () -> converterEngine.parseArchiFromString(xmlContent));
-
-            // Ověření, že zpráva odpovídá implementaci v ConverterEngine a že důvod (cause) je původní RuntimeException
+            // Ověření obalené výjimky a jejího cause
             assertEquals("Během čtení souboru došlo k nečekané chybě.", thrown.getMessage());
             assertSame(re, thrown.getCause());
-            verify(archiConverter, times(1)).parseFromString(xmlContent);
+
+            // Kontrola ERROR logu pro neočekávanou chybu
+            assertEquals(2, listAppender.list.size());
+            ILoggingEvent error = listAppender.list.get(1);
+            assertTrue(error.getFormattedMessage()
+                    .contains("Unexpected error during Archi XML parsing: requestId=req-3"));
         }
 
         @Test
-        void testParseArchiFromString_nullContent() throws Exception {
-            String xmlContent = null;
-
-            // ArchiConverter.parseFromString(null) nevyhodí výjimku
+        void testParseArchiFromString_nullContent_invoked() throws Exception {
+            // Nastavení MDC a stub pro parseFromString(null)
+            MDC.put(LOG_REQUEST_ID, "req-4");
             doNothing().when(archiConverter).parseFromString(null);
 
-            // Volání testované metody s 'null'
-            converterEngine.parseArchiFromString(xmlContent);
+            // Volání parseArchiFromString(null)
+            converterEngine.parseArchiFromString(null);
 
-            // Ověření, že parseFromString byl zavolán s null
+            // Ověření, že parseFromString(null) byl skutečně zavolán
             verify(archiConverter, times(1)).parseFromString(null);
         }
     }
 
-    //---- convertArchi -------------------------------------------------------
+    // ----- convertArchi -------------------------------------------------------
     @Nested
     class ConvertArchiTests {
 
         @Test
-        void testConvertArchi_successTrue() throws Exception {
-            Boolean removeInvalid = true;
-
-            // ArchiConverter.setRemoveELI (true) a convert() nevyhodí výjimku
-            doNothing().when(archiConverter).setRemoveELI(removeInvalid);
+        void testConvertArchi_happyPath_logsAndVerify() throws Exception {
+            // Nastavení MDC a stub pro setRemoveELI() a convert()
+            MDC.put(LOG_REQUEST_ID, "req-5");
+            Boolean flag = true;
+            doNothing().when(archiConverter).setRemoveELI(flag);
             doNothing().when(archiConverter).convert();
 
-            // Volání testováné metody
-            converterEngine.convertArchi(removeInvalid);
+            // Volání convertArchi()
+            converterEngine.convertArchi(flag);
 
-            // Ověření, že nejprve byl nastaven flag removeInvalidSources a pak convert()
-            verify(archiConverter, times(1)).setRemoveELI(removeInvalid);
-            verify(archiConverter, times(1)).convert();
+            // Kontrola počtu logů (start + flag + end)
+            assertEquals(3, listAppender.list.size());
+
+            // Ověření start logu
+            assertTrue(listAppender.list.get(0).getFormattedMessage()
+                    .contains("Starting Archi model conversion: requestId=req-5"));
+
+            // Ověření logu flag
+            assertTrue(listAppender.list.get(1).getFormattedMessage()
+                    .contains("Invalid sources removal requested: true, requestId=req-5"));
+
+            // Ověření dokončení conversion
+            assertTrue(listAppender.list.get(2).getFormattedMessage()
+                    .contains("Archi model conversion completed: requestId=req-5, durationMs="));
         }
 
         @Test
-        void testConvertArchi_successFalse() throws Exception {
-            Boolean removeInvalid = false;
-
-            doNothing().when(archiConverter).setRemoveELI(removeInvalid);
-            doNothing().when(archiConverter).convert();
-
-            converterEngine.convertArchi(removeInvalid);
-
-            verify(archiConverter, times(1)).setRemoveELI(removeInvalid);
-            verify(archiConverter, times(1)).convert();
-        }
-
-        @Test
-        void testConvertArchi_nullFlag() throws Exception {
-            Boolean removeInvalid = null;
-
-            // Ověření, že při removeInvalidSources = null se volá setRemoveELI(null) a poté convert()
-            doNothing().when(archiConverter).setRemoveELI(null);
-            doNothing().when(archiConverter).convert();
-
-            converterEngine.convertArchi(removeInvalid);
-
-            verify(archiConverter, times(1)).setRemoveELI(null);
-            verify(archiConverter, times(1)).convert();
-        }
-
-        @Test
-        void testConvertArchi_conversionExceptionIsPropagated() throws Exception {
-            Boolean removeInvalid = true;
-            ConversionException ce = new ConversionException("Chyba při konverzi!");
-
-            // Konfigurace, že convert() vyhodí ConversionException
-            doNothing().when(archiConverter).setRemoveELI(removeInvalid);
+        void testConvertArchi_conversionException_propagated() throws Exception {
+            // Nastavení MDC a stub pro convert() vyhazující ConversionException
+            MDC.put(LOG_REQUEST_ID, "req-6");
+            Boolean flag = false;
+            ConversionException ce = new ConversionException("chyba konverze");
+            doNothing().when(archiConverter).setRemoveELI(flag);
             doThrow(ce).when(archiConverter).convert();
 
-            // Očekává se, že propadne stejná ConversionException
+            // Volání convertArchi() a zachycení ConversionException
             ConversionException thrown = assertThrows(
-                    ConversionException.class, () -> converterEngine.convertArchi(removeInvalid));
+                    ConversionException.class, () -> converterEngine.convertArchi(flag));
 
-            assertEquals("Chyba při konverzi!", thrown.getMessage());
-            verify(archiConverter, times(1)).setRemoveELI(removeInvalid);
-            verify(archiConverter, times(1)).convert();
+            // Ověření textu výjimky
+            assertEquals("chyba konverze", thrown.getMessage());
+
+            // Kontrola ERROR logu s requestId a chybou
+            assertEquals(3, listAppender.list.size());
+            ILoggingEvent error = listAppender.list.get(2);
+            assertTrue(error.getFormattedMessage()
+                    .contains("Failed to convert Archi model: requestId=req-6, error=chyba konverze"));
         }
 
         @Test
-        void testConvertArchi_genericExceptionIsWrapped() throws Exception {
-            Boolean removeInvalid = false;
-            RuntimeException re = new RuntimeException("Něco se pokazilo!");
-
-            // Konfigurace, že convert() vyhodí obecnou RuntimeException
-            doNothing().when(archiConverter).setRemoveELI(removeInvalid);
+        void testConvertArchi_unexpectedException_wrapped() throws Exception {
+            // Nastavení MDC a stub pro convert() vyhazující RuntimeException
+            MDC.put(LOG_REQUEST_ID, "req-7");
+            Boolean flag = null;
+            RuntimeException re = new RuntimeException("nečekaná chyba");
+            doNothing().when(archiConverter).setRemoveELI(flag);
             doThrow(re).when(archiConverter).convert();
 
-            // Očekává se, že bude vyhozena ConversionException s příslušným textem
+            // Volání convertArchi() a zachycení ConversionException
             ConversionException thrown = assertThrows(
-                    ConversionException.class, () -> converterEngine.convertArchi(removeInvalid));
+                    ConversionException.class, () -> converterEngine.convertArchi(flag));
 
+            // Ověření obalené výjimky a jejího cause
             assertEquals("Během konverze Archi souboru došlo k nečekané chybě.", thrown.getMessage());
-            assertNull(thrown.getCause());
 
-            verify(archiConverter, times(1)).setRemoveELI(removeInvalid);
-            verify(archiConverter, times(1)).convert();
+            // Kontrola ERROR logu neočekávané chyby
+            assertEquals(3, listAppender.list.size());
+            ILoggingEvent error = listAppender.list.get(2);
+            assertTrue(error.getFormattedMessage()
+                    .contains("Unexpected error during Archi model conversion: requestId=req-7"));
         }
     }
 
-        //---- exportToJson -------------------------------------------------------
-        @Nested
-        class ExportToJsonTests{
+    // ----- exportToJson -------------------------------------------------------
+    @Nested
+    class ExportToJsonTests{
 
-            @Test
-            void testExportToJson_successful() throws Exception {
-                String jsonResult = "{\"key\": \"value\"}";
+        @Test
+        void testExportToJson_happyPath_logsAndVerify() throws Exception {
+            // Nastavení MDC a stub pro exportToJson()
+            MDC.put("requestId", "req-8");
+            String result = "{\"k\":1}";
+            when(archiConverter.exportToJson()).thenReturn(result);
 
-                // ArchiConverter.exportToJson() vrátí připravený řetězec JSON
-                when(archiConverter.exportToJson()).thenReturn(jsonResult);
+            // Volání exportToJson()
+            String out = converterEngine.exportToJson();
 
-                // Volání testované metody
-                String returned = converterEngine.exportToJson();
+            // Kontrola návratové hodnoty
+            assertEquals(result, out);
 
-                // Ověření, že vrácená hodnota odpovídá vrácené hodnotě z ArchiConverter
-                assertEquals(jsonResult, returned);
-                verify(archiConverter, times(1)).exportToJson();
-            }
-
-            @Test
-            void testExportToJson_jsonExportExceptionIsPropagated() throws Exception {
-                JsonExportException jee = new JsonExportException("Chyba při exportu do JSON");
-                when(archiConverter.exportToJson()).thenThrow(jee);
-
-                // Očekavá se, že propadne stejná JsonExportException
-                JsonExportException thrown = assertThrows(
-                        JsonExportException.class, () -> converterEngine.exportToJson());
-
-                assertEquals("Chyba při exportu do JSON", thrown.getMessage());
-                verify(archiConverter, times(1)).exportToJson();
-            }
-
-            @Test
-            void testExportToJson_genericExceptionIsWrapped() throws Exception {
-                RuntimeException re = new RuntimeException("Neočekávaná chyba");
-
-                when(archiConverter.exportToJson()).thenThrow(re);
-
-                // Očekává se, že se obalí do JsonExportException s textem z ConverterEngine
-                JsonExportException thrown = assertThrows(
-                        JsonExportException.class, () -> converterEngine.exportToJson());
-
-                assertEquals("Během exportu do JSON došlo k nečekané chybě", thrown.getMessage());
-                verify(archiConverter, times(1)).exportToJson();
-            }
+            // Ověření logů startu a dokončení s outputSize a durationMs
+            assertEquals(2, listAppender.list.size());
+            assertTrue(listAppender.list.get(0).getFormattedMessage()
+                    .contains("Starting JSON export: requestId=req-8"));
+            assertTrue(listAppender.list.get(1).getFormattedMessage()
+                    .contains("JSON export completed: requestId=req-8, outputSize=" + result.length() + ", durationMs="));
         }
 
-        @Nested
-        class ExportToTurtleTests{
+        @Test
+        void testExportToJson_jsonExportException_propagated() throws Exception {
+            // Nastavení MDC a stub pro exportToJson() vyhazující JsonExportException
+            MDC.put("requestId", "req-9");
+            JsonExportException je = new JsonExportException("chyba JSON");
+            when(archiConverter.exportToJson()).thenThrow(je);
 
-            @Test
-            void testExportToTurtle_successful() throws Exception {
-                String turtleResult = "@prefix ex: <http://example.org/ .>";
+            // Volání exportToJson() a zachycení JsonExportException
+            JsonExportException thrown = assertThrows(
+                    JsonExportException.class, () -> converterEngine.exportToJson());
 
-                // ArchiConverter.exportToTurtle() vrátí připravený řetězec Turtle
-                when(archiConverter.exportToTurtle()).thenReturn(turtleResult);
+            // Ověření textu výjimky
+            assertEquals("chyba JSON", thrown.getMessage());
 
-                // Volání testováné metody
-                String returned = converterEngine.exportToTurtle();
+            // Kontrola ERROR logu neočekávané chyby
+            assertEquals(2, listAppender.list.size());
+            ILoggingEvent error = listAppender.list.get(1);
+            assertTrue(error.getFormattedMessage()
+                    .contains("Failed to export to JSON: requestId=req-9, error=chyba JSON"));
+        }
 
-                // Ověření, že vrácený řetězec odpovídá tomu z ArchiConverter
-                assertEquals(turtleResult, returned);
-                verify(archiConverter, times(1)).exportToTurtle();
-            }
+        @Test
+        void testExportToJson_unexpectedException_wrapped() throws Exception {
+            // Nastavení MDC a stub pro exportToJson() vyhazující RuntimeException
+            MDC.put("requestId", "req-10");
+            RuntimeException re = new RuntimeException("nečekaná chyba");
+            when(archiConverter.exportToJson()).thenThrow(re);
 
-            @Test
-            void testExportToTurtle_turtleExportExceptionIsPropagated() throws Exception{
-                TurtleExportException tee = new TurtleExportException("Chyba při exportu do Turtle");
-                when(archiConverter.exportToTurtle()).thenThrow(tee);
+            // Volání exportToJson() a zachycení JsonExportException
+            JsonExportException thrown = assertThrows(
+                    JsonExportException.class, () -> converterEngine.exportToJson());
 
-                // Očekává se, že se propadne stejná TurtleExportException
-                TurtleExportException thrown = assertThrows(
-                        TurtleExportException.class, () -> converterEngine.exportToTurtle());
+            // Ověření obalené výjimky a jejího cause
+            assertEquals("Během exportu do JSON došlo k nečekané chybě", thrown.getMessage());
+            assertSame(re, thrown.getCause());
 
-                assertEquals("Chyba při exportu do Turtle", thrown.getMessage());
-                verify(archiConverter, times(1)).exportToTurtle();
-            }
+            // Kontrola ERROR logu neočekávané chyby
+            assertEquals(2, listAppender.list.size());
+            ILoggingEvent error = listAppender.list.get(1);
+            assertTrue(error.getFormattedMessage()
+                    .contains("Unexpected error during JSON export: requestId=req-10"));
+        }
+    }
 
-            @Test
-            void testExportToTurtle_genericExceptionIsWrapped() throws Exception {
-                RuntimeException re = new RuntimeException("Neočekávaná chyba");
-                when(archiConverter.exportToTurtle()).thenThrow(re);
+    // ----- exportToTurtle -------------------------------------------------------
+    @Nested
+    class ExportToTurtleTests{
 
-                // Očekává se, že bude vyhozena TurtleExportException se zprávou z ConverterEngine
-                TurtleExportException thrown = assertThrows(
-                        TurtleExportException.class, () -> converterEngine.exportToTurtle());
+        @Test
+        void testExportToTurtle_happyPath_logsAndVerify() throws Exception {
+            // Nastavení MDC a stub pro exportToTurtle()
+            MDC.put(LOG_REQUEST_ID, "req-11");
+            String result = "@prefix";
+            when(archiConverter.exportToTurtle()).thenReturn(result);
 
-                assertEquals("Během exportu do Turtle došlo k nečekané chybě.", thrown.getMessage());
-                verify(archiConverter, times(1)).exportToTurtle();
-            }
+            // Volání exportToTurtle()
+            String out = converterEngine.exportToTurtle();
+
+            // Kontrola návratové hodnoty
+            assertEquals(result, out);
+
+            // Ověření logů startu a dokončení s outputSize a durationMs
+            assertEquals(2, listAppender.list.size());
+            assertTrue(listAppender.list.get(0).getFormattedMessage()
+                    .contains("Starting Turtle export: requestId=req-11"));
+            assertTrue(listAppender.list.get(1).getFormattedMessage()
+                    .contains("Turtle export completed: requestId=req-11, outputSize=" + result.length() + ", durationMs="));
+        }
+
+        @Test
+        void testExportToTurtle_turtleExportException_propagated() throws Exception {
+            // Nastavení MDC a stub pro exportToTurtle() vyhazující TurtleExportException
+            MDC.put(LOG_REQUEST_ID, "req-12");
+            TurtleExportException te = new TurtleExportException("chyba Turtle");
+            when(archiConverter.exportToTurtle()).thenThrow(te);
+
+            // Volání exportToTurtle() и zachycení TurtleExportException
+            TurtleExportException thrown = assertThrows(
+                    TurtleExportException.class, () -> converterEngine.exportToTurtle());
+
+            // Ověření textu výjimky
+            assertEquals("chyba Turtle", thrown.getMessage());
+
+            // Kontrola ERROR logu neočekávané chyby
+            assertEquals(2, listAppender.list.size());
+            ILoggingEvent error = listAppender.list.get(1);
+            assertTrue(error.getFormattedMessage()
+                    .contains("Failed to export to Turtle: requestId=req-12, error=chyba Turtle"));
+        }
+
+        @Test
+        void testExportToTurtle_unexpectedException_wrapped() throws Exception {
+            // Nastavení MDC a stub pro exportToTurtle() vyhazující RuntimeException
+            MDC.put(LOG_REQUEST_ID, "req-13");
+            RuntimeException re = new RuntimeException("nečekaná chyba");
+            when(archiConverter.exportToTurtle()).thenThrow(re);
+
+            // Volání exportToTurtle() и zachycení TurtleExportException
+            TurtleExportException thrown = assertThrows(
+                    TurtleExportException.class, () -> converterEngine.exportToTurtle());
+
+            // Ověření obаlené výjimкy и jejího cause
+            assertEquals("Během exportu do Turtle došlo k nečekané chybě.", thrown.getMessage());
+
+            // Kontrola ERROR logu neočekávané chyby
+            assertEquals(2, listAppender.list.size());
+            ILoggingEvent error = listAppender.list.get(1);
+            assertTrue(error.getFormattedMessage()
+                    .contains("Unexpected error during Turtle export: requestId=req-13"));
+        }
     }
 }
