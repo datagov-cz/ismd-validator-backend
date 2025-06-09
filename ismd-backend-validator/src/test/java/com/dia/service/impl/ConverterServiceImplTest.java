@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * vracejí výsledky a propagují výjimky.
  */
 @ExtendWith(MockitoExtension.class)
-public class ConverterServiceImplTest {
+class ConverterServiceImplTest {
 
     @Mock
     private ConverterEngine converterEngine;
@@ -175,5 +175,4 @@ public class ConverterServiceImplTest {
         assertEquals("", result, "Service should return empty string when engine returns empty string");
         verify(converterEngine, times(1)).exportToTurtle();
     }
-
 }
