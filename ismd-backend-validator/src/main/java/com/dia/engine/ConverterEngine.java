@@ -4,6 +4,7 @@ import com.dia.converter.archi.ArchiConverter;
 import com.dia.converter.excel.data.OntologyData;
 import com.dia.converter.excel.reader.ExcelReader;
 import com.dia.converter.excel.transformer.ExcelDataTransformer;
+import com.dia.converter.excel.transformer.TransformationResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class ConverterEngine {
     private final ExcelReader excelReader;
     private final ExcelDataTransformer excelDataTransformer;
 
-    private com.dia.converter.excel.transformer.ExcelDataTransformer.TransformationResult excelTransformationResult;
+    private TransformationResult excelTransformationResult;
     private OntologyData  excelOntologyData;
 
     public void parseArchiFromString(String content) throws FileParsingException {
@@ -53,7 +54,7 @@ public class ConverterEngine {
         }
     }
 
-    public void convertArchi(Boolean removeInvalidSources) throws ConversionException {
+    public void convertArchi(boolean removeInvalidSources) throws ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Archi model conversion: requestId={}", requestId);
         log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
@@ -151,7 +152,7 @@ public class ConverterEngine {
         excelOntologyData = excelReader.readOntologyFromExcel(file.getInputStream());
     }
 
-    public void convertExcel() {
-        excelTransformationResult = excelDataTransformer.transform(excelOntologyData);
+    public void convertExcel(boolean removeInvalidSources) {
+        excelTransformationResult = excelDataTransformer.transform(excelOntologyData, removeInvalidSources);
     }
 }

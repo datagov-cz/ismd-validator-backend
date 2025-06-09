@@ -1,15 +1,20 @@
 package com.dia.utility;
 
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import static com.dia.constants.ArchiOntologyConstants.XSD;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @UtilityClass
+@Slf4j
 public class UtilityMethods {
 
     public boolean isValidFirstChar(char ch) {
@@ -125,5 +130,46 @@ public class UtilityMethods {
         }
 
         return value;
+    }
+
+    /**
+     * Transforms ELI URLs from e-sbirka to opendata.eselpoint.cz
+     * Following ArchiConverter pattern
+     */
+    public String transformEliUrl(String url, boolean removeELI) {
+        if (Boolean.FALSE.equals(removeELI)) {
+            return url;
+        }
+
+        Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
+        Matcher matcher = eliPattern.matcher(url);
+
+        if (matcher.matches()) {
+            String eliPart = matcher.group(1);
+            String transformedUrl = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+            log.debug("Transformed ELI URL: {} -> {}", url, transformedUrl);
+            return transformedUrl;
+        } else {
+            return url;
+        }
+    }
+
+    /**
+     * Maps data type strings to XSD URIs using DataTypeConverter patterns
+     */
+    public String mapDataTypeToXSD(String dataType) {
+        String normalized = dataType.toLowerCase().trim();
+
+        return switch (normalized) {
+            case "string", "text", "řetězec" -> XSD + "string";
+            case "boolean", "bool", "logický" -> XSD + "boolean";
+            case "integer", "int", "celé číslo" -> XSD + "integer";
+            case "decimal", "float", "double", "desetinné číslo" -> XSD + "decimal";
+            case "date", "datum" -> XSD + "date";
+            case "time", "čas" -> XSD + "time";
+            case "datetime", "datum a čas" -> XSD + "dateTime";
+            case "uri", "url", "anyuri" -> XSD + "anyURI";
+            default -> XSD + "string"; // Safe fallback
+        };
     }
 }
