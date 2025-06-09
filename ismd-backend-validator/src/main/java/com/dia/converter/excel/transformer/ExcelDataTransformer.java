@@ -26,8 +26,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.dia.constants.ArchiOntologyConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
@@ -53,7 +51,7 @@ public class ExcelDataTransformer {
     private String modelName;
 
     @Setter
-    private Boolean removeELI = false;
+    private Boolean removeELI;
 
     public ExcelDataTransformer() {
         this.baseModel = new OFNBaseModel();
@@ -62,14 +60,13 @@ public class ExcelDataTransformer {
         this.uriGenerator = new URIGenerator();
     }
 
-    public TransformationResult transform(OntologyData ontologyData, boolean removeInvalidSources) throws ConversionException {
+    public TransformationResult transform(OntologyData ontologyData) throws ConversionException {
         try {
             log.info("Starting ontology data transformation...");
 
             if (ontologyData == null || ontologyData.getVocabularyMetadata() == null) {
                 throw new ConversionException("Invalid ontology data");
             }
-            this.removeELI = removeInvalidSources;
 
             String effectiveNamespace = determineEffectiveNamespace(ontologyData.getVocabularyMetadata());
             uriGenerator.setEffectiveNamespace(effectiveNamespace);

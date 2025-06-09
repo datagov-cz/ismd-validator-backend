@@ -30,8 +30,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.dia.constants.ArchiOntologyConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
