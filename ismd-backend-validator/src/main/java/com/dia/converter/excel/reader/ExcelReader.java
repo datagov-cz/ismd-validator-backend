@@ -33,11 +33,6 @@ public class ExcelReader {
         initializeDefaultMappings();
     }
 
-    /**
-     * Main entry point for reading Excel files
-     * @param inputStream The Excel file input stream
-     * @return Parsed ontology data ready for transformation
-     */
     public OntologyData readOntologyFromExcel(InputStream inputStream) throws ExcelReadingException {
         OntologyData.Builder builder;
         try (inputStream; Workbook workbook = workbookProcessor.openWorkbook(inputStream)) {
@@ -73,20 +68,18 @@ public class ExcelReader {
     }
 
     private List<PropertyData> processPropertiesSheet(Workbook workbook) throws ExcelReadingException {
-        // TODO: verify if Vlastnosti are required
-        /*if (!workbookProcessor.hasSheet(workbook, VLASTNOSTI)) {
+        if (!workbookProcessor.hasSheet(workbook, VLASTNOSTI)) {
         throw new ExcelReadingException("Workbook does not have Vlastnosti sheet.");
-        }*/
+        }
         Sheet sheet = workbookProcessor.getSheet(workbook, VLASTNOSTI);
         return new PropertySheetProcessor(mappingRegistry).process(sheet);
 
     }
 
     private List<RelationshipData> processRelationshipsSheet(Workbook workbook) throws ExcelReadingException {
-        // TODO: verify if Vztahy are required
-        /*if (!workbookProcessor.hasSheet(workbook, VZTAHY)) {
+        if (!workbookProcessor.hasSheet(workbook, VZTAHY)) {
         throw new ExcelReadingException("Workbook does not have Vztahy sheet.");
-        }*/
+        }
         Sheet sheet = workbookProcessor.getSheet(workbook, VZTAHY);
         return new RelationshipSheetProcessor(mappingRegistry).process(sheet);
     }

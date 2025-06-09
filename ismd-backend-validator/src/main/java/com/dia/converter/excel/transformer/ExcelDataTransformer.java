@@ -162,9 +162,6 @@ public class ExcelDataTransformer {
                 DataTypeConverter.addTypedProperty(ontologyResource, descProperty, metadata.getDescription(), "cs", ontModel);
             }
 
-            //TODO: Add multilingual vocabulary labels
-            addVocabularyMultilingualLabels(ontologyResource, metadata);
-
             resourceMap.put("ontology", ontologyResource);
             log.debug("Ontology resource created successfully: {}", ontologyIRI);
         }
@@ -295,7 +292,6 @@ public class ExcelDataTransformer {
         addDomainRelationship(propertyResource, propertyData);
         addRangeInformation(propertyResource, propertyData);
         addDataGovernanceMetadata(propertyResource, propertyData);
-        addMultilingualLabels(propertyResource, propertyData);
         addSchemeRelationship(propertyResource);
         return propertyResource;
     }
@@ -329,7 +325,6 @@ public class ExcelDataTransformer {
         addResourceMetadata(relationshipResource, relationshipData.getName(), relationshipData.getDescription(),
                 relationshipData.getDefinition(), relationshipData.getSource());
         addDomainRangeRelationships(relationshipResource, relationshipData);
-        addMultilingualLabels(relationshipResource, relationshipData);
         addSchemeRelationship(relationshipResource);
         return relationshipResource;
     }
@@ -418,8 +413,6 @@ public class ExcelDataTransformer {
             DataTypeConverter.addTypedProperty(classResource, aisProperty,
                     classData.getAgendaSystemCode(), null, ontModel);
         }
-
-        addMultilingualLabels(classResource, classData);
     }
 
     private void addAlternativeNames(Resource resource, String altNamesValue) {
@@ -442,26 +435,6 @@ public class ExcelDataTransformer {
                     DataTypeConverter.addTypedProperty(resource, altNameProperty, name, "cs", ontModel);
                     log.debug("Added alternative name: {}", name);
                 });
-    }
-
-    private void addVocabularyMultilingualLabels(Resource ontologyResource, VocabularyMetadata metadata) {
-        // This is a placeholder for when VocabularyMetadata is extended with multilingual fields
-        log.debug("Multilingual vocabulary labels processing completed");
-    }
-
-    private void addMultilingualLabels(Resource resource, ClassData classData) {
-        // Placeholder for when ClassData is extended with multilingual fields
-        log.debug("Multilingual label processing completed for class: {}", resource.getURI());
-    }
-
-    private void addMultilingualLabels(Resource resource, PropertyData propertyData) {
-        // Placeholder for when PropertyData is extended with multilingual fields
-        log.debug("Multilingual label processing completed for property: {}", resource.getURI());
-    }
-
-    private void addMultilingualLabels(Resource resource, RelationshipData relationshipData) {
-        // Placeholder for when RelationshipData is extended with multilingual fields
-        log.debug("Multilingual label processing completed for relationship: {}", resource.getURI());
     }
 
     private void addDomainRelationship(Resource propertyResource, PropertyData propertyData) {
