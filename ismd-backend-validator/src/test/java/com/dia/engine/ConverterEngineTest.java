@@ -141,7 +141,7 @@ class ConverterEngineTest {
     class ConvertArchiTests {
 
         @Test
-        void testConvertArchi_happyPath_logsAndVerify() throws Exception {
+        void testConvertArchi_happyPath_logsAndVerify() {
             // Nastavení MDC a stub pro setRemoveELI() a convert()
             MDC.put(LOG_REQUEST_ID, "req-5");
             Boolean flag = true;
@@ -168,7 +168,7 @@ class ConverterEngineTest {
         }
 
         @Test
-        void testConvertArchi_conversionException_propagated() throws Exception {
+        void testConvertArchi_conversionException_propagated() {
             // Nastavení MDC a stub pro convert() vyhazující ConversionException
             MDC.put(LOG_REQUEST_ID, "req-6");
             Boolean flag = false;
@@ -191,7 +191,7 @@ class ConverterEngineTest {
         }
 
         @Test
-        void testConvertArchi_unexpectedException_wrapped() throws Exception {
+        void testConvertArchi_unexpectedException_wrapped() {
             // Nastavení MDC a stub pro convert() vyhazující RuntimeException
             MDC.put(LOG_REQUEST_ID, "req-7");
             Boolean flag = null;
@@ -219,9 +219,9 @@ class ConverterEngineTest {
     class ExportToJsonTests{
 
         @Test
-        void testExportToJson_happyPath_logsAndVerify() throws Exception {
+        void testExportToJson_happyPath_logsAndVerify() {
             // Nastavení MDC a stub pro exportToJson()
-            MDC.put("requestId", "req-8");
+            MDC.put(LOG_REQUEST_ID, "req-8");
             String result = "{\"k\":1}";
             when(archiConverter.exportToJson()).thenReturn(result);
 
@@ -240,9 +240,9 @@ class ConverterEngineTest {
         }
 
         @Test
-        void testExportToJson_jsonExportException_propagated() throws Exception {
+        void testExportToJson_jsonExportException_propagated() {
             // Nastavení MDC a stub pro exportToJson() vyhazující JsonExportException
-            MDC.put("requestId", "req-9");
+            MDC.put(LOG_REQUEST_ID, "req-9");
             JsonExportException je = new JsonExportException("chyba JSON");
             when(archiConverter.exportToJson()).thenThrow(je);
 
@@ -261,9 +261,9 @@ class ConverterEngineTest {
         }
 
         @Test
-        void testExportToJson_unexpectedException_wrapped() throws Exception {
+        void testExportToJson_unexpectedException_wrapped() {
             // Nastavení MDC a stub pro exportToJson() vyhazující RuntimeException
-            MDC.put("requestId", "req-10");
+            MDC.put(LOG_REQUEST_ID, "req-10");
             RuntimeException re = new RuntimeException("nečekaná chyba");
             when(archiConverter.exportToJson()).thenThrow(re);
 
@@ -288,7 +288,7 @@ class ConverterEngineTest {
     class ExportToTurtleTests{
 
         @Test
-        void testExportToTurtle_happyPath_logsAndVerify() throws Exception {
+        void testExportToTurtle_happyPath_logsAndVerify() {
             // Nastavení MDC a stub pro exportToTurtle()
             MDC.put(LOG_REQUEST_ID, "req-11");
             String result = "@prefix";
@@ -309,7 +309,7 @@ class ConverterEngineTest {
         }
 
         @Test
-        void testExportToTurtle_turtleExportException_propagated() throws Exception {
+        void testExportToTurtle_turtleExportException_propagated() {
             // Nastavení MDC a stub pro exportToTurtle() vyhazující TurtleExportException
             MDC.put(LOG_REQUEST_ID, "req-12");
             TurtleExportException te = new TurtleExportException("chyba Turtle");
@@ -330,7 +330,7 @@ class ConverterEngineTest {
         }
 
         @Test
-        void testExportToTurtle_unexpectedException_wrapped() throws Exception {
+        void testExportToTurtle_unexpectedException_wrapped() {
             // Nastavení MDC a stub pro exportToTurtle() vyhazující RuntimeException
             MDC.put(LOG_REQUEST_ID, "req-13");
             RuntimeException re = new RuntimeException("nečekaná chyba");
