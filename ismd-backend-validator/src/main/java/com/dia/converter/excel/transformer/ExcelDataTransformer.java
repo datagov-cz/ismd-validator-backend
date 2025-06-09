@@ -26,22 +26,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.dia.constants.ArchiOntologyConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
 /**
  * OntologyDataTransformer - Transforms Excel-parsed data into OFN ontology models
- * <p>
- * This transformer bridges the gap between the Excel reader output (OntologyData)
- * and the format expected by the existing JSON and Turtle exporters.
- * <p>
- * Key responsibilities:
- * 1. Transform OntologyData into populated OntModel
- * 2. Use DataTypeConverter for intelligent type detection
- * 3. Use UtilityMethods for URI generation and validation
- * 4. Create the resourceMap expected by exporters
- * 5. Preserve all Excel metadata in appropriate RDF properties
  */
 @Component
 @Slf4j
@@ -70,11 +62,6 @@ public class ExcelDataTransformer {
         this.uriGenerator = new URIGenerator();
     }
 
-    /**
-     * Main transformation method
-     * @param ontologyData Parsed Excel data
-     * @return TransformationResult containing everything needed for export
-     */
     public TransformationResult transform(OntologyData ontologyData, boolean removeInvalidSources) throws ConversionException {
         try {
             log.info("Starting ontology data transformation...");
@@ -105,7 +92,7 @@ public class ExcelDataTransformer {
 
             return new TransformationResult(
                     ontModel,
-                    new HashMap<>(resourceMap), // defensive copy
+                    new HashMap<>(resourceMap),
                     ontologyData.getVocabularyMetadata().getName(),
                     modelProperties,
                     effectiveNamespace
@@ -122,7 +109,6 @@ public class ExcelDataTransformer {
         log.info("Starting JSON export: requestId={}, modelName={}", requestId, modelName);
 
         try {
-            log.debug("Creating JSON exporter: requestId={}", requestId);
             JsonExporter exporter = new JsonExporter(
                     transformationResult.getOntModel(),
                     transformationResult.getResourceMap(),
@@ -133,9 +119,6 @@ public class ExcelDataTransformer {
             String result = exporter.exportToJson();
             log.info("JSON export completed: requestId={}, outputSize={}", requestId, result.length());
             return result;
-        } catch (JsonExportException e) {
-            log.error("JSON export error: requestId={}, error={}", requestId, e.getMessage(), e);
-            throw e;
         } catch (Exception e) {
             log.error("Unexpected error during JSON export: requestId={}", requestId, e);
             throw new JsonExportException("Neočekávaná chyba při exportu do JSON.", e);
@@ -147,7 +130,6 @@ public class ExcelDataTransformer {
         log.info("Starting Turtle export: requestId={}, modelName={}", requestId, modelName);
 
         try {
-            log.debug("Creating Turtle exporter: requestId={}", requestId);
             TurtleExporter exporter = new TurtleExporter(
                     transformationResult.getOntModel(),
                     transformationResult.getResourceMap(),
@@ -157,26 +139,19 @@ public class ExcelDataTransformer {
             String result = exporter.exportToTurtle();
             log.info("Turtle export completed: requestId={}, outputSize={}", requestId, result.length());
             return result;
-        } catch (TurtleExportException e) {
-            log.error("Turtle export error: requestId={}, error={}", requestId, e.getMessage(), e);
-            throw e;
         } catch (Exception e) {
             log.error("Unexpected error during Turtle export: requestId={}", requestId, e);
             throw new TurtleExportException("Neočekávaná chyba při exportu do Turtle.", e);
         }
     }
 
-    /**
-     * Creates the ontology resource with proper IRI based on vocabulary metadata
-     */
     private void createOntologyResource(VocabularyMetadata metadata, String effectiveNamespace) {
         String ontologyIRI = assembleOntologyIRI(metadata.getName(), effectiveNamespace);
-
         log.debug("Creating ontology resource with IRI: {}", ontologyIRI);
 
         ontModel.createOntology(ontologyIRI);
-
         Resource ontologyResource = ontModel.getResource(ontologyIRI);
+
         if (ontologyResource != null) {
             ontologyResource.addProperty(RDF.type, ontModel.getResource("http://www.w3.org/2002/07/owl#Ontology"));
             ontologyResource.addProperty(RDF.type, SKOS.ConceptScheme);
@@ -190,19 +165,16 @@ public class ExcelDataTransformer {
                 DataTypeConverter.addTypedProperty(ontologyResource, descProperty, metadata.getDescription(), "cs", ontModel);
             }
 
-            resourceMap.put("ontology", ontologyResource);
+            //TODO: Add multilingual vocabulary labels
+            addVocabularyMultilingualLabels(ontologyResource, metadata);
 
+            resourceMap.put("ontology", ontologyResource);
             log.debug("Ontology resource created successfully: {}", ontologyIRI);
         }
     }
 
-    /**
-     * Initializes clean type classes with hyphenated URIs
-     * This prevents the creation of type classes with spaces in URIs
-     */
     private void initializeCleanTypeClasses() {
         String namespace = uriGenerator.getEffectiveNamespace();
-
         ontModel.createResource(namespace + TYP_POJEM);
         ontModel.createResource(namespace + TYP_TRIDA);
         ontModel.createResource(namespace + TYP_VZTAH);
@@ -211,36 +183,25 @@ public class ExcelDataTransformer {
         ontModel.createResource(namespace + TYP_TOP);
         ontModel.createResource(namespace + TYP_VEREJNY_UDAJ);
         ontModel.createResource(namespace + TYP_NEVEREJNY_UDAJ);
-
         log.debug("Initialized clean type classes with hyphenated URIs");
     }
 
-    /**
-     * Assembles the complete ontology IRI from name and namespace (like ArchiConverter)
-     */
     private String assembleOntologyIRI(String modelName, String effectiveNamespace) {
         if (modelName == null || modelName.trim().isEmpty()) {
             return effectiveNamespace;
         }
-
         String baseNamespace = effectiveNamespace;
         if (baseNamespace.endsWith("/")) {
             baseNamespace = baseNamespace.substring(0, baseNamespace.length() - 1);
         }
-
         return baseNamespace + "/" + UtilityMethods.sanitizeForIRI(modelName);
     }
 
-    /**
-     * Determines the effective namespace from vocabulary metadata
-     */
     private String determineEffectiveNamespace(VocabularyMetadata metadata) {
         String namespace = metadata.getNamespace();
-
         if (namespace != null && !namespace.trim().isEmpty() && UtilityMethods.isValidUrl(namespace)) {
             return UtilityMethods.ensureNamespaceEndsWithDelimiter(namespace);
         }
-
         return NS;
     }
 
@@ -249,120 +210,82 @@ public class ExcelDataTransformer {
         if (ontologyResource != null && resource.hasProperty(RDF.type,
                 ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_POJEM))) {
             resource.addProperty(SKOS.inScheme, ontologyResource);
-            log.debug("Added inScheme relationship for resource: {}", resource.getURI());
         }
     }
 
-    /**
-     * Creates model properties map
-     */
     private Map<String, String> createModelProperties(VocabularyMetadata metadata) {
         Map<String, String> properties = new HashMap<>();
-
         if (metadata.getName() != null) {
             properties.put(LABEL_NAZEV, metadata.getName());
         }
-
         if (metadata.getDescription() != null) {
             properties.put(LABEL_POPIS, metadata.getDescription());
         }
-
         if (metadata.getNamespace() != null) {
             properties.put(LABEL_ALKD, metadata.getNamespace());
         }
-
         return properties;
     }
 
-    /**
-     * Transforms Excel class data into ontology classes
-     */
     private void transformClasses(List<ClassData> classes) {
         log.debug("Transforming {} classes", classes.size());
-
         for (ClassData classData : classes) {
             if (!classData.hasValidData()) {
                 log.warn("Skipping invalid class: {}", classData.getName());
                 continue;
             }
-
             try {
                 Resource classResource = createClassResource(classData);
                 classResources.put(classData.getName(), classResource);
                 resourceMap.put(classData.getName(), classResource);
-
                 log.debug("Created class: {} -> {}", classData.getName(), classResource.getURI());
-
             } catch (Exception e) {
                 log.error("Failed to create class: {}", classData.getName(), e);
             }
         }
     }
 
-    /**
-     * Creates an individual class resource from ClassData
-     */
     private Resource createClassResource(ClassData classData) {
         String classURI = uriGenerator.generateClassURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
         classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_POJEM));
-
         addSpecificClassType(classResource, classData);
-
         addResourceMetadata(classResource, classData.getName(), classData.getDescription(),
                 classData.getDefinition(), classData.getSource());
-
         addClassSpecificMetadata(classResource, classData);
-
         addSchemeRelationship(classResource);
-
         return classResource;
     }
 
-    /**
-     * Adds specific type classification based on Excel data
-     */
     private void addSpecificClassType(Resource classResource, ClassData classData) {
         String excelType = classData.getType();
-
         if ("Subjekt práva".equals(excelType)) {
             classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_TSP));
         } else if ("Objekt práva".equals(excelType)) {
             classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_TOP));
         }
-
         classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_TRIDA));
     }
 
-    /**
-     * Transforms Excel property data into ontology properties
-     */
     private void transformProperties(List<PropertyData> properties) {
         log.debug("Transforming {} properties", properties.size());
-
         for (PropertyData propertyData : properties) {
             if (!propertyData.hasValidData()) {
                 log.warn("Skipping invalid property: {}", propertyData.getName());
                 continue;
             }
-
             try {
                 Resource propertyResource = createPropertyResource(propertyData);
                 propertyResources.put(propertyData.getName(), propertyResource);
                 resourceMap.put(propertyData.getName(), propertyResource);
-
                 log.debug("Created property: {} -> {}", propertyData.getName(), propertyResource.getURI());
-
             } catch (Exception e) {
                 log.error("Failed to create property: {}", propertyData.getName(), e);
             }
         }
     }
 
-    /**
-     * Creates an individual property resource from PropertyData
-     */
     private Resource createPropertyResource(PropertyData propertyData) {
         String propertyURI = uriGenerator.generatePropertyURI(propertyData.getName(), propertyData.getIdentifier());
         Resource propertyResource = ontModel.createResource(propertyURI);
@@ -372,48 +295,32 @@ public class ExcelDataTransformer {
 
         addResourceMetadata(propertyResource, propertyData.getName(), propertyData.getDescription(),
                 propertyData.getDefinition(), propertyData.getSource());
-
         addDomainRelationship(propertyResource, propertyData);
-
         addRangeInformation(propertyResource, propertyData);
-
         addDataGovernanceMetadata(propertyResource, propertyData);
-
         addMultilingualLabels(propertyResource, propertyData);
-
         addSchemeRelationship(propertyResource);
-
         return propertyResource;
     }
 
-    /**
-     * Transforms Excel relationship data into ontology relationships
-     */
     private void transformRelationships(List<RelationshipData> relationships) {
         log.debug("Transforming {} relationships", relationships.size());
-
         for (RelationshipData relationshipData : relationships) {
             if (!relationshipData.hasValidData()) {
                 log.warn("Skipping invalid relationship: {}", relationshipData.getName());
                 continue;
             }
-
             try {
                 Resource relationshipResource = createRelationshipResource(relationshipData);
                 relationshipResources.put(relationshipData.getName(), relationshipResource);
                 resourceMap.put(relationshipData.getName(), relationshipResource);
-
                 log.debug("Created relationship: {} -> {}", relationshipData.getName(), relationshipResource.getURI());
-
             } catch (Exception e) {
                 log.error("Failed to create relationship: {}", relationshipData.getName(), e);
             }
         }
     }
 
-    /**
-     * Creates an individual relationship resource from RelationshipData
-     */
     private Resource createRelationshipResource(RelationshipData relationshipData) {
         String relationshipURI = uriGenerator.generateRelationshipURI(relationshipData.getName(),
                 relationshipData.getIdentifier());
@@ -424,20 +331,12 @@ public class ExcelDataTransformer {
 
         addResourceMetadata(relationshipResource, relationshipData.getName(), relationshipData.getDescription(),
                 relationshipData.getDefinition(), relationshipData.getSource());
-
         addDomainRangeRelationships(relationshipResource, relationshipData);
-
         addMultilingualLabels(relationshipResource, relationshipData);
-
         addSchemeRelationship(relationshipResource);
-
         return relationshipResource;
     }
 
-    /**
-     * Adds core metadata (name, description, definition, source) to any resource
-     * Uses DataTypeConverter for intelligent typing
-     */
     private void addResourceMetadata(Resource resource, String name, String description,
                                      String definition, String source) {
         if (name != null && !name.trim().isEmpty()) {
@@ -459,10 +358,6 @@ public class ExcelDataTransformer {
         }
     }
 
-    /**
-     * Handles multiple source URLs (semicolon-separated) with ELI transformation
-     * Following ArchiConverter pattern
-     */
     private void addSourceReferences(Resource resource, String sourceUrls) {
         if (sourceUrls.contains(";")) {
             addMultipleSourceUrls(resource, sourceUrls);
@@ -471,9 +366,6 @@ public class ExcelDataTransformer {
         }
     }
 
-    /**
-     * Processes multiple semicolon-separated source URLs
-     */
     private void addMultipleSourceUrls(Resource resource, String sourceUrlString) {
         String[] urls = sourceUrlString.split(";");
         for (String url : urls) {
@@ -483,37 +375,40 @@ public class ExcelDataTransformer {
         }
     }
 
-    /**
-     * Adds a single source URL with ELI transformation support
-     */
     private void addSingleSourceUrl(Resource resource, String url) {
         if (url == null || url.trim().isEmpty()) {
             return;
         }
 
-        String transformedUrl = UtilityMethods.transformEliUrl(url, getRemoveELI());
+        String transformedUrl = UtilityMethods.transformEliUrl(url, removeELI);
         Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_ZDROJ);
+
         if (DataTypeConverter.isUri(transformedUrl)) {
             resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
+            log.debug("Added source URL as resource: {}", transformedUrl);
         } else {
             DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
+            log.debug("Added source URL as typed literal: {}", transformedUrl);
         }
     }
 
-    /**
-     * Adds class-specific metadata (alternative names, equivalent concepts, etc.)
-     */
     private void addClassSpecificMetadata(Resource classResource, ClassData classData) {
         if (classData.getAlternativeName() != null && !classData.getAlternativeName().trim().isEmpty()) {
             addAlternativeNames(classResource, classData.getAlternativeName());
         }
 
-        if (classData.getEquivalentConcept() != null && !classData.getEquivalentConcept().trim().isEmpty() &&
-                DataTypeConverter.isUri(classData.getEquivalentConcept())) {
-            classResource.addProperty(ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch"),
-                    ontModel.createResource(classData.getEquivalentConcept()));
-        }
+        if (classData.getEquivalentConcept() != null && !classData.getEquivalentConcept().trim().isEmpty()) {
+            Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
+            String equivalentConcept = classData.getEquivalentConcept();
 
+            if (DataTypeConverter.isUri(equivalentConcept)) {
+                classResource.addProperty(exactMatchProperty, ontModel.createResource(equivalentConcept));
+                log.debug("Added equivalent concept as URI: {}", equivalentConcept);
+            } else {
+                DataTypeConverter.addTypedProperty(classResource, exactMatchProperty, equivalentConcept, null, ontModel);
+                log.debug("Added equivalent concept as typed literal: {}", equivalentConcept);
+            }
+        }
 
         if (classData.getAgendaCode() != null && !classData.getAgendaCode().trim().isEmpty()) {
             Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_AGENDA);
@@ -530,10 +425,6 @@ public class ExcelDataTransformer {
         addMultilingualLabels(classResource, classData);
     }
 
-    /**
-     * Handles multiple alternative names (semicolon-separated)
-     * Following ArchiConverter pattern
-     */
     private void addAlternativeNames(Resource resource, String altNamesValue) {
         if (altNamesValue == null || altNamesValue.isEmpty()) {
             return;
@@ -556,158 +447,171 @@ public class ExcelDataTransformer {
                 });
     }
 
-    /**
-     * Adds multilingual labels for resources
-     * Enhanced support for multiple languages beyond Czech
-     */
-    private void addMultilingualLabels(Resource resource, ClassData classData) {
-        // Add English label if available (assuming ClassData might have it)
-        // This would require extending ClassData to include multilingual fields
-        // For now, this is a placeholder for the pattern
-
-        // Example pattern for when multilingual data is available:
-        // if (classData.getEnglishName() != null && !classData.getEnglishName().trim().isEmpty()) {
-        //     resource.addProperty(RDFS.label, classData.getEnglishName(), "en");
-        //     log.debug("Added English label: {}", classData.getEnglishName());
-        // }
-
-        log.debug("Multilingual label processing completed for resource: {}", resource.getURI());
+    private void addVocabularyMultilingualLabels(Resource ontologyResource, VocabularyMetadata metadata) {
+        // This is a placeholder for when VocabularyMetadata is extended with multilingual fields
+        log.debug("Multilingual vocabulary labels processing completed");
     }
 
-    /**
-     * Enhanced property-specific multilingual support
-     */
+    private void addMultilingualLabels(Resource resource, ClassData classData) {
+        // Placeholder for when ClassData is extended with multilingual fields
+        log.debug("Multilingual label processing completed for class: {}", resource.getURI());
+    }
+
     private void addMultilingualLabels(Resource resource, PropertyData propertyData) {
-        // Placeholder for property multilingual labels
-        // Similar pattern as above for ClassData
+        // Placeholder for when PropertyData is extended with multilingual fields
         log.debug("Multilingual label processing completed for property: {}", resource.getURI());
     }
 
-    /**
-     * Enhanced relationship-specific multilingual support
-     */
     private void addMultilingualLabels(Resource resource, RelationshipData relationshipData) {
-        // Placeholder for relationship multilingual labels
-        // Similar pattern as above
+        // Placeholder for when RelationshipData is extended with multilingual fields
         log.debug("Multilingual label processing completed for relationship: {}", resource.getURI());
     }
 
-    /**
-     * Adds domain relationship for properties
-     */
     private void addDomainRelationship(Resource propertyResource, PropertyData propertyData) {
         if (propertyData.getDomain() != null && !propertyData.getDomain().trim().isEmpty()) {
-            Resource domainResource = classResources.get(propertyData.getDomain());
-            if (domainResource != null) {
-                Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_DEF_O);
-                propertyResource.addProperty(domainProperty, domainResource);
-            } else {
-                log.warn("Domain class '{}' not found for property '{}'",
-                        propertyData.getDomain(), propertyData.getName());
-            }
+            Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_DEF_O);
+            addResourceReference(propertyResource, domainProperty, propertyData.getDomain(), classResources);
         }
     }
 
-    /**
-     * Adds range/data type information using DataTypeConverter intelligence
-     */
     private void addRangeInformation(Resource propertyResource, PropertyData propertyData) {
         String dataType = propertyData.getDataType();
 
         if (dataType != null && !dataType.trim().isEmpty()) {
-            String xsdType = UtilityMethods.mapDataTypeToXSD(dataType);
             Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_OBOR_HODNOT);
-            propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
-        }
-    }
 
-    /**
-     * Adds Czech data governance metadata
-     */
-    private void addDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
-        if (propertyData.getSharedInPPDF() != null && !propertyData.getSharedInPPDF().trim().isEmpty()) {
-            Property ppdfProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_JE_PPDF);
-            DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty,
-                    propertyData.getSharedInPPDF(), null, ontModel);
-        }
-
-        if (propertyData.getIsPublic() != null && !propertyData.getIsPublic().trim().isEmpty()) {
-            if (DataTypeConverter.isBooleanValue(propertyData.getIsPublic()) &&
-                    !"ne".equalsIgnoreCase(propertyData.getIsPublic()) &&
-                    !"false".equalsIgnoreCase(propertyData.getIsPublic())) {
-
-                propertyResource.addProperty(RDF.type,
-                        ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_VEREJNY_UDAJ));
+            if (dataType.startsWith("xsd:")) {
+                String xsdType = XSD + dataType.substring(4);
+                propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
+                log.debug("Added XSD range type: {}", xsdType);
+            } else if (DataTypeConverter.isUri(dataType)) {
+                propertyResource.addProperty(rangeProperty, ontModel.createResource(dataType));
+                log.debug("Added URI range type: {}", dataType);
             } else {
-                propertyResource.addProperty(RDF.type,
-                        ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_NEVEREJNY_UDAJ));
-
-                if (propertyData.getPrivacyProvision() != null && !propertyData.getPrivacyProvision().trim().isEmpty()) {
-                    Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_UDN);
-                    DataTypeConverter.addTypedProperty(propertyResource, provisionProperty,
-                            propertyData.getPrivacyProvision(), null, ontModel);
+                Resource existingClass = classResources.get(dataType);
+                if (existingClass != null) {
+                    propertyResource.addProperty(rangeProperty, existingClass);
+                    log.debug("Added local class range: {}", dataType);
+                } else {
+                    String xsdType = UtilityMethods.mapDataTypeToXSD(dataType);
+                    propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
+                    log.debug("Mapped data type '{}' to XSD type: {}", dataType, xsdType);
                 }
             }
         }
     }
 
-    /**
-     * Adds domain and range relationships for object properties
-     */
+    private void addDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
+        addPPDFData(propertyResource, propertyData);
+        addPublicOrNonPublicData(propertyResource, propertyData);
+        addGovernanceProperty(propertyResource, propertyData.getSharingMethod(), LABEL_ZPUSOB_SDILENI);
+        addGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), LABEL_ZPUSOB_ZISKANI);
+        addGovernanceProperty(propertyResource, propertyData.getContentType(), LABEL_TYP_OBSAHU);
+    }
+
+    private void addPPDFData(Resource propertyResource, PropertyData propertyData) {
+        if (propertyData.getSharedInPPDF() != null && !propertyData.getSharedInPPDF().trim().isEmpty()) {
+            String value = propertyData.getSharedInPPDF();
+            Property ppdfProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_JE_PPDF);
+
+            if (DataTypeConverter.isBooleanValue(value)) {
+                boolean boolValue = "true".equalsIgnoreCase(value) ||
+                        "ano".equalsIgnoreCase(value) ||
+                        "yes".equalsIgnoreCase(value);
+                DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty,
+                        boolValue ? "true" : "false", null, ontModel);
+                log.debug("Added normalized PPDF boolean: {} -> {}", value, boolValue);
+            } else {
+                log.warn("Unrecognized boolean value for PPDF property: '{}'", value);
+                DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty, value, null, ontModel);
+            }
+        }
+    }
+
+    private void addPublicOrNonPublicData(Resource propertyResource, PropertyData propertyData) {
+        if (propertyData.getIsPublic() != null && !propertyData.getIsPublic().trim().isEmpty()) {
+            String value = propertyData.getIsPublic();
+
+            if (DataTypeConverter.isBooleanValue(value)) {
+                boolean isPublic = "true".equalsIgnoreCase(value) ||
+                        "ano".equalsIgnoreCase(value) ||
+                        "yes".equalsIgnoreCase(value);
+
+                if (isPublic) {
+                    propertyResource.addProperty(RDF.type,
+                            ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_VEREJNY_UDAJ));
+                } else {
+                    propertyResource.addProperty(RDF.type,
+                            ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_NEVEREJNY_UDAJ));
+
+                    if (propertyData.getPrivacyProvision() != null && !propertyData.getPrivacyProvision().trim().isEmpty()) {
+                        Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_UDN);
+                        DataTypeConverter.addTypedProperty(propertyResource, provisionProperty,
+                                propertyData.getPrivacyProvision(), null, ontModel);
+                    }
+                }
+            } else {
+                log.warn("Unrecognized boolean value for public property: '{}'", value);
+            }
+        }
+    }
+
+    private void addGovernanceProperty(Resource resource, String value, String propertyName) {
+        if (value != null && !value.trim().isEmpty()) {
+            Property property = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+
+            if (DataTypeConverter.isUri(value)) {
+                resource.addProperty(property, ontModel.createResource(value));
+                log.debug("Added governance property {} as URI: {}", propertyName, value);
+            } else {
+                DataTypeConverter.addTypedProperty(resource, property, value, null, ontModel);
+                log.debug("Added governance property {} as typed literal: {}", propertyName, value);
+            }
+        }
+    }
+
     private void addDomainRangeRelationships(Resource relationshipResource, RelationshipData relationshipData) {
         if (relationshipData.getDomain() != null && !relationshipData.getDomain().trim().isEmpty()) {
-            Resource domainResource = classResources.get(relationshipData.getDomain());
-            if (domainResource != null) {
-                Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_DEF_O);
-                relationshipResource.addProperty(domainProperty, domainResource);
-            }
+            Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_DEF_O);
+            addResourceReference(relationshipResource, domainProperty, relationshipData.getDomain(), classResources);
         }
 
         if (relationshipData.getRange() != null && !relationshipData.getRange().trim().isEmpty()) {
-            Resource rangeResource = findOrCreateRangeResource(relationshipData.getRange());
-            if (rangeResource != null) {
-                Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_OBOR_HODNOT);
-                relationshipResource.addProperty(rangeProperty, rangeResource);
-            }
+            Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_OBOR_HODNOT);
+            addResourceReference(relationshipResource, rangeProperty, relationshipData.getRange(), classResources);
         }
     }
 
-    /**
-     * Finds existing range resource or creates external reference
-     */
-    private Resource findOrCreateRangeResource(String rangeName) {
-        Resource existingClass = classResources.get(rangeName);
-        if (existingClass != null) {
-            return existingClass;
+    private void addResourceReference(Resource subject, Property property, String referenceName,
+                                      Map<String, Resource> resourceMap) {
+        Resource existingResource = resourceMap.get(referenceName);
+        if (existingResource != null) {
+            subject.addProperty(property, existingResource);
+            log.debug("Added local resource reference: {} -> {}", property.getLocalName(), referenceName);
+            return;
         }
 
-        if (DataTypeConverter.isUri(rangeName)) {
-            return ontModel.createResource(rangeName);
+        if (DataTypeConverter.isUri(referenceName)) {
+            subject.addProperty(property, ontModel.createResource(referenceName));
+            log.debug("Added URI resource reference: {} -> {}", property.getLocalName(), referenceName);
+        } else {
+            DataTypeConverter.addTypedProperty(subject, property, referenceName, null, ontModel);
+            log.debug("Added typed literal reference: {} -> {}", property.getLocalName(), referenceName);
         }
-
-        log.warn("Range '{}' not found as local class and not a valid URI", rangeName);
-        return null;
     }
 
-    /**
-     * Establishes hierarchical relationships between classes
-     */
     private void establishHierarchies(OntologyData ontologyData) {
         log.debug("Establishing class hierarchies");
 
         for (ClassData classData : ontologyData.getClasses()) {
             if (classData.getSuperClass() != null && !classData.getSuperClass().trim().isEmpty()) {
                 Resource childResource = classResources.get(classData.getName());
-                Resource parentResource = classResources.get(classData.getSuperClass());
-
-                if (childResource != null && parentResource != null) {
+                if (childResource != null) {
                     Property hierarchyProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_NT);
-                    childResource.addProperty(hierarchyProperty, parentResource);
-
+                    addResourceReference(childResource, hierarchyProperty, classData.getSuperClass(), classResources);
                     log.debug("Established hierarchy: {} -> {}", classData.getName(), classData.getSuperClass());
                 } else {
-                    log.warn("Could not establish hierarchy for {} -> {}",
-                            classData.getName(), classData.getSuperClass());
+                    log.warn("Child class resource not found for hierarchy: {}", classData.getName());
                 }
             }
         }

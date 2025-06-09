@@ -132,11 +132,7 @@ public class UtilityMethods {
         return value;
     }
 
-    /**
-     * Transforms ELI URLs from e-sbirka to opendata.eselpoint.cz
-     * Following ArchiConverter pattern
-     */
-    public String transformEliUrl(String url, boolean removeELI) {
+    public String transformEliUrl(String url, Boolean removeELI) {
         if (Boolean.FALSE.equals(removeELI)) {
             return url;
         }
@@ -146,17 +142,12 @@ public class UtilityMethods {
 
         if (matcher.matches()) {
             String eliPart = matcher.group(1);
-            String transformedUrl = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
-            log.debug("Transformed ELI URL: {} -> {}", url, transformedUrl);
-            return transformedUrl;
+            return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
         } else {
             return url;
         }
     }
 
-    /**
-     * Maps data type strings to XSD URIs using DataTypeConverter patterns
-     */
     public String mapDataTypeToXSD(String dataType) {
         String normalized = dataType.toLowerCase().trim();
 

@@ -30,6 +30,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.dia.constants.ArchiOntologyConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
@@ -773,7 +775,7 @@ public class ArchiConverter {
         }
 
         try {
-            String transformedUrl = UtilityMethods.transformEliUrl(url, getRemoveELI());
+            String transformedUrl = UtilityMethods.transformEliUrl(url, removeELI);
             Property sourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ);
             resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
         } catch (Exception e) {
@@ -790,7 +792,7 @@ public class ArchiConverter {
 
         String relatedSourceUrl = properties.get(LABEL_SZ);
         if (relatedSourceUrl != null && !relatedSourceUrl.isEmpty()) {
-            String transformedUrl = UtilityMethods.transformEliUrl(relatedSourceUrl, getRemoveELI());
+            String transformedUrl = UtilityMethods.transformEliUrl(relatedSourceUrl, removeELI);
             Property relatedSourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SZ);
             resource.addProperty(relatedSourceProp, ontModel.createResource(transformedUrl));
         }
@@ -832,7 +834,7 @@ public class ArchiConverter {
         if (properties.containsKey(LABEL_SUPP)) {
             String provision = properties.get(LABEL_SUPP);
             if (provision != null && !provision.trim().isEmpty()) {
-                String transformedProvision = UtilityMethods.transformEliUrl(provision, getRemoveELI());
+                String transformedProvision = UtilityMethods.transformEliUrl(provision, removeELI);
                 resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SUPP),
                         ontModel.createResource(transformedProvision));
             }

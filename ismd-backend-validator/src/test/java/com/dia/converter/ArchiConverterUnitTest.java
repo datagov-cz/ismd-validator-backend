@@ -3,6 +3,7 @@ package com.dia.converter;
 import com.dia.converter.archi.ArchiConverter;
 import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.FileParsingException;
+import com.dia.utility.UtilityMethods;
 import org.apache.jena.ontology.ObjectProperty;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.rdf.model.Property;
@@ -521,10 +522,10 @@ class ArchiConverterUnitTest {
     })
     void transformEliUrl_WithSettings(boolean removeELI, String input, String expected) throws Exception {
         converter.setRemoveELI(removeELI);
-        Method transformEliUrl = ArchiConverter.class.getDeclaredMethod("transformEliUrl", String.class);
+        Method transformEliUrl = UtilityMethods.class.getDeclaredMethod("transformEliUrl", String.class, Boolean.class);
         transformEliUrl.setAccessible(true);
 
-        String result = (String) transformEliUrl.invoke(converter, input);
+        String result = (String) transformEliUrl.invoke(converter, input, removeELI);
         assertEquals(expected, result);
     }
 
