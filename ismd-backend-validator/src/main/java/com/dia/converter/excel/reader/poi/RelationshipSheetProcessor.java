@@ -17,7 +17,7 @@ import java.util.Set;
 import static com.dia.constants.ExcelOntologyConstants.VZTAHY;
 
 /**
- * RelationshipSheetProcessor - Handles the relationships sheet
+ * RelationshipSheetProcessor - Handles the Vztahy sheet
  * <p>
  * Relationships have a unique format with domain and range columns, requiring
  * special handling for the relationship mapping logic.

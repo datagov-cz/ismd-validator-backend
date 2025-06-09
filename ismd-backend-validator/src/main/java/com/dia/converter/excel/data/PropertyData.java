@@ -31,8 +31,4 @@ public class PropertyData {
         return name != null && !name.trim().isEmpty() &&
                 identifier != null && !identifier.trim().isEmpty();
     }
-
-    public boolean isPublicProperty() {
-        return !"Ne".equals(isPublic) && privacyProvision == null || privacyProvision.trim().isEmpty();
-    }
 }

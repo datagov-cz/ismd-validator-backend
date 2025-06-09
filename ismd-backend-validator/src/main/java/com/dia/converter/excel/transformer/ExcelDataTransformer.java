@@ -31,7 +31,7 @@ import static com.dia.constants.ArchiOntologyConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
 /**
- * OntologyDataTransformer - Transforms Excel-parsed data into OFN ontology models
+ * ExcelDataTransformer - Transforms Excel-parsed data into OFN ontology models
  */
 @Component
 @Slf4j

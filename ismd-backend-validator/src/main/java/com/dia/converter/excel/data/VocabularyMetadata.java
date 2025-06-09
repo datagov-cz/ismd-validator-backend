@@ -9,8 +9,4 @@ public class VocabularyMetadata {
     private String name;
     private String description;
     private String namespace;
-
-    public boolean hasValidData() {
-        return name != null && !name.trim().isEmpty();
-    }
 }

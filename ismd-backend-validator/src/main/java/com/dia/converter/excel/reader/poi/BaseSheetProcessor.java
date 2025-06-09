@@ -23,14 +23,8 @@ public abstract class BaseSheetProcessor<T> {
         this.mappingRegistry = mappingRegistry;
     }
 
-    /**
-     * Template method for processing sheets - subclasses implement specific logic
-     */
     public abstract T process(Sheet sheet) throws ExcelReadingException;
 
-    /**
-     * Safely extracts cell value as string, handling null cells and different data types
-     */
     protected String getCellValueAsString(Cell cell) {
         if (cell == null) {
             return "";
@@ -59,9 +53,6 @@ public abstract class BaseSheetProcessor<T> {
         }
     }
 
-    /**
-     * Checks if a row is effectively empty (all cells are null or blank)
-     */
     protected boolean isRowEmpty(Row row) {
         if (row == null) return true;
 
@@ -73,9 +64,6 @@ public abstract class BaseSheetProcessor<T> {
         return true;
     }
 
-    /**
-     * Creates a map of column names to their indices for efficient lookup
-     */
     protected Map<String, Integer> createColumnIndexMap(Row headerRow) {
         Map<String, Integer> columnMap = new HashMap<>();
 

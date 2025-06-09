@@ -53,10 +53,6 @@ public class ClassSheetProcessor extends BaseSheetProcessor<List<ClassData>> {
         return classes;
     }
 
-    /**
-     * Finds the header row by looking for expected column names
-     * This makes the processor resilient to sheets with multiple header rows
-     */
     private Row findHeaderRow(Sheet sheet) {
         Set<String> expectedColumns = Set.of("Název", "Typ", "Popis", "Definice");
 
@@ -72,9 +68,6 @@ public class ClassSheetProcessor extends BaseSheetProcessor<List<ClassData>> {
         return null;
     }
 
-    /**
-     * Processes a single data row using the column mapping
-     */
     private ClassData processDataRow(Row row, Map<String, Integer> columnMap,
                                      ColumnMapping<ClassData> mapping) {
         ClassData classData = new ClassData();

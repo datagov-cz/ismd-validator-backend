@@ -15,7 +15,7 @@ import static com.dia.constants.ExcelOntologyConstants.SLOVNIK;
 /**
  * VocabularySheetProcessor - Handles key-value pair format sheets
  * <p>
- * The vocabulary sheet has a different format than other sheets - it contains
+ * The Slovník sheet has a different format than other sheets - it contains
  * key-value pairs rather than tabular data. This processor handles that specific format.
  */
 @Slf4j
@@ -34,9 +34,7 @@ public class VocabularySheetProcessor extends BaseSheetProcessor<VocabularyMetad
         if (mapping == null) {
             log.error("Mapping for vocabulary sheet Slovník not found. ");
             throw new ExcelReadingException(
-                    "Mapping for vocabulary sheet Slovník not found. " +
-                            "This suggests an initialization problem in the mapping registry. " +
-                            "Please verify that setupVocabularyMappings() is being called properly."
+                    "Mapping for vocabulary sheet Slovník not found. "
             );
         }
 

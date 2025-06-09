@@ -25,13 +25,4 @@ public class ClassData {
         return name != null && !name.trim().isEmpty() &&
                 identifier != null && !identifier.trim().isEmpty();
     }
-
-    public String getOntologyType() {
-        if ("Subjekt práva".equals(type)) {
-            return "Typ subjektu práva";
-        } else if ("Objekt práva".equals(type)) {
-            return "Typ objektu práva";
-        }
-        return "Třída";
-    }
 }

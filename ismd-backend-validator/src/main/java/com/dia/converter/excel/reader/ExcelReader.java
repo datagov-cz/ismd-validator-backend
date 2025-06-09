@@ -15,6 +15,9 @@ import java.util.List;
 
 import static com.dia.constants.ExcelOntologyConstants.*;
 
+/**
+ * ExcelReader - Reads and pareses ontology data from Excel files
+ */
 @Component
 @Slf4j
 public class ExcelReader {
@@ -88,10 +91,6 @@ public class ExcelReader {
         return new RelationshipSheetProcessor(mappingRegistry).process(sheet);
     }
 
-    /**
-     * Initialize default column mappings for all sheet types
-     * This method sets up the relationship between Excel columns and ontology properties
-     */
     private void initializeDefaultMappings() {
         setupClassesMappings();
         setupPropertiesMappings();

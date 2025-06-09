@@ -17,10 +17,10 @@ import java.util.Set;
 import static com.dia.constants.ExcelOntologyConstants.VLASTNOSTI;
 
 /**
- * PropertySheetProcessor - Similar to ClassSheetProcessor but for properties
+ * PropertySheetProcessor - Handles the Vlastnosti sheet.
  * <p>
  * This follows the same pattern as ClassSheetProcessor but handles the specific
- * structure and requirements of the Properties sheet.
+ * structure and requirements of the Vlastnosti sheet.
  */
 public class PropertySheetProcessor extends BaseSheetProcessor<List<PropertyData>> {
 
