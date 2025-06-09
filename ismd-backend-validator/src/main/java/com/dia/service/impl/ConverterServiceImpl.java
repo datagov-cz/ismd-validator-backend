@@ -1,9 +1,7 @@
 package com.dia.service.impl;
 
 import com.dia.engine.ConverterEngine;
-import com.dia.exceptions.FileParsingException;
-import com.dia.exceptions.JsonExportException;
-import com.dia.exceptions.TurtleExportException;
+import com.dia.exceptions.*;
 import com.dia.service.ConverterService;
 import lombok.RequiredArgsConstructor;
 import org.apache.jena.ontology.ConversionException;
@@ -21,7 +19,7 @@ public class ConverterServiceImpl implements ConverterService {
     }
 
     @Override
-    public void convertArchi(Boolean removeInvalidSources) throws ConversionException {
+    public void convertArchi(boolean removeInvalidSources) throws ConversionException {
         converterEngine.convertArchi(removeInvalidSources);
     }
 

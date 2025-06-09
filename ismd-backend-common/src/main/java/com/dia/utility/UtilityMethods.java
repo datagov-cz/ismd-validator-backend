@@ -44,13 +44,6 @@ public class UtilityMethods {
         return namespace;
     }
 
-    public String capitalize(String str) {
-        if (str == null || str.isEmpty()) {
-            return str;
-        }
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
-    }
-
     public boolean looksLikeId(String name) {
         return name != null &&
                 (name.matches("id-[0-9a-f]{8}.*") ||

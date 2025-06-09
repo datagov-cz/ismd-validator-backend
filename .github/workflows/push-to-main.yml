@@ -4,6 +4,16 @@ on:
   push:
     branches:
       - main
+    # Blacklist approach - ignore these paths
+    paths-ignore:
+      - '**/README.md'
+      - '**/.gitignore'
+      - '**/*.md'
+      - '**/.gitkeep'
+      - '**/LICENSE'
+      - '**/target/**'
+      - '**/.idea/**'
+      - '**/*.iml'
 
 permissions:
   contents: read
@@ -11,14 +21,15 @@ permissions:
 
 jobs:
   # Build Docker image for main branch
-  build-docker:
+  build-validator:
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       branch: main
+      module: validator
       
   # Sync dev with main after Docker build
   sync-dev:
-    needs: build-docker
+    needs: build-validator
     runs-on: ubuntu-latest
     permissions:
       contents: read
