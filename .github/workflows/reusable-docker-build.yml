@@ -88,8 +88,8 @@ jobs:
             echo "Building module: $MODULE"
             
             # Use the precomputed repository path
-            IMAGE_TAG="ghcr.io/${{ env.REPO_PATH }}/ismd-backend-${MODULE}:${{ steps.version.outputs.version }}"
-            LATEST_TAG="ghcr.io/${{ env.REPO_PATH }}/ismd-backend-${MODULE}:latest"
+            IMAGE_TAG="ghcr.io/${{ env.REPO_PATH }}:${{ steps.version.outputs.version }}"
+            LATEST_TAG="ghcr.io/${{ env.REPO_PATH }}:latest"
             
             echo "Building $MODULE with tags:"
             echo "  - $IMAGE_TAG"

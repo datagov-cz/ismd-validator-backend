@@ -1,20 +1,15 @@
 package com.dia.utility;
 
 import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static com.dia.constants.ArchiOntologyConstants.XSD;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @UtilityClass
-@Slf4j
 public class UtilityMethods {
 
     public boolean isValidFirstChar(char ch) {
@@ -132,35 +127,35 @@ public class UtilityMethods {
         return value;
     }
 
-    public String transformEliUrl(String url, Boolean removeELI) {
-        if (Boolean.FALSE.equals(removeELI)) {
-            return url;
+    public String cleanForXMLName(String input) {
+        if (input == null || input.isEmpty()) {
+            return "";
         }
 
-        Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
-        Matcher matcher = eliPattern.matcher(url);
+        String cleaned = input.replaceAll("[^a-zA-Z0-9]", "");
 
-        if (matcher.matches()) {
-            String eliPart = matcher.group(1);
-            return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
-        } else {
-            return url;
+        if (!cleaned.isEmpty() && Character.isDigit(cleaned.charAt(0))) {
+            cleaned = "n" + cleaned;
         }
+
+        return cleaned;
     }
 
-    public String mapDataTypeToXSD(String dataType) {
-        String normalized = dataType.toLowerCase().trim();
+    public boolean isValidXMLNameStart(String name) {
+        if (name == null || name.isEmpty()) {
+            return false;
+        }
 
-        return switch (normalized) {
-            case "string", "text", "řetězec" -> XSD + "string";
-            case "boolean", "bool", "logický" -> XSD + "boolean";
-            case "integer", "int", "celé číslo" -> XSD + "integer";
-            case "decimal", "float", "double", "desetinné číslo" -> XSD + "decimal";
-            case "date", "datum" -> XSD + "date";
-            case "time", "čas" -> XSD + "time";
-            case "datetime", "datum a čas" -> XSD + "dateTime";
-            case "uri", "url", "anyuri" -> XSD + "anyURI";
-            default -> XSD + "string"; // Safe fallback
-        };
+        if (!Character.isLetter(name.charAt(0))) {
+            return false;
+        }
+
+        for (char c : name.toCharArray()) {
+            if (!Character.isLetterOrDigit(c)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

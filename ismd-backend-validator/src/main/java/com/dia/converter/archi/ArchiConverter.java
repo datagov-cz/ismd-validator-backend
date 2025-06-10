@@ -189,7 +189,8 @@ public class ArchiConverter {
                     ontModel,
                     resourceMap,
                     modelName,
-                    getModelProperties()
+                    getModelProperties(),
+                    getEffectiveOntologyNamespace()
             );
 
             String result = exporter.exportToTurtle();
