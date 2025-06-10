@@ -43,12 +43,12 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put("xsd", XSD);
     }
 
-    public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties) {
+    public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
         this.ontModel = ontModel;
         this.resourceMap = new HashMap<>(resourceMap);
         this.modelName = modelName;
         this.modelProperties = modelProperties;
-        this.effectiveNamespace = determineEffectiveNamespace();
+        this.effectiveNamespace = effectiveNamespace;
     }
 
     public String exportToTurtle() throws TurtleExportException {
@@ -163,19 +163,6 @@ public class TurtleExporter {
         removeEmptyLiterals(transformedModel);
     }
 
-    private String determineEffectiveNamespace() {
-        for (Map.Entry<String, String> entry : modelProperties.entrySet()) {
-            if (entry.getKey().contains("adresa lokálního katalogu dat")) {
-                String ns = entry.getValue();
-                if (ns != null && !ns.isEmpty() && UtilityMethods.isValidUrl(ns)) {
-                    return UtilityMethods.ensureNamespaceEndsWithDelimiter(ns);
-                }
-            }
-        }
-
-        return NS;
-    }
-
     private void setupPrefixes(OntModel transformedModel) {
         for (Map.Entry<String, String> entry : STANDARD_PREFIXES.entrySet()) {
             transformedModel.setNsPrefix(entry.getKey(), entry.getValue());
@@ -205,55 +192,14 @@ public class TurtleExporter {
 
         for (String part : parts) {
             if (!part.isEmpty()) {
-                String cleanedPart = cleanForXMLName(part);
-                if (isValidXMLNameStart(cleanedPart)) {
+                String cleanedPart = UtilityMethods.cleanForXMLName(part);
+                if (UtilityMethods.isValidXMLNameStart(cleanedPart)) {
                     return cleanedPart.toLowerCase();
                 }
             }
         }
 
         return "domain";
-    }
-
-    /**
-     * Cleans a string to make it suitable for an XML name
-     * - Removes non-alphanumeric characters
-     * - Ensures it starts with a letter
-     */
-    private String cleanForXMLName(String input) {
-        if (input == null || input.isEmpty()) {
-            return "";
-        }
-
-        String cleaned = input.replaceAll("[^a-zA-Z0-9]", "");
-
-        if (!cleaned.isEmpty() && Character.isDigit(cleaned.charAt(0))) {
-            cleaned = "n" + cleaned;
-        }
-
-        return cleaned;
-    }
-
-    /**
-     * Checks if a string would be a valid start for an XML name
-     * (starts with letter, contains only letters and digits)
-     */
-    private boolean isValidXMLNameStart(String name) {
-        if (name == null || name.isEmpty()) {
-            return false;
-        }
-
-        if (!Character.isLetter(name.charAt(0))) {
-            return false;
-        }
-
-        for (char c : name.toCharArray()) {
-            if (!Character.isLetterOrDigit(c)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private void createConceptScheme(OntModel transformedModel) {
@@ -286,7 +232,7 @@ public class TurtleExporter {
     }
 
     private void transformResourcesToSKOSConcepts(OntModel transformedModel) {
-        Resource pojemType = transformedModel.createResource(effectiveNamespace + TYP_POJEM);
+        Resource pojemType = transformedModel.createResource(effectiveNamespace + LABEL_POJEM);
         ResIterator pojemResources = transformedModel.listSubjectsWithProperty(RDF.type, pojemType);
 
         while (pojemResources.hasNext()) {
