@@ -126,4 +126,36 @@ public class UtilityMethods {
 
         return value;
     }
+
+    public String cleanForXMLName(String input) {
+        if (input == null || input.isEmpty()) {
+            return "";
+        }
+
+        String cleaned = input.replaceAll("[^a-zA-Z0-9]", "");
+
+        if (!cleaned.isEmpty() && Character.isDigit(cleaned.charAt(0))) {
+            cleaned = "n" + cleaned;
+        }
+
+        return cleaned;
+    }
+
+    public boolean isValidXMLNameStart(String name) {
+        if (name == null || name.isEmpty()) {
+            return false;
+        }
+
+        if (!Character.isLetter(name.charAt(0))) {
+            return false;
+        }
+
+        for (char c : name.toCharArray()) {
+            if (!Character.isLetterOrDigit(c)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
