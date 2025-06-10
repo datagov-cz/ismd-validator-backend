@@ -1,7 +1,7 @@
 package com.dia.controller;
 
 import com.dia.controller.dto.ConversionRequestDto;
-import com.dia.controller.dto.ConversionResponceDto;
+import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.UnsupportedFormatException;
@@ -37,7 +37,7 @@ public class ConverterController {
     private final ConverterService converterService;
 
     @PostMapping("/convert")
-    public ResponseEntity<String> convertFile(
+    public ResponseEntity<ConversionResponseDto> convertFile(
             @RequestParam("conversionRequest") ConversionRequestDto conversionRequest,
             @RequestHeader(value = "Accept", required = false) String acceptHeader,
             HttpServletRequest request
@@ -54,19 +54,19 @@ public class ConverterController {
 
         try {
             if (!validateSingleFileUpload(request, requestId)) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Můžete nahrát pouze jeden soubor.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ConversionResponseDto(null, "Můžete nahrát pouze jeden soubor."));
             }
 
             if (file.isEmpty()) {
                 log.warn("Empty file upload attempt");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nebyl vložen žádný soubor.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ConversionResponseDto(null, "Nebyl vložen žádný soubor."));
             }
 
             if (file.getSize() > MAX_FILE_SIZE) {
                 log.warn("File too large: filename={}, size={}, maxAllowedSize={}",
                         file.getOriginalFilename(), file.getSize(), MAX_FILE_SIZE);
                 return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                        .body("Soubor je příliš velký. Maximální povolená velikost je 5 MB.");
+                        .body(new ConversionResponseDto(null, "Soubor je příliš velký. Maximální povolená velikost je 5 MB."));
             }
 
             FileFormat fileFormat = checkFileFormat(file);
@@ -93,18 +93,18 @@ public class ConverterController {
                 }
             }
 
-            ResponseEntity<String> response = getResponseEntity(outputFormat);
+            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat);
             log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, fileFormat, outputFormat);
             return response;
         } catch (UnsupportedFormatException e) {
             log.error("Unsupported format exception: requestId={}, message={}", requestId, e.getMessage());
             return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                    .body(e.getMessage());
+                    .body(new ConversionResponseDto(null, e.getMessage()));
         } catch (Exception e) {
             log.error("Error processing file conversion: requestId={}", requestId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(e.getMessage());
+                    .body(new ConversionResponseDto(null, e.getMessage()));
         } finally {
             MDC.remove(LOG_REQUEST_ID);
         }
@@ -202,7 +202,7 @@ public class ConverterController {
         return FileFormat.UNSUPPORTED;
     }
 
-    private ResponseEntity<String> getResponseEntity(
+    private ResponseEntity<ConversionResponseDto> getResponseEntity(
             @RequestParam(value = "output", defaultValue = "json") String output) throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.debug("Preparing response entity: requestId={}, outputFormat={}", requestId, output);
@@ -214,7 +214,7 @@ public class ConverterController {
                 log.debug("JSON export completed: requestId={}, outputSize={}", requestId, jsonOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(jsonOutput);
+                        .body(new ConversionResponseDto(jsonOutput, null));
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
@@ -222,7 +222,7 @@ public class ConverterController {
                 log.debug("Turtle export completed: requestId={}, outputSize={}", requestId, ttlOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.TEXT_PLAIN)
-                        .body(ttlOutput);
+                        .body(new ConversionResponseDto(ttlOutput, null));
             }
             default -> {
                 log.warn("Unsupported output format requested: requestId={}, format={}", requestId, output);
