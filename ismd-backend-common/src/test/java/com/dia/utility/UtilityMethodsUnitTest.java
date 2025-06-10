@@ -2,6 +2,7 @@ package com.dia.utility;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.*;
@@ -149,6 +150,144 @@ class UtilityMethodsUnitTest {
         assertEquals("unnamed", UtilityMethods.sanitizeForIRI(""));
         assertEquals("unnamed", UtilityMethods.sanitizeForIRI("!@#$%^"));
     }
+
+    // ================= NEW TESTS FOR cleanForXMLName =================
+
+    @Test
+    void testCleanForXMLName() {
+        // Basic cleaning - removes non-alphanumeric
+        assertEquals("hello", UtilityMethods.cleanForXMLName("hello"));
+        assertEquals("hello123", UtilityMethods.cleanForXMLName("hello123"));
+        assertEquals("helloWorldtest", UtilityMethods.cleanForXMLName("hello-World_test"));
+
+        // Special characters removal
+        assertEquals("abc123", UtilityMethods.cleanForXMLName("a@b#c$1%2^3"));
+        assertEquals("test", UtilityMethods.cleanForXMLName("test!@#$%^&*()"));
+
+        // Numbers at start - should be prefixed with 'n'
+        assertEquals("n123test", UtilityMethods.cleanForXMLName("123test"));
+        assertEquals("n456", UtilityMethods.cleanForXMLName("456"));
+        assertEquals("n9abc", UtilityMethods.cleanForXMLName("9-a@b#c"));
+
+        // Mixed cases
+        assertEquals("TestCase123", UtilityMethods.cleanForXMLName("TestCase-123"));
+        assertEquals("n2Version2Release3", UtilityMethods.cleanForXMLName("2Version-2.Release_3"));
+
+        // Edge cases
+        assertEquals("", UtilityMethods.cleanForXMLName(null));
+        assertEquals("", UtilityMethods.cleanForXMLName(""));
+        assertEquals("", UtilityMethods.cleanForXMLName("!@#$%^&*()"));
+        assertEquals("n123", UtilityMethods.cleanForXMLName("123"));
+
+        // Unicode and special characters
+        assertEquals("", UtilityMethods.cleanForXMLName("üäöß"));
+        assertEquals("hellowrld", UtilityMethods.cleanForXMLName("hello-wörld"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "hello, hello",
+            "hello123, hello123",
+            "Hello-World_test, HelloWorldtest",
+            "test!@#, test",
+            "123test, n123test",
+            "456, n456",
+            "TestCase-123, TestCase123",
+            "'', ''",
+            "!@#$%^, ''",
+            "a1b2c3, a1b2c3"
+    })
+    void testCleanForXMLNameParameterized(String input, String expected) {
+        assertEquals(expected, UtilityMethods.cleanForXMLName(input));
+    }
+
+    // ================= NEW TESTS FOR isValidXMLNameStart =================
+
+    @Test
+    void testIsValidXMLNameStart() {
+        // Valid XML names - start with letter, contain only letters/digits
+        assertTrue(UtilityMethods.isValidXMLNameStart("hello"));
+        assertTrue(UtilityMethods.isValidXMLNameStart("Hello"));
+        assertTrue(UtilityMethods.isValidXMLNameStart("test123"));
+        assertTrue(UtilityMethods.isValidXMLNameStart("a"));
+        assertTrue(UtilityMethods.isValidXMLNameStart("A"));
+        assertTrue(UtilityMethods.isValidXMLNameStart("myVariable123"));
+        assertTrue(UtilityMethods.isValidXMLNameStart("XMLParser"));
+
+        // Invalid - starts with number
+        assertFalse(UtilityMethods.isValidXMLNameStart("123test"));
+        assertFalse(UtilityMethods.isValidXMLNameStart("9abc"));
+        assertFalse(UtilityMethods.isValidXMLNameStart("1"));
+
+        // Invalid - contains non-alphanumeric characters
+        assertFalse(UtilityMethods.isValidXMLNameStart("hello-world"));
+        assertFalse(UtilityMethods.isValidXMLNameStart("test_name"));
+        assertFalse(UtilityMethods.isValidXMLNameStart("hello world"));
+        assertFalse(UtilityMethods.isValidXMLNameStart("test.name"));
+        assertFalse(UtilityMethods.isValidXMLNameStart("test@name"));
+        assertFalse(UtilityMethods.isValidXMLNameStart("test#name"));
+
+        // Invalid - starts with non-letter
+        assertFalse(UtilityMethods.isValidXMLNameStart("_test"));
+        assertFalse(UtilityMethods.isValidXMLNameStart("-test"));
+        assertFalse(UtilityMethods.isValidXMLNameStart(".test"));
+        assertFalse(UtilityMethods.isValidXMLNameStart("@test"));
+
+        // Edge cases
+        assertFalse(UtilityMethods.isValidXMLNameStart(null));
+        assertFalse(UtilityMethods.isValidXMLNameStart(""));
+        assertFalse(UtilityMethods.isValidXMLNameStart(" "));
+        assertFalse(UtilityMethods.isValidXMLNameStart("!@#"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "hello",
+            "Hello",
+            "test123",
+            "a",
+            "A",
+            "myVariable123",
+            "XMLParser",
+            "validName",
+            "camelCase123"
+    })
+    void testIsValidXMLNameStartWithValidNames(String name) {
+        assertTrue(UtilityMethods.isValidXMLNameStart(name),
+                "Should be valid XML name: " + name);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "123test",
+            "9abc",
+            "1",
+            "hello-world",
+            "test_name",
+            "hello world",
+            "test.name",
+            "test@name",
+            "test#name",
+            "_test",
+            "-test",
+            ".test",
+            "@test",
+            "",
+            " ",
+            "!@#"
+    })
+    void testIsValidXMLNameStartWithInvalidNames(String name) {
+        assertFalse(UtilityMethods.isValidXMLNameStart(name),
+                "Should be invalid XML name: " + name);
+    }
+
+    @Test
+    void testIsValidXMLNameStartWithNullInput() {
+        assertFalse(UtilityMethods.isValidXMLNameStart(null),
+                "Null input should be invalid");
+    }
+
+    // ================= EXISTING TESTS =================
 
     @Test
     void testFilterMap() {
