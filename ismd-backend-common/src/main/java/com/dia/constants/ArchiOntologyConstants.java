@@ -8,15 +8,15 @@ public class ArchiOntologyConstants {
     public static final String CONTEXT = "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld";
     public static final String LANG = "lang=";
 
-    public static final String TYP_TSP = "Typ subjektu práva";
-    public static final String TYP_TOP = "Typ objektu práva";
-    public static final String TYP_POJEM = "Pojem";
-    public static final String TYP_TRIDA = "Třída";
-    public static final String TYP_VZTAH = "Vztah";
-    public static final String TYP_VEREJNY_UDAJ = "Veřejný údaj";
-    public static final String TYP_NEVEREJNY_UDAJ = "Neveřejný údaj";
-    public static final String TYP_VLASTNOST = "Vlastnost";
-    public static final String TYP_DT = "Datový typ";
+    public static final String TYP_TSP = "typ-subjektu-práva";
+    public static final String TYP_TOP = "typ-objektu-práva";
+    public static final String TYP_POJEM = "pojem";
+    public static final String TYP_TRIDA = "třída";
+    public static final String TYP_VZTAH = "vztah";
+    public static final String TYP_VEREJNY_UDAJ = "veřejný-údaj";
+    public static final String TYP_NEVEREJNY_UDAJ = "neveřejný-údaj";
+    public static final String TYP_VLASTNOST = "vlastnost";
+    public static final String TYP_DT = "datový-typ";
 
     public static final String LABEL_TYP = "typ";
     public static final String LABEL_POPIS = "popis";
