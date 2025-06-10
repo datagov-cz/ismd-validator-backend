@@ -131,7 +131,8 @@ public class ExcelDataTransformer {
                     transformationResult.getOntModel(),
                     transformationResult.getResourceMap(),
                     transformationResult.getModelName(),
-                    transformationResult.getModelProperties()
+                    transformationResult.getModelProperties(),
+                    transformationResult.getEffectiveNamespace()
             );
             String result = exporter.exportToTurtle();
             log.info("Turtle export completed: requestId={}, outputSize={}", requestId, result.length());
