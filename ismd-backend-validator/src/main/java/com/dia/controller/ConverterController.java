@@ -1,5 +1,7 @@
 package com.dia.controller;
 
+import com.dia.controller.dto.ConversionRequestDto;
+import com.dia.controller.dto.ConversionResponceDto;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.UnsupportedFormatException;
@@ -36,19 +38,19 @@ public class ConverterController {
 
     @PostMapping("/convert")
     public ResponseEntity<String> convertFile(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "output", required = false) String output,
-            @RequestParam(value= "removeInvalidSources", required = false) Boolean removeInvalidSources,
+            @RequestParam("conversionRequest") ConversionRequestDto conversionRequest,
             @RequestHeader(value = "Accept", required = false) String acceptHeader,
             HttpServletRequest request
     ) {
         String requestId = UUID.randomUUID().toString();
         MDC.put(LOG_REQUEST_ID, requestId);
 
-        String outputFormat = determineOutputFormat(output, acceptHeader);
+        MultipartFile file = conversionRequest.getFile();
+        String outputFormat = determineOutputFormat(conversionRequest.getOutput(), acceptHeader);
+        Boolean removeInvalidSources = conversionRequest.getRemoveInvalidSources();
 
         log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}",
-                file.getOriginalFilename(), file.getSize(), output, removeInvalidSources);
+                file.getOriginalFilename(), file.getSize(), outputFormat, removeInvalidSources);
 
         try {
             if (!validateSingleFileUpload(request, requestId)) {
@@ -93,7 +95,7 @@ public class ConverterController {
 
             ResponseEntity<String> response = getResponseEntity(outputFormat);
             log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
-                    requestId, fileFormat, output);
+                    requestId, fileFormat, outputFormat);
             return response;
         } catch (UnsupportedFormatException e) {
             log.error("Unsupported format exception: requestId={}, message={}", requestId, e.getMessage());
