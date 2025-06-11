@@ -9,7 +9,7 @@ import java.io.IOException;
 public interface ConverterService {
     void parseArchiFromString(String value) throws FileParsingException;
 
-    void convertArchi(boolean removeInvalidSources) throws ConversionException;
+    void convertArchi(Boolean removeInvalidSources) throws ConversionException;
 
     String exportToJson(FileFormat fileFormat) throws JsonExportException;
 

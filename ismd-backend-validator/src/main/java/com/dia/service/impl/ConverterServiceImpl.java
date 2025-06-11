@@ -22,8 +22,7 @@ public class ConverterServiceImpl implements ConverterService {
         converterEngine.parseArchiFromString(content);
     }
 
-    @Override
-    public void convertArchi(boolean removeInvalidSources) throws ConversionException {
+    public void convertArchi(Boolean removeInvalidSources) throws ConversionException {
         converterEngine.convertArchi(removeInvalidSources);
     }
 
