@@ -2,9 +2,8 @@ package com.dia.controller.dto;
 
 import lombok.*;
 
-@Getter
-@Setter
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class ConversionResponseDto {
     private String response;

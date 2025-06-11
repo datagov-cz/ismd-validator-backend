@@ -54,19 +54,22 @@ public class ConverterController {
 
         try {
             if (!validateSingleFileUpload(request, requestId)) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ConversionResponseDto(null, "Můžete nahrát pouze jeden soubor."));
+                ConversionResponseDto response = new ConversionResponseDto(null, "Můžete nahrát pouze jeden soubor.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
             if (file.isEmpty()) {
                 log.warn("Empty file upload attempt");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ConversionResponseDto(null, "Nebyl vložen žádný soubor."));
+                ConversionResponseDto response = new ConversionResponseDto(null, "Nebyl vložen žádný soubor.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
             if (file.getSize() > MAX_FILE_SIZE) {
                 log.warn("File too large: filename={}, size={}, maxAllowedSize={}",
                         file.getOriginalFilename(), file.getSize(), MAX_FILE_SIZE);
+                ConversionResponseDto response = new ConversionResponseDto(null, "Soubor je příliš velký. Maximální povolená velikost je 5 MB.");
                 return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                        .body(new ConversionResponseDto(null, "Soubor je příliš velký. Maximální povolená velikost je 5 MB."));
+                        .body(response);
             }
 
             FileFormat fileFormat = checkFileFormat(file);
@@ -99,12 +102,14 @@ public class ConverterController {
             return response;
         } catch (UnsupportedFormatException e) {
             log.error("Unsupported format exception: requestId={}, message={}", requestId, e.getMessage());
+            ConversionResponseDto response = new ConversionResponseDto(null, e.getMessage());
             return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                    .body(new ConversionResponseDto(null, e.getMessage()));
+                    .body(response);
         } catch (Exception e) {
             log.error("Error processing file conversion: requestId={}", requestId, e);
+            ConversionResponseDto response = new ConversionResponseDto(null, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ConversionResponseDto(null, e.getMessage()));
+                    .body(response);
         } finally {
             MDC.remove(LOG_REQUEST_ID);
         }
@@ -212,21 +217,26 @@ public class ConverterController {
                 log.debug("Exporting to JSON: requestId={}", requestId);
                 String jsonOutput = converterService.exportArchiToJson();
                 log.debug("JSON export completed: requestId={}, outputSize={}", requestId, jsonOutput.length());
+                ConversionResponseDto responseDto = new ConversionResponseDto(jsonOutput, null);
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(new ConversionResponseDto(jsonOutput, null));
+                        .body(responseDto);
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
                 String ttlOutput = converterService.exportArchiToTurtle();
                 log.debug("Turtle export completed: requestId={}, outputSize={}", requestId, ttlOutput.length());
+                ConversionResponseDto responseDto = new ConversionResponseDto(ttlOutput, null);
                 yield ResponseEntity.ok()
                         .contentType(MediaType.TEXT_PLAIN)
-                        .body(new ConversionResponseDto(ttlOutput, null));
+                        .body(responseDto);
             }
             default -> {
                 log.warn("Unsupported output format requested: requestId={}, format={}", requestId, output);
-                throw new UnsupportedFormatException("Nepodporovaný výstupní formát: " + output);
+                UnsupportedFormatException exception =  new UnsupportedFormatException("Nepodporovaný výstupní formát: " + output);
+                ConversionResponseDto responseDto = new ConversionResponseDto(null, exception.getMessage());
+                yield ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                        .body(responseDto);
             }
         };
     }
