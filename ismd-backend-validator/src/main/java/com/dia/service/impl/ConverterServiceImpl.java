@@ -42,7 +42,7 @@ public class ConverterServiceImpl implements ConverterService {
     }
 
     @Override
-    public void convertExcel(boolean removeInvalidSources) throws com.dia.exceptions.ConversionException {
+    public void convertExcel(Boolean removeInvalidSources) throws com.dia.exceptions.ConversionException {
         converterEngine.convertExcel(removeInvalidSources);
     }
 }

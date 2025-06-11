@@ -86,7 +86,7 @@ public class ConverterEngine {
         }
     }
 
-    public void convertArchi(boolean removeInvalidSources) throws ConversionException {
+    public void convertArchi(Boolean removeInvalidSources) throws ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Archi model conversion: requestId={}", requestId);
         log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
@@ -164,7 +164,7 @@ public class ConverterEngine {
         } catch (Exception e) {
             log.error("Unexpected error during Turtle export using registry: requestId={}, fileFormat={}",
                     requestId, fileFormat, e);
-            throw new JsonExportException("Během exportu do Turtle došlo k nečekané chybě.", e);
+            throw new TurtleExportException("Během exportu do Turtle došlo k nečekané chybě.", e);
         }
     }
 
@@ -189,7 +189,7 @@ public class ConverterEngine {
         }
     }
 
-    public void convertExcel(boolean removeInvalidSources) {
+    public void convertExcel(Boolean removeInvalidSources) {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Excel model conversion: requestId={}", requestId);
         log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
