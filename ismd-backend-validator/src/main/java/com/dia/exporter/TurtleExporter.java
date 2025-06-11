@@ -1,6 +1,7 @@
 package com.dia.exporter;
 
 import com.dia.exceptions.TurtleExportException;
+import com.dia.utility.Transliterator;
 import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -177,6 +178,8 @@ public class TurtleExporter {
             return "domain";
         }
 
+        log.debug("Determining prefix for namespace: {}", namespace);
+
         String domain = namespace
                 .replaceAll("^https?://", "")
                 .replaceAll("^www\\.", "");
@@ -192,13 +195,23 @@ public class TurtleExporter {
 
         for (String part : parts) {
             if (!part.isEmpty()) {
-                String cleanedPart = UtilityMethods.cleanForXMLName(part);
-                if (UtilityMethods.isValidXMLNameStart(cleanedPart)) {
-                    return cleanedPart.toLowerCase();
+                log.debug("Processing domain part: '{}'", part);
+
+                String transliterated = Transliterator.transliterate(part);
+                log.debug("After transliteration: '{}'", transliterated);
+
+                String cleaned = UtilityMethods.cleanForXMLName(transliterated);
+                log.debug("After XML cleaning: '{}'", cleaned);
+
+                if (UtilityMethods.isValidXMLNameStart(cleaned)) {
+                    String result = cleaned.toLowerCase();
+                    log.debug("Generated prefix: '{}'", result);
+                    return result;
                 }
             }
         }
 
+        log.debug("Falling back to default prefix: domain");
         return "domain";
     }
 
