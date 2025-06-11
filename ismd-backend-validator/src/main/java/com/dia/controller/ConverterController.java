@@ -38,7 +38,7 @@ public class ConverterController {
 
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponseDto> convertFile(
-            @RequestParam("conversionRequest") ConversionRequestDto conversionRequest,
+            @ModelAttribute("conversionRequest") ConversionRequestDto conversionRequest,
             @RequestHeader(value = "Accept", required = false) String acceptHeader,
             HttpServletRequest request
     ) {
