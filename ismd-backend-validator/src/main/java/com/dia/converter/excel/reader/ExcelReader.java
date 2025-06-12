@@ -69,7 +69,7 @@ public class ExcelReader {
 
     private List<PropertyData> processPropertiesSheet(Workbook workbook) throws ExcelReadingException {
         if (!workbookProcessor.hasSheet(workbook, VLASTNOSTI)) {
-        throw new ExcelReadingException("Workbook does not have Vlastnosti sheet.");
+            throw new ExcelReadingException("Workbook does not have Vlastnosti sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, VLASTNOSTI);
         return new PropertySheetProcessor(mappingRegistry).process(sheet);
@@ -78,7 +78,7 @@ public class ExcelReader {
 
     private List<RelationshipData> processRelationshipsSheet(Workbook workbook) throws ExcelReadingException {
         if (!workbookProcessor.hasSheet(workbook, VZTAHY)) {
-        throw new ExcelReadingException("Workbook does not have Vztahy sheet.");
+            throw new ExcelReadingException("Workbook does not have Vztahy sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, VZTAHY);
         return new RelationshipSheetProcessor(mappingRegistry).process(sheet);

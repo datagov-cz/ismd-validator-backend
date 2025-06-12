@@ -1,8 +1,5 @@
 package com.dia.models;
 
-import static com.dia.constants.ArchiOntologyConstants.*;
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.apache.jena.ontology.OntClass;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
@@ -17,12 +14,15 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 
+import static com.dia.constants.ArchiOntologyConstants.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 class OFNBaseModelTest {
 
     private OntModel ontModel;
 
     @BeforeEach
-    void setUp () {
+    void setUp() {
         OFNBaseModel baseModel = new OFNBaseModel();
         ontModel = baseModel.getOntModel();
     }
@@ -30,10 +30,10 @@ class OFNBaseModelTest {
     // Test konstruktora: ověření inicializace modelu, OWL-MEM a namespace prefixů
     @Test
     void testConstructor_initializeModelAndPrefixes() {
-        assertNotNull(ontModel, "OntModel by měl být inicializován konstruktorem" );
+        assertNotNull(ontModel, "OntModel by měl být inicializován konstruktorem");
 
         assertInstanceOf(OntModelImpl.class, ontModel, "ontModel musí být instancí OntModelImpl");
-        assertEquals(OntModelSpec.OWL_MEM, ((OntModelImpl) ontModel).getSpecification(), "Specifikace modelu musí být OWL_MEM");
+        assertEquals(OntModelSpec.OWL_MEM, ontModel.getSpecification(), "Specifikace modelu musí být OWL_MEM");
 
         assertEquals(NS, ontModel.getNsPrefixURI("cz"), "Prefix 'cz' by měl odpovídat NS");
         assertEquals(RDF.getURI(), ontModel.getNsPrefixURI("rdf"), "Prefix 'rdf' by měl být registrován");
@@ -116,8 +116,8 @@ class OFNBaseModelTest {
     // Test createBaseModel(): ověření existence a charakteristiky vlastností (label, domain, range)
     @Test
     void testCreateBaseModel_properties() {
-        OntClass pojemClass     = ontModel.getOntClass(NS + TYP_POJEM);
-        OntClass neverejnyUdajClass  = ontModel.getOntClass(NS + TYP_NEVEREJNY_UDAJ);
+        OntClass pojemClass = ontModel.getOntClass(NS + TYP_POJEM);
+        OntClass neverejnyUdajClass = ontModel.getOntClass(NS + TYP_NEVEREJNY_UDAJ);
 
         // Ověření, že vlastnost 'nazev' existuje, má správný label, doménu TYP_POJEM a rozsah XSD:string
         OntProperty nazevProp = ontModel.getOntProperty(NS + LABEL_NAZEV);

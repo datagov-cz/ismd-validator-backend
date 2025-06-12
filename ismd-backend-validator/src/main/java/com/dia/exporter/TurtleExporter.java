@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.dia.constants.ArchiOntologyConstants.*;
-import static com.dia.constants.ConvertorControllerConstants.*;
+import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
 @Slf4j
 public class TurtleExporter {
@@ -55,7 +55,7 @@ public class TurtleExporter {
     public String exportToTurtle() throws TurtleExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Turtle export operation: requestId={}, modelName={}", requestId, modelName);
-        return handleTurtleOperation(()-> {
+        return handleTurtleOperation(() -> {
             log.debug("Creating transformed model: requestId={}", requestId);
             OntModel transformedModel = createTransformedModel();
 
@@ -103,7 +103,7 @@ public class TurtleExporter {
     private void removeEmptyPropertyValues(OntModel model, Property property) {
         List<Statement> toRemove = new ArrayList<>();
 
-        StmtIterator stmts = model.listStatements(null, property, (RDFNode)null);
+        StmtIterator stmts = model.listStatements(null, property, (RDFNode) null);
         while (stmts.hasNext()) {
             Statement stmt = stmts.next();
             if (isEmptyLiteralStatement(stmt)) {
@@ -116,7 +116,7 @@ public class TurtleExporter {
     }
 
     private void cleanupNamespaceProperties(OntModel model) {
-       for (String propName : LABELS) {
+        for (String propName : LABELS) {
             Property property = model.createProperty(effectiveNamespace + propName);
             removeEmptyPropertyValues(model, property);
         }
@@ -264,11 +264,9 @@ public class TurtleExporter {
         if (hasResourceType(resource, transformedModel, TYP_TRIDA)) {
             addResourceType(resource, OWL2.Class);
             mapSubjectOrObjectType(resource, transformedModel, verejnySektorNamespace);
-        }
-        else if (hasResourceType(resource, transformedModel, TYP_VLASTNOST)) {
+        } else if (hasResourceType(resource, transformedModel, TYP_VLASTNOST)) {
             mapPropertyType(resource, transformedModel);
-        }
-        else if (hasResourceType(resource, transformedModel, TYP_VZTAH)) {
+        } else if (hasResourceType(resource, transformedModel, TYP_VZTAH)) {
             addResourceType(resource, OWL2.ObjectProperty);
         }
 
@@ -322,7 +320,7 @@ public class TurtleExporter {
     private void transformLabelsToSKOS(OntModel transformedModel) {
         Map<Resource, Map<String, String>> resourceLabels = new HashMap<>();
 
-        StmtIterator labelStmts = transformedModel.listStatements(null, RDFS.label, (RDFNode)null);
+        StmtIterator labelStmts = transformedModel.listStatements(null, RDFS.label, (RDFNode) null);
         while (labelStmts.hasNext()) {
             Statement stmt = labelStmts.next();
             if (stmt.getObject().isLiteral()) {
@@ -360,7 +358,7 @@ public class TurtleExporter {
 
     private void transformDefinitionsToSKOS(OntModel transformedModel) {
         Property defProperty = transformedModel.createProperty(effectiveNamespace + LABEL_DEF);
-        StmtIterator defStmts = transformedModel.listStatements(null, defProperty, (RDFNode)null);
+        StmtIterator defStmts = transformedModel.listStatements(null, defProperty, (RDFNode) null);
 
         List<Statement> toAdd = new ArrayList<>();
         List<Statement> toRemove = new ArrayList<>();
@@ -401,7 +399,7 @@ public class TurtleExporter {
 
     private void ensureDomainRangeProperties(OntModel transformedModel) {
         Property defOProperty = transformedModel.createProperty(effectiveNamespace + LABEL_DEF_O);
-        StmtIterator domainStmts = transformedModel.listStatements(null, defOProperty, (RDFNode)null);
+        StmtIterator domainStmts = transformedModel.listStatements(null, defOProperty, (RDFNode) null);
 
         List<Statement> toAdd = new ArrayList<>();
         List<Statement> toRemove = new ArrayList<>();
@@ -422,7 +420,7 @@ public class TurtleExporter {
         transformedModel.add(toAdd);
 
         Property rangeProperty = transformedModel.createProperty(effectiveNamespace + LABEL_OBOR_HODNOT);
-        StmtIterator rangeStmts = transformedModel.listStatements(null, rangeProperty, (RDFNode)null);
+        StmtIterator rangeStmts = transformedModel.listStatements(null, rangeProperty, (RDFNode) null);
 
         toAdd = new ArrayList<>();
         toRemove = new ArrayList<>();
@@ -479,7 +477,7 @@ public class TurtleExporter {
                 transformedModel.createProperty(agendovyNamespace + AGENDA_LONG));
 
         Property opisProperty = transformedModel.createProperty(effectiveNamespace + LABEL_POPIS);
-        StmtIterator opisStmts = transformedModel.listStatements(null, opisProperty, (RDFNode)null);
+        StmtIterator opisStmts = transformedModel.listStatements(null, opisProperty, (RDFNode) null);
         List<Statement> toRemove = new ArrayList<>();
 
         while (opisStmts.hasNext()) {
@@ -493,7 +491,7 @@ public class TurtleExporter {
     }
 
     private void mapBooleanProperty(OntModel model, Property sourceProperty, Property targetProperty) {
-        StmtIterator stmts = model.listStatements(null, sourceProperty, (RDFNode)null);
+        StmtIterator stmts = model.listStatements(null, sourceProperty, (RDFNode) null);
         List<Statement> toAdd = new ArrayList<>();
         List<Statement> toRemove = new ArrayList<>();
 
@@ -519,7 +517,7 @@ public class TurtleExporter {
     }
 
     private void mapProperty(OntModel transformedModel, Property sourceProperty, Property targetProperty) {
-        StmtIterator stmts = transformedModel.listStatements(null, sourceProperty, (RDFNode)null);
+        StmtIterator stmts = transformedModel.listStatements(null, sourceProperty, (RDFNode) null);
 
         List<Statement> toAdd = new ArrayList<>();
         List<Statement> toRemove = new ArrayList<>();

@@ -11,5 +11,6 @@ public class JsonExportConstants {
     public static final String TYPE_TEZAURUS = "Tezaurus";
     public static final String TYPE_KM = "Konceptuální model";
 
-    private JsonExportConstants() {}
+    private JsonExportConstants() {
+    }
 }

@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Test for {@link DataTypeConverter}.
+ *
  * @see DataTypeConverter
  */
 @ExtendWith(MockitoExtension.class)

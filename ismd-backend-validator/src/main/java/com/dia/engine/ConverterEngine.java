@@ -28,7 +28,7 @@ public class ConverterEngine {
     private final ExcelDataTransformer excelDataTransformer;
 
     private TransformationResult excelTransformationResult;
-    private OntologyData  excelOntologyData;
+    private OntologyData excelOntologyData;
 
     private final Map<FileFormat, ConverterAdapter> converterRegistry = Map.of(
             FileFormat.ARCHI_XML, new ConverterAdapter() {
