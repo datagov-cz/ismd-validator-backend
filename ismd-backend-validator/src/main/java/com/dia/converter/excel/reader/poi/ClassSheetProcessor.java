@@ -17,7 +17,7 @@ import java.util.Set;
 import static com.dia.constants.ExcelOntologyConstants.SUBJEKTY_OBJEKTY_PRAVA;
 
 /**
- * ClassSheetProcessor - Handles tabular sheets for classes/entities
+ * ClassSheetProcessor - Handles tabular sheets for Subjekty a objekty práva.
  * <p>
  * This processor handles sheets with header rows and data rows, mapping each
  * column to the appropriate property in the data object.
