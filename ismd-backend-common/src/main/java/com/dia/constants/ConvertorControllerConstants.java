@@ -6,5 +6,6 @@ public class ConvertorControllerConstants {
     public static final String XMI_HEADER = "http://schema.omg.org/spec/XMI/2.1";
     public static final String LOG_REQUEST_ID = "requestId";
 
-    private ConvertorControllerConstants(){}
+    private ConvertorControllerConstants() {
+    }
 }

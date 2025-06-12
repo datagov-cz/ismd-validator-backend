@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Tests for {@link CorsConfigUtil} simulating localhost environment
+ *
  * @see CorsConfig
  */
 @SpringBootTest

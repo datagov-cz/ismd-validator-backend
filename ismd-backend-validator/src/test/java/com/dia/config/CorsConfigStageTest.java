@@ -1,4 +1,5 @@
 package com.dia.config;
+
 import com.dia.config.cors.CorsConfig;
 import com.dia.config.cors.CorsConfigUtil;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Test for {@link CorsConfigUtil} when we simulate stage environment.
+ *
  * @see CorsConfig
  */
 @SpringBootTest
@@ -53,4 +55,5 @@ class CorsConfigStageTest {
                 .andExpect(status().isOk())
                 .andExpect(header().exists("Access-Control-Allow-Origin"))
                 .andExpect(header().string("Access-Control-Allow-Origin", testOrigin));
-    }}
+    }
+}
