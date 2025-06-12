@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test for {@link ArchiConverter}.
+ *
  * @see ArchiConverter
  */
 @ExtendWith(MockitoExtension.class)
@@ -893,17 +894,17 @@ class ArchiConverterUnitTest {
     void getModelProperties_WithNoModelProperties_ReturnsEmptyMap() throws Exception {
         // Arrange
         String xmlWithoutModelProperties = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <name>Test Model</name>
-                <elements>
-                    <element identifier="element-1" xsi:type="BusinessActor">
-                        <name>Test Actor</name>
-                    </element>
-                </elements>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <name>Test Model</name>
+                    <elements>
+                        <element identifier="element-1" xsi:type="BusinessActor">
+                            <name>Test Actor</name>
+                        </element>
+                    </elements>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithoutModelProperties);
         invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
@@ -921,15 +922,15 @@ class ArchiConverterUnitTest {
     void getModelProperties_WithEmptyPropertiesElement_ReturnsEmptyMap() throws Exception {
         // Arrange
         String xmlWithEmptyProperties = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <name>Test Model</name>
-                <properties>
-                    <!-- Empty properties element -->
-                </properties>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <name>Test Model</name>
+                    <properties>
+                        <!-- Empty properties element -->
+                    </properties>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithEmptyProperties);
         invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
@@ -947,28 +948,28 @@ class ArchiConverterUnitTest {
     void findModelPropertiesElement_WithValidModelProperties_ReturnsElement() throws Exception {
         // Arrange
         String xmlWithModelProperties = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <name>Test Model</name>
-                <properties>
-                    <property propertyDefinitionRef="prop-def-1">
-                        <value>Test Value</value>
-                    </property>
-                </properties>
-                <elements>
-                    <element identifier="element-1" xsi:type="BusinessActor">
-                        <name>Test Actor</name>
-                        <properties>
-                            <!-- This should NOT be returned - it's element properties, not model properties -->
-                            <property propertyDefinitionRef="prop-def-2">
-                                <value>Element Value</value>
-                            </property>
-                        </properties>
-                    </element>
-                </elements>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <name>Test Model</name>
+                    <properties>
+                        <property propertyDefinitionRef="prop-def-1">
+                            <value>Test Value</value>
+                        </property>
+                    </properties>
+                    <elements>
+                        <element identifier="element-1" xsi:type="BusinessActor">
+                            <name>Test Actor</name>
+                            <properties>
+                                <!-- This should NOT be returned - it's element properties, not model properties -->
+                                <property propertyDefinitionRef="prop-def-2">
+                                    <value>Element Value</value>
+                                </property>
+                            </properties>
+                        </element>
+                    </elements>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithModelProperties);
 
@@ -987,23 +988,23 @@ class ArchiConverterUnitTest {
     void findModelPropertiesElement_WithNoModelProperties_ReturnsNull() throws Exception {
         // Arrange
         String xmlWithoutModelProperties = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <name>Test Model</name>
-                <elements>
-                    <element identifier="element-1" xsi:type="BusinessActor">
-                        <name>Test Actor</name>
-                        <properties>
-                            <!-- This is element properties, not model properties -->
-                            <property propertyDefinitionRef="prop-def-1">
-                                <value>Element Value</value>
-                            </property>
-                        </properties>
-                    </element>
-                </elements>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <name>Test Model</name>
+                    <elements>
+                        <element identifier="element-1" xsi:type="BusinessActor">
+                            <name>Test Actor</name>
+                            <properties>
+                                <!-- This is element properties, not model properties -->
+                                <property propertyDefinitionRef="prop-def-1">
+                                    <value>Element Value</value>
+                                </property>
+                            </properties>
+                        </element>
+                    </elements>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithoutModelProperties);
 
@@ -1018,33 +1019,33 @@ class ArchiConverterUnitTest {
     void extractPropertiesFromElement_WithValidProperties_ExtractsAll() throws Exception {
         // Arrange
         String xmlWithProperties = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <properties>
-                    <property propertyDefinitionRef="prop-def-1">
-                        <value>First Value</value>
-                    </property>
-                    <property propertyDefinitionRef="prop-def-2">
-                        <value>Second Value</value>
-                    </property>
-                    <property propertyDefinitionRef="prop-def-3">
-                        <value>Third Value</value>
-                    </property>
-                </properties>
-                <propertyDefinitions>
-                    <propertyDefinition identifier="prop-def-1" type="string">
-                        <name>first property</name>
-                    </propertyDefinition>
-                    <propertyDefinition identifier="prop-def-2" type="string">
-                        <name>second property</name>
-                    </propertyDefinition>
-                    <propertyDefinition identifier="prop-def-3" type="string">
-                        <name>third property</name>
-                    </propertyDefinition>
-                </propertyDefinitions>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <properties>
+                        <property propertyDefinitionRef="prop-def-1">
+                            <value>First Value</value>
+                        </property>
+                        <property propertyDefinitionRef="prop-def-2">
+                            <value>Second Value</value>
+                        </property>
+                        <property propertyDefinitionRef="prop-def-3">
+                            <value>Third Value</value>
+                        </property>
+                    </properties>
+                    <propertyDefinitions>
+                        <propertyDefinition identifier="prop-def-1" type="string">
+                            <name>first property</name>
+                        </propertyDefinition>
+                        <propertyDefinition identifier="prop-def-2" type="string">
+                            <name>second property</name>
+                        </propertyDefinition>
+                        <propertyDefinition identifier="prop-def-3" type="string">
+                            <name>third property</name>
+                        </propertyDefinition>
+                    </propertyDefinitions>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithProperties);
         invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
@@ -1071,14 +1072,14 @@ class ArchiConverterUnitTest {
     void extractPropertiesFromElement_WithEmptyProperties_ExtractsNothing() throws Exception {
         // Arrange
         String xmlWithEmptyProperties = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <properties>
-                    <!-- Empty properties element -->
-                </properties>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <properties>
+                        <!-- Empty properties element -->
+                    </properties>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithEmptyProperties);
         invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
@@ -1099,21 +1100,21 @@ class ArchiConverterUnitTest {
     void processProperty_WithValidProperty_ExtractsCorrectly() throws Exception {
         // Arrange
         String xmlWithProperty = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <properties>
-                    <property propertyDefinitionRef="prop-def-1">
-                        <value>Test Property Value</value>
-                    </property>
-                </properties>
-                <propertyDefinitions>
-                    <propertyDefinition identifier="prop-def-1" type="string">
-                        <name>test property</name>
-                    </propertyDefinition>
-                </propertyDefinitions>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <properties>
+                        <property propertyDefinitionRef="prop-def-1">
+                            <value>Test Property Value</value>
+                        </property>
+                    </properties>
+                    <propertyDefinitions>
+                        <propertyDefinition identifier="prop-def-1" type="string">
+                            <name>test property</name>
+                        </propertyDefinition>
+                    </propertyDefinitions>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithProperty);
         invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
@@ -1142,17 +1143,17 @@ class ArchiConverterUnitTest {
     void processProperty_WithMissingPropertyDefinition_UsesPropertyRef() throws Exception {
         // Arrange
         String xmlWithMissingDef = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <properties>
-                    <property propertyDefinitionRef="unknown-prop-def">
-                        <value>Test Value</value>
-                    </property>
-                </properties>
-                <!-- Note: No propertyDefinitions for unknown-prop-def -->
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <properties>
+                        <property propertyDefinitionRef="unknown-prop-def">
+                            <value>Test Value</value>
+                        </property>
+                    </properties>
+                    <!-- Note: No propertyDefinitions for unknown-prop-def -->
+                </model>
+                """;
 
         setupArchiDocument(xmlWithMissingDef);
         invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
@@ -1181,21 +1182,21 @@ class ArchiConverterUnitTest {
     void processProperty_WithEmptyValue_SkipsProperty() throws Exception {
         // Arrange
         String xmlWithEmptyValue = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <properties>
-                    <property propertyDefinitionRef="prop-def-1">
-                        <value></value>
-                    </property>
-                </properties>
-                <propertyDefinitions>
-                    <propertyDefinition identifier="prop-def-1" type="string">
-                        <name>empty property</name>
-                    </propertyDefinition>
-                </propertyDefinitions>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <properties>
+                        <property propertyDefinitionRef="prop-def-1">
+                            <value></value>
+                        </property>
+                    </properties>
+                    <propertyDefinitions>
+                        <propertyDefinition identifier="prop-def-1" type="string">
+                            <name>empty property</name>
+                        </propertyDefinition>
+                    </propertyDefinitions>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithEmptyValue);
         invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
@@ -1223,21 +1224,21 @@ class ArchiConverterUnitTest {
     void processProperty_WithNoValueElement_SkipsProperty() throws Exception {
         // Arrange
         String xmlWithNoValue = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <properties>
-                    <property propertyDefinitionRef="prop-def-1">
-                        <!-- No value element -->
-                    </property>
-                </properties>
-                <propertyDefinitions>
-                    <propertyDefinition identifier="prop-def-1" type="string">
-                        <name>no value property</name>
-                    </propertyDefinition>
-                </propertyDefinitions>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <properties>
+                        <property propertyDefinitionRef="prop-def-1">
+                            <!-- No value element -->
+                        </property>
+                    </properties>
+                    <propertyDefinitions>
+                        <propertyDefinition identifier="prop-def-1" type="string">
+                            <name>no value property</name>
+                        </propertyDefinition>
+                    </propertyDefinitions>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithNoValue);
         invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
@@ -1266,34 +1267,34 @@ class ArchiConverterUnitTest {
         return Stream.of(
                 Arguments.of(
                         """
-                        <property propertyDefinitionRef="prop-1">
-                            <value>Expected Value</value>
-                        </property>
-                        """,
+                                <property propertyDefinitionRef="prop-1">
+                                    <value>Expected Value</value>
+                                </property>
+                                """,
                         "Expected Value", "Should return property value"
                 ),
                 Arguments.of(
                         """
-                        <property propertyDefinitionRef="prop-1">
-                            <!-- No value element -->
-                        </property>
-                        """,
+                                <property propertyDefinitionRef="prop-1">
+                                    <!-- No value element -->
+                                </property>
+                                """,
                         null, "Should return null when no value element"
                 ),
                 Arguments.of(
                         """
-                        <property propertyDefinitionRef="prop-1">
-                            <value></value>
-                        </property>
-                        """,
+                                <property propertyDefinitionRef="prop-1">
+                                    <value></value>
+                                </property>
+                                """,
                         "", "Should return empty string for empty value"
                 ),
                 Arguments.of(
                         """
-                        <property propertyDefinitionRef="prop-1">
-                            <value>   </value>
-                        </property>
-                        """,
+                                <property propertyDefinitionRef="prop-1">
+                                    <value>   </value>
+                                </property>
+                                """,
                         "   ", "Should return whitespace as-is"
                 )
         );
@@ -1304,13 +1305,13 @@ class ArchiConverterUnitTest {
     void getPropertyValue_WithVariousInputs(String propertyXml, String expectedValue, String description) throws Exception {
         // Arrange
         String xmlWrapper = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <properties>
-                    %s
-                </properties>
-            </model>
-            """.formatted(propertyXml);
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <properties>
+                        %s
+                    </properties>
+                </model>
+                """.formatted(propertyXml);
 
         setupArchiDocument(xmlWrapper);
 
@@ -1333,21 +1334,21 @@ class ArchiConverterUnitTest {
     void processProperty_WithOntologyNamespaceProperty_SetsOntologyNamespace() throws Exception {
         // Arrange
         String xmlWithNamespaceProperty = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   identifier="test-model">
-                <properties>
-                    <property propertyDefinitionRef="prop-def-1">
-                        <value>https://example.org/custom-namespace</value>
-                    </property>
-                </properties>
-                <propertyDefinitions>
-                    <propertyDefinition identifier="prop-def-1" type="string">
-                        <name>adresa lokálního katalogu dat</name>
-                    </propertyDefinition>
-                </propertyDefinitions>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       identifier="test-model">
+                    <properties>
+                        <property propertyDefinitionRef="prop-def-1">
+                            <value>https://example.org/custom-namespace</value>
+                        </property>
+                    </properties>
+                    <propertyDefinitions>
+                        <propertyDefinition identifier="prop-def-1" type="string">
+                            <name>adresa lokálního katalogu dat</name>
+                        </propertyDefinition>
+                    </propertyDefinitions>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithNamespaceProperty);
         invokePrivateMethod("buildPropertyMapping", new Class<?>[0]);
@@ -1795,15 +1796,15 @@ class ArchiConverterUnitTest {
     void extractPropName_WithValidNameElement_ReturnsName() throws Exception {
         // Arrange
         String xmlWithPropertyDef = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <propertyDefinitions>
-                    <propertyDefinition identifier="prop-def-1" type="string">
-                        <name>Test Property Name</name>
-                    </propertyDefinition>
-                </propertyDefinitions>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <propertyDefinitions>
+                        <propertyDefinition identifier="prop-def-1" type="string">
+                            <name>Test Property Name</name>
+                        </propertyDefinition>
+                    </propertyDefinitions>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithPropertyDef);
 
@@ -1829,15 +1830,15 @@ class ArchiConverterUnitTest {
     void extractPropName_WithMissingNameElement_ReturnsNull() throws Exception {
         // Arrange
         String xmlWithoutName = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <propertyDefinitions>
-                    <propertyDefinition identifier="prop-def-1" type="string">
-                        <!-- No name element -->
-                    </propertyDefinition>
-                </propertyDefinitions>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <propertyDefinitions>
+                        <propertyDefinition identifier="prop-def-1" type="string">
+                            <!-- No name element -->
+                        </propertyDefinition>
+                    </propertyDefinitions>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithoutName);
 
@@ -1863,15 +1864,15 @@ class ArchiConverterUnitTest {
     void extractPropName_WithEmptyNameElement_ReturnsEmptyString() throws Exception {
         // Arrange
         String xmlWithEmptyName = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <propertyDefinitions>
-                    <propertyDefinition identifier="prop-def-1" type="string">
-                        <name></name>
-                    </propertyDefinition>
-                </propertyDefinitions>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <propertyDefinitions>
+                        <propertyDefinition identifier="prop-def-1" type="string">
+                            <name></name>
+                        </propertyDefinition>
+                    </propertyDefinitions>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithEmptyName);
 
@@ -1897,15 +1898,15 @@ class ArchiConverterUnitTest {
     void getElementName_WithValidNameElement_ReturnsName() throws Exception {
         // Arrange
         String xmlWithElement = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <elements>
-                    <element identifier="element-1" xsi:type="BusinessActor">
-                        <name>Test Element Name</name>
-                    </element>
-                </elements>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <elements>
+                        <element identifier="element-1" xsi:type="BusinessActor">
+                            <name>Test Element Name</name>
+                        </element>
+                    </elements>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithElement);
 
@@ -1931,15 +1932,15 @@ class ArchiConverterUnitTest {
     void getElementName_WithMissingNameElement_ReturnsEmptyString() throws Exception {
         // Arrange
         String xmlWithoutName = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <elements>
-                    <element identifier="element-1" xsi:type="BusinessActor">
-                        <!-- No name element -->
-                    </element>
-                </elements>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <elements>
+                        <element identifier="element-1" xsi:type="BusinessActor">
+                            <!-- No name element -->
+                        </element>
+                    </elements>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithoutName);
 
@@ -1965,15 +1966,15 @@ class ArchiConverterUnitTest {
     void getRelationshipName_WithValidNameElement_ReturnsName() throws Exception {
         // Arrange
         String xmlWithRelationship = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <relationships>
-                    <relationship identifier="rel-1" source="elem-1" target="elem-2" xsi:type="Association">
-                        <name>Test Relationship Name</name>
-                    </relationship>
-                </relationships>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <relationships>
+                        <relationship identifier="rel-1" source="elem-1" target="elem-2" xsi:type="Association">
+                            <name>Test Relationship Name</name>
+                        </relationship>
+                    </relationships>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithRelationship);
 
@@ -1999,15 +2000,15 @@ class ArchiConverterUnitTest {
     void getRelationshipName_WithMissingNameElement_ReturnsEmptyString() throws Exception {
         // Arrange
         String xmlWithoutName = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <relationships>
-                    <relationship identifier="rel-1" source="elem-1" target="elem-2" xsi:type="Association">
-                        <!-- No name element -->
-                    </relationship>
-                </relationships>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <relationships>
+                        <relationship identifier="rel-1" source="elem-1" target="elem-2" xsi:type="Association">
+                            <!-- No name element -->
+                        </relationship>
+                    </relationships>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithoutName);
 
@@ -2033,18 +2034,18 @@ class ArchiConverterUnitTest {
     void processNameNodesForLabels_WithMultipleLanguages_ExtractsAll() throws Exception {
         // Arrange
         String xmlWithMultilingual = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <elements>
-                    <element identifier="element-1" xsi:type="BusinessActor">
-                        <name xml:lang="cs">Czech Name</name>
-                        <name xml:lang="en">English Name</name>
-                        <name xml:lang="de">German Name</name>
-                        <name xml:lang="fr">French Name</name>
-                    </element>
-                </elements>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <elements>
+                        <element identifier="element-1" xsi:type="BusinessActor">
+                            <name xml:lang="cs">Czech Name</name>
+                            <name xml:lang="en">English Name</name>
+                            <name xml:lang="de">German Name</name>
+                            <name xml:lang="fr">French Name</name>
+                        </element>
+                    </elements>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithMultilingual);
 
@@ -2077,15 +2078,15 @@ class ArchiConverterUnitTest {
     void processNameNodesForLabels_WithNoLanguageAttributes_ExtractsNothing() throws Exception {
         // Arrange
         String xmlWithoutLang = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <elements>
-                    <element identifier="element-1" xsi:type="BusinessActor">
-                        <name>Default Name</name>
-                    </element>
-                </elements>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <elements>
+                        <element identifier="element-1" xsi:type="BusinessActor">
+                            <name>Default Name</name>
+                        </element>
+                    </elements>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithoutLang);
 
@@ -2114,15 +2115,15 @@ class ArchiConverterUnitTest {
     void processNameNodesForLabels_WithEmptyLanguageAttribute_ExtractsNothing() throws Exception {
         // Arrange
         String xmlWithEmptyLang = """
-            <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <elements>
-                    <element identifier="element-1" xsi:type="BusinessActor">
-                        <name xml:lang="">Empty Lang Name</name>
-                    </element>
-                </elements>
-            </model>
-            """;
+                <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <elements>
+                        <element identifier="element-1" xsi:type="BusinessActor">
+                            <name xml:lang="">Empty Lang Name</name>
+                        </element>
+                    </elements>
+                </model>
+                """;
 
         setupArchiDocument(xmlWithEmptyLang);
 
