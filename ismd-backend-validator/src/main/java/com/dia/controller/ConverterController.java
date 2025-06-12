@@ -1,6 +1,5 @@
 package com.dia.controller;
 
-import com.dia.controller.dto.ConversionRequestDto;
 import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
@@ -38,16 +37,16 @@ public class ConverterController {
 
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponseDto> convertFile(
-            @ModelAttribute("conversionRequest") ConversionRequestDto conversionRequest,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "output", required = false) String output,
+            @RequestParam(value= "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestHeader(value = "Accept", required = false) String acceptHeader,
             HttpServletRequest request
     ) {
         String requestId = UUID.randomUUID().toString();
         MDC.put(LOG_REQUEST_ID, requestId);
 
-        MultipartFile file = conversionRequest.getFile();
-        String outputFormat = determineOutputFormat(conversionRequest.getOutput(), acceptHeader);
-        Boolean removeInvalidSources = conversionRequest.getRemoveInvalidSources();
+        String outputFormat = determineOutputFormat(output, acceptHeader);
 
         log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}",
                 file.getOriginalFilename(), file.getSize(), outputFormat, removeInvalidSources);
