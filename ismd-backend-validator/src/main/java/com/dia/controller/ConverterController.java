@@ -1,6 +1,5 @@
 package com.dia.controller;
 
-import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.UnsupportedFormatException;
@@ -24,6 +23,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.dia.constants.ConvertorControllerConstants.*;
+import static com.dia.enums.FileFormat.ARCHI_XML;
+import static com.dia.enums.FileFormat.XLSX;
 
 @RestController
 @RequestMapping("/api/convertor")
@@ -36,10 +37,10 @@ public class ConverterController {
     private final ConverterService converterService;
 
     @PostMapping("/convert")
-    public ResponseEntity<ConversionResponseDto> convertFile(
+    public ResponseEntity<String> convertFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "output", required = false) String output,
-            @RequestParam(value= "removeInvalidSources", required = false) Boolean removeInvalidSources,
+            @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestHeader(value = "Accept", required = false) String acceptHeader,
             HttpServletRequest request
     ) {
@@ -49,26 +50,23 @@ public class ConverterController {
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
         log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}",
-                file.getOriginalFilename(), file.getSize(), outputFormat, removeInvalidSources);
+                file.getOriginalFilename(), file.getSize(), output, removeInvalidSources);
 
         try {
             if (!validateSingleFileUpload(request, requestId)) {
-                ConversionResponseDto response = new ConversionResponseDto(null, "Můžete nahrát pouze jeden soubor.");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Můžete nahrát pouze jeden soubor.");
             }
 
             if (file.isEmpty()) {
                 log.warn("Empty file upload attempt");
-                ConversionResponseDto response = new ConversionResponseDto(null, "Nebyl vložen žádný soubor.");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Nebyl vložen žádný soubor.");
             }
 
             if (file.getSize() > MAX_FILE_SIZE) {
                 log.warn("File too large: filename={}, size={}, maxAllowedSize={}",
                         file.getOriginalFilename(), file.getSize(), MAX_FILE_SIZE);
-                ConversionResponseDto response = new ConversionResponseDto(null, "Soubor je příliš velký. Maximální povolená velikost je 5 MB.");
                 return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                        .body(response);
+                        .body("Soubor je příliš velký. Maximální povolená velikost je 5 MB.");
             }
 
             FileFormat fileFormat = checkFileFormat(file);
@@ -81,12 +79,25 @@ public class ConverterController {
 
             switch (fileFormat) {
                 case ARCHI_XML -> {
+                    log.debug("Processing Archi XML file: requestId={}", requestId);
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
                     converterService.parseArchiFromString(xmlContent);
                     converterService.convertArchi(removeInvalidSources != null && removeInvalidSources);
+                    ResponseEntity<String> response = getResponseEntity(outputFormat, ARCHI_XML);
+                    log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
+                            requestId, fileFormat, output);
+                    return response;
                 }
                 case XMI -> log.debug("Processing XMI file: requestId={}", requestId);
-                case XLSX -> log.debug("Processing XLSX file: requestId={}", requestId);
+                case XLSX -> {
+                    log.debug("Processing XLSX file: requestId={}", requestId);
+                    converterService.parseExcelFromFile(file);
+                    converterService.convertExcel(removeInvalidSources != null && removeInvalidSources);
+                    ResponseEntity<String> response = getResponseEntity(outputFormat, XLSX);
+                    log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
+                            requestId, fileFormat, output);
+                    return response;
+                }
                 case TURTLE -> {/* Returns directly */
                     return new ResponseEntity<>(HttpStatus.OK);
                 }
@@ -94,21 +105,15 @@ public class ConverterController {
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
-
-            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat);
-            log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
-                    requestId, fileFormat, outputFormat);
-            return response;
+            return new ResponseEntity<>(HttpStatus.OK);
         } catch (UnsupportedFormatException e) {
             log.error("Unsupported format exception: requestId={}, message={}", requestId, e.getMessage());
-            ConversionResponseDto response = new ConversionResponseDto(null, e.getMessage());
             return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                    .body(response);
+                    .body(e.getMessage());
         } catch (Exception e) {
             log.error("Error processing file conversion: requestId={}", requestId, e);
-            ConversionResponseDto response = new ConversionResponseDto(null, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(response);
+                    .body(e.getMessage());
         } finally {
             MDC.remove(LOG_REQUEST_ID);
         }
@@ -141,9 +146,9 @@ public class ConverterController {
         if (checkForXlsx(file)) {
             log.debug("XLSX format detected: filename={}", filename);
             return FileFormat.XLSX;
-        } else if (checkForXmlOrXmi(file) == FileFormat.ARCHI_XML) {
+        } else if (checkForXmlOrXmi(file) == ARCHI_XML) {
             log.debug("Archi XML format detected: filename={}", filename);
-            return FileFormat.ARCHI_XML;
+            return ARCHI_XML;
         } else if (checkForXmlOrXmi(file) == FileFormat.XMI) {
             log.debug("XMI format detected: filename={}", filename);
             return FileFormat.XMI;
@@ -182,7 +187,7 @@ public class ConverterController {
 
                 if (xmlHeader.contains(ARCHI_3_HEADER)
                         || xmlHeader.contains(ARCHIMATE_HEADER)) {
-                    return FileFormat.ARCHI_XML;
+                    return ARCHI_XML;
                 }
 
                 if (xmlHeader.contains(XMI_HEADER)
@@ -206,36 +211,31 @@ public class ConverterController {
         return FileFormat.UNSUPPORTED;
     }
 
-    private ResponseEntity<ConversionResponseDto> getResponseEntity(
-            @RequestParam(value = "output", defaultValue = "json") String output) throws JsonExportException {
+    private ResponseEntity<String> getResponseEntity(
+            @RequestParam(value = "output", defaultValue = "json") String output, FileFormat fileFormat) throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.debug("Preparing response entity: requestId={}, outputFormat={}", requestId, output);
 
         return switch (output.toLowerCase()) {
             case "json" -> {
                 log.debug("Exporting to JSON: requestId={}", requestId);
-                String jsonOutput = converterService.exportArchiToJson();
+                String jsonOutput = converterService.exportToJson(fileFormat);
                 log.debug("JSON export completed: requestId={}, outputSize={}", requestId, jsonOutput.length());
-                ConversionResponseDto responseDto = new ConversionResponseDto(jsonOutput, null);
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(responseDto);
+                        .body(jsonOutput);
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
-                String ttlOutput = converterService.exportArchiToTurtle();
+                String ttlOutput = converterService.exportToTurtle(fileFormat);
                 log.debug("Turtle export completed: requestId={}, outputSize={}", requestId, ttlOutput.length());
-                ConversionResponseDto responseDto = new ConversionResponseDto(ttlOutput, null);
                 yield ResponseEntity.ok()
                         .contentType(MediaType.TEXT_PLAIN)
-                        .body(responseDto);
+                        .body(ttlOutput);
             }
             default -> {
                 log.warn("Unsupported output format requested: requestId={}, format={}", requestId, output);
-                UnsupportedFormatException exception =  new UnsupportedFormatException("Nepodporovaný výstupní formát: " + output);
-                ConversionResponseDto responseDto = new ConversionResponseDto(null, exception.getMessage());
-                yield ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                        .body(responseDto);
+                throw new UnsupportedFormatException("Nepodporovaný výstupní formát: " + output);
             }
         };
     }

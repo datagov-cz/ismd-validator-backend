@@ -5,5 +5,7 @@ public class TurtleExportException extends RuntimeException {
         super(message);
     }
 
-    public TurtleExportException(String message, Throwable cause) { super(message, cause); }
+    public TurtleExportException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

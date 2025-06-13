@@ -84,6 +84,82 @@ class TurtleExporterUnitTest {
         );
     }
 
+    // ================= TRANSLITERATION TESTS =================
+
+    @ParameterizedTest(name = "Diacritic transliteration: {0} → {1}")
+    @CsvSource({
+            "https://slovník.gov.cz/, slovnik",
+            "https://příklad.cz/, priklad",
+            "https://škola.edu/, skola",
+            "https://řešení.org/, reseni",
+            "https://úřad.gov.cz/, urad",
+            "https://město.cz/, mesto",
+            "https://náměstí.info/, namesti",
+            "https://žádost.gov.cz/, zadost",
+            "https://číslo.net/, cislo",
+            "https://označení.org/, oznaceni"
+    })
+    void determineMainPrefix_WithCzechDiacritics_TransliteratesCorrectly(String input, String expectedPrefix) throws Exception {
+        // Arrange
+        Method method = TurtleExporter.class.getDeclaredMethod("determineMainPrefix", String.class);
+        method.setAccessible(true);
+
+        // Act
+        String result = (String) method.invoke(exporter, input);
+
+        // Assert
+        assertAll("Czech diacritic transliteration validation",
+                () -> assertEquals(expectedPrefix, result, "Should correctly transliterate Czech diacritics"),
+                () -> assertTrue(result.matches("[a-zA-Z][a-zA-Z0-9]*"), "Should match XML name pattern"),
+                () -> assertFalse(result.matches(".*[áčďéěíňóřšťúůýž].*"), "Should not contain any Czech diacritics"),
+                () -> assertTrue(Character.isLetter(result.charAt(0)), "Should start with letter")
+        );
+    }
+
+    @ParameterizedTest(name = "European diacritic transliteration: {0} → {1}")
+    @CsvSource({
+            "https://café.fr/, cafe",
+            "https://niño.es/, nino",
+            "https://schön.de/, schoen",
+            "https://naïve.com/, naive",
+            "https://résumé.org/, resume",
+            "https://größe.at/, groesse",
+            "https://Zürich.ch/, zuerich"
+    })
+    void determineMainPrefix_WithEuropeanDiacritics_TransliteratesCorrectly(String input, String expectedPrefix) throws Exception {
+        // Arrange
+        Method method = TurtleExporter.class.getDeclaredMethod("determineMainPrefix", String.class);
+        method.setAccessible(true);
+
+        // Act
+        String result = (String) method.invoke(exporter, input);
+
+        // Assert
+        assertAll("European diacritic transliteration validation",
+                () -> assertEquals(expectedPrefix, result, "Should correctly transliterate European diacritics"),
+                () -> assertTrue(result.matches("[a-zA-Z][a-zA-Z0-9]*"), "Should match XML name pattern"),
+                () -> assertTrue(Character.isLetter(result.charAt(0)), "Should start with letter")
+        );
+    }
+
+    @Test
+    void exportToTurtle_WithDiacriticNamespace_GeneratesCorrectPrefix() {
+        // Arrange
+        String czechNamespace = "https://slovník.gov.cz/";
+        TurtleExporter czechExporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, czechNamespace);
+        setupMinimalOntologyModelWithNamespace(czechNamespace);
+
+        // Act
+        String result = czechExporter.exportToTurtle();
+
+        // Assert
+        assertAll("Diacritic namespace handling",
+                () -> assertTrue(result.contains("PREFIX slovnik:"), "Should generate 'slovnik:' prefix"),
+                () -> assertTrue(result.contains("<https://slovník.gov.cz/>"), "Should preserve original namespace URI"),
+                () -> assertFalse(result.contains("PREFIX slovnk:"), "Should not generate malformed 'slovnk:' prefix")
+        );
+    }
+
     // ================= PARAMETERIZED TESTS =================
 
     @ParameterizedTest(name = "Prefix generation for {0}")
@@ -404,13 +480,17 @@ class TurtleExporterUnitTest {
     // ================= SETUP METHODS =================
 
     private void setupMinimalOntologyModel() {
-        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
+        setupMinimalOntologyModelWithNamespace(effectiveNamespace);
+    }
+
+    private void setupMinimalOntologyModelWithNamespace(String namespace) {
+        Resource ontology = ontModel.createOntology(namespace + "test-vocabulary");
         ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
         // Use the sanitized constants - these now work correctly
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
-        Resource testConcept = ontModel.createResource(effectiveNamespace + "test-concept");
+        OntClass pojemClass = ontModel.createClass(namespace + TYP_POJEM);
+        Resource testConcept = ontModel.createResource(namespace + "test-concept");
         testConcept.addProperty(RDF.type, pojemClass);
         testConcept.addProperty(RDFS.label, "Test Concept", "cs");
         resourceMap.put("test-concept", testConcept);

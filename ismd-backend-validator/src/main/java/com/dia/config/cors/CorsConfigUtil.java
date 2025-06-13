@@ -25,7 +25,7 @@ public class CorsConfigUtil {
             // Docker container/service names (aligned in docker-compose.yml)
             "http://ismd-validator-frontend:[*]",
             "http://ismd-validator-backend:[*]",
-            
+
             // Docker host.docker.internal (for standalone Docker containers)
             "http://host.docker.internal:[*]",
             "https://host.docker.internal:[*]"
@@ -64,7 +64,7 @@ public class CorsConfigUtil {
 
     public CorsConfiguration createLocalCorsConfiguration() {
         var config = new CorsConfiguration();
-        
+
         // Get allowed origins from environment variable
         String corsAllowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
         if (corsAllowedOrigins != null && !corsAllowedOrigins.isEmpty()) {
@@ -72,7 +72,7 @@ public class CorsConfigUtil {
             System.out.println("CORS allowed origins set from environment: " + corsAllowedOrigins);
             config.setAllowedOrigins(List.of(corsAllowedOrigins));
         }
-        
+
         // Always include development patterns for local environment
         config.setAllowedOriginPatterns(DEV_PATTERNS);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));

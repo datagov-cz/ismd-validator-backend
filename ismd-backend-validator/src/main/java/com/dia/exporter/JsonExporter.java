@@ -14,15 +14,15 @@ import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
-import org.slf4j.MDC;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.MDC;
 
 import java.util.*;
 
 import static com.dia.constants.ArchiOntologyConstants.*;
-import static com.dia.constants.ConvertorControllerConstants.*;
+import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 import static com.dia.constants.JsonExportConstants.*;
 
 @Slf4j
