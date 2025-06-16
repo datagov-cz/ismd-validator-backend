@@ -6,7 +6,7 @@ import ch.qos.logback.core.read.ListAppender;
 import com.dia.converter.archi.ArchiConverter;
 import com.dia.converter.data.OntologyData;
 import com.dia.converter.excel.reader.ExcelReader;
-import com.dia.converter.transformer.OntologyDataTransformer;
+import com.dia.converter.transformer.OFNDataTransformer;
 import com.dia.converter.transformer.TransformationResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.ConversionException;
@@ -42,7 +42,7 @@ class ConverterEngineTest {
     private ExcelReader excelReader;
 
     @Mock
-    private OntologyDataTransformer ontologyDataTransformer;
+    private OFNDataTransformer OFNDataTransformer;
 
     @InjectMocks
     private ConverterEngine converterEngine;
@@ -267,7 +267,7 @@ class ConverterEngineTest {
             // Použití reflection pro nastavení excelTransformationResult
             setExcelTransformationResult(mockResult);
 
-            when(ontologyDataTransformer.exportToJson(mockResult)).thenReturn(result);
+            when(OFNDataTransformer.exportToJson(mockResult)).thenReturn(result);
 
             // Volání exportToJson() s XLSX formátem
             String out = converterEngine.exportToJson(FileFormat.XLSX);
@@ -388,7 +388,7 @@ class ConverterEngineTest {
             // Použití reflection pro nastavení excelTransformationResult
             setExcelTransformationResult(mockResult);
 
-            when(ontologyDataTransformer.exportToTurtle(mockResult)).thenReturn(result);
+            when(OFNDataTransformer.exportToTurtle(mockResult)).thenReturn(result);
 
             // Volání exportToTurtle() s XLSX formátem
             String out = converterEngine.exportToTurtle(FileFormat.XLSX);
@@ -543,8 +543,8 @@ class ConverterEngineTest {
                 // Nastavení mock ontology data
                 setExcelOntologyData(mockOntologyData);
 
-                doNothing().when(ontologyDataTransformer).setRemoveELI(removeInvalidSources);
-                when(ontologyDataTransformer.transform(mockOntologyData)).thenReturn(mockResult);
+                doNothing().when(OFNDataTransformer).setRemoveELI(removeInvalidSources);
+                when(OFNDataTransformer.transform(mockOntologyData)).thenReturn(mockResult);
 
                 // Volání convertExcel()
                 converterEngine.convertExcel(removeInvalidSources);
@@ -565,8 +565,8 @@ class ConverterEngineTest {
                         .contains("Excel model conversion completed: requestId=req-17, durationMs="));
 
                 // Ověření volání dependencies
-                verify(ontologyDataTransformer).setRemoveELI(removeInvalidSources);
-                verify(ontologyDataTransformer).transform(mockOntologyData);
+                verify(OFNDataTransformer).setRemoveELI(removeInvalidSources);
+                verify(OFNDataTransformer).transform(mockOntologyData);
             }
 
             @Test
@@ -579,8 +579,8 @@ class ConverterEngineTest {
 
                 setExcelOntologyData(mockOntologyData);
 
-                doNothing().when(ontologyDataTransformer).setRemoveELI(removeInvalidSources);
-                when(ontologyDataTransformer.transform(mockOntologyData)).thenThrow(conversionException);
+                doNothing().when(OFNDataTransformer).setRemoveELI(removeInvalidSources);
+                when(OFNDataTransformer.transform(mockOntologyData)).thenThrow(conversionException);
 
                 // Volání convertExcel() a zachycení ConversionException
                 ConversionException thrown = assertThrows(ConversionException.class,
@@ -606,8 +606,8 @@ class ConverterEngineTest {
 
                 setExcelOntologyData(mockOntologyData);
 
-                doNothing().when(ontologyDataTransformer).setRemoveELI(removeInvalidSources);
-                when(ontologyDataTransformer.transform(mockOntologyData)).thenThrow(runtimeException);
+                doNothing().when(OFNDataTransformer).setRemoveELI(removeInvalidSources);
+                when(OFNDataTransformer.transform(mockOntologyData)).thenThrow(runtimeException);
 
                 // Volání convertExcel() a zachycení ConversionException
                 ConversionException thrown = assertThrows(ConversionException.class,

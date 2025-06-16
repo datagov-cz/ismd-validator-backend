@@ -4,7 +4,7 @@ import com.dia.converter.archi.ArchiConverter;
 import com.dia.converter.ea.reader.EnterpriseArchitectReader;
 import com.dia.converter.data.OntologyData;
 import com.dia.converter.excel.reader.ExcelReader;
-import com.dia.converter.transformer.OntologyDataTransformer;
+import com.dia.converter.transformer.OFNDataTransformer;
 import com.dia.converter.transformer.TransformationResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
@@ -26,7 +26,7 @@ public class ConverterEngine {
 
     private final ArchiConverter archiConverter;
     private final ExcelReader excelReader;
-    private final OntologyDataTransformer ontologyDataTransformer;
+    private final OFNDataTransformer OFNDataTransformer;
     private final EnterpriseArchitectReader eaReader;
 
     private TransformationResult excelTransformationResult;
@@ -52,7 +52,7 @@ public class ConverterEngine {
                     if (excelTransformationResult == null) {
                         throw new JsonExportException("Excel transformation result is not available.");
                     }
-                    return ontologyDataTransformer.exportToJson(excelTransformationResult);
+                    return OFNDataTransformer.exportToJson(excelTransformationResult);
                 }
 
                 @Override
@@ -60,7 +60,7 @@ public class ConverterEngine {
                     if (excelTransformationResult == null) {
                         throw new TurtleExportException("Excel transformation result is not available.");
                     }
-                    return ontologyDataTransformer.exportToTurtle(excelTransformationResult);
+                    return OFNDataTransformer.exportToTurtle(excelTransformationResult);
                 }
             },
             FileFormat.XMI, new ConverterAdapter() {
@@ -69,7 +69,7 @@ public class ConverterEngine {
                     if (eaTransformationResult == null) {
                         throw new JsonExportException("EA transformation result is not available.");
                     }
-                    return ontologyDataTransformer.exportToJson(eaTransformationResult);
+                    return OFNDataTransformer.exportToJson(eaTransformationResult);
                 }
 
                 @Override
@@ -77,7 +77,7 @@ public class ConverterEngine {
                     if (eaTransformationResult == null) {
                         throw new TurtleExportException("EA transformation result is not available.");
                     }
-                    return ontologyDataTransformer.exportToTurtle(eaTransformationResult);
+                    return OFNDataTransformer.exportToTurtle(eaTransformationResult);
                 }
             }
     );
@@ -216,8 +216,8 @@ public class ConverterEngine {
         log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
         try {
             long startTime = System.currentTimeMillis();
-            ontologyDataTransformer.setRemoveELI(removeInvalidSources);
-            excelTransformationResult = ontologyDataTransformer.transform(excelOntologyData);
+            OFNDataTransformer.setRemoveELI(removeInvalidSources);
+            excelTransformationResult = OFNDataTransformer.transform(excelOntologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("Excel model conversion completed: requestId={}, durationMs={}",
                     requestId, duration);
@@ -257,8 +257,8 @@ public class ConverterEngine {
         log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
         try {
             long startTime = System.currentTimeMillis();
-            ontologyDataTransformer.setRemoveELI(removeInvalidSources);
-            eaTransformationResult = ontologyDataTransformer.transform(eaOntologyData);
+            OFNDataTransformer.setRemoveELI(removeInvalidSources);
+            eaTransformationResult = OFNDataTransformer.transform(eaOntologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("EA model conversion completed: requestId={}, durationMs={}",
                     requestId, duration);

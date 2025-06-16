@@ -31,12 +31,12 @@ import static com.dia.constants.ArchiOntologyConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
 /**
- * ExcelDataTransformer - Transforms Excel-parsed data into OFN ontology models
+ * OFNDataTransformer - Transforms parsed data from Excel and EA ontologies into OFN ontology models
  */
 @Component
 @Slf4j
 @Getter
-public class OntologyDataTransformer {
+public class OFNDataTransformer {
 
     private final OFNBaseModel baseModel;
     private final OntModel ontModel;
@@ -53,7 +53,7 @@ public class OntologyDataTransformer {
     @Setter
     private Boolean removeELI;
 
-    public OntologyDataTransformer() {
+    public OFNDataTransformer() {
         this.baseModel = new OFNBaseModel();
         this.ontModel = baseModel.getOntModel();
         this.resourceMap = new HashMap<>();

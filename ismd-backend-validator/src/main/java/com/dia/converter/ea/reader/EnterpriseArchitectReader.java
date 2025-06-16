@@ -17,26 +17,18 @@ import java.util.*;
 
 import static com.dia.constants.EnterpriseArchitectConstants.*;
 
+/**
+ * EnterpriseArchitectReader - reads and parses ontology data from EA XMI files
+ */
 @Component
 @Slf4j
 public class EnterpriseArchitectReader {
 
-    /**
-     * Reads and parses an Enterprise Architect XMI file from multipart file bytes.
-     * Automatically detects encoding (windows-1252, utf-8, iso-8859-2).
-     *
-     * @param fileBytes byte array from multipart file
-     * @return parsed OntologyData
-     * @throws FileParsingException if parsing fails
-     */
     public OntologyData readXmiFromBytes(byte[] fileBytes) throws FileParsingException {
         Document document = parseWithEncodingDetection(fileBytes);
         return parseDocument(document);
     }
 
-    /**
-     * Attempts to parse XML content with different encodings.
-     */
     private Document parseWithEncodingDetection(byte[] content) throws FileParsingException {
         List<Charset> encodings = Arrays.asList(
                 StandardCharsets.UTF_8,
@@ -66,9 +58,6 @@ public class EnterpriseArchitectReader {
         throw new FileParsingException("Failed to parse XML with any supported encoding", lastException);
     }
 
-    /**
-     * Parses the XML document and extracts ontology data.
-     */
     private OntologyData parseDocument(Document document) throws FileParsingException {
         Element vocabularyPackage = findVocabularyPackageInMainModel(document);
         if (vocabularyPackage == null) {
@@ -101,9 +90,6 @@ public class EnterpriseArchitectReader {
                 .build();
     }
 
-    /**
-     * Finds the main vocabulary package in the UML model (not in extension).
-     */
     private Element findVocabularyPackageInMainModel(Document document) {
         NodeList umlPackages = document.getElementsByTagName(PACKAGED_ELEMENT);
 
@@ -124,9 +110,6 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
-    /**
-     * Finds the extension element that corresponds to a main model element.
-     */
     private Element findExtensionElement(Document document, String elementId) {
         NodeList extensionElements = document.getElementsByTagName("element");
 
@@ -139,9 +122,6 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
-    /**
-     * Extracts vocabulary metadata from the main package and its extension.
-     */
     private VocabularyMetadata extractVocabularyMetadata(Document document, String vocabularyPackageId) {
         VocabularyMetadata metadata = new VocabularyMetadata();
 
@@ -168,9 +148,6 @@ public class EnterpriseArchitectReader {
         return metadata;
     }
 
-    /**
-     * Finds a main model element by its ID.
-     */
     private Element findMainModelElement(Document document, String elementId) {
         NodeList elements = document.getElementsByTagName("*");
 
@@ -183,9 +160,6 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
-    /**
-     * Gets all package IDs that belong to the vocabulary (including sub-packages without slovnikyPackage stereotype).
-     */
     private Set<String> getVocabularyPackageIds(Document document, String mainPackageId) {
         Set<String> packageIds = new HashSet<>();
         packageIds.add(mainPackageId);
@@ -195,9 +169,6 @@ public class EnterpriseArchitectReader {
         return packageIds;
     }
 
-    /**
-     * Recursively adds sub-packages that don't have slovnikyPackage stereotype.
-     */
     private void addSubPackages(Document document, String parentPackageId, Set<String> packageIds) {
         NodeList packages = document.getElementsByTagName(PACKAGED_ELEMENT);
 
@@ -223,9 +194,6 @@ public class EnterpriseArchitectReader {
         }
     }
 
-    /**
-     * Parses elements and categorizes them into classes and properties.
-     */
     private void parseElements(Document document, Set<String> vocabularyPackageIds,
                                List<ClassData> classes, List<PropertyData> properties) {
         NodeList umlClasses = document.getElementsByTagName(PACKAGED_ELEMENT);
@@ -252,9 +220,6 @@ public class EnterpriseArchitectReader {
         return vocabularyPackageIds.contains(packageId);
     }
 
-    /**
-     * Parses elements from Extension tag and categorizes them into classes and properties.
-     */
     private void parseExtensions(Document document, String elementId, List<ClassData> classes,
                                  List<PropertyData> properties, Element umlClass) {
         Element extensionElement = findExtensionElement(document, elementId);
@@ -278,9 +243,6 @@ public class EnterpriseArchitectReader {
         }
     }
 
-    /**
-     * Gets the package ID that contains an element.
-     */
     private String getElementPackageId(Element element) {
         Element parent = (Element) element.getParentNode();
         while (parent != null) {
@@ -292,9 +254,6 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
-    /**
-     * Parses class data from UML element and extension element.
-     */
     private ClassData parseClassData(Element umlElement, Element extensionElement, String stereotype) {
         ClassData classData = new ClassData();
 
@@ -313,9 +272,6 @@ public class EnterpriseArchitectReader {
         return classData;
     }
 
-    /**
-     * Parses property data from UML element and extension element.
-     */
     private PropertyData parsePropertyData(Element umlElement, Element extensionElement) {
         PropertyData propertyData = new PropertyData();
 
@@ -342,9 +298,6 @@ public class EnterpriseArchitectReader {
         return propertyData;
     }
 
-    /**
-     * Enhanced connectors parsing that handles multiple relationship types.
-     */
     private void parseConnectors(Document document, Set<String> vocabularyPackageIds,
                                  List<RelationshipData> relationships, List<ClassData> classes,
                                  List<PropertyData> properties) {
@@ -390,9 +343,6 @@ public class EnterpriseArchitectReader {
         }
     }
 
-    /**
-     * Creates a map of class names to ClassData objects for efficient lookup.
-     */
     private Map<String, ClassData> createClassMap(List<ClassData> classes) {
         Map<String, ClassData> classMap = new HashMap<>();
         for (ClassData classData : classes) {
@@ -401,9 +351,6 @@ public class EnterpriseArchitectReader {
         return classMap;
     }
 
-    /**
-     * Creates a map of property names to PropertyData objects for efficient lookup.
-     */
     private Map<String, PropertyData> createPropertyMap(List<PropertyData> properties) {
         Map<String, PropertyData> propertyMap = new HashMap<>();
         for (PropertyData propertyData : properties) {
@@ -412,9 +359,6 @@ public class EnterpriseArchitectReader {
         return propertyMap;
     }
 
-    /**
-     * Gets the connector type from either properties or main model attributes.
-     */
     private String getConnectorType(Element connector) {
         NodeList properties = connector.getElementsByTagName("properties");
         if (properties.getLength() > 0) {
@@ -433,17 +377,11 @@ public class EnterpriseArchitectReader {
         return "Unknown";
     }
 
-    /**
-     * Checks if connector has the correct stereotype for associations.
-     */
     private boolean isValidAssociationConnector(Element connector) {
         String stereotype = getStereotype(connector);
         return STEREOTYPE_TYP_VZTAHU.equals(stereotype);
     }
 
-    /**
-     * Processes generalization connectors to establish inheritance relationships.
-     */
     private void processGeneralizationConnector(Document document, Element connector, Map<String, ClassData> classMap) {
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);
@@ -472,9 +410,6 @@ public class EnterpriseArchitectReader {
         }
     }
 
-    /**
-     * Processes aggregation connectors to establish property-class relationships.
-     */
     private void processAggregationConnector(Document document, Element connector,
                                              Map<String, PropertyData> propertyMap,
                                              Map<String, ClassData> classMap) {
@@ -505,9 +440,6 @@ public class EnterpriseArchitectReader {
         }
     }
 
-    /**
-     * Checks if a connector belongs to the vocabulary by verifying its connected elements.
-     */
     private boolean isConnectorInVocabulary(Document document, Element connector, Set<String> vocabularyPackageIds) {
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);
@@ -527,9 +459,6 @@ public class EnterpriseArchitectReader {
         return sourceInVocab && targetInVocab;
     }
 
-    /**
-     * Checks if an element with given ID belongs to the vocabulary packages.
-     */
     private boolean isElementInVocabulary(Document document, String elementId, Set<String> vocabularyPackageIds) {
         Element mainElement = findMainModelElement(document, elementId);
         if (mainElement != null) {
@@ -542,9 +471,6 @@ public class EnterpriseArchitectReader {
         return false;
     }
 
-    /**
-     * Parses relationship data from a connector.
-     */
     private RelationshipData parseRelationshipData(Document document, Element connector) {
         RelationshipData relationshipData = new RelationshipData();
 
@@ -585,9 +511,6 @@ public class EnterpriseArchitectReader {
         return relationshipData;
     }
 
-    /**
-     * Gets element name by its ID.
-     */
     private String getElementName(Document document, String elementId) {
         Element mainElement = findMainModelElement(document, elementId);
         if (mainElement != null) {
@@ -599,9 +522,6 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
-    /**
-     * Gets stereotype of an element.
-     */
     private String getStereotype(Element element) {
         NodeList properties = element.getElementsByTagName("properties");
         if (properties.getLength() > 0) {
@@ -611,9 +531,6 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
-    /**
-     * Gets tag value by tag name from an element.
-     */
     private String getTagValue(Element element, String tagName) {
         if (element == null) {
             return null;
@@ -633,9 +550,6 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
-    /**
-     * Cleans tag values by removing EA metadata.
-     */
     private String cleanTagValue(String value) {
         if (value == null) {
             return null;
@@ -657,9 +571,6 @@ public class EnterpriseArchitectReader {
         return value;
     }
 
-    /**
-     * Gets boolean tag value.
-     */
     private String getBooleanTagValue(Element element, String tagName) {
         String value = getTagValue(element, tagName);
         if (value == null) {
