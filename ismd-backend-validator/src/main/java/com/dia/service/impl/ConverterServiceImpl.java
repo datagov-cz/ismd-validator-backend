@@ -48,4 +48,9 @@ public class ConverterServiceImpl implements ConverterService {
     public void convertExcel(Boolean removeInvalidSources) throws com.dia.exceptions.ConversionException {
         converterEngine.convertExcel(removeInvalidSources);
     }
+
+    @Override
+    public void parseEAFromFile(MultipartFile file) throws FileParsingException, IOException {
+        converterEngine.parseEAFromFile(file);
+    }
 }

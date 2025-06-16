@@ -1,5 +1,6 @@
 package com.dia.controller;
 
+import com.dia.converter.excel.data.OntologyData;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.UnsupportedFormatException;
@@ -88,7 +89,10 @@ public class ConverterController {
                             requestId, fileFormat, output);
                     return response;
                 }
-                case XMI -> log.debug("Processing XMI file: requestId={}", requestId);
+                case XMI -> {
+                    log.debug("Processing XMI file: requestId={}", requestId);
+                    converterService.parseEAFromFile(file);
+                }
                 case XLSX -> {
                     log.debug("Processing XLSX file: requestId={}", requestId);
                     converterService.parseExcelFromFile(file);

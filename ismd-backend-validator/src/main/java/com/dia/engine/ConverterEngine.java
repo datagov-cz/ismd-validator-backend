@@ -1,6 +1,7 @@
 package com.dia.engine;
 
 import com.dia.converter.archi.ArchiConverter;
+import com.dia.converter.ea.reader.EnterpriseArchitectReader;
 import com.dia.converter.excel.data.OntologyData;
 import com.dia.converter.excel.reader.ExcelReader;
 import com.dia.converter.excel.transformer.ExcelDataTransformer;
@@ -26,9 +27,11 @@ public class ConverterEngine {
     private final ArchiConverter archiConverter;
     private final ExcelReader excelReader;
     private final ExcelDataTransformer excelDataTransformer;
+    private final EnterpriseArchitectReader eaReader;
 
     private TransformationResult excelTransformationResult;
     private OntologyData excelOntologyData;
+    private OntologyData eaOntologyData;
 
     private final Map<FileFormat, ConverterAdapter> converterRegistry = Map.of(
             FileFormat.ARCHI_XML, new ConverterAdapter() {
@@ -208,6 +211,25 @@ public class ConverterEngine {
             log.error("Unexpected error during Excel model conversion: requestId={}",
                     requestId, e);
             throw new ConversionException("Během konverze Excel souboru došlo k nečekané chybě.");
+        }
+    }
+
+    public void parseEAFromFile(MultipartFile file) throws FileParsingException, IOException {
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        log.info("Starting EA file parsing: requestId={}", requestId);
+
+        try {
+            long startTime = System.currentTimeMillis();
+            eaOntologyData = eaReader.readXmiFromBytes(file.getBytes());
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("EA file parsing completed: requestId={}, durationMs={}",
+                    requestId, duration);
+        } catch (IOException e) {
+            log.error("Failed to parse EA file: requestId={}", requestId, e);
+            throw e;
+        } catch (FileParsingException e) {
+            log.error("Failed to parse EA file: requestId={}", requestId, e);
+            throw new FileParsingException("Během čtení souboru došlo k chybě.", e);
         }
     }
 }
