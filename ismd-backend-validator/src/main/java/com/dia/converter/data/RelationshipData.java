@@ -31,7 +31,6 @@ public class RelationshipData {
     public boolean hasValidData() {
         return name != null && !name.trim().isEmpty() &&
                 domain != null && !domain.trim().isEmpty() &&
-                range != null && !range.trim().isEmpty() &&
-                identifier != null && !identifier.trim().isEmpty();
+                range != null && !range.trim().isEmpty();
     }
 }

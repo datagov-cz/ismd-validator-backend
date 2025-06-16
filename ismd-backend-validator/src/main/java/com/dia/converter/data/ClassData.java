@@ -25,4 +25,8 @@ public class ClassData {
         return name != null && !name.trim().isEmpty() &&
                 identifier != null && !identifier.trim().isEmpty();
     }
+
+    public boolean hasSuperClass() {
+        return superClass != null && !superClass.trim().isEmpty();
+    }
 }

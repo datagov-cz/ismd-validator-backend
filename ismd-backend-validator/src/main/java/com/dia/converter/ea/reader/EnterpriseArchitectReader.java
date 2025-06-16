@@ -88,7 +88,8 @@ public class EnterpriseArchitectReader {
         List<RelationshipData> relationships = new ArrayList<>();
 
         parseElements(document, vocabularyPackageIds, classes, properties);
-        parseConnectors(document, vocabularyPackageIds, relationships);
+
+        parseConnectors(document, vocabularyPackageIds, relationships, classes, properties);
 
         log.info("Parsed {} classes, {} properties, {} relationships", classes.size(), properties.size(), relationships.size());
 
@@ -342,44 +343,166 @@ public class EnterpriseArchitectReader {
     }
 
     /**
-     * Parses connectors (relationships).
+     * Enhanced connectors parsing that handles multiple relationship types.
      */
     private void parseConnectors(Document document, Set<String> vocabularyPackageIds,
-                                 List<RelationshipData> relationships) {
+                                 List<RelationshipData> relationships, List<ClassData> classes,
+                                 List<PropertyData> properties) {
         NodeList connectors = document.getElementsByTagName("connector");
+
+        Map<String, ClassData> classMap = createClassMap(classes);
+        Map<String, PropertyData> propertyMap = createPropertyMap(properties);
 
         for (int i = 0; i < connectors.getLength(); i++) {
             Element connector = (Element) connectors.item(i);
 
-            if (!isValidConnectorToProcess(document, connector, vocabularyPackageIds)) {
+            if (!isConnectorInVocabulary(document, connector, vocabularyPackageIds)) {
                 continue;
             }
 
-            RelationshipData relationshipData = parseRelationshipData(document, connector);
-            if (relationshipData.hasValidData()) {
-                relationships.add(relationshipData);
-                log.debug("Added relationship: {}", relationshipData.getName());
+            String connectorType = getConnectorType(connector);
+            log.debug("Processing connector: {} of type: {}", connector.getAttribute("name"), connectorType);
+            if (connector.getAttribute("name").contains("sídlí")) {
+                log.debug("DEBUG DEBUG DEBUG Found sídlí connector - type: {}, stereotype: {}, inVocab: {}",
+                        connectorType, getStereotype(connector),
+                        isConnectorInVocabulary(document, connector, vocabularyPackageIds));
+            }
+
+            switch (connectorType) {
+                case "Association":
+                    if (isValidAssociationConnector(connector)) {
+                        RelationshipData relationshipData = parseRelationshipData(document, connector);
+                        if (relationshipData.hasValidData()) {
+                            relationships.add(relationshipData);
+                            log.debug("Added association: {}", relationshipData.getName());
+                        }
+                    }
+                    break;
+                case "Generalization":
+                    processGeneralizationConnector(document, connector, classMap);
+                    break;
+                case "Aggregation":
+                    processAggregationConnector(document, connector, propertyMap, classMap);
+                    break;
+                default:
+                    log.debug("Skipping connector type: {}", connectorType);
             }
         }
     }
 
     /**
-     * Validates if a connector should be processed (has correct stereotype and belongs to vocabulary).
+     * Creates a map of class names to ClassData objects for efficient lookup.
      */
-    private boolean isValidConnectorToProcess(Document document, Element connector, Set<String> vocabularyPackageIds) {
-        if (!isValidConnectorStereotype(connector)) {
-            return false;
+    private Map<String, ClassData> createClassMap(List<ClassData> classes) {
+        Map<String, ClassData> classMap = new HashMap<>();
+        for (ClassData classData : classes) {
+            classMap.put(classData.getName(), classData);
         }
-
-        return isConnectorInVocabulary(document, connector, vocabularyPackageIds);
+        return classMap;
     }
 
     /**
-     * Checks if connector has the correct stereotype for relationships.
+     * Creates a map of property names to PropertyData objects for efficient lookup.
      */
-    private boolean isValidConnectorStereotype(Element connector) {
+    private Map<String, PropertyData> createPropertyMap(List<PropertyData> properties) {
+        Map<String, PropertyData> propertyMap = new HashMap<>();
+        for (PropertyData propertyData : properties) {
+            propertyMap.put(propertyData.getName(), propertyData);
+        }
+        return propertyMap;
+    }
+
+    /**
+     * Gets the connector type from either properties or main model attributes.
+     */
+    private String getConnectorType(Element connector) {
+        NodeList properties = connector.getElementsByTagName("properties");
+        if (properties.getLength() > 0) {
+            Element property = (Element) properties.item(0);
+            String eaType = property.getAttribute("ea_type");
+            if (!eaType.trim().isEmpty()) {
+                return eaType;
+            }
+        }
+
+        String stereotype = getStereotype(connector);
+        if (STEREOTYPE_TYP_VZTAHU.equals(stereotype)) {
+            return "Association";
+        }
+
+        return "Unknown";
+    }
+
+    /**
+     * Checks if connector has the correct stereotype for associations.
+     */
+    private boolean isValidAssociationConnector(Element connector) {
         String stereotype = getStereotype(connector);
         return STEREOTYPE_TYP_VZTAHU.equals(stereotype);
+    }
+
+    /**
+     * Processes generalization connectors to establish inheritance relationships.
+     */
+    private void processGeneralizationConnector(Document document, Element connector, Map<String, ClassData> classMap) {
+        NodeList sources = connector.getElementsByTagName("source");
+        NodeList targets = connector.getElementsByTagName("target");
+
+        if (sources.getLength() > 0 && targets.getLength() > 0) {
+            Element source = (Element) sources.item(0);
+            Element target = (Element) targets.item(0);
+
+            String childId = source.getAttribute(XMI_IDREF);
+            String parentId = target.getAttribute(XMI_IDREF);
+
+            String childName = getElementName(document, childId);
+            String parentName = getElementName(document, parentId);
+
+            if (childName != null && parentName != null) {
+                ClassData childClass = classMap.get(childName);
+                if (childClass != null) {
+                    childClass.setSuperClass(parentName);
+                    log.debug("Established inheritance: {} extends {}", childName, parentName);
+                } else {
+                    log.warn("Child class not found for inheritance: {}", childName);
+                }
+            } else {
+                log.warn("Could not resolve names for inheritance relationship: child={}, parent={}", childName, parentName);
+            }
+        }
+    }
+
+    /**
+     * Processes aggregation connectors to establish property-class relationships.
+     */
+    private void processAggregationConnector(Document document, Element connector,
+                                             Map<String, PropertyData> propertyMap,
+                                             Map<String, ClassData> classMap) {
+        NodeList sources = connector.getElementsByTagName("source");
+        NodeList targets = connector.getElementsByTagName("target");
+
+        if (sources.getLength() > 0 && targets.getLength() > 0) {
+            Element source = (Element) sources.item(0);
+            Element target = (Element) targets.item(0);
+
+            String propertyId = source.getAttribute(XMI_IDREF);
+            String classId = target.getAttribute(XMI_IDREF);
+
+            String propertyName = getElementName(document, propertyId);
+            String className = getElementName(document, classId);
+
+            if (propertyName != null && className != null) {
+                PropertyData property = propertyMap.get(propertyName);
+                ClassData ownerClass = classMap.get(className);
+
+                if (property != null && ownerClass != null) {
+                    property.setDomain(className);
+                    log.debug("Set property domain: {} belongs to {}", propertyName, className);
+                } else {
+                    log.warn("Could not resolve aggregation: property={}, class={}", propertyName, className);
+                }
+            }
+        }
     }
 
     /**
@@ -390,6 +513,7 @@ public class EnterpriseArchitectReader {
         NodeList targets = connector.getElementsByTagName("target");
 
         if (sources.getLength() == 0 || targets.getLength() == 0) {
+            log.debug("Connector missing source or target: {}", connector.getAttribute("name"));
             return false;
         }
 
@@ -399,8 +523,13 @@ public class EnterpriseArchitectReader {
         String sourceId = source.getAttribute(XMI_IDREF);
         String targetId = target.getAttribute(XMI_IDREF);
 
-        return isElementInVocabulary(document, sourceId, vocabularyPackageIds) &&
-                isElementInVocabulary(document, targetId, vocabularyPackageIds);
+        boolean sourceInVocab = isElementInVocabulary(document, sourceId, vocabularyPackageIds);
+        boolean targetInVocab = isElementInVocabulary(document, targetId, vocabularyPackageIds);
+
+        log.debug("Connector {} - source {} in vocab: {}, target {} in vocab: {}",
+                connector.getAttribute("name"), sourceId, sourceInVocab, targetId, targetInVocab);
+
+        return sourceInVocab && targetInVocab;
     }
 
     /**
@@ -410,8 +539,11 @@ public class EnterpriseArchitectReader {
         Element mainElement = findMainModelElement(document, elementId);
         if (mainElement != null) {
             String packageId = getElementPackageId(mainElement);
-            return vocabularyPackageIds.contains(packageId);
+            boolean inVocab = vocabularyPackageIds.contains(packageId);
+            log.debug("Element {} (package: {}) in vocabulary: {}", elementId, packageId, inVocab);
+            return inVocab;
         }
+        log.debug("Element {} not found in main model", elementId);
         return false;
     }
 
@@ -450,6 +582,9 @@ public class EnterpriseArchitectReader {
 
             relationshipData.setDomain(getElementName(document, sourceId));
             relationshipData.setRange(getElementName(document, targetId));
+
+            log.debug("Relationship {} connects {} -> {}",
+                    relationshipData.getName(), relationshipData.getDomain(), relationshipData.getRange());
         }
 
         return relationshipData;
@@ -461,8 +596,11 @@ public class EnterpriseArchitectReader {
     private String getElementName(Document document, String elementId) {
         Element mainElement = findMainModelElement(document, elementId);
         if (mainElement != null) {
-            return mainElement.getAttribute("name");
+            String name = mainElement.getAttribute("name");
+            log.debug("Resolved element {} to name: {}", elementId, name);
+            return name;
         }
+        log.warn("Could not resolve element name for ID: {}", elementId);
         return null;
     }
 
