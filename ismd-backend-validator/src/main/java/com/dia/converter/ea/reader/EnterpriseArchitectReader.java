@@ -1,6 +1,6 @@
 package com.dia.converter.ea.reader;
 
-import com.dia.converter.excel.data.*;
+import com.dia.converter.data.*;
 import com.dia.exceptions.FileParsingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

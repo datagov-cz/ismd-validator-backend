@@ -1,6 +1,6 @@
 package com.dia.converter.excel.reader;
 
-import com.dia.converter.excel.data.*;
+import com.dia.converter.data.*;
 import com.dia.converter.excel.mapper.ColumnMapping;
 import com.dia.converter.excel.mapper.ColumnMappingRegistry;
 import com.dia.converter.excel.reader.poi.*;

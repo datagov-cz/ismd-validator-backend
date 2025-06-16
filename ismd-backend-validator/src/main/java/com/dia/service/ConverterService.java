@@ -20,4 +20,6 @@ public interface ConverterService {
     void convertExcel(Boolean removeInvalidSources) throws ConversionException;
 
     void parseEAFromFile(MultipartFile file) throws FileParsingException, IOException;
+
+    void convertEA(Boolean removeInvalidSources) throws ConversionException;
 }

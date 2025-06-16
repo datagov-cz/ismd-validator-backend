@@ -1,6 +1,5 @@
 package com.dia.controller;
 
-import com.dia.converter.excel.data.OntologyData;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.UnsupportedFormatException;
@@ -24,8 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.dia.constants.ConvertorControllerConstants.*;
-import static com.dia.enums.FileFormat.ARCHI_XML;
-import static com.dia.enums.FileFormat.XLSX;
+import static com.dia.enums.FileFormat.*;
 
 @RestController
 @RequestMapping("/api/convertor")
@@ -92,6 +90,11 @@ public class ConverterController {
                 case XMI -> {
                     log.debug("Processing XMI file: requestId={}", requestId);
                     converterService.parseEAFromFile(file);
+                    converterService.convertEA(removeInvalidSources != null && removeInvalidSources);
+                    ResponseEntity<String> response = getResponseEntity(outputFormat, XMI);
+                    log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
+                            requestId, fileFormat, output);
+                    return response;
                 }
                 case XLSX -> {
                     log.debug("Processing XLSX file: requestId={}", requestId);
@@ -109,7 +112,6 @@ public class ConverterController {
                     return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
                 }
             }
-            return new ResponseEntity<>(HttpStatus.OK);
         } catch (UnsupportedFormatException e) {
             log.error("Unsupported format exception: requestId={}, message={}", requestId, e.getMessage());
             return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)

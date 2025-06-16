@@ -2,10 +2,10 @@ package com.dia.engine;
 
 import com.dia.converter.archi.ArchiConverter;
 import com.dia.converter.ea.reader.EnterpriseArchitectReader;
-import com.dia.converter.excel.data.OntologyData;
+import com.dia.converter.data.OntologyData;
 import com.dia.converter.excel.reader.ExcelReader;
-import com.dia.converter.excel.transformer.ExcelDataTransformer;
-import com.dia.converter.excel.transformer.TransformationResult;
+import com.dia.converter.transformer.OntologyDataTransformer;
+import com.dia.converter.transformer.TransformationResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
 import lombok.RequiredArgsConstructor;
@@ -26,12 +26,13 @@ public class ConverterEngine {
 
     private final ArchiConverter archiConverter;
     private final ExcelReader excelReader;
-    private final ExcelDataTransformer excelDataTransformer;
+    private final OntologyDataTransformer ontologyDataTransformer;
     private final EnterpriseArchitectReader eaReader;
 
     private TransformationResult excelTransformationResult;
     private OntologyData excelOntologyData;
     private OntologyData eaOntologyData;
+    private TransformationResult eaTransformationResult;
 
     private final Map<FileFormat, ConverterAdapter> converterRegistry = Map.of(
             FileFormat.ARCHI_XML, new ConverterAdapter() {
@@ -51,7 +52,7 @@ public class ConverterEngine {
                     if (excelTransformationResult == null) {
                         throw new JsonExportException("Excel transformation result is not available.");
                     }
-                    return excelDataTransformer.exportToJson(excelTransformationResult);
+                    return ontologyDataTransformer.exportToJson(excelTransformationResult);
                 }
 
                 @Override
@@ -59,7 +60,24 @@ public class ConverterEngine {
                     if (excelTransformationResult == null) {
                         throw new TurtleExportException("Excel transformation result is not available.");
                     }
-                    return excelDataTransformer.exportToTurtle(excelTransformationResult);
+                    return ontologyDataTransformer.exportToTurtle(excelTransformationResult);
+                }
+            },
+            FileFormat.XMI, new ConverterAdapter() {
+                @Override
+                public String exportToJson() throws JsonExportException {
+                    if (eaTransformationResult == null) {
+                        throw new JsonExportException("EA transformation result is not available.");
+                    }
+                    return ontologyDataTransformer.exportToJson(eaTransformationResult);
+                }
+
+                @Override
+                public String exportToTurtle() throws TurtleExportException {
+                    if (eaTransformationResult == null) {
+                        throw new TurtleExportException("EA transformation result is not available.");
+                    }
+                    return ontologyDataTransformer.exportToTurtle(eaTransformationResult);
                 }
             }
     );
@@ -198,8 +216,8 @@ public class ConverterEngine {
         log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
         try {
             long startTime = System.currentTimeMillis();
-            excelDataTransformer.setRemoveELI(removeInvalidSources);
-            excelTransformationResult = excelDataTransformer.transform(excelOntologyData);
+            ontologyDataTransformer.setRemoveELI(removeInvalidSources);
+            excelTransformationResult = ontologyDataTransformer.transform(excelOntologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("Excel model conversion completed: requestId={}, durationMs={}",
                     requestId, duration);
@@ -231,5 +249,28 @@ public class ConverterEngine {
             log.error("Failed to parse EA file: requestId={}", requestId, e);
             throw new FileParsingException("Během čtení souboru došlo k chybě.", e);
         }
+    }
+
+    public void convertEA(Boolean removeInvalidSources) {
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        log.info("Starting EA model conversion: requestId={}", requestId);
+        log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
+        try {
+            long startTime = System.currentTimeMillis();
+            ontologyDataTransformer.setRemoveELI(removeInvalidSources);
+            eaTransformationResult = ontologyDataTransformer.transform(eaOntologyData);
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("EA model conversion completed: requestId={}, durationMs={}",
+                    requestId, duration);
+        } catch (ConversionException e) {
+            log.error("Failed to convert EA model: requestId={}, error={}",
+                    requestId, e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error during EA model conversion: requestId={}",
+                    requestId, e);
+            throw new ConversionException("Během konverze EnterpriseArchitect souboru došlo k nečekané chybě.");
+        }
+
     }
 }
