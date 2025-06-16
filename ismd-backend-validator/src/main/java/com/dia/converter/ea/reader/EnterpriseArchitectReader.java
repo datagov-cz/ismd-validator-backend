@@ -445,8 +445,8 @@ public class EnterpriseArchitectReader {
      * Processes generalization connectors to establish inheritance relationships.
      */
     private void processGeneralizationConnector(Document document, Element connector, Map<String, ClassData> classMap) {
-        NodeList sources = connector.getElementsByTagName("source");
-        NodeList targets = connector.getElementsByTagName("target");
+        NodeList sources = connector.getElementsByTagName(SOURCE);
+        NodeList targets = connector.getElementsByTagName(TARGET);
 
         if (sources.getLength() > 0 && targets.getLength() > 0) {
             Element source = (Element) sources.item(0);
@@ -478,8 +478,8 @@ public class EnterpriseArchitectReader {
     private void processAggregationConnector(Document document, Element connector,
                                              Map<String, PropertyData> propertyMap,
                                              Map<String, ClassData> classMap) {
-        NodeList sources = connector.getElementsByTagName("source");
-        NodeList targets = connector.getElementsByTagName("target");
+        NodeList sources = connector.getElementsByTagName(SOURCE);
+        NodeList targets = connector.getElementsByTagName(TARGET);
 
         if (sources.getLength() > 0 && targets.getLength() > 0) {
             Element source = (Element) sources.item(0);
@@ -509,13 +509,8 @@ public class EnterpriseArchitectReader {
      * Checks if a connector belongs to the vocabulary by verifying its connected elements.
      */
     private boolean isConnectorInVocabulary(Document document, Element connector, Set<String> vocabularyPackageIds) {
-        NodeList sources = connector.getElementsByTagName("source");
-        NodeList targets = connector.getElementsByTagName("target");
-
-        if (sources.getLength() == 0 || targets.getLength() == 0) {
-            log.debug("Connector missing source or target: {}", connector.getAttribute("name"));
-            return false;
-        }
+        NodeList sources = connector.getElementsByTagName(SOURCE);
+        NodeList targets = connector.getElementsByTagName(TARGET);
 
         Element source = (Element) sources.item(0);
         Element target = (Element) targets.item(0);
@@ -570,8 +565,8 @@ public class EnterpriseArchitectReader {
         relationshipData.setAcquisitionMethod(getTagValue(connector, TAG_ZPUSOB_ZISKANI_UDAJE));
         relationshipData.setContentType(getTagValue(connector, TAG_TYP_OBSAHU_UDAJE));
 
-        NodeList sources = connector.getElementsByTagName("source");
-        NodeList targets = connector.getElementsByTagName("target");
+        NodeList sources = connector.getElementsByTagName(SOURCE);
+        NodeList targets = connector.getElementsByTagName(TARGET);
 
         if (sources.getLength() > 0 && targets.getLength() > 0) {
             Element source = (Element) sources.item(0);

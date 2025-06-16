@@ -13,6 +13,8 @@ public class EnterpriseArchitectConstants {
     public static final String UML_PACKAGE = "uml:Package";
     public static final String UML_CLASS = "uml:Class";
     public static final String PACKAGED_ELEMENT = "packagedElement";
+    public static final String SOURCE = "source";
+    public static final String TARGET = "target";
 
     // Encoding constants
     public static final String WINDOWS_1252 = "windows-1252";
