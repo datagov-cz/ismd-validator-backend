@@ -1,5 +1,6 @@
 package com.dia.converter.archi;
 
+import com.dia.converter.reader.archi.ArchiReader;
 import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.FileParsingException;
 import com.dia.exceptions.JsonExportException;
@@ -34,6 +35,7 @@ import java.util.*;
 import static com.dia.constants.ArchiOntologyConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
+@Deprecated(forRemoval = true)
 @Component
 @Slf4j
 public class ArchiConverter {
@@ -58,12 +60,14 @@ public class ArchiConverter {
     @Setter
     private Boolean removeELI;
 
+    @Deprecated
     public ArchiConverter() {
         this.resourceMap = new HashMap<>();
         OFNBaseModel ofnBaseModel = new OFNBaseModel();
         this.ontModel = ofnBaseModel.getOntModel();
     }
 
+    @Deprecated
     public void parseFromString(String content) throws FileParsingException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         int contentLength = content != null ? content.length() : 0;
@@ -103,6 +107,7 @@ public class ArchiConverter {
         }
     }
 
+    @Deprecated
     public void convert() throws ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Archi model conversion: requestId={}", requestId);
@@ -153,6 +158,7 @@ public class ArchiConverter {
         }
     }
 
+    @Deprecated
     public String exportToJson() throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting JSON export: requestId={}, modelName={}", requestId, modelName);
@@ -179,6 +185,7 @@ public class ArchiConverter {
         }
     }
 
+    @Deprecated
     public String exportToTurtle() throws TurtleExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Turtle export: requestId={}, modelName={}", requestId, modelName);
@@ -1082,16 +1089,7 @@ public class ArchiConverter {
     }
 
     private void processNameNodesForLabels(Element element, Map<String, String> result) {
-        NodeList nameNodes = element.getElementsByTagNameNS(ARCHI_NS, "name");
-        for (int i = 0; i < nameNodes.getLength(); i++) {
-            Element nameElement = (Element) nameNodes.item(i);
-            String lang = nameElement.getAttributeNS("http://www.w3.org/XML/1998/namespace", "lang");
-
-            if (!lang.isEmpty() && !lang.equals("cs")) {
-                result.put("lang=" + lang, nameElement.getTextContent());
-                log.debug("Found {} name for multilingual labeling: {}", lang, nameElement.getTextContent());
-            }
-        }
+        ArchiReader.getNameNodes(element, result, log);
     }
 
     private String getLocalName(Resource resource) {
