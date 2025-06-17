@@ -24,8 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.dia.constants.ConvertorControllerConstants.*;
-import static com.dia.enums.FileFormat.ARCHI_XML;
-import static com.dia.enums.FileFormat.XLSX;
+import static com.dia.enums.FileFormat.*;
 
 @RestController
 @RequestMapping("/api/convertor")
@@ -94,11 +93,12 @@ public class ConverterController {
                 }
                 case XMI -> {
                     log.debug("Processing XMI file: requestId={}", requestId);
-                    // TODO: Implement XMI processing logic
-                    ConversionResponseDto response = new ConversionResponseDto(
-                            null,
-                            "XMI processing not yet implemented.");
-                    yield ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(response);
+                    converterService.parseEAFromFile(file);
+                    converterService.convertEA(removeInvalidSources != null && removeInvalidSources);
+                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, XMI);
+                    log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
+                            requestId, fileFormat, output);
+                    yield response;
                 }
                 case XLSX -> {
                     log.debug("Processing XLSX file: requestId={}", requestId);
@@ -156,9 +156,9 @@ public class ConverterController {
         } else if (checkForXmlOrXmi(file) == ARCHI_XML) {
             log.debug("Archi XML format detected: filename={}", filename);
             return ARCHI_XML;
-        } else if (checkForXmlOrXmi(file) == FileFormat.XMI) {
+        } else if (checkForXmlOrXmi(file) == XMI) {
             log.debug("XMI format detected: filename={}", filename);
-            return FileFormat.XMI;
+            return XMI;
         } else if (checkForTurtle(file) == FileFormat.TURTLE) {
             log.debug("Turtle format detected: filename={}", filename);
             return FileFormat.TURTLE;
@@ -202,7 +202,7 @@ public class ConverterController {
                         || xmlHeader.contains("xmi:version=\"2.0\"")
                         || xmlHeader.contains("xmi:XMI")
                         || xmlHeader.contains("<xmi:XMI")) {
-                    return FileFormat.XMI;
+                    return XMI;
                 }
             }
         }

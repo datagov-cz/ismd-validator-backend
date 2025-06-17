@@ -1,9 +1,9 @@
 package com.dia.engine;
 
 import com.dia.converter.archi.ArchiConverter;
-import com.dia.converter.ea.reader.EnterpriseArchitectReader;
+import com.dia.converter.reader.ea.EnterpriseArchitectReader;
 import com.dia.converter.data.OntologyData;
-import com.dia.converter.excel.reader.ExcelReader;
+import com.dia.converter.reader.excel.ExcelReader;
 import com.dia.converter.transformer.OFNDataTransformer;
 import com.dia.converter.transformer.TransformationResult;
 import com.dia.enums.FileFormat;

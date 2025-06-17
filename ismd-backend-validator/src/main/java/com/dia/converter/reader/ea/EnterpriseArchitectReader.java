@@ -1,4 +1,4 @@
-package com.dia.converter.ea.reader;
+package com.dia.converter.reader.ea;
 
 import com.dia.converter.data.*;
 import com.dia.exceptions.FileParsingException;
