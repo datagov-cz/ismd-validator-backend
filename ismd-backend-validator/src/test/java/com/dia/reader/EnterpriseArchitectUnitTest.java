@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
+import static com.dia.constants.ArchiOntologyConstants.NS;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -153,7 +154,7 @@ class EnterpriseArchitectUnitTest {
 
         // Should generate namespace if not present
         String namespace = metadata.getNamespace();
-        assertTrue(namespace == null || namespace.isEmpty() || namespace.startsWith("https://data.dia.gov.cz/"));
+        assertTrue(namespace == null || namespace.isEmpty() || namespace.startsWith(NS));
     }
 
     @Test
