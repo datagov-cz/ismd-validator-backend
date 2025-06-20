@@ -1,9 +1,11 @@
 package com.dia.config.cors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 
+@Slf4j
 public class CorsConfigUtil {
 
     private static final List<String> DEV_PATTERNS = List.of(
@@ -69,7 +71,7 @@ public class CorsConfigUtil {
         String corsAllowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
         if (corsAllowedOrigins != null && !corsAllowedOrigins.isEmpty()) {
             // Add the specific allowed origin from environment variable
-            System.out.println("CORS allowed origins set from environment: " + corsAllowedOrigins);
+            log.info("CORS allowed origins set from environment: {}", corsAllowedOrigins);
             config.setAllowedOrigins(List.of(corsAllowedOrigins));
         }
 

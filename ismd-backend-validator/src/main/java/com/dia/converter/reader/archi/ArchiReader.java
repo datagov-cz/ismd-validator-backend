@@ -22,21 +22,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 
-import static com.dia.constants.ArchiOntologyConstants.*;
+import static com.dia.constants.OntologyConstants.*;
+import static com.dia.constants.TypeMappings.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
 @Component
 @Slf4j
 @Getter
 public class ArchiReader {
-
-    private static final Map<String, String> TYPE_MAPPINGS = new HashMap<>();
-
-    static {
-        TYPE_MAPPINGS.put("typ subjektu", "Subjekt práva");
-        TYPE_MAPPINGS.put("typ objektu", "Objekt práva");
-        TYPE_MAPPINGS.put("typ vlastnosti", "Vlastnost");
-    }
 
     private final Map<String, String> propertyMapping = new HashMap<>();
 
@@ -141,7 +134,7 @@ public class ArchiReader {
 
         Map<String, String> modelProperties = getModelProperties();
 
-        String description = modelProperties.getOrDefault(LABEL_POPIS, "");
+        String description = modelProperties.getOrDefault(POPIS, "");
         if (!description.isEmpty()) {
             metadata.setDescription(description);
         }
@@ -159,7 +152,7 @@ public class ArchiReader {
     private String extractNamespaceFromProperties(Map<String, String> properties) {
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             String key = entry.getKey();
-            if (key.equals(LABEL_ALKD) ||
+            if (key.equals(LOKALNI_KATALOG) ||
                     (key.contains("adresa") && (key.contains("lokální") || key.contains("lokálního")))) {
                 String ns = entry.getValue();
                 if (ns != null && !ns.isEmpty() && UtilityMethods.isValidUrl(ns)) {
@@ -187,7 +180,7 @@ public class ArchiReader {
             String id = element.getAttribute(IDENT);
             Map<String, String> elementProperties = getElementProperties(element);
 
-            String elementType = elementProperties.getOrDefault("typ", "").trim();
+            String elementType = elementProperties.getOrDefault(TYP, "").trim();
             if (isClassType(elementType)) {
                 ClassData classData = createClassData(name, id, elementType, elementProperties);
                 if (classData.hasValidData()) {
@@ -242,24 +235,21 @@ public class ArchiReader {
         }
     }
 
-    private boolean isClassType(String elementType) {
-        return "typ subjektu".equals(elementType) || "typ objektu".equals(elementType);
-    }
-
     private ClassData createClassData(String name, String id, String elementType, Map<String, String> properties) {
         ClassData classData = new ClassData();
         classData.setName(name);
         classData.setIdentifier(id);
-        classData.setType(TYPE_MAPPINGS.getOrDefault(elementType, elementType));
 
-        classData.setDescription(properties.get(LABEL_POPIS));
-        classData.setDefinition(properties.get(LABEL_DEF));
-        classData.setSource(properties.get(LABEL_ZDROJ));
-        classData.setRelatedSource(properties.get(LABEL_SZ));
-        classData.setAlternativeName(properties.get(LABEL_AN));
+        classData.setType(mapArchiType(elementType));
 
-        classData.setAgendaCode(properties.get(LABEL_AGENDA));
-        classData.setAgendaSystemCode(properties.get(LABEL_AIS));
+        classData.setDescription(properties.get(POPIS));
+        classData.setDefinition(properties.get(DEFINICE));
+        classData.setSource(properties.get(ZDROJ));
+        classData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
+        classData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
+
+        classData.setAgendaCode(properties.get(AGENDA));
+        classData.setAgendaSystemCode(properties.get(AIS));
 
         return classData;
     }
@@ -281,7 +271,7 @@ public class ArchiReader {
             String id = element.getAttribute(IDENT);
             Map<String, String> elementProperties = getElementProperties(element);
 
-            String elementType = elementProperties.getOrDefault("typ", "").trim();
+            String elementType = elementProperties.getOrDefault(TYP, "").trim();
             if (isPropertyType(elementType)) {
                 PropertyData propertyData = createPropertyData(name, id, elementProperties);
                 if (propertyData.hasValidData()) {
@@ -334,28 +324,24 @@ public class ArchiReader {
         }
     }
 
-    private boolean isPropertyType(String elementType) {
-        return "typ vlastnosti".equals(elementType);
-    }
-
     private PropertyData createPropertyData(String name, String id, Map<String, String> properties) {
         PropertyData propertyData = new PropertyData();
         propertyData.setName(name);
         propertyData.setIdentifier(id);
 
-        propertyData.setDescription(properties.get(LABEL_POPIS));
-        propertyData.setDefinition(properties.get(LABEL_DEF));
-        propertyData.setSource(properties.get(LABEL_ZDROJ));
-        propertyData.setRelatedSource(properties.get(LABEL_SZ));
-        propertyData.setAlternativeName(properties.get(LABEL_AN));
-        propertyData.setDataType(properties.get(LABEL_DT));
+        propertyData.setDescription(properties.get(POPIS));
+        propertyData.setDefinition(properties.get(DEFINICE));
+        propertyData.setSource(properties.get(ZDROJ));
+        propertyData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
+        propertyData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
+        propertyData.setDataType(properties.get(DATOVY_TYP));
 
-        propertyData.setSharedInPPDF(properties.get(LABEL_JE_PPDF));
-        propertyData.setIsPublic(properties.get(LABEL_JE_VEREJNY));
-        propertyData.setPrivacyProvision(properties.get(LABEL_UDN));
-        propertyData.setSharingMethod(properties.get(LABEL_ZPUSOB_SDILENI));
-        propertyData.setAcquisitionMethod(properties.get(LABEL_ZPUSOB_ZISKANI));
-        propertyData.setContentType(properties.get(LABEL_TYP_OBSAHU));
+        propertyData.setSharedInPPDF(properties.get(JE_PPDF));
+        propertyData.setIsPublic(properties.get(JE_VEREJNY));
+        propertyData.setPrivacyProvision(properties.get(USTANOVENI_NEVEREJNOST));
+        propertyData.setSharingMethod(properties.get(ZPUSOB_SDILENI));
+        propertyData.setAcquisitionMethod(properties.get(ZPUSOB_ZISKANI));
+        propertyData.setContentType(properties.get(TYP_OBSAHU));
 
         return propertyData;
     }
@@ -417,11 +403,11 @@ public class ArchiReader {
         relationshipData.setRange(targetName);
 
         Map<String, String> properties = getElementProperties(relationship);
-        relationshipData.setDescription(properties.get(LABEL_POPIS));
-        relationshipData.setDefinition(properties.get(LABEL_DEF));
-        relationshipData.setSource(properties.get(LABEL_ZDROJ));
-        relationshipData.setRelatedSource(properties.get(LABEL_SZ));
-        relationshipData.setAlternativeName(properties.get(LABEL_AN));
+        relationshipData.setDescription(properties.get(POPIS));
+        relationshipData.setDefinition(properties.get(DEFINICE));
+        relationshipData.setSource(properties.get(ZDROJ));
+        relationshipData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
+        relationshipData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
 
         return relationshipData;
     }
@@ -446,33 +432,38 @@ public class ArchiReader {
 
     private void mapStandardizedLabel(String propId, String propName) {
         if ("související zdroj".equals(propName)) {
-            propertyMapping.put(propId, LABEL_SZ);
+            propertyMapping.put(propId, SOUVISEJICI_ZDROJ);
             return;
         }
         if ("zdroj".equals(propName)) {
-            propertyMapping.put(propId, LABEL_ZDROJ);
+            propertyMapping.put(propId, ZDROJ);
             return;
         }
 
-        Map<String, String> labelPatterns = new LinkedHashMap<>();
-        labelPatterns.put(LABEL_POPIS, LABEL_POPIS);
-        labelPatterns.put(LABEL_DEF, LABEL_DEF);
-        labelPatterns.put(LABEL_ID, LABEL_ID);
-        labelPatterns.put("ustanovení dokládající neveřejnost", LABEL_SUPP);
-        labelPatterns.put(LABEL_AGENDA, LABEL_AGENDA);
-        labelPatterns.put("agendový informační systém", LABEL_AIS);
-        labelPatterns.put("je pojem sdílen v PPDF?", LABEL_JE_PPDF);
-        labelPatterns.put("je pojem veřejný?", LABEL_JE_VEREJNY);
-        labelPatterns.put("alternativní název", LABEL_AN);
-        labelPatterns.put("datový typ", LABEL_DT);
-        labelPatterns.put("typ", LABEL_TYP);
-        labelPatterns.put("adresa lokálního katalogu dat", LABEL_ALKD);
+        Map<String, String> labelPatterns = Map.of(
+                "popis", POPIS,
+                "definice", DEFINICE,
+                "identifikátor", IDENTIFIKATOR,
+                "ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST,
+                "agenda", AGENDA,
+                "agendový informační systém", AIS,
+                "je pojem sdílen v PPDF?", JE_PPDF,
+                "je pojem veřejný?", JE_VEREJNY,
+                "alternativní název", ALTERNATIVNI_NAZEV,
+                "datový typ", DATOVY_TYP
+        );
 
         for (Map.Entry<String, String> pattern : labelPatterns.entrySet()) {
             if (propName.contains(pattern.getKey())) {
                 propertyMapping.put(propId, pattern.getValue());
                 break;
             }
+        }
+
+        if (propName.contains("typ")) {
+            propertyMapping.put(propId, TYP);
+        } else if (propName.contains("adresa lokálního katalogu dat")) {
+            propertyMapping.put(propId, LOKALNI_KATALOG);
         }
     }
 

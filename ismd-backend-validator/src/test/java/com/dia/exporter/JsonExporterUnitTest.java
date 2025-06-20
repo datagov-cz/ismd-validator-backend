@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static com.dia.constants.ArchiOntologyConstants.*;
+import static com.dia.constants.OntologyConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -155,7 +155,7 @@ class JsonExporterUnitTest {
     @Test
     void exportToJson_WithModelMetadata_IncludesMetadataInOutput() throws Exception {
         // Arrange
-        modelProperties.put(LABEL_POPIS, "Test model description");
+        modelProperties.put(POPIS, "Test model description");
         exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
         setupMinimalOntologyModel();
 
@@ -219,12 +219,12 @@ class JsonExporterUnitTest {
 
             boolean hasBaseType = false;
             for (JsonNode typ : typArray) {
-                if (TYP_POJEM.equals(typ.asText())) {
+                if (POJEM.equals(typ.asText())) {
                     hasBaseType = true;
                     break;
                 }
             }
-            assertTrue(hasBaseType, "All concepts should have base type " + TYP_POJEM);
+            assertTrue(hasBaseType, "All concepts should have base type " + POJEM);
         }
     }
 
@@ -389,9 +389,9 @@ class JsonExporterUnitTest {
     @Test
     void getConceptTypes_WithMultipleInheritance_ReturnsAllTypes() throws Exception {
         // Test concept with multiple type inheritance
-        OntClass baseClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
-        OntClass vlastnostClass = ontModel.createClass(effectiveNamespace + TYP_VLASTNOST);
-        OntClass tridaClass = ontModel.createClass(effectiveNamespace + TYP_TRIDA);
+        OntClass baseClass = ontModel.createClass(effectiveNamespace + POJEM);
+        OntClass vlastnostClass = ontModel.createClass(effectiveNamespace + VLASTNOST);
+        OntClass tridaClass = ontModel.createClass(effectiveNamespace + TRIDA);
 
         Resource concept = ontModel.createResource(effectiveNamespace + "multi-type-concept");
         concept.addProperty(RDF.type, baseClass);
@@ -409,16 +409,16 @@ class JsonExporterUnitTest {
         for (int i = 0; i < types.length(); i++) {
             typeSet.add(types.getString(i));
         }
-        assertTrue(typeSet.contains(TYP_POJEM));
-        assertTrue(typeSet.contains(TYP_VLASTNOST));
-        assertTrue(typeSet.contains(TYP_TRIDA));
+        assertTrue(typeSet.contains(POJEM));
+        assertTrue(typeSet.contains(VLASTNOST));
+        assertTrue(typeSet.contains(TRIDA));
     }
 
     @Test
     void addRangePropertyWithBothNamespaces_WithXSDTypes_FormatsCorrectly() throws Exception {
         // Test XSD type formatting
         Resource concept = ontModel.createResource(effectiveNamespace + "range-concept");
-        Property rangeProp = ontModel.createProperty(effectiveNamespace + LABEL_OBOR_HODNOT);
+        Property rangeProp = ontModel.createProperty(effectiveNamespace + OBOR_HODNOT);
         concept.addProperty(rangeProp, ontModel.createResource("http://www.w3.org/2001/XMLSchema#string"));
 
         JSONObject result = new JSONObject();
@@ -428,8 +428,8 @@ class JsonExporterUnitTest {
 
         method.invoke(exporter, concept, result, effectiveNamespace);
 
-        assertTrue(result.has(LABEL_OBOR_HODNOT));
-        assertEquals("xsd:string", result.getString(LABEL_OBOR_HODNOT));
+        assertTrue(result.has(OBOR_HODNOT));
+        assertEquals("xsd:string", result.getString(OBOR_HODNOT));
     }
 
     @Test
@@ -457,7 +457,7 @@ class JsonExporterUnitTest {
 
         // Create a concept with properties that might cause JSON serialization issues
         Resource concept = problematicModel.createResource(effectiveNamespace + "problematic-concept");
-        OntClass pojemClass = problematicModel.createClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = problematicModel.createClass(effectiveNamespace + POJEM);
         concept.addProperty(RDF.type, pojemClass);
 
         // Add a property with a very long string that might cause issues
@@ -487,7 +487,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         // Create base concept type class (this is important!)
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
 
         // Create a minimal test concept that should appear in pojmy array
         Resource testConcept = ontModel.createResource(effectiveNamespace + "test-concept");
@@ -504,7 +504,7 @@ class JsonExporterUnitTest {
         setupMinimalOntologyModel(); // This already creates one concept
 
         // Create additional test concepts with proper types
-        OntClass pojemClass = ontModel.getOntClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.getOntClass(effectiveNamespace + POJEM);
 
         // Create second concept
         Resource concept2 = ontModel.createResource(effectiveNamespace + "second-concept");
@@ -519,7 +519,7 @@ class JsonExporterUnitTest {
         setupMinimalOntologyModel(); // This already creates one concept
 
         // Create additional test concepts with proper types
-        OntClass pojemClass = ontModel.getOntClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.getOntClass(effectiveNamespace + POJEM);
 
         // Create second concept
         Resource concept2 = ontModel.createResource(effectiveNamespace + "second-concept");
@@ -537,7 +537,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         // Create concept class and multilingual concept instance
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
 
         Resource concept = ontModel.createResource(effectiveNamespace + "multilingual-concept");
         concept.addProperty(RDF.type, pojemClass);  // Must have TYP_POJEM type
@@ -555,14 +555,14 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         // Create concept class and concept with alternative names
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
 
         Resource concept = ontModel.createResource(effectiveNamespace + "concept-with-alt-names");
         concept.addProperty(RDF.type, pojemClass);  // Must have TYP_POJEM type
         concept.addProperty(RDFS.label, "Main Concept", "cs");
 
         // Add alternative names
-        Property altNameProp = ontModel.createProperty(effectiveNamespace + LABEL_AN);
+        Property altNameProp = ontModel.createProperty(effectiveNamespace + ALTERNATIVNI_NAZEV);
         concept.addProperty(altNameProp, "Alternative Name 1", "cs");
         concept.addProperty(altNameProp, "Alternative Name 2", "cs");
 
@@ -577,9 +577,9 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         // Create base concept class and specialized classes
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
-        OntClass vlastnostClass = ontModel.createClass(effectiveNamespace + TYP_VLASTNOST);
-        OntClass vztahClass = ontModel.createClass(effectiveNamespace + TYP_VZTAH);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
+        OntClass vlastnostClass = ontModel.createClass(effectiveNamespace + VLASTNOST);
+        OntClass vztahClass = ontModel.createClass(effectiveNamespace + VZTAH);
 
         // Create concept of type vlastnost (property)
         Resource vlastnostConcept = ontModel.createResource(effectiveNamespace + "test-vlastnost");
@@ -605,18 +605,18 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         // Create concept class and complex concept instance
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
 
         Resource concept = ontModel.createResource(effectiveNamespace + "complex-concept");
         concept.addProperty(RDF.type, pojemClass);  // Must have TYP_POJEM type
         concept.addProperty(RDFS.label, "Complex Concept", "cs");
 
         // Add various property types
-        Property zdrojProp = ontModel.createProperty(effectiveNamespace + LABEL_ZDROJ);
+        Property zdrojProp = ontModel.createProperty(effectiveNamespace + ZDROJ);
         concept.addProperty(zdrojProp, ontModel.createResource("http://example.org/source1"));
         concept.addProperty(zdrojProp, ontModel.createResource("http://example.org/source2"));
 
-        Property defProp = ontModel.createProperty(effectiveNamespace + LABEL_DEF);
+        Property defProp = ontModel.createProperty(effectiveNamespace + DEFINICE);
         concept.addProperty(defProp, "Czech definition", "cs");
         concept.addProperty(defProp, "English definition", "en");
 
@@ -629,7 +629,7 @@ class JsonExporterUnitTest {
         ontology.addProperty(SKOS.prefLabel, modelName, "cs");
         resourceMap.put("ontology", ontology);
 
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
 
         for (int i = 0; i < 1000; i++) {
             Resource concept = ontModel.createResource(effectiveNamespace + "concept-" + i);

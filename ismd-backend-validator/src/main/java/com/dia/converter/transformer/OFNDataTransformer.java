@@ -27,7 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dia.constants.ArchiOntologyConstants.*;
+import static com.dia.constants.OntologyConstants.*;
+import static com.dia.constants.TypeMappings.*;
+import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
 /**
@@ -155,12 +157,12 @@ public class OFNDataTransformer {
             ontologyResource.addProperty(RDF.type, SKOS.ConceptScheme);
 
             if (metadata.getName() != null && !metadata.getName().trim().isEmpty()) {
-                ontologyResource.addProperty(SKOS.prefLabel, metadata.getName(), "cs");
+                ontologyResource.addProperty(SKOS.prefLabel, metadata.getName(), DEFAULT_LANG);
             }
 
             if (metadata.getDescription() != null && !metadata.getDescription().trim().isEmpty()) {
                 Property descProperty = ontModel.createProperty("http://purl.org/dc/terms/description");
-                DataTypeConverter.addTypedProperty(ontologyResource, descProperty, metadata.getDescription(), "cs", ontModel);
+                DataTypeConverter.addTypedProperty(ontologyResource, descProperty, metadata.getDescription(), DEFAULT_LANG, ontModel);
             }
 
             resourceMap.put("ontology", ontologyResource);
@@ -170,14 +172,16 @@ public class OFNDataTransformer {
 
     private void initializeCleanTypeClasses() {
         String namespace = uriGenerator.getEffectiveNamespace();
-        ontModel.createResource(namespace + TYP_POJEM);
-        ontModel.createResource(namespace + TYP_TRIDA);
-        ontModel.createResource(namespace + TYP_VZTAH);
-        ontModel.createResource(namespace + TYP_VLASTNOST);
-        ontModel.createResource(namespace + TYP_TSP);
-        ontModel.createResource(namespace + TYP_TOP);
-        ontModel.createResource(namespace + TYP_VEREJNY_UDAJ);
-        ontModel.createResource(namespace + TYP_NEVEREJNY_UDAJ);
+
+        ontModel.createResource(namespace + POJEM);
+        ontModel.createResource(namespace + TRIDA);
+        ontModel.createResource(namespace + VZTAH);
+        ontModel.createResource(namespace + VLASTNOST);
+        ontModel.createResource(namespace + TSP);
+        ontModel.createResource(namespace + TOP);
+        ontModel.createResource(namespace + VEREJNY_UDAJ);
+        ontModel.createResource(namespace + NEVEREJNY_UDAJ);
+
         log.debug("Initialized clean type classes with hyphenated URIs");
     }
 
@@ -203,7 +207,7 @@ public class OFNDataTransformer {
     private void addSchemeRelationship(Resource resource) {
         Resource ontologyResource = resourceMap.get("ontology");
         if (ontologyResource != null && resource.hasProperty(RDF.type,
-                ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_POJEM))) {
+                ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM))) {
             resource.addProperty(SKOS.inScheme, ontologyResource);
         }
     }
@@ -211,13 +215,13 @@ public class OFNDataTransformer {
     private Map<String, String> createModelProperties(VocabularyMetadata metadata) {
         Map<String, String> properties = new HashMap<>();
         if (metadata.getName() != null) {
-            properties.put(LABEL_NAZEV, metadata.getName());
+            properties.put(NAZEV, metadata.getName());
         }
         if (metadata.getDescription() != null) {
-            properties.put(LABEL_POPIS, metadata.getDescription());
+            properties.put(POPIS, metadata.getDescription());
         }
         if (metadata.getNamespace() != null) {
-            properties.put(LABEL_ALKD, metadata.getNamespace());
+            properties.put(LOKALNI_KATALOG, metadata.getNamespace());
         }
         return properties;
     }
@@ -244,7 +248,7 @@ public class OFNDataTransformer {
         String classURI = uriGenerator.generateClassURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
-        classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_POJEM));
+        classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
         addSpecificClassType(classResource, classData);
         addResourceMetadata(classResource, classData.getName(), classData.getDescription(),
                 classData.getDefinition(), classData.getSource());
@@ -255,12 +259,13 @@ public class OFNDataTransformer {
 
     private void addSpecificClassType(Resource classResource, ClassData classData) {
         String excelType = classData.getType();
+
         if ("Subjekt práva".equals(excelType)) {
-            classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_TSP));
+            classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TSP));
         } else if ("Objekt práva".equals(excelType)) {
-            classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_TOP));
+            classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TOP));
         }
-        classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_TRIDA));
+        classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TRIDA));
     }
 
     private void transformProperties(List<PropertyData> properties) {
@@ -285,8 +290,8 @@ public class OFNDataTransformer {
         String propertyURI = uriGenerator.generatePropertyURI(propertyData.getName(), propertyData.getIdentifier());
         Resource propertyResource = ontModel.createResource(propertyURI);
 
-        propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_POJEM));
-        propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_VLASTNOST));
+        propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
+        propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + VLASTNOST));
 
         addResourceMetadata(propertyResource, propertyData.getName(), propertyData.getDescription(),
                 propertyData.getDefinition(), propertyData.getSource());
@@ -320,8 +325,8 @@ public class OFNDataTransformer {
                 relationshipData.getIdentifier());
         Resource relationshipResource = ontModel.createResource(relationshipURI);
 
-        relationshipResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_POJEM));
-        relationshipResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_VZTAH));
+        relationshipResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
+        relationshipResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + VZTAH));
 
         addResourceMetadata(relationshipResource, relationshipData.getName(), relationshipData.getDescription(),
                 relationshipData.getDefinition(), relationshipData.getSource());
@@ -333,17 +338,17 @@ public class OFNDataTransformer {
     private void addResourceMetadata(Resource resource, String name, String description,
                                      String definition, String source) {
         if (name != null && !name.trim().isEmpty()) {
-            DataTypeConverter.addTypedProperty(resource, RDFS.label, name, "cs", ontModel);
+            DataTypeConverter.addTypedProperty(resource, RDFS.label, name, DEFAULT_LANG, ontModel);
         }
 
         if (description != null && !description.trim().isEmpty()) {
-            Property descProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_POPIS);
-            DataTypeConverter.addTypedProperty(resource, descProperty, description, "cs", ontModel);
+            Property descProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + POPIS);
+            DataTypeConverter.addTypedProperty(resource, descProperty, description, DEFAULT_LANG, ontModel);
         }
 
         if (definition != null && !definition.trim().isEmpty()) {
-            Property defProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_DEF);
-            DataTypeConverter.addTypedProperty(resource, defProperty, definition, "cs", ontModel);
+            Property defProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICE);
+            DataTypeConverter.addTypedProperty(resource, defProperty, definition, DEFAULT_LANG, ontModel);
         }
 
         if (source != null && !source.trim().isEmpty()) {
@@ -374,7 +379,7 @@ public class OFNDataTransformer {
         }
 
         String transformedUrl = UtilityMethods.transformEliUrl(url, removeELI);
-        Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_ZDROJ);
+        Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ZDROJ);
 
         if (DataTypeConverter.isUri(transformedUrl)) {
             resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
@@ -404,13 +409,13 @@ public class OFNDataTransformer {
         }
 
         if (classData.getAgendaCode() != null && !classData.getAgendaCode().trim().isEmpty()) {
-            Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_AGENDA);
+            Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AGENDA);
             DataTypeConverter.addTypedProperty(classResource, agendaProperty,
                     classData.getAgendaCode(), null, ontModel);
         }
 
         if (classData.getAgendaSystemCode() != null && !classData.getAgendaSystemCode().trim().isEmpty()) {
-            Property aisProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_AIS);
+            Property aisProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AIS);
             DataTypeConverter.addTypedProperty(classResource, aisProperty,
                     classData.getAgendaSystemCode(), null, ontModel);
         }
@@ -421,10 +426,10 @@ public class OFNDataTransformer {
             return;
         }
 
-        Property altNameProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_AN);
+        Property altNameProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ALTERNATIVNI_NAZEV);
 
         if (!altNamesValue.contains(";")) {
-            DataTypeConverter.addTypedProperty(resource, altNameProperty, altNamesValue, "cs", ontModel);
+            DataTypeConverter.addTypedProperty(resource, altNameProperty, altNamesValue, DEFAULT_LANG, ontModel);
             log.debug("Added single alternative name: {}", altNamesValue);
             return;
         }
@@ -433,14 +438,14 @@ public class OFNDataTransformer {
                 .map(String::trim)
                 .filter(name -> !name.isEmpty())
                 .forEach(name -> {
-                    DataTypeConverter.addTypedProperty(resource, altNameProperty, name, "cs", ontModel);
+                    DataTypeConverter.addTypedProperty(resource, altNameProperty, name, DEFAULT_LANG, ontModel);
                     log.debug("Added alternative name: {}", name);
                 });
     }
 
     private void addDomainRelationship(Resource propertyResource, PropertyData propertyData) {
         if (propertyData.getDomain() != null && !propertyData.getDomain().trim().isEmpty()) {
-            Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_DEF_O);
+            Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICNI_OBOR);
             addResourceReference(propertyResource, domainProperty, propertyData.getDomain(), classResources);
         }
     }
@@ -449,7 +454,7 @@ public class OFNDataTransformer {
         String dataType = propertyData.getDataType();
 
         if (dataType != null && !dataType.trim().isEmpty()) {
-            Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_OBOR_HODNOT);
+            Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + OBOR_HODNOT);
 
             if (dataType.startsWith("xsd:")) {
                 String xsdType = XSD + dataType.substring(4);
@@ -464,7 +469,7 @@ public class OFNDataTransformer {
                     propertyResource.addProperty(rangeProperty, existingClass);
                     log.debug("Added local class range: {}", dataType);
                 } else {
-                    String xsdType = UtilityMethods.mapDataTypeToXSD(dataType);
+                    String xsdType = mapToXSDType(dataType);
                     propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
                     log.debug("Mapped data type '{}' to XSD type: {}", dataType, xsdType);
                 }
@@ -475,22 +480,20 @@ public class OFNDataTransformer {
     private void addDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
         addPPDFData(propertyResource, propertyData);
         addPublicOrNonPublicData(propertyResource, propertyData);
-        addGovernanceProperty(propertyResource, propertyData.getSharingMethod(), LABEL_ZPUSOB_SDILENI);
-        addGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), LABEL_ZPUSOB_ZISKANI);
-        addGovernanceProperty(propertyResource, propertyData.getContentType(), LABEL_TYP_OBSAHU);
+        addGovernanceProperty(propertyResource, propertyData.getSharingMethod(), ZPUSOB_SDILENI);
+        addGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), ZPUSOB_ZISKANI);
+        addGovernanceProperty(propertyResource, propertyData.getContentType(), TYP_OBSAHU);
     }
 
     private void addPPDFData(Resource propertyResource, PropertyData propertyData) {
         if (propertyData.getSharedInPPDF() != null && !propertyData.getSharedInPPDF().trim().isEmpty()) {
             String value = propertyData.getSharedInPPDF();
-            Property ppdfProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_JE_PPDF);
+            Property ppdfProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + JE_PPDF);
 
-            if (DataTypeConverter.isBooleanValue(value)) {
-                boolean boolValue = "true".equalsIgnoreCase(value) ||
-                        "ano".equalsIgnoreCase(value) ||
-                        "yes".equalsIgnoreCase(value);
+            if (isBooleanValue(value)) {
+                Boolean boolValue = normalizeCzechBoolean(value);
                 DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty,
-                        boolValue ? "true" : "false", null, ontModel);
+                        boolValue.toString(), null, ontModel);
                 log.debug("Added normalized PPDF boolean: {} -> {}", value, boolValue);
             } else {
                 log.warn("Unrecognized boolean value for PPDF property: '{}'", value);
@@ -503,20 +506,18 @@ public class OFNDataTransformer {
         if (propertyData.getIsPublic() != null && !propertyData.getIsPublic().trim().isEmpty()) {
             String value = propertyData.getIsPublic();
 
-            if (DataTypeConverter.isBooleanValue(value)) {
-                boolean isPublic = "true".equalsIgnoreCase(value) ||
-                        "ano".equalsIgnoreCase(value) ||
-                        "yes".equalsIgnoreCase(value);
+            if (isBooleanValue(value)) {
+                Boolean isPublic = normalizeCzechBoolean(value);
 
-                if (isPublic) {
+                if (Boolean.TRUE.equals(isPublic)) {
                     propertyResource.addProperty(RDF.type,
-                            ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_VEREJNY_UDAJ));
+                            ontModel.getResource(uriGenerator.getEffectiveNamespace() + VEREJNY_UDAJ));
                 } else {
                     propertyResource.addProperty(RDF.type,
-                            ontModel.getResource(uriGenerator.getEffectiveNamespace() + TYP_NEVEREJNY_UDAJ));
+                            ontModel.getResource(uriGenerator.getEffectiveNamespace() + NEVEREJNY_UDAJ));
 
                     if (propertyData.getPrivacyProvision() != null && !propertyData.getPrivacyProvision().trim().isEmpty()) {
-                        Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_UDN);
+                        Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
                         DataTypeConverter.addTypedProperty(propertyResource, provisionProperty,
                                 propertyData.getPrivacyProvision(), null, ontModel);
                     }
@@ -543,12 +544,12 @@ public class OFNDataTransformer {
 
     private void addDomainRangeRelationships(Resource relationshipResource, RelationshipData relationshipData) {
         if (relationshipData.getDomain() != null && !relationshipData.getDomain().trim().isEmpty()) {
-            Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_DEF_O);
+            Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICNI_OBOR);
             addResourceReference(relationshipResource, domainProperty, relationshipData.getDomain(), classResources);
         }
 
         if (relationshipData.getRange() != null && !relationshipData.getRange().trim().isEmpty()) {
-            Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_OBOR_HODNOT);
+            Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + OBOR_HODNOT);
             addResourceReference(relationshipResource, rangeProperty, relationshipData.getRange(), classResources);
         }
     }
@@ -578,7 +579,7 @@ public class OFNDataTransformer {
             if (classData.getSuperClass() != null && !classData.getSuperClass().trim().isEmpty()) {
                 Resource childResource = classResources.get(classData.getName());
                 if (childResource != null) {
-                    Property hierarchyProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + LABEL_NT);
+                    Property hierarchyProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + NADRAZENA_TRIDA);
                     addResourceReference(childResource, hierarchyProperty, classData.getSuperClass(), classResources);
                     log.debug("Established hierarchy: {} -> {}", classData.getName(), classData.getSuperClass());
                 } else {

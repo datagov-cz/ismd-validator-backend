@@ -1,7 +1,7 @@
 package com.dia.constants;
 
 public class EnterpriseArchitectConstants {
-    // Stereotype constants
+    // =============== STEREOTYPE CONSTANTS ===============
     public static final String STEREOTYPE_SLOVNIKY_PACKAGE = "slovnikyPackage";
     public static final String STEREOTYPE_TYP_OBJEKTU = "typObjektu";
     public static final String STEREOTYPE_TYP_SUBJEKTU = "typSubjektu";
@@ -16,12 +16,11 @@ public class EnterpriseArchitectConstants {
     public static final String SOURCE = "source";
     public static final String TARGET = "target";
 
-    // Encoding constants
+    // =============== ENCODING CONSTANTS ===============
     public static final String WINDOWS_1252 = "windows-1252";
     public static final String ISO_8859_2 = "ISO-8859-2";
 
-
-    // Field mapping constants
+    // =============== FIELD MAPPING CONSTANTS ===============
     public static final String TAG_POPIS = "popis";
     public static final String TAG_DEFINICE = "definice";
     public static final String TAG_ZDROJ = "zdroj";

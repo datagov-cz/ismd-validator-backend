@@ -10,7 +10,7 @@ import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 
-import static com.dia.constants.ArchiOntologyConstants.*;
+import static com.dia.constants.OntologyConstants.*;
 
 @Getter
 public class OFNBaseModel {
@@ -34,102 +34,102 @@ public class OFNBaseModel {
         OntClass xsdBoolean = ontModel.createClass(XSD + "boolean");
         OntClass xsdAnyURI = ontModel.createClass(XSD + "anyURI");
 
-        OntClass pojemClass = ontModel.createClass(NS + TYP_POJEM);
-        pojemClass.addLabel(LABEL_POJEM, "cs");
+        OntClass pojemClass = ontModel.createClass(NS + POJEM);
+        pojemClass.addLabel(POJEM, "cs");
 
-        OntClass vlastnostClass = ontModel.createClass(NS + TYP_VLASTNOST);
-        vlastnostClass.addLabel(LABEL_VLASTNOST, "cs");
+        OntClass vlastnostClass = ontModel.createClass(NS + VLASTNOST);
+        vlastnostClass.addLabel(VLASTNOST, "cs");
         vlastnostClass.addSuperClass(pojemClass);
 
-        OntClass vztahClass = ontModel.createClass(NS + TYP_VZTAH);
-        vztahClass.addLabel(LABEL_VZTAH, "cs");
+        OntClass vztahClass = ontModel.createClass(NS + VZTAH);
+        vztahClass.addLabel(VZTAH, "cs");
         vztahClass.addSuperClass(pojemClass);
 
-        OntClass tridaClass = ontModel.createClass(NS + TYP_TRIDA);
-        tridaClass.addLabel(LABEL_TRIDA, "cs");
+        OntClass tridaClass = ontModel.createClass(NS + TRIDA);
+        tridaClass.addLabel(TRIDA, "cs");
         tridaClass.addSuperClass(pojemClass);
 
-        OntClass datovyTyp = ontModel.createClass(NS + TYP_DT);
-        datovyTyp.addLabel(LABEL_DT, "cs");
+        OntClass datovyTyp = ontModel.createClass(NS + DATOVY_TYP);
+        datovyTyp.addLabel(DATOVY_TYP, "cs");
 
-        OntClass typSubjektuClass = ontModel.createClass(NS + TYP_TSP);
-        typSubjektuClass.addLabel(LABEL_TSP, "cs");
+        OntClass typSubjektuClass = ontModel.createClass(NS + TSP);
+        typSubjektuClass.addLabel(TSP, "cs");
         typSubjektuClass.addSuperClass(tridaClass);
 
-        OntClass typObjektuClass = ontModel.createClass(NS + TYP_TOP);
-        typObjektuClass.addLabel(LABEL_TOP, "cs");
+        OntClass typObjektuClass = ontModel.createClass(NS + TOP);
+        typObjektuClass.addLabel(TOP, "cs");
         typObjektuClass.addSuperClass(tridaClass);
 
-        OntClass verejnyUdajClass = ontModel.createClass(NS + TYP_VEREJNY_UDAJ);
-        verejnyUdajClass.addLabel(LABEL_VU, "cs");
+        OntClass verejnyUdajClass = ontModel.createClass(NS + VEREJNY_UDAJ);
+        verejnyUdajClass.addLabel(VEREJNY_UDAJ, "cs");
 
-        OntClass neverejnyUdajClass = ontModel.createClass(NS + TYP_NEVEREJNY_UDAJ);
-        neverejnyUdajClass.addLabel(LABEL_NVU, "cs");
+        OntClass neverejnyUdajClass = ontModel.createClass(NS + NEVEREJNY_UDAJ);
+        neverejnyUdajClass.addLabel(NEVEREJNY_UDAJ, "cs");
 
-        OntProperty nazevProp = ontModel.createOntProperty(NS + LABEL_NAZEV);
-        nazevProp.addLabel(LABEL_NAZEV, "cs");
+        OntProperty nazevProp = ontModel.createOntProperty(NS + NAZEV);
+        nazevProp.addLabel(NAZEV, "cs");
         nazevProp.addDomain(pojemClass);
         nazevProp.addRange(xsdString);
 
-        OntProperty popisProp = ontModel.createOntProperty(NS + LABEL_POPIS);
-        popisProp.addLabel(LABEL_POPIS, "cs");
+        OntProperty popisProp = ontModel.createOntProperty(NS + POPIS);
+        popisProp.addLabel(POPIS, "cs");
         popisProp.addDomain(pojemClass);
         popisProp.addRange(xsdString);
 
-        OntProperty definiceProp = ontModel.createOntProperty(NS + LABEL_DEF);
-        definiceProp.addLabel(LABEL_DEF, "cs");
+        OntProperty definiceProp = ontModel.createOntProperty(NS + DEFINICE);
+        definiceProp.addLabel(DEFINICE, "cs");
         definiceProp.addDomain(pojemClass);
         definiceProp.addRange(xsdString);
 
-        OntProperty zdrojProp = ontModel.createOntProperty(NS + LABEL_ZDROJ);
-        zdrojProp.addLabel(LABEL_ZDROJ, "cs");
+        OntProperty zdrojProp = ontModel.createOntProperty(NS + ZDROJ);
+        zdrojProp.addLabel(ZDROJ, "cs");
         zdrojProp.addDomain(pojemClass);
         zdrojProp.addRange(xsdAnyURI);
 
-        OntProperty jeSdilenVPpdfProp = ontModel.createOntProperty(NS + LABEL_JE_PPDF);
-        jeSdilenVPpdfProp.addLabel(LABEL_JE_PPDF, "cs");
+        OntProperty jeSdilenVPpdfProp = ontModel.createOntProperty(NS + JE_PPDF);
+        jeSdilenVPpdfProp.addLabel(JE_PPDF, "cs");
         jeSdilenVPpdfProp.addDomain(pojemClass);
         jeSdilenVPpdfProp.addRange(xsdBoolean);
 
-        OntProperty agendaProp = ontModel.createOntProperty(NS + LABEL_AGENDA);
-        agendaProp.addLabel(LABEL_AGENDA, "cs");
+        OntProperty agendaProp = ontModel.createOntProperty(NS + AGENDA);
+        agendaProp.addLabel(AGENDA, "cs");
         agendaProp.addDomain(pojemClass);
         agendaProp.addRange(RDFS.Resource);
 
-        OntProperty aisProp = ontModel.createOntProperty(NS + LABEL_AIS);
-        aisProp.addLabel(LABEL_AIS, "cs");
+        OntProperty aisProp = ontModel.createOntProperty(NS + AIS);
+        aisProp.addLabel(AIS, "cs");
         aisProp.addDomain(pojemClass);
         aisProp.addRange(RDFS.Resource);
 
-        OntProperty ustanoveniProp = ontModel.createOntProperty(NS + LABEL_UDN);
-        ustanoveniProp.addLabel(LABEL_UDN, "cs");
+        OntProperty ustanoveniProp = ontModel.createOntProperty(NS + USTANOVENI_NEVEREJNOST);
+        ustanoveniProp.addLabel(USTANOVENI_NEVEREJNOST, "cs");
         ustanoveniProp.addDomain(neverejnyUdajClass);
         ustanoveniProp.addRange(RDFS.Resource);
 
-        OntProperty definicniOborProp = ontModel.createOntProperty(NS + LABEL_DEF_O);
-        definicniOborProp.addLabel(LABEL_DEF_O, "cs");
+        OntProperty definicniOborProp = ontModel.createOntProperty(NS + DEFINICNI_OBOR);
+        definicniOborProp.addLabel(DEFINICNI_OBOR, "cs");
 
-        OntProperty oborHodnotProp = ontModel.createOntProperty(NS + LABEL_OBOR_HODNOT);
-        oborHodnotProp.addLabel(LABEL_OBOR_HODNOT, "cs");
+        OntProperty oborHodnotProp = ontModel.createOntProperty(NS + OBOR_HODNOT);
+        oborHodnotProp.addLabel(OBOR_HODNOT, "cs");
 
-        OntProperty nadrazenaTrida = ontModel.createOntProperty(NS + LABEL_NT);
-        nadrazenaTrida.addLabel(LABEL_NT, "cs");
+        OntProperty nadrazenaTrida = ontModel.createOntProperty(NS + NADRAZENA_TRIDA);
+        nadrazenaTrida.addLabel(NADRAZENA_TRIDA, "cs");
 
-        OntProperty souvisejiciUstanoveni = ontModel.createOntProperty(NS + LABEL_SUPP);
-        souvisejiciUstanoveni.addLabel(LABEL_SUPP, "cs");
+        OntProperty souvisejiciUstanoveni = ontModel.createOntProperty(NS + SUPP);
+        souvisejiciUstanoveni.addLabel(SUPP, "cs");
 
-        OntProperty zpusobSdileniProp = ontModel.createOntProperty(NS + LABEL_ZPUSOB_SDILENI);
-        zpusobSdileniProp.addLabel("Způsob sdílení údaje", "cs");
+        OntProperty zpusobSdileniProp = ontModel.createOntProperty(NS + ZPUSOB_SDILENI);
+        zpusobSdileniProp.addLabel(ZPUSOB_SDILENI, "cs");
         zpusobSdileniProp.addDomain(pojemClass);
         zpusobSdileniProp.addRange(RDFS.Resource);
 
-        OntProperty zpusobZiskaniProp = ontModel.createOntProperty(NS + LABEL_ZPUSOB_ZISKANI);
-        zpusobZiskaniProp.addLabel("Způsob získání údaje", "cs");
+        OntProperty zpusobZiskaniProp = ontModel.createOntProperty(NS + ZPUSOB_ZISKANI);
+        zpusobZiskaniProp.addLabel(ZPUSOB_ZISKANI, "cs");
         zpusobZiskaniProp.addDomain(pojemClass);
         zpusobZiskaniProp.addRange(RDFS.Resource);
 
-        OntProperty typObsahuProp = ontModel.createOntProperty(NS + LABEL_TYP_OBSAHU);
-        typObsahuProp.addLabel("Typ obsahu údaje", "cs");
+        OntProperty typObsahuProp = ontModel.createOntProperty(NS + TYP_OBSAHU);
+        typObsahuProp.addLabel(TYP_OBSAHU, "cs");
         typObsahuProp.addDomain(pojemClass);
         typObsahuProp.addRange(RDFS.Resource);
     }
