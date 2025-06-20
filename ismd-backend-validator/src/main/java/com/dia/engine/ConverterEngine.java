@@ -1,5 +1,6 @@
 package com.dia.engine;
 
+import com.dia.converter.reader.archi.ArchiReader;
 import com.dia.converter.reader.ea.EnterpriseArchitectReader;
 import com.dia.converter.data.OntologyData;
 import com.dia.converter.reader.excel.ExcelReader;
@@ -203,7 +204,7 @@ public class ConverterEngine {
             log.error("Failed to parse Excel file: requestId={}, error={}",
                     requestId, e.getMessage(), e);
             throw e;
-        } catch (ExcelReadingException e) {
+        } catch (Exception e) {
             log.error("Unexpected error during Excel file parsing: requestId={}",
                     requestId, e);
             throw new ExcelReadingException("Během čtení souboru došlo k nečekané chybě.", e);
@@ -245,7 +246,7 @@ public class ConverterEngine {
         } catch (IOException e) {
             log.error("Failed to parse EA file: requestId={}", requestId, e);
             throw e;
-        } catch (FileParsingException e) {
+        } catch (Exception e) {
             log.error("Failed to parse EA file: requestId={}", requestId, e);
             throw new FileParsingException("Během čtení souboru došlo k chybě.", e);
         }

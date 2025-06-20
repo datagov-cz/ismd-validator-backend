@@ -1,5 +1,6 @@
 package com.dia.converter.archi;
 
+import com.dia.converter.reader.archi.ArchiReader;
 import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.FileParsingException;
 import com.dia.exceptions.JsonExportException;

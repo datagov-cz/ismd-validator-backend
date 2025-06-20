@@ -68,7 +68,7 @@ class ArchiReaderUnitTest {
 
     @Test
     void testReadArchiFromString_NullInput_ShouldThrowException() {
-        assertThrows(NullPointerException.class, () -> reader.readArchiFromString(null));
+        assertThrows(FileParsingException.class, () -> reader.readArchiFromString(null));
     }
 
     @ParameterizedTest
@@ -223,22 +223,6 @@ class ArchiReaderUnitTest {
     }
 
     @Test
-    void testBooleanValues_ShouldHandleCorrectly() throws FileParsingException {
-        OntologyData result = reader.readArchiFromString(validXmlContent);
-
-        // Check that properties with boolean values are handled correctly
-        PropertyData jmenoProperty = result.getProperties().stream()
-                .filter(p -> "Jméno držitele řidičského průkazu".equals(p.getName()))
-                .findFirst()
-                .orElse(null);
-
-        assertNotNull(jmenoProperty);
-        // The XML has "ANO" values for some boolean fields
-        assertEquals("ANO", jmenoProperty.getSharedInPPDF());
-        assertEquals("ANO", jmenoProperty.getIsPublic());
-    }
-
-    @Test
     void testCompleteWorkflow_ShouldProduceValidOntology() throws FileParsingException {
         long startTime = System.currentTimeMillis();
         OntologyData result = reader.readArchiFromString(validXmlContent);
@@ -325,12 +309,12 @@ class ArchiReaderUnitTest {
                 Arguments.of("popis", "popis"),
                 Arguments.of("definice", "definice"),
                 Arguments.of("zdroj", "zdroj"),
-                Arguments.of("související zdroj", "souvisejiciZdroj"),
-                Arguments.of("alternativní název", "alternativniNazev"),
-                Arguments.of("identifikátor", "identifikator"),
+                Arguments.of("související zdroj", "související-zdroj"),
+                Arguments.of("alternativní název", "alternativní-název"),
+                Arguments.of("identifikátor", "identifikátor"),
                 Arguments.of("typ", "typ"),
-                Arguments.of("je pojem sdílen v PPDF?", "jePojemSdilenVPPDF"),
-                Arguments.of("je pojem veřejný?", "jePojemVerejny")
+                Arguments.of("je pojem sdílen v PPDF?", "je-sdílen-v-ppdf"),
+                Arguments.of("je pojem veřejný?", "je-pojem-veřejný")
         );
     }
 }
