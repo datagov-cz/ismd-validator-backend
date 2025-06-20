@@ -1,6 +1,5 @@
 package com.dia.engine;
 
-import com.dia.converter.reader.archi.ArchiReader;
 import com.dia.converter.reader.ea.EnterpriseArchitectReader;
 import com.dia.converter.data.OntologyData;
 import com.dia.converter.reader.excel.ExcelReader;
