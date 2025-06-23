@@ -1,4 +1,4 @@
-package com.dia.converter.excel.data;
+package com.dia.converter.data;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -24,5 +24,9 @@ public class ClassData {
     public boolean hasValidData() {
         return name != null && !name.trim().isEmpty() &&
                 identifier != null && !identifier.trim().isEmpty();
+    }
+
+    public boolean hasSuperClass() {
+        return superClass != null && !superClass.trim().isEmpty();
     }
 }

@@ -1,6 +1,6 @@
-package com.dia.converter.excel.transformer;
+package com.dia.converter.transformer;
 
-import com.dia.converter.excel.data.*;
+import com.dia.converter.data.*;
 import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.TurtleExportException;
@@ -31,12 +31,12 @@ import static com.dia.constants.ArchiOntologyConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
 /**
- * ExcelDataTransformer - Transforms Excel-parsed data into OFN ontology models
+ * OFNDataTransformer - Transforms parsed data from Excel and EA ontologies into OFN ontology models
  */
 @Component
 @Slf4j
 @Getter
-public class ExcelDataTransformer {
+public class OFNDataTransformer {
 
     private final OFNBaseModel baseModel;
     private final OntModel ontModel;
@@ -53,7 +53,7 @@ public class ExcelDataTransformer {
     @Setter
     private Boolean removeELI;
 
-    public ExcelDataTransformer() {
+    public OFNDataTransformer() {
         this.baseModel = new OFNBaseModel();
         this.ontModel = baseModel.getOntModel();
         this.resourceMap = new HashMap<>();

@@ -1,4 +1,4 @@
-package com.dia.converter.excel.data;
+package com.dia.converter.data;
 
 import lombok.Getter;
 

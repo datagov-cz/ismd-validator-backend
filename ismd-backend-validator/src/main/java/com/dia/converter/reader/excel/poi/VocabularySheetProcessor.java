@@ -1,9 +1,9 @@
-package com.dia.converter.excel.reader.poi;
+package com.dia.converter.reader.excel.poi;
 
-import com.dia.converter.excel.data.VocabularyMetadata;
-import com.dia.converter.excel.mapper.ColumnMapping;
-import com.dia.converter.excel.mapper.ColumnMappingRegistry;
-import com.dia.converter.excel.mapper.PropertySetter;
+import com.dia.converter.data.VocabularyMetadata;
+import com.dia.converter.reader.excel.mapper.ColumnMapping;
+import com.dia.converter.reader.excel.mapper.ColumnMappingRegistry;
+import com.dia.converter.reader.excel.mapper.PropertySetter;
 import com.dia.exceptions.ExcelReadingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;

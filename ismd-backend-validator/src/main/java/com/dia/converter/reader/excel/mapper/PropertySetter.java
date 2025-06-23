@@ -1,4 +1,4 @@
-package com.dia.converter.excel.mapper;
+package com.dia.converter.reader.excel.mapper;
 
 @FunctionalInterface
 public interface PropertySetter<T> {
