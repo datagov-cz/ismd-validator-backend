@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
-import static com.dia.constants.OntologyConstants.*;
+import static com.dia.constants.ArchiConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
@@ -47,7 +47,7 @@ class TurtleExporterUnitTest {
         resourceMap = new HashMap<>();
         modelName = "Test Vocabulary";
         modelProperties = new HashMap<>();
-        effectiveNamespace = NS; // Add effectiveNamespace
+        effectiveNamespace = DEFAULT_NS; // Add effectiveNamespace
         modelProperties.put("adresa lokálního katalogu dat", effectiveNamespace);
         MDC.put(LOG_REQUEST_ID, "test-request-123");
         // Fix constructor call - add effectiveNamespace parameter
@@ -231,8 +231,8 @@ class TurtleExporterUnitTest {
                 dynamicTest("DCTerms.references mapping", () -> testPropertyMapping(SOUVISEJICI_ZDROJ, DCTerms.references, "http://example.org/related")),
                 dynamicTest("RDFS.subClassOf mapping", () -> testPropertyMapping(NADRAZENA_TRIDA, RDFS.subClassOf, effectiveNamespace + "super-class")),
                 dynamicTest("Boolean property mapping", this::testBooleanPropertyMapping),
-                dynamicTest("AIS property mapping", () -> testComplexPropertyMapping(AIS, NS + AGENDOVY_104 + UDAJE_AIS, "AIS-value")),
-                dynamicTest("AGENDA property mapping", () -> testComplexPropertyMapping(AGENDA, NS + AGENDOVY_104 + AGENDA_LONG, "agenda-value"))
+                dynamicTest("AIS property mapping", () -> testComplexPropertyMapping(AIS, DEFAULT_NS + AGENDOVY_104 + UDAJE_AIS, "AIS-value")),
+                dynamicTest("AGENDA property mapping", () -> testComplexPropertyMapping(AGENDA, DEFAULT_NS + AGENDOVY_104 + AGENDA_LONG, "agenda-value"))
         );
     }
 
@@ -261,10 +261,10 @@ class TurtleExporterUnitTest {
 
     static Stream<Arguments> advancedConceptTypeArguments() {
         return Stream.of(
-                Arguments.of("TSP type mapping", NS + VS_POJEM + TSP),
-                Arguments.of("TOP type mapping", NS + VS_POJEM + TOP),
-                Arguments.of("Public data type mapping", NS + LEGISLATIVNI_111_VU),
-                Arguments.of("Non-public data type mapping", NS + LEGISLATIVNI_111_NVU)
+                Arguments.of("TSP type mapping", DEFAULT_NS + VS_POJEM + TSP),
+                Arguments.of("TOP type mapping", DEFAULT_NS + VS_POJEM + TOP),
+                Arguments.of("Public data type mapping", DEFAULT_NS + LEGISLATIVNI_111_VU),
+                Arguments.of("Non-public data type mapping", DEFAULT_NS + LEGISLATIVNI_111_NVU)
         );
     }
 
@@ -426,7 +426,7 @@ class TurtleExporterUnitTest {
         setupModelWithCustomProperty(JE_PPDF, "true");
         Model parsedModel = exportAndParseModel();
 
-        String expectedPropertyURI = NS + AGENDOVY_104 + JE_PPDF_LONG;
+        String expectedPropertyURI = DEFAULT_NS + AGENDOVY_104 + JE_PPDF_LONG;
         Property expectedProperty = parsedModel.createProperty(expectedPropertyURI);
 
         assertTrue(parsedModel.contains(null, expectedProperty, (RDFNode) null),

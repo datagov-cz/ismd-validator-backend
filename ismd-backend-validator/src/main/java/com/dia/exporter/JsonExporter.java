@@ -1,6 +1,6 @@
 package com.dia.exporter;
 
-import com.dia.constants.OntologyConstants;
+import com.dia.constants.ArchiConstants;
 import com.dia.exceptions.JsonExportException;
 import com.dia.utility.UtilityMethods;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +22,7 @@ import org.slf4j.MDC;
 
 import java.util.*;
 
-import static com.dia.constants.OntologyConstants.*;
+import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 import static com.dia.constants.ExportConstants.*;
 
@@ -64,7 +64,7 @@ public class JsonExporter {
     }
 
     private void addModelMetadata(JSONObject root) throws JSONException {
-        root.put(Json.CONTEXT, OntologyConstants.CONTEXT);
+        root.put(Json.CONTEXT, ArchiConstants.CONTEXT);
         root.put(Json.IRI, getOntologyIRI());
         root.put(Json.TYP, addJSONtypes());
 
@@ -323,7 +323,7 @@ public class JsonExporter {
                                                              JSONObject pojemObj,
                                                              String namespace,
                                                              String labelSupp) throws JSONException {
-        Property suppDefault = ontModel.getProperty(OntologyConstants.NS + labelSupp);
+        Property suppDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + labelSupp);
         Property suppCustom = ontModel.getProperty(namespace + labelSupp);
         if (concept.hasProperty(suppDefault)) {
             addResourceArrayProperty(concept, suppDefault, labelSupp, pojemObj);
@@ -336,7 +336,7 @@ public class JsonExporter {
                                                             JSONObject pojemObj,
                                                             String namespace,
                                                             String labelDef) throws JSONException {
-        Property langDefault = ontModel.getProperty(OntologyConstants.NS + labelDef);
+        Property langDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + labelDef);
         Property langCustom = ontModel.getProperty(namespace + labelDef);
         if (concept.hasProperty(langDefault)) {
             addMultilingualProperty(concept, langDefault, labelDef, pojemObj);
@@ -346,7 +346,7 @@ public class JsonExporter {
     }
 
     private void addAlternativeNamesFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
-        Property anPropDefault = ontModel.getProperty(OntologyConstants.NS + ALTERNATIVNI_NAZEV);
+        Property anPropDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + ALTERNATIVNI_NAZEV);
         Property anPropCustom = ontModel.getProperty(namespace + ALTERNATIVNI_NAZEV);
 
         StmtIterator stmtIter = concept.listProperties(anPropDefault);
@@ -380,11 +380,11 @@ public class JsonExporter {
 
     private void addSingleResourcePropertyFromEitherNamespace(Resource concept, JSONObject pojemObj,
                                                               String namespace, String labelDefO) throws JSONException {
-        Property domainDefault = ontModel.getProperty(OntologyConstants.NS + labelDefO);
+        Property domainDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + labelDefO);
         Property domainCustom = ontModel.getProperty(namespace + labelDefO);
 
         if (concept.hasProperty(domainDefault)) {
-            addResourceProperty(concept, OntologyConstants.NS + labelDefO, labelDefO, pojemObj);
+            addResourceProperty(concept, ArchiConstants.DEFAULT_NS + labelDefO, labelDefO, pojemObj);
         } else if (concept.hasProperty(domainCustom)) {
             addResourceProperty(concept, namespace + labelDefO, labelDefO, pojemObj);
         }
@@ -392,7 +392,7 @@ public class JsonExporter {
 
     private void addRangePropertyWithBothNamespaces(Resource concept, JSONObject pojemObj,
                                                     String namespace) throws JSONException {
-        Property rangeDefault = ontModel.getProperty(OntologyConstants.NS + OBOR_HODNOT);
+        Property rangeDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + OBOR_HODNOT);
         Property rangeCustom = ontModel.getProperty(namespace + OBOR_HODNOT);
 
         Statement rangeStmt = concept.getProperty(rangeDefault);
@@ -403,8 +403,8 @@ public class JsonExporter {
         if (rangeStmt != null && rangeStmt.getObject().isResource()) {
             String rangeUri = rangeStmt.getObject().asResource().getURI();
 
-            if (rangeUri.startsWith(OntologyConstants.XSD)) {
-                pojemObj.put(OBOR_HODNOT, "xsd:" + rangeUri.substring(OntologyConstants.XSD.length()));
+            if (rangeUri.startsWith(ArchiConstants.XSD)) {
+                pojemObj.put(OBOR_HODNOT, "xsd:" + rangeUri.substring(ArchiConstants.XSD.length()));
             } else {
                 pojemObj.put(OBOR_HODNOT, rangeUri);
             }
@@ -413,7 +413,7 @@ public class JsonExporter {
 
     private void addRppMetadataWithBothNamespaces(Resource concept, JSONObject pojemObj,
                                                   String namespace) throws JSONException {
-        Property ppdfDefault = ontModel.getProperty(OntologyConstants.NS + JE_PPDF);
+        Property ppdfDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + JE_PPDF);
         Property ppdfCustom = ontModel.getProperty(namespace + JE_PPDF);
 
         Statement stmt = concept.getProperty(ppdfDefault);

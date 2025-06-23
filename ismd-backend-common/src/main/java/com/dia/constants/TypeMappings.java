@@ -39,7 +39,6 @@ public final class TypeMappings {
     );
 
     private TypeMappings() {
-        // Utility class - prevent instantiation
     }
 
     /**

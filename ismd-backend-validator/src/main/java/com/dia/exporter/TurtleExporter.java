@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dia.constants.OntologyConstants.*;
+import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ExportConstants.Turtle.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
@@ -260,7 +260,7 @@ public class TurtleExporter {
     }
 
     private void mapResourceTypes(Resource resource, OntModel transformedModel) {
-        String baseNamespace = NS;
+        String baseNamespace = DEFAULT_NS;
         String verejnySektorNamespace = baseNamespace + VS_POJEM;
 
         if (hasResourceType(resource, transformedModel, TRIDA)) {
@@ -445,7 +445,7 @@ public class TurtleExporter {
     }
 
     private void mapCustomPropertiesToStandard(OntModel transformedModel) {
-        String baseNamespace = NS;
+        String baseNamespace = DEFAULT_NS;
         String agendovyNamespace = baseNamespace + AGENDOVY_104;
         String legislativniNamespace = baseNamespace + LEGISLATIVNI_111;
 

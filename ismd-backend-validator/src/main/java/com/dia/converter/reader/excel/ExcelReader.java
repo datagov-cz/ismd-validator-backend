@@ -17,6 +17,7 @@ import static com.dia.constants.ExcelOntologyConstants.*;
 
 /**
  * ExcelReader - Reads and pareses ontology data from Excel files
+ * TODO: verify possibility of TypeMappings usage
  */
 @Component
 @Slf4j

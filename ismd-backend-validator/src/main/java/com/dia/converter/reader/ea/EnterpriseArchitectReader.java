@@ -15,11 +15,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static com.dia.constants.ArchiOntologyConstants.NS;
+import static com.dia.constants.ArchiConstants.DEFAULT_NS;
 import static com.dia.constants.EnterpriseArchitectConstants.*;
 
 /**
  * EnterpriseArchitectReader - reads and parses ontology data from EA XMI files
+ * TODO: verify possibility of TypeMappings usage
  */
 @Component
 @Slf4j
@@ -140,7 +141,7 @@ public class EnterpriseArchitectReader {
         if (namespace == null || namespace.trim().isEmpty()) {
             String name = metadata.getName();
             if (name != null && !name.trim().isEmpty()) {
-                namespace = NS +
+                namespace = DEFAULT_NS +
                         name.toLowerCase();
             }
         }

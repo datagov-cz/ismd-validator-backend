@@ -1,11 +1,13 @@
 package com.dia.constants;
 
 public class ExcelOntologyConstants {
+    // =============== CORE VOCABULARY TYPES ===============
     public static final String SLOVNIK = "Slovník";
     public static final String SUBJEKTY_OBJEKTY_PRAVA = "Subjekty a objekty práva";
     public static final String VLASTNOSTI = "Vlastnosti";
     public static final String VZTAHY = "Vztahy";
 
+    // =============== CORE VOCABULARY PROPERTIES ===============
     public static final String NAZEV = "Název";
     public static final String TYP = "Typ";
     public static final String POPIS = "Popis";
