@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.dia.constants.ArchiConstants.*;
-import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**

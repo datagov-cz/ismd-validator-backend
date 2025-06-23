@@ -1,6 +1,6 @@
 package com.dia.constants;
 
-public class ExcelOntologyConstants {
+public class ExcelConstants {
     // =============== CORE VOCABULARY TYPES ===============
     public static final String SLOVNIK = "Slovník";
     public static final String SUBJEKTY_OBJEKTY_PRAVA = "Subjekty a objekty práva";
@@ -28,6 +28,6 @@ public class ExcelOntologyConstants {
     public static final String ZPUSOB_ZISKANI_UDEJE = "Způsob získání údaje";
     public static final String TYP_OBSAHU_UDAJE = "Typ obsahu údaje";
 
-    private ExcelOntologyConstants() {
+    private ExcelConstants() {
     }
 }

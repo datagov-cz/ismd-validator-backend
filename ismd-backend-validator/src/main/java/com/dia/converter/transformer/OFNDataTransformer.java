@@ -30,7 +30,7 @@ import java.util.Map;
 import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.TypeMappings.*;
 import static com.dia.constants.ExportConstants.Common.*;
-import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 
 /**
  * OFNDataTransformer - Transforms parsed data from Excel and EA ontologies into OFN ontology models

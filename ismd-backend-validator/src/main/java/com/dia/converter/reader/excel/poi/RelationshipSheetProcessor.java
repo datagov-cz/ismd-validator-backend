@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.dia.constants.ExcelOntologyConstants.VZTAHY;
+import static com.dia.constants.ExcelConstants.VZTAHY;
 
 /**
  * RelationshipSheetProcessor - Handles the Vztahy sheet

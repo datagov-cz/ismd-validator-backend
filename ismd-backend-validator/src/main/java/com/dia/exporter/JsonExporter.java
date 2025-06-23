@@ -23,7 +23,7 @@ import org.slf4j.MDC;
 import java.util.*;
 
 import static com.dia.constants.ArchiConstants.*;
-import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 import static com.dia.constants.ExportConstants.*;
 
 @Slf4j

@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.dia.constants.ConvertorControllerConstants.*;
+import static com.dia.constants.ConverterControllerConstants.*;
 import static com.dia.enums.FileFormat.*;
 
 @RestController

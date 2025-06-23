@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.io.InputStream;
 import java.util.List;
 
-import static com.dia.constants.ExcelOntologyConstants.*;
+import static com.dia.constants.ExcelConstants.*;
 
 /**
  * ExcelReader - Reads and pareses ontology data from Excel files
