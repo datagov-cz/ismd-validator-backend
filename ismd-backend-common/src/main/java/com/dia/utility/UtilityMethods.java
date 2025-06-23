@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.dia.constants.ArchiOntologyConstants.XSD;
+import static com.dia.constants.ArchiConstants.XSD;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @UtilityClass

@@ -3,7 +3,7 @@ package com.dia.utility;
 import lombok.Getter;
 import lombok.Setter;
 
-import static com.dia.constants.ArchiOntologyConstants.NS;
+import static com.dia.constants.ArchiConstants.DEFAULT_NS;
 
 /**
  * URI Generator helper class
@@ -11,7 +11,7 @@ import static com.dia.constants.ArchiOntologyConstants.NS;
 @Setter
 @Getter
 public class URIGenerator {
-    private String effectiveNamespace = NS;
+    private String effectiveNamespace = DEFAULT_NS;
 
     public String generateClassURI(String className, String identifier) {
         if (identifier != null && !identifier.trim().isEmpty() && UtilityMethods.isValidUrl(identifier)) {
