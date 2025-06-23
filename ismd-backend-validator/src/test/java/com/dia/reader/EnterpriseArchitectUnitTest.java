@@ -18,7 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-import static com.dia.constants.ArchiOntologyConstants.NS;
+import static com.dia.constants.ArchiConstants.DEFAULT_NS;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -154,7 +154,7 @@ class EnterpriseArchitectUnitTest {
 
         // Should generate namespace if not present
         String namespace = metadata.getNamespace();
-        assertTrue(namespace == null || namespace.isEmpty() || namespace.startsWith(NS));
+        assertTrue(namespace == null || namespace.isEmpty() || namespace.startsWith(DEFAULT_NS));
     }
 
     @Test
