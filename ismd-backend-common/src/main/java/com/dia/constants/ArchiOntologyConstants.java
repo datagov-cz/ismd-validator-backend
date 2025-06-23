@@ -1,40 +1,25 @@
 package com.dia.constants;
 
-import static com.dia.constants.OntologyConstants.*;
+import static com.dia.constants.ArchiConstants.*;
 
-/**
- * @deprecated This class has been refactored and split into multiple organized classes.
- *
- * Migration guide:
- * - Use {@link OntologyConstants} for core vocabulary and property constants
- * - Use {@link ExportConstants} for export format specific constants
- * - Use {@link TypeMappings} for type conversion utilities
- * - Use {@link OntologyConstants.PropertySets} for organized constant groups
- *
- * This class will be removed in version 3.0. Please migrate to the new structure.
- *
- * @see OntologyConstants
- * @see ExportConstants
- * @see TypeMappings
- */
 @Deprecated(forRemoval = true)
 public class ArchiOntologyConstants {
 
-    // Core namespaces - MIGRATED to OntologyConstants
+    // Core namespaces - MIGRATED to ArchiConstants
     @Deprecated(forRemoval = true)
-    public static final String NS = OntologyConstants.NS;
+    public static final String NS = ArchiConstants.DEFAULT_NS;
     @Deprecated(forRemoval = true)
-    public static final String ARCHI_NS = OntologyConstants.ARCHI_NS;
+    public static final String ARCHI_NS = ArchiConstants.ARCHI_NS;
     @Deprecated(forRemoval = true)
-    public static final String XSD = OntologyConstants.XSD;
+    public static final String XSD = ArchiConstants.XSD;
     @Deprecated(forRemoval = true)
-    public static final String IDENT = OntologyConstants.IDENT;
+    public static final String IDENT = ArchiConstants.IDENT;
     @Deprecated(forRemoval = true)
-    public static final String CONTEXT = OntologyConstants.CONTEXT;
+    public static final String CONTEXT = ArchiConstants.CONTEXT;
     @Deprecated(forRemoval = true)
-    public static final String LANG = OntologyConstants.LANG;
+    public static final String LANG = ArchiConstants.LANG;
 
-    // Type constants - CONSOLIDATED to single constants in OntologyConstants
+    // Type constants - CONSOLIDATED to single constants in ArchiConstants
     @Deprecated(forRemoval = true)
     public static final String TYP_TSP = TSP;
     @Deprecated(forRemoval = true)
@@ -54,7 +39,7 @@ public class ArchiOntologyConstants {
     @Deprecated(forRemoval = true)
     public static final String TYP_DT = DATOVY_TYP;
 
-    // Label constants - DUPLICATES REMOVED, use core constants from OntologyConstants
+    // Label constants - DUPLICATES REMOVED, use core constants from ArchiConstants
     @Deprecated(forRemoval = true)
     public static final String LABEL_TYP = TYP;
     @Deprecated(forRemoval = true)
@@ -78,7 +63,7 @@ public class ArchiOntologyConstants {
     @Deprecated(forRemoval = true)
     public static final String LABEL_AGENDA = AGENDA;
     @Deprecated(forRemoval = true)
-    public static final String AGENDA_LONG = OntologyConstants.AGENDA_LONG;
+    public static final String AGENDA_LONG = ArchiConstants.AGENDA_LONG;
     @Deprecated(forRemoval = true)
     public static final String LABEL_DT = DATOVY_TYP;
     @Deprecated(forRemoval = true)
@@ -126,21 +111,21 @@ public class ArchiOntologyConstants {
     @Deprecated(forRemoval = true)
     public static final String LABEL_TYP_OBSAHU = TYP_OBSAHU;
 
-    // Namespace paths - MIGRATED to OntologyConstants
+    // Namespace paths - MIGRATED to ArchiConstants
     @Deprecated(forRemoval = true)
-    public static final String AGENDOVY_104 = OntologyConstants.AGENDOVY_104;
+    public static final String AGENDOVY_104 = ArchiConstants.AGENDOVY_104;
     @Deprecated(forRemoval = true)
-    public static final String LEGISLATIVNI_111 = OntologyConstants.LEGISLATIVNI_111;
+    public static final String LEGISLATIVNI_111 = ArchiConstants.LEGISLATIVNI_111;
     @Deprecated(forRemoval = true)
-    public static final String LEGISLATIVNI_111_VU = OntologyConstants.LEGISLATIVNI_111_VU;
+    public static final String LEGISLATIVNI_111_VU = ArchiConstants.LEGISLATIVNI_111_VU;
     @Deprecated(forRemoval = true)
-    public static final String LEGISLATIVNI_111_NVU = OntologyConstants.LEGISLATIVNI_111_NVU;
+    public static final String LEGISLATIVNI_111_NVU = ArchiConstants.LEGISLATIVNI_111_NVU;
     @Deprecated(forRemoval = true)
-    public static final String VS_POJEM = OntologyConstants.VS_POJEM;
+    public static final String VS_POJEM = ArchiConstants.VS_POJEM;
 
-    // LABELS array - REPLACED with organized PropertySets in OntologyConstants
+    // LABELS array - REPLACED with organized PropertySets in ArchiConstants
     @Deprecated(forRemoval = true)
-    public static final String[] LABELS = OntologyConstants.PropertySets.ALL_PROPERTIES;
+    public static final String[] LABELS = ArchiConstants.PropertySets.ALL_PROPERTIES;
 
     private ArchiOntologyConstants() {
     }

@@ -1,8 +1,8 @@
 package com.dia.constants;
 
-public class OntologyConstants {
+public class ArchiConstants {
     // =============== CORE NAMESPACES ===============
-    public static final String NS = "https://slovník.gov.cz/";
+    public static final String DEFAULT_NS = "https://slovník.gov.cz/";
     public static final String ARCHI_NS = "http://www.opengroup.org/xsd/archimate/3.0/";
     public static final String XSD = "http://www.w3.org/2001/XMLSchema#";
     public static final String CONTEXT = "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld";
@@ -48,7 +48,6 @@ public class OntologyConstants {
     public static final String TYP_OBSAHU = "má-typ-obsahu-údaje";
 
     // =============== LONG FORM PROPERTIES ===============
-    // Only when different from short form
     public static final String JE_PPDF_LONG = "je-sdílen-v-propojeném-datovém-fondu";
     public static final String AGENDA_LONG = "sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy";
     public static final String USTANOVENI_LONG = "je-vymezen-ustanovení-stanovujícím-jeho-neveřejnost";
@@ -60,7 +59,7 @@ public class OntologyConstants {
     public static final String LEGISLATIVNI_111_NVU = "legislativní/sbírka/111/2009/pojem/neveřejný-údaj";
     public static final String VS_POJEM = "veřejný-sektor/pojem/";
 
-    private OntologyConstants() {
+    private ArchiConstants() {
     }
 
     /**

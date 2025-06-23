@@ -2,17 +2,6 @@ package com.dia.constants;
 
 import static com.dia.constants.ExportConstants.Json.*;
 
-/**
- * @deprecated This class has been merged into {@link ExportConstants.Json}.
- *
- * Migration guide:
- * - Use {@link ExportConstants.Json} for JSON-LD export constants
- * - Use {@link ExportConstants.Turtle} for Turtle export constants
- * - Use {@link ExportConstants.Common} for shared export constants
- *
- * @see ExportConstants
- * @see ExportConstants.Json
- */
 @Deprecated(forRemoval = true)
 public class JsonExportConstants {
 

@@ -22,7 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 
-import static com.dia.constants.OntologyConstants.*;
+import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.TypeMappings.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 

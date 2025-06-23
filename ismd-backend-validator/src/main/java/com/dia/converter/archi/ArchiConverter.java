@@ -32,7 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 
-import static com.dia.constants.OntologyConstants.*;
+import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
 @Deprecated(forRemoval = true)
@@ -429,7 +429,7 @@ public class ArchiConverter {
             return ontologyNamespace;
         }
 
-        return NS;
+        return DEFAULT_NS;
     }
 
     private String extractPropName(Element propDef) {

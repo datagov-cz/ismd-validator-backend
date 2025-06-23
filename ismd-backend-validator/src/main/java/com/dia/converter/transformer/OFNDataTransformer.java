@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dia.constants.OntologyConstants.*;
+import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.TypeMappings.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
@@ -201,7 +201,7 @@ public class OFNDataTransformer {
         if (namespace != null && !namespace.trim().isEmpty() && UtilityMethods.isValidUrl(namespace)) {
             return UtilityMethods.ensureNamespaceEndsWithDelimiter(namespace);
         }
-        return NS;
+        return DEFAULT_NS;
     }
 
     private void addSchemeRelationship(Resource resource) {
