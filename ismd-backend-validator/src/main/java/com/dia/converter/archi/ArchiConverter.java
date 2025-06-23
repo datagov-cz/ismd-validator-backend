@@ -32,7 +32,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 
-import static com.dia.constants.ArchiOntologyConstants.*;
+import static com.dia.constants.OntologyConstants.*;
 import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
 
 @Deprecated(forRemoval = true)
@@ -45,9 +45,9 @@ public class ArchiConverter {
     private static final Map<String, String> TYPE_MAPPINGS = new HashMap<>();
 
     static {
-        TYPE_MAPPINGS.put("typ subjektu", TYP_TSP);
-        TYPE_MAPPINGS.put("typ objektu", TYP_TOP);
-        TYPE_MAPPINGS.put("typ vlastnosti", TYP_VLASTNOST);
+        TYPE_MAPPINGS.put("typ subjektu", TSP);
+        TYPE_MAPPINGS.put("typ objektu", TOP);
+        TYPE_MAPPINGS.put("typ vlastnosti", VLASTNOST);
     }
 
     private final Map<String, String> propertyMapping = new HashMap<>();
@@ -217,7 +217,7 @@ public class ArchiConverter {
 
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             String key = entry.getKey();
-            if (key.equals(LABEL_ALKD) ||
+            if (key.equals(LOKALNI_KATALOG) ||
                     key.contains("adresa") && (key.contains("lokální") || key.contains("lokálního"))) {
                 String ns = entry.getValue();
                 if (ns != null && !ns.isEmpty() && UtilityMethods.isValidUrl(ns)) {
@@ -239,7 +239,7 @@ public class ArchiConverter {
             ontologyResource.addProperty(SKOS.prefLabel, modelName, "cs");
 
             Map<String, String> properties = getModelProperties();
-            String description = properties.getOrDefault(LABEL_POPIS, "");
+            String description = properties.getOrDefault(POPIS, "");
             if (description != null && !description.isEmpty()) {
                 ontologyResource.addProperty(DCTerms.description, description, "cs");
             }
@@ -328,14 +328,14 @@ public class ArchiConverter {
     }
 
     private void initializeTypeClasses() {
-        createNamespacedResource(TYP_POJEM);
-        createNamespacedResource(TYP_TRIDA);
-        createNamespacedResource(TYP_VZTAH);
-        createNamespacedResource(TYP_VLASTNOST);
-        createNamespacedResource(TYP_TSP);
-        createNamespacedResource(TYP_TOP);
-        createNamespacedResource(TYP_VEREJNY_UDAJ);
-        createNamespacedResource(TYP_NEVEREJNY_UDAJ);
+        createNamespacedResource(POJEM);
+        createNamespacedResource(TRIDA);
+        createNamespacedResource(VZTAH);
+        createNamespacedResource(VLASTNOST);
+        createNamespacedResource(TSP);
+        createNamespacedResource(TOP);
+        createNamespacedResource(VEREJNY_UDAJ);
+        createNamespacedResource(NEVEREJNY_UDAJ);
     }
 
     private void processElements() throws ConversionException {
@@ -357,7 +357,7 @@ public class ArchiConverter {
             Map<String, String> properties = getElementProperties(element);
 
             String elementType = properties.getOrDefault("typ", "").trim();
-            String ontologyClass = TYPE_MAPPINGS.getOrDefault(elementType, TYP_POJEM);
+            String ontologyClass = TYPE_MAPPINGS.getOrDefault(elementType, POJEM);
 
             Resource resource = createResourceFromElement(id, name, ontologyClass, properties);
             resourceMap.put(id, resource);
@@ -377,26 +377,26 @@ public class ArchiConverter {
         Map<String, String> labelPatterns = new LinkedHashMap<>();
 
         if (propName.equals("související zdroj")) {
-            propertyMapping.put(propId, LABEL_SZ);
+            propertyMapping.put(propId, SOUVISEJICI_ZDROJ);
             return;
         }
         if (propName.equals("zdroj")) {
-            propertyMapping.put(propId, LABEL_ZDROJ);
+            propertyMapping.put(propId, ZDROJ);
             return;
         }
 
-        labelPatterns.put(LABEL_POPIS, LABEL_POPIS);
-        labelPatterns.put(LABEL_DEF, LABEL_DEF);
-        labelPatterns.put(LABEL_ID, LABEL_ID);
-        labelPatterns.put("ustanovení dokládající neveřejnost", LABEL_SUPP);
-        labelPatterns.put(LABEL_AGENDA, LABEL_AGENDA);
-        labelPatterns.put("agendový informační systém", LABEL_AIS);
-        labelPatterns.put("je pojem sdílen v PPDF?", LABEL_JE_PPDF);
-        labelPatterns.put("je pojem veřejný?", LABEL_JE_VEREJNY);
-        labelPatterns.put("alternativní název", LABEL_AN);
-        labelPatterns.put("datový typ", LABEL_DT);
-        labelPatterns.put("typ", LABEL_TYP);
-        labelPatterns.put("adresa lokálního katalogu dat", LABEL_ALKD);
+        labelPatterns.put("popis", POPIS);
+        labelPatterns.put("definice", DEFINICE);
+        labelPatterns.put("identifikátor", IDENTIFIKATOR);
+        labelPatterns.put("ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST);
+        labelPatterns.put("agenda", AGENDA);
+        labelPatterns.put("agendový informační systém", AIS);
+        labelPatterns.put("je pojem sdílen v PPDF?", JE_PPDF);
+        labelPatterns.put("je pojem veřejný?", JE_VEREJNY);
+        labelPatterns.put("alternativní název", ALTERNATIVNI_NAZEV);
+        labelPatterns.put("datový typ", DATOVY_TYP);
+        labelPatterns.put("typ", TYP);
+        labelPatterns.put("adresa lokálního katalogu dat", LOKALNI_KATALOG);
 
         for (Map.Entry<String, String> pattern : labelPatterns.entrySet()) {
             if (propName.contains(pattern.getKey())) {
@@ -468,7 +468,7 @@ public class ArchiConverter {
     }
 
     private void processSpecializationRelationship(Resource source, Resource target) {
-        source.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_NT), target);
+        source.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + NADRAZENA_TRIDA), target);
 
         if (source instanceof OntClass sourceClass && target instanceof OntClass targetClass) {
             sourceClass.addSuperClass(targetClass);
@@ -530,8 +530,8 @@ public class ArchiConverter {
 
         String iri = baseVocabularyIri + "/pojem/" + UtilityMethods.sanitizeForIRI(relName);
 
-        if (relProps.containsKey(LABEL_ID)) {
-            String explicitIri = relProps.get(LABEL_ID);
+        if (relProps.containsKey(IDENTIFIKATOR)) {
+            String explicitIri = relProps.get(IDENTIFIKATOR);
             if (explicitIri != null && !explicitIri.isEmpty()) {
                 iri = explicitIri;
             }
@@ -548,13 +548,13 @@ public class ArchiConverter {
         Resource relResource = ontModel.createResource(iri);
 
         relResource.addProperty(RDF.type, OWL2.ObjectProperty);
-        relResource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_VZTAH));
-        relResource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_POJEM));
+        relResource.addProperty(RDF.type, ontModel.getResource(namespace + VZTAH));
+        relResource.addProperty(RDF.type, ontModel.getResource(namespace + POJEM));
 
         relResource.addProperty(RDFS.label, relName, "cs");
 
-        relResource.addProperty(ontModel.getProperty(namespace + LABEL_DEF_O), source);
-        relResource.addProperty(ontModel.getProperty(namespace + LABEL_OBOR_HODNOT), target);
+        relResource.addProperty(ontModel.getProperty(namespace + DEFINICNI_OBOR), source);
+        relResource.addProperty(ontModel.getProperty(namespace + OBOR_HODNOT), target);
 
         addSchemeRelationship(relResource);
 
@@ -562,22 +562,22 @@ public class ArchiConverter {
     }
 
     private void addRelationshipProperties(Resource relResource, Map<String, String> relProps) {
-        addPropertyIfExists(relResource, relProps, LABEL_POPIS, LABEL_POPIS);
+        addPropertyIfExists(relResource, relProps, POPIS, POPIS);
 
-        addPropertyIfExists(relResource, relProps, LABEL_DEF, LABEL_DEF);
+        addPropertyIfExists(relResource, relProps, DEFINICE, DEFINICE);
 
-        if (relProps.containsKey(LABEL_ZDROJ)) {
-            String sourceUrl = relProps.get(LABEL_ZDROJ);
+        if (relProps.containsKey(ZDROJ)) {
+            String sourceUrl = relProps.get(ZDROJ);
             if (!sourceUrl.isEmpty()) {
-                Property zdrojProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ);
+                Property zdrojProp = ontModel.getProperty(getEffectiveOntologyNamespace() + ZDROJ);
                 DataTypeConverter.addTypedProperty(relResource, zdrojProp, sourceUrl, null, ontModel);
             }
         }
 
-        if (relProps.containsKey(LABEL_SUPP)) {
-            String provision = relProps.get(LABEL_SUPP);
+        if (relProps.containsKey(SUPP)) {
+            String provision = relProps.get(SUPP);
             if (!provision.isEmpty()) {
-                relResource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SUPP),
+                relResource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + SUPP),
                         ontModel.createResource(provision));
             }
         }
@@ -634,8 +634,8 @@ public class ArchiConverter {
     }
 
     private Resource createResourceWithIri(String id, String name, Map<String, String> properties) {
-        if (properties.containsKey(LABEL_ID)) {
-            String iri = properties.get(LABEL_ID);
+        if (properties.containsKey(IDENTIFIKATOR)) {
+            String iri = properties.get(IDENTIFIKATOR);
             if (iri != null && !iri.isEmpty() && UtilityMethods.isValidUrl(iri)) {
                 return ontModel.createResource(iri);
             }
@@ -663,18 +663,18 @@ public class ArchiConverter {
     private void addRdfTypesAndClasses(Resource resource, String ontologyClass) {
         String namespace = getEffectiveOntologyNamespace();
 
-        resource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_POJEM));
+        resource.addProperty(RDF.type, ontModel.getResource(namespace + POJEM));
 
         switch (ontologyClass) {
-            case TYP_TSP -> {
-                resource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_TRIDA));
-                resource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_TSP));
+            case TSP -> {
+                resource.addProperty(RDF.type, ontModel.getResource(namespace + TRIDA));
+                resource.addProperty(RDF.type, ontModel.getResource(namespace + TSP));
             }
-            case TYP_TOP -> {
-                resource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_TRIDA));
-                resource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_TOP));
+            case TOP -> {
+                resource.addProperty(RDF.type, ontModel.getResource(namespace + TRIDA));
+                resource.addProperty(RDF.type, ontModel.getResource(namespace + TOP));
             }
-            case TYP_VLASTNOST -> resource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_VLASTNOST));
+            case VLASTNOST -> resource.addProperty(RDF.type, ontModel.getResource(namespace + VLASTNOST));
             default -> resource.addProperty(RDF.type, ontModel.getResource(namespace + ontologyClass));
         }
     }
@@ -697,14 +697,14 @@ public class ArchiConverter {
     private void addDescriptionAndDefinition(Resource resource, Map<String, String> properties) {
         String namespace = getEffectiveOntologyNamespace();
 
-        if (properties.containsKey(LABEL_POPIS)) {
-            Property popisProp = ontModel.getProperty(namespace + LABEL_POPIS);
-            DataTypeConverter.addTypedProperty(resource, popisProp, properties.get(LABEL_POPIS), "cs", ontModel);
+        if (properties.containsKey(POPIS)) {
+            Property popisProp = ontModel.getProperty(namespace + POPIS);
+            DataTypeConverter.addTypedProperty(resource, popisProp, properties.get(POPIS), "cs", ontModel);
         }
 
-        if (properties.containsKey(LABEL_DEF)) {
-            Property defProp = ontModel.getProperty(namespace + LABEL_DEF);
-            DataTypeConverter.addTypedProperty(resource, defProp, properties.get(LABEL_DEF), "cs", ontModel);
+        if (properties.containsKey(DEFINICE)) {
+            Property defProp = ontModel.getProperty(namespace + DEFINICE);
+            DataTypeConverter.addTypedProperty(resource, defProp, properties.get(DEFINICE), "cs", ontModel);
 
         }
 
@@ -716,7 +716,7 @@ public class ArchiConverter {
                     String propName = parts[0];
                     String lang = parts[1];
 
-                    if (propName.equals(LABEL_POPIS) || propName.equals(LABEL_DEF)) {
+                    if (propName.equals(POPIS) || propName.equals(DEFINICE)) {
                         Property defProp = ontModel.getProperty(namespace + propName);
                         DataTypeConverter.addTypedProperty(resource, defProp, entry.getValue(), lang, ontModel);
                     }
@@ -726,16 +726,16 @@ public class ArchiConverter {
     }
 
     private void addAlternativeNames(Resource resource, Map<String, String> properties) {
-        if (!properties.containsKey(LABEL_AN)) {
+        if (!properties.containsKey(ALTERNATIVNI_NAZEV)) {
             return;
         }
 
-        String altNamesValue = properties.get(LABEL_AN);
+        String altNamesValue = properties.get(ALTERNATIVNI_NAZEV);
         if (altNamesValue == null || altNamesValue.isEmpty()) {
             return;
         }
 
-        Property altNameProperty = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_AN);
+        Property altNameProperty = ontModel.getProperty(getEffectiveOntologyNamespace() + ALTERNATIVNI_NAZEV);
         if (!altNamesValue.contains(";")) {
             DataTypeConverter.addTypedProperty(resource, altNameProperty, altNamesValue, "cs", ontModel);
             return;
@@ -754,11 +754,11 @@ public class ArchiConverter {
     }
 
     private void addMainSourceReferences(Resource resource, Map<String, String> properties) {
-        if (!properties.containsKey(LABEL_ZDROJ)) {
+        if (!properties.containsKey(ZDROJ)) {
             return;
         }
 
-        String sourceUrl = properties.get(LABEL_ZDROJ);
+        String sourceUrl = properties.get(ZDROJ);
         if (sourceUrl.contains(";")) {
             addMultipleSourceUrls(resource, sourceUrl);
         } else {
@@ -782,36 +782,36 @@ public class ArchiConverter {
 
         try {
             String transformedUrl = UtilityMethods.transformEliUrl(url, removeELI);
-            Property sourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ);
+            Property sourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + ZDROJ);
             resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
         } catch (Exception e) {
             log.warn("Failed to add source URL '{}': {}. Adding as plain literal.", url, e.getMessage());
-            Property sourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZDROJ);
+            Property sourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + ZDROJ);
             resource.addProperty(sourceProp, url);
         }
     }
 
     private void addRelatedSourceReferences(Resource resource, Map<String, String> properties) {
-        if (!properties.containsKey(LABEL_SZ)) {
+        if (!properties.containsKey(SOUVISEJICI_ZDROJ)) {
             return;
         }
 
-        String relatedSourceUrl = properties.get(LABEL_SZ);
+        String relatedSourceUrl = properties.get(SOUVISEJICI_ZDROJ);
         if (relatedSourceUrl != null && !relatedSourceUrl.isEmpty()) {
             String transformedUrl = UtilityMethods.transformEliUrl(relatedSourceUrl, removeELI);
-            Property relatedSourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SZ);
+            Property relatedSourceProp = ontModel.getProperty(getEffectiveOntologyNamespace() + SOUVISEJICI_ZDROJ);
             resource.addProperty(relatedSourceProp, ontModel.createResource(transformedUrl));
         }
     }
 
     private void addDomainAndRange(Resource resource, Map<String, String> properties) {
-        if (properties.containsKey(LABEL_DEF_O)) {
-            resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_DEF_O),
-                    ontModel.createResource(properties.get(LABEL_DEF_O)));
+        if (properties.containsKey(DEFINICNI_OBOR)) {
+            resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + DEFINICNI_OBOR),
+                    ontModel.createResource(properties.get(DEFINICNI_OBOR)));
         }
 
-        if (properties.containsKey(LABEL_OBOR_HODNOT)) {
-            addRangeProperty(resource, properties.get(LABEL_OBOR_HODNOT));
+        if (properties.containsKey(OBOR_HODNOT)) {
+            addRangeProperty(resource, properties.get(OBOR_HODNOT));
         }
     }
 
@@ -820,28 +820,28 @@ public class ArchiConverter {
 
         if (rangeValue.startsWith("xsd:")) {
             String xsdType = XSD + rangeValue.substring(4);
-            resource.addProperty(ontModel.getProperty(namespace + LABEL_OBOR_HODNOT),
+            resource.addProperty(ontModel.getProperty(namespace + OBOR_HODNOT),
                     ontModel.createResource(xsdType));
         } else {
-            resource.addProperty(ontModel.getProperty(namespace + LABEL_OBOR_HODNOT),
+            resource.addProperty(ontModel.getProperty(namespace + OBOR_HODNOT),
                     ontModel.createResource(rangeValue));
         }
     }
 
     private void addSuperclasses(Resource resource, Map<String, String> properties) {
-        if (properties.containsKey(LABEL_NT)) {
-            String superClass = properties.get(LABEL_NT);
-            resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_NT),
+        if (properties.containsKey(NADRAZENA_TRIDA)) {
+            String superClass = properties.get(NADRAZENA_TRIDA);
+            resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + NADRAZENA_TRIDA),
                     ontModel.createResource(superClass));
         }
     }
 
     private void addLegalSources(Resource resource, Map<String, String> properties) {
-        if (properties.containsKey(LABEL_SUPP)) {
-            String provision = properties.get(LABEL_SUPP);
+        if (properties.containsKey(SUPP)) {
+            String provision = properties.get(SUPP);
             if (provision != null && !provision.trim().isEmpty()) {
                 String transformedProvision = UtilityMethods.transformEliUrl(provision, removeELI);
-                resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_SUPP),
+                resource.addProperty(ontModel.getProperty(getEffectiveOntologyNamespace() + SUPP),
                         ontModel.createResource(transformedProvision));
             }
         }
@@ -858,8 +858,8 @@ public class ArchiConverter {
     }
 
     private void addDataSharingWays(Resource resource, Map<String, String> properties) {
-        if (properties.containsKey(LABEL_ZPUSOB_SDILENI)) {
-            String sharingWays = properties.get(LABEL_ZPUSOB_SDILENI);
+        if (properties.containsKey(ZPUSOB_SDILENI)) {
+            String sharingWays = properties.get(ZPUSOB_SDILENI);
             if (sharingWays != null && !sharingWays.isEmpty()) {
                 if (sharingWays.contains(";")) {
                     String[] ways = sharingWays.split(";");
@@ -882,13 +882,13 @@ public class ArchiConverter {
                     + sharingWay;
         }
 
-        Property sdileniProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZPUSOB_SDILENI);
+        Property sdileniProp = ontModel.getProperty(getEffectiveOntologyNamespace() + ZPUSOB_SDILENI);
         DataTypeConverter.addTypedProperty(resource, sdileniProp, formattedSharingWay, null, ontModel);
     }
 
     private void addDataAcquisitionWay(Resource resource, Map<String, String> properties) {
-        if (properties.containsKey(LABEL_ZPUSOB_ZISKANI)) {
-            String acquisitionWay = properties.get(LABEL_ZPUSOB_ZISKANI);
+        if (properties.containsKey(ZPUSOB_ZISKANI)) {
+            String acquisitionWay = properties.get(ZPUSOB_ZISKANI);
             if (acquisitionWay != null && !acquisitionWay.isEmpty()) {
                 String formattedAcquisitionWay;
                 if (acquisitionWay.startsWith("http")) {
@@ -898,15 +898,15 @@ public class ArchiConverter {
                             + acquisitionWay;
                 }
 
-                Property acquisitionProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_ZPUSOB_ZISKANI);
+                Property acquisitionProp = ontModel.getProperty(getEffectiveOntologyNamespace() + ZPUSOB_ZISKANI);
                 DataTypeConverter.addTypedProperty(resource, acquisitionProp, formattedAcquisitionWay, null, ontModel);
             }
         }
     }
 
     private void addDataContentType(Resource resource, Map<String, String> properties) {
-        if (properties.containsKey(LABEL_TYP_OBSAHU)) {
-            String contentType = properties.get(LABEL_TYP_OBSAHU);
+        if (properties.containsKey(TYP_OBSAHU)) {
+            String contentType = properties.get(TYP_OBSAHU);
             if (contentType != null && !contentType.isEmpty()) {
                 String formattedContentType;
                 if (contentType.startsWith("http")) {
@@ -915,24 +915,24 @@ public class ArchiConverter {
                     formattedContentType = "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/"
                             + contentType;
                 }
-                Property contentTypeProp = ontModel.getProperty(getEffectiveOntologyNamespace() + LABEL_TYP_OBSAHU);
+                Property contentTypeProp = ontModel.getProperty(getEffectiveOntologyNamespace() + TYP_OBSAHU);
                 DataTypeConverter.addTypedProperty(resource, contentTypeProp, formattedContentType, null, ontModel);
             }
         }
     }
 
     private void addPpdfSharing(Resource resource, Map<String, String> properties) {
-        if (!properties.containsKey(LABEL_JE_PPDF)) {
+        if (!properties.containsKey(JE_PPDF)) {
             return;
         }
 
-        String value = properties.get(LABEL_JE_PPDF);
+        String value = properties.get(JE_PPDF);
         if (value == null || value.trim().isEmpty()) {
             return;
         }
 
         String namespace = getEffectiveOntologyNamespace();
-        Property ppdfProp = ontModel.getProperty(namespace + LABEL_JE_PPDF);
+        Property ppdfProp = ontModel.getProperty(namespace + JE_PPDF);
 
         if (isResourceProperty(ppdfProp)) {
             try {
@@ -951,17 +951,17 @@ public class ArchiConverter {
                         boolValue ? "true" : "false", null, ontModel);
             } else {
                 log.warn("Unrecognized boolean value for {} property: '{}'. Expected true/false, ano/ne, or yes/no.",
-                        LABEL_JE_PPDF, value);
+                        JE_PPDF, value);
             }
         }
     }
 
     private void addPublicFlag(Resource resource, Map<String, String> properties) {
-        if (!properties.containsKey(LABEL_JE_VEREJNY)) {
+        if (!properties.containsKey(JE_VEREJNY)) {
             return;
         }
 
-        String value = properties.get(LABEL_JE_VEREJNY);
+        String value = properties.get(JE_VEREJNY);
         if (value == null || value.trim().isEmpty()) {
             return;
         }
@@ -972,23 +972,23 @@ public class ArchiConverter {
                     "yes".equalsIgnoreCase(value);
 
             if (isPublic) {
-                resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + TYP_VEREJNY_UDAJ));
+                resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + VEREJNY_UDAJ));
             } else {
-                resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + TYP_NEVEREJNY_UDAJ));
+                resource.addProperty(RDF.type, ontModel.getResource(getEffectiveOntologyNamespace() + NEVEREJNY_UDAJ));
             }
         } else {
             log.warn("Unrecognized boolean value for {} property: '{}'. Expected true/false, ano/ne, or yes/no.",
-                    LABEL_JE_VEREJNY, value);
+                    JE_VEREJNY, value);
         }
     }
 
     private void addNonPublicData(Resource resource, Map<String, String> properties) {
         String namespace = getEffectiveOntologyNamespace();
 
-        if (properties.containsKey(LABEL_UDN) && !properties.get(LABEL_UDN).isBlank()) {
-            resource.addProperty(RDF.type, ontModel.getResource(namespace + TYP_NEVEREJNY_UDAJ));
-            String legalProvision = properties.get(LABEL_UDN);
-            Property udnProp = ontModel.getProperty(namespace + LABEL_UDN);
+        if (properties.containsKey(USTANOVENI_NEVEREJNOST) && !properties.get(USTANOVENI_NEVEREJNOST).isBlank()) {
+            resource.addProperty(RDF.type, ontModel.getResource(namespace + NEVEREJNY_UDAJ));
+            String legalProvision = properties.get(USTANOVENI_NEVEREJNOST);
+            Property udnProp = ontModel.getProperty(namespace + USTANOVENI_NEVEREJNOST);
             DataTypeConverter.addTypedProperty(resource, udnProp, legalProvision, null, ontModel);
         }
     }
@@ -1001,8 +1001,8 @@ public class ArchiConverter {
     }
 
     private void addAgendaInformationSystem(Resource resource, Map<String, String> properties, String namespace) {
-        if (properties.containsKey(LABEL_AIS)) {
-            String ais = properties.get(LABEL_AIS);
+        if (properties.containsKey(AIS)) {
+            String ais = properties.get(AIS);
             if (ais != null && !ais.isEmpty()) {
                 String formattedAis;
                 if (ais.matches("^\\d+$")) {
@@ -1014,7 +1014,7 @@ public class ArchiConverter {
                 }
 
                 resource.addProperty(
-                        ontModel.getProperty(namespace + LABEL_AIS),
+                        ontModel.getProperty(namespace + AIS),
                         ontModel.createResource(formattedAis)
                 );
             }
@@ -1022,14 +1022,14 @@ public class ArchiConverter {
     }
 
     private void addAgenda(Resource resource, Map<String, String> properties, String namespace) {
-        if (properties.containsKey(LABEL_AGENDA)) {
-            String agenda = properties.get(LABEL_AGENDA);
+        if (properties.containsKey(AGENDA)) {
+            String agenda = properties.get(AGENDA);
             if (agenda != null && !agenda.isEmpty()) {
 
                 String formattedAgenda = getFormattedAgenda(agenda);
 
                 resource.addProperty(
-                        ontModel.getProperty(namespace + LABEL_AGENDA),
+                        ontModel.getProperty(namespace + AGENDA),
                         ontModel.createResource(formattedAgenda)
                 );
             }
@@ -1053,7 +1053,7 @@ public class ArchiConverter {
     private void addSchemeRelationship(Resource resource) {
         Resource ontologyResource = resourceMap.get("ontology");
         if (ontologyResource != null && resource.hasProperty(RDF.type,
-                ontModel.getResource(getEffectiveOntologyNamespace() + TYP_POJEM))) {
+                ontModel.getResource(getEffectiveOntologyNamespace() + POJEM))) {
             resource.addProperty(SKOS.inScheme, ontologyResource);
         }
     }
