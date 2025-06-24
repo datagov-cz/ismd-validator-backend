@@ -422,8 +422,8 @@ public class OFNDataTransformer {
         if (classData.getAgendaCode() != null && !classData.getAgendaCode().trim().isEmpty()) {
             String agendaCode = classData.getAgendaCode().trim();
 
-            if (isValidAgendaValue(agendaCode)) {
-                String transformedAgenda = transformAgendaValue(agendaCode);
+            if (UtilityMethods.isValidAgendaValue(agendaCode)) {
+                String transformedAgenda = UtilityMethods.transformAgendaValue(agendaCode);
                 Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AGENDA);
 
                 if (DataTypeConverter.isUri(transformedAgenda)) {
@@ -443,8 +443,8 @@ public class OFNDataTransformer {
         if (classData.getAgendaSystemCode() != null && !classData.getAgendaSystemCode().trim().isEmpty()) {
             String aisCode = classData.getAgendaSystemCode().trim();
 
-            if (isValidAISValue(aisCode)) {
-                String transformedAIS = transformAISValue(aisCode);
+            if (UtilityMethods.isValidAISValue(aisCode)) {
+                String transformedAIS = UtilityMethods.transformAISValue(aisCode);
                 Property aisProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AIS);
 
                 if (DataTypeConverter.isUri(transformedAIS)) {
@@ -458,66 +458,6 @@ public class OFNDataTransformer {
                 log.warn("Invalid AIS code '{}' for class '{}' - skipping", aisCode, classData.getName());
             }
         }
-    }
-
-    private boolean isValidAgendaValue(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return false;
-        }
-        value = value.trim();
-
-        if (value.matches("^(\\d+)$")) {
-            return true;
-        }
-
-        if (value.matches("^A(\\d+)$")) {
-            return true;
-        }
-
-        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/agenda/A)(\\d+)$");
-    }
-
-    private String transformAgendaValue(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return value;
-        }
-        value = value.trim();
-
-        if (value.matches("^(\\d+)$")) {
-            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A" + value;
-        }
-
-        if (value.matches("^A(\\d+)$")) {
-            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/" + value;
-        }
-
-        return value;
-    }
-
-    private boolean isValidAISValue(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return false;
-        }
-        value = value.trim();
-
-        if (value.matches("^(\\d+)$")) {
-            return true;
-        }
-
-        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/isvs/)(\\d+)$");
-    }
-
-    private String transformAISValue(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return value;
-        }
-        value = value.trim();
-
-        if (value.matches("^(\\d+)$")) {
-            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/" + value;
-        }
-
-        return value;
     }
 
     private void addAlternativeNames(Resource resource, String altNamesValue) {

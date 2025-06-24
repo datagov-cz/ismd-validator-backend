@@ -178,19 +178,63 @@ public class UtilityMethods {
         }
     }
 
-    public String mapDataTypeToXSD(String dataType) {
-        String normalized = dataType.toLowerCase().trim();
+    public boolean isValidAgendaValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return false;
+        }
+        value = value.trim();
 
-        return switch (normalized) {
-            case "string", "text", "řetězec" -> XSD + "string";
-            case "boolean", "bool", "logický" -> XSD + "boolean";
-            case "integer", "int", "celé číslo" -> XSD + "integer";
-            case "decimal", "float", "double", "desetinné číslo" -> XSD + "decimal";
-            case "date", "datum" -> XSD + "date";
-            case "time", "čas" -> XSD + "time";
-            case "datetime", "datum a čas" -> XSD + "dateTime";
-            case "uri", "url", "anyuri" -> XSD + "anyURI";
-            default -> XSD + "string"; // Safe fallback
-        };
+        if (value.matches("^(\\d+)$")) {
+            return true;
+        }
+
+        if (value.matches("^A(\\d+)$")) {
+            return true;
+        }
+
+        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/agenda/A)(\\d+)$");
+    }
+
+    public String transformAgendaValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return value;
+        }
+        value = value.trim();
+
+        if (value.matches("^(\\d+)$")) {
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A" + value;
+        }
+
+        if (value.matches("^A(\\d+)$")) {
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/" + value;
+        }
+
+        return value;
+    }
+
+    public boolean isValidAISValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return false;
+        }
+        value = value.trim();
+
+        if (value.matches("^(\\d+)$")) {
+            return true;
+        }
+
+        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/isvs/)(\\d+)$");
+    }
+
+    public String transformAISValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return value;
+        }
+        value = value.trim();
+
+        if (value.matches("^(\\d+)$")) {
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/" + value;
+        }
+
+        return value;
     }
 }
