@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class PropertyData {
     private String name;
-    private String domain; // "Subjekt nebo objekt práva" column
+    private String domain;
     private String description;
     private String definition;
     private String source;
@@ -19,13 +19,13 @@ public class PropertyData {
     private String identifier;
     private String dataType;
 
-    private String sharedInPPDF; // "Je pojem sdílen v PPDF?"
-    private String isPublic;     // "Je pojem veřejný?"
-    private String privacyProvision; // "Ustanovení dokládající neveřejnost pojmu"
+    private String sharedInPPDF;
+    private String isPublic;
+    private String privacyProvision;
 
-    private String sharingMethod;     // "Způsob sdílení údaje"
-    private String acquisitionMethod; // "Způsob získání údaje"
-    private String contentType; // "Typ obsahu údaje"
+    private String sharingMethod;
+    private String acquisitionMethod;
+    private String contentType;
 
     public boolean hasValidData() {
         return name != null && !name.trim().isEmpty() &&

@@ -78,11 +78,11 @@ public class OFNDataTransformer {
 
             initializeCleanTypeClasses();
             createOntologyResource(ontologyData.getVocabularyMetadata(), effectiveNamespace);
+
             transformClasses(ontologyData.getClasses());
             transformProperties(ontologyData.getProperties());
             transformRelationships(ontologyData.getRelationships());
-
-            establishHierarchies(ontologyData);
+            //transformHierarchies(ontologyData.getHierarchies());
 
             Map<String, String> modelProperties = createModelProperties(ontologyData.getVocabularyMetadata());
 
@@ -327,6 +327,7 @@ public class OFNDataTransformer {
 
         relationshipResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
         relationshipResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + VZTAH));
+        relationshipResource.addProperty(RDF.type, ontModel.getProperty("http://www.w3.org/2002/07/owl#ObjectProperty"));
 
         addResourceMetadata(relationshipResource, relationshipData.getName(), relationshipData.getDescription(),
                 relationshipData.getDefinition(), relationshipData.getSource());
@@ -631,23 +632,6 @@ public class OFNDataTransformer {
         } else {
             DataTypeConverter.addTypedProperty(subject, property, referenceName, null, ontModel);
             log.debug("Added typed literal reference: {} -> {}", property.getLocalName(), referenceName);
-        }
-    }
-
-    private void establishHierarchies(OntologyData ontologyData) {
-        log.debug("Establishing class hierarchies");
-
-        for (ClassData classData : ontologyData.getClasses()) {
-            if (classData.getSuperClass() != null && !classData.getSuperClass().trim().isEmpty()) {
-                Resource childResource = classResources.get(classData.getName());
-                if (childResource != null) {
-                    Property hierarchyProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + NADRAZENA_TRIDA);
-                    addResourceReference(childResource, hierarchyProperty, classData.getSuperClass(), classResources);
-                    log.debug("Established hierarchy: {} -> {}", classData.getName(), classData.getSuperClass());
-                } else {
-                    log.warn("Child class resource not found for hierarchy: {}", classData.getName());
-                }
-            }
         }
     }
 }

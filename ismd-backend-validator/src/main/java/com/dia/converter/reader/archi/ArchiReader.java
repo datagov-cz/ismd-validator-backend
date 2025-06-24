@@ -21,6 +21,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.TypeMappings.*;
@@ -105,6 +106,7 @@ public class ArchiReader {
         List<ClassData> classes = extractClasses();
         List<PropertyData> properties = extractProperties();
         List<RelationshipData> relationships = extractRelationships();
+        //List<HierarchyData> hierarchies = extractHierarchies(classes);
 
         log.info("Extracted {} classes, {} properties, {} relationships",
                 classes.size(), properties.size(), relationships.size());
@@ -114,6 +116,7 @@ public class ArchiReader {
                 .classes(classes)
                 .properties(properties)
                 .relationships(relationships)
+                //.hierarchies(hierarchies)
                 .build();
     }
 
@@ -190,49 +193,8 @@ public class ArchiReader {
             }
         }
 
-        processInheritanceRelationships(classes);
-
         log.debug("Extracted {} classes", classes.size());
         return classes;
-    }
-
-    private void processInheritanceRelationships(List<ClassData> classes) {
-        Map<String, ClassData> classMap = new HashMap<>();
-        Map<String, String> idToNameMap = new HashMap<>();
-
-        for (ClassData classData : classes) {
-            classMap.put(classData.getName(), classData);
-        }
-
-        NodeList elements = archiDoc.getElementsByTagNameNS(ARCHI_NS, "element");
-        for (int i = 0; i < elements.getLength(); i++) {
-            Element element = (Element) elements.item(i);
-            String id = element.getAttribute(IDENT);
-            String name = getElementName(element);
-            idToNameMap.put(id, name);
-        }
-
-        NodeList relationships = archiDoc.getElementsByTagNameNS(ARCHI_NS, "relationship");
-        for (int i = 0; i < relationships.getLength(); i++) {
-            Element relationship = (Element) relationships.item(i);
-            String type = relationship.getAttribute("xsi:type");
-
-            if ("Specialization".equals(type)) {
-                String sourceId = relationship.getAttribute("source");
-                String targetId = relationship.getAttribute("target");
-
-                String childName = idToNameMap.get(sourceId);
-                String parentName = idToNameMap.get(targetId);
-
-                if (childName != null && parentName != null) {
-                    ClassData childClass = classMap.get(childName);
-                    if (childClass != null) {
-                        childClass.setSuperClass(parentName);
-                        log.debug("Set inheritance: {} extends {}", childName, parentName);
-                    }
-                }
-            }
-        }
     }
 
     private ClassData createClassData(String name, String id, String elementType, Map<String, String> properties) {
@@ -365,34 +327,43 @@ public class ArchiReader {
             Element relationship = (Element) relationshipElements.item(i);
             String type = relationship.getAttribute("xsi:type");
 
-            if ("Association".equals(type)) {
+            log.debug("Found relationship with type: {}", type);
+
+            if ("Association".equals(type) || "Composition".equals(type) || "Specialization".equals(type)) {
                 RelationshipData relationshipData = createRelationshipData(relationship, idToNameMap);
                 if (relationshipData != null && relationshipData.hasValidData()) {
                     relationships.add(relationshipData);
-                    log.debug("Extracted relationship: {}", relationshipData.getName());
+                    log.debug("Successfully extracted relationship: {} (type: {})", relationshipData.getName(), type);
+                } else {
+                    log.warn("Failed to create relationship data for type: {}", type);
                 }
+            } else {
+                log.debug("Skipping relationship with unknown type: {}", type);
             }
         }
 
-        log.debug("Extracted {} relationships", relationships.size());
+        log.info("Extracted {} total relationships", relationships.size());
         return relationships;
     }
 
     private RelationshipData createRelationshipData(Element relationship, Map<String, String> idToNameMap) {
         String name = getRelationshipName(relationship);
         if (name == null || name.isEmpty()) {
+            log.warn("Relationship has no name, skipping");
             return null;
         }
 
         String id = relationship.getAttribute(IDENT);
         String sourceId = relationship.getAttribute("source");
         String targetId = relationship.getAttribute("target");
+        String type = relationship.getAttribute("xsi:type");
 
         String sourceName = idToNameMap.get(sourceId);
         String targetName = idToNameMap.get(targetId);
 
         if (sourceName == null || targetName == null) {
-            log.warn("Could not resolve source or target names for relationship: {}", name);
+            log.warn("Could not resolve source '{}' or target '{}' names for relationship: {}",
+                    sourceId, targetId, name);
             return null;
         }
 
@@ -401,6 +372,7 @@ public class ArchiReader {
         relationshipData.setIdentifier(id);
         relationshipData.setDomain(sourceName);
         relationshipData.setRange(targetName);
+        relationshipData.setRelationshipType(type);
 
         Map<String, String> properties = getElementProperties(relationship);
         relationshipData.setDescription(properties.get(POPIS));
@@ -409,6 +381,8 @@ public class ArchiReader {
         relationshipData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         relationshipData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
 
+        log.debug("Created relationship data: {} ({} -> {}, type: {})",
+                name, sourceName, targetName, type);
         return relationshipData;
     }
 

@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class ClassData {
     private String name;
-    private String type; // "Subjekt práva" or "Objekt práva"
+    private String type;
     private String description;
     private String definition;
     private String source;

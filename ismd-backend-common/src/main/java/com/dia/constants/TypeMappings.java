@@ -61,11 +61,18 @@ public final class TypeMappings {
      * @return true if the element type represents a class
      */
     public static boolean isClassType(String elementType) {
-        if (elementType == null) {
+        if (elementType == null || elementType.trim().isEmpty()) {
             return false;
         }
-        String trimmed = elementType.trim();
-        return "typ subjektu".equals(trimmed) || "typ objektu".equals(trimmed);
+
+        String type = elementType.trim().toLowerCase();
+
+        return type.contains("typ objektu") ||
+                type.contains("typ subjektu") ||
+                type.contains("typ vlastnosti") ||
+                type.equals("objekt") ||
+                type.equals("subjekt") ||
+                type.equals("vlastnost");
     }
 
     /**
