@@ -555,14 +555,37 @@ public class OFNDataTransformer {
                     propertyResource.addProperty(RDF.type,
                             ontModel.getResource(uriGenerator.getEffectiveNamespace() + NEVEREJNY_UDAJ));
 
-                    if (propertyData.getPrivacyProvision() != null && !propertyData.getPrivacyProvision().trim().isEmpty()) {
-                        Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
-                        DataTypeConverter.addTypedProperty(propertyResource, provisionProperty,
-                                propertyData.getPrivacyProvision(), null, ontModel);
-                    }
+                    addPrivacyProvision(propertyResource, propertyData);
                 }
             } else {
                 log.warn("Unrecognized boolean value for public property: '{}'", value);
+            }
+        }
+    }
+
+    private void addPrivacyProvision(Resource propertyResource, PropertyData propertyData) {
+        if (propertyData.getPrivacyProvision() != null && !propertyData.getPrivacyProvision().trim().isEmpty()) {
+            String provision = propertyData.getPrivacyProvision().trim();
+
+            String transformedProvision = UtilityMethods.transformEliPrivacyProvision(provision, removeELI);
+
+            if (Boolean.TRUE.equals(removeELI) && transformedProvision == null) {
+                log.debug("Skipping privacy provision '{}' - invalid ELI and removeELI=true", provision);
+                return;
+            }
+
+            if (transformedProvision != null && !transformedProvision.trim().isEmpty()) {
+                Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
+
+                if (DataTypeConverter.isUri(transformedProvision)) {
+                    propertyResource.addProperty(provisionProperty, ontModel.createResource(transformedProvision));
+                    log.debug("Added privacy provision as URI: {} -> {}", provision, transformedProvision);
+                } else {
+                    DataTypeConverter.addTypedProperty(propertyResource, provisionProperty, transformedProvision, null, ontModel);
+                    log.debug("Added privacy provision as literal: {} -> {}", provision, transformedProvision);
+                }
+            } else {
+                log.warn("Privacy provision transformation resulted in empty value: '{}'", provision);
             }
         }
     }

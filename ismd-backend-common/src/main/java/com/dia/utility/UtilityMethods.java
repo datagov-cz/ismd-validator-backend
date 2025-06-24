@@ -1,6 +1,7 @@
 package com.dia.utility;
 
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -9,10 +10,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.dia.constants.ArchiConstants.XSD;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @UtilityClass
+@Slf4j
 public class UtilityMethods {
 
     public boolean isValidFirstChar(char ch) {
@@ -236,5 +237,50 @@ public class UtilityMethods {
         }
 
         return value;
+    }
+
+    public String transformEliPrivacyProvision(String provision, Boolean removeELI) {
+        if (provision == null || provision.trim().isEmpty()) {
+            return null;
+        }
+
+        provision = provision.trim();
+
+        if (containsEliPattern(provision)) {
+            String eliPart = extractEliPart(provision);
+            if (eliPart != null) {
+                String transformed = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+                log.debug("Transformed ELI provision: {} -> {}", provision, transformed);
+                return transformed;
+            }
+        }
+
+        if (Boolean.TRUE.equals(removeELI)) {
+            log.debug("Filtering out non-ELI provision (removeELI=true): {}", provision);
+            return null;
+        }
+
+        return provision;
+    }
+
+    public boolean containsEliPattern(String provision) {
+        return provision.matches(".*[/\\\\]eli[/\\\\]cz[/\\\\].*");
+    }
+
+    public String extractEliPart(String provision) {
+        String pattern = ".*?([/\\\\]eli[/\\\\]cz[/\\\\].*)";
+        java.util.regex.Pattern regex = java.util.regex.Pattern.compile(pattern);
+        java.util.regex.Matcher matcher = regex.matcher(provision);
+
+        if (matcher.find()) {
+            String eliPart = matcher.group(1);
+            eliPart = eliPart.replace('\\', '/');
+            if (eliPart.startsWith("/")) {
+                eliPart = eliPart.substring(1);
+            }
+            return eliPart;
+        }
+
+        return null;
     }
 }
