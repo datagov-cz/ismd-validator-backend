@@ -37,7 +37,7 @@ public class ConverterController {
     private final ConverterService converterService;
 
     @PostMapping("/convert")
-    public ResponseEntity<ConversionResponseDto> convertFile(
+    public ResponseEntity<?> convertFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
@@ -86,7 +86,7 @@ public class ConverterController {
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
                     converterService.parseArchiFromString(xmlContent);
                     converterService.convertArchi(removeInvalidSources != null && removeInvalidSources);
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, ARCHI_XML);
+                    ResponseEntity<?> response = getResponseEntity(outputFormat, ARCHI_XML);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                             requestId, fileFormat, output);
                     yield response;
@@ -95,7 +95,7 @@ public class ConverterController {
                     log.debug("Processing XMI file: requestId={}", requestId);
                     converterService.parseEAFromFile(file);
                     converterService.convertEA(removeInvalidSources != null && removeInvalidSources);
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, XMI);
+                    ResponseEntity<?> response = getResponseEntity(outputFormat, XMI);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                             requestId, fileFormat, output);
                     yield response;
@@ -104,7 +104,7 @@ public class ConverterController {
                     log.debug("Processing XLSX file: requestId={}", requestId);
                     converterService.parseExcelFromFile(file);
                     converterService.convertExcel(removeInvalidSources != null && removeInvalidSources);
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, XLSX);
+                    ResponseEntity<?> response = getResponseEntity(outputFormat, XLSX);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                             requestId, fileFormat, output);
                     yield  response;
@@ -218,7 +218,7 @@ public class ConverterController {
         return FileFormat.UNSUPPORTED;
     }
 
-    private ResponseEntity<ConversionResponseDto> getResponseEntity(
+    private ResponseEntity<?> getResponseEntity(
             @RequestParam(value = "output", defaultValue = "json") String output, FileFormat fileFormat) throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.debug("Preparing response entity: requestId={}, outputFormat={}", requestId, output);
@@ -230,7 +230,7 @@ public class ConverterController {
                 log.debug("JSON export completed: requestId={}, outputSize={}", requestId, jsonOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.success(jsonOutput));
+                        .body(ConversionResponseDto.success(jsonOutput).getOutput());
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
@@ -238,7 +238,7 @@ public class ConverterController {
                 log.debug("Turtle export completed: requestId={}, outputSize={}", requestId, ttlOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.success(ttlOutput));
+                        .body(ConversionResponseDto.success(ttlOutput).getOutput());
             }
             default -> {
                 log.warn("Unsupported output format requested: requestId={}, format={}", requestId, output);

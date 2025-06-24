@@ -493,6 +493,11 @@ public class JsonExporter {
                 Statement propStmt = propIter.next();
                 if (propStmt.getObject().isResource()) {
                     propArray.put(propStmt.getObject().asResource().getURI());
+                } else if (propStmt.getObject().isLiteral()) {
+                    String literalValue = propStmt.getString();
+                    if (literalValue != null && !literalValue.trim().isEmpty()) {
+                        propArray.put(literalValue);
+                    }
                 }
             }
             if (propArray.length() > 0) {
