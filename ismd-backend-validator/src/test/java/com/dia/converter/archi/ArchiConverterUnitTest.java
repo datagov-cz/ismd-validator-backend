@@ -1,6 +1,5 @@
-package com.dia.converter;
+package com.dia.converter.archi;
 
-import com.dia.converter.archi.ArchiConverter;
 import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.FileParsingException;
 import com.dia.utility.UtilityMethods;
