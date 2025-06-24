@@ -209,7 +209,7 @@ public class ArchiReader {
         classData.setSource(properties.get(ZDROJ));
         classData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         classData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
-
+        classData.setEquivalentConcept(properties.get(EKVIVALENTNI_POJEM));
         classData.setAgendaCode(properties.get(AGENDA));
         classData.setAgendaSystemCode(properties.get(AIS));
 
@@ -411,6 +411,10 @@ public class ArchiReader {
         }
         if ("zdroj".equals(propName)) {
             propertyMapping.put(propId, ZDROJ);
+            return;
+        }
+        if ("ekvivalentní pojem".equals(propName)) {
+            propertyMapping.put(propId, EKVIVALENTNI_POJEM);
             return;
         }
 

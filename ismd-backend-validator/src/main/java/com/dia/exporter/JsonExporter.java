@@ -221,7 +221,7 @@ public class JsonExporter {
     private Map<String, Object> orderPojemFields(Map<String, Object> pojemMap) {
         Map<String, Object> orderedPojem = new LinkedHashMap<>();
 
-        String[] orderedFields = {"iri", "typ", "název", "alternativní název", "popis", "definice"};
+        String[] orderedFields = {"iri", "typ", "název", "alternativní název", "popis", "definice", "ekvivalentní pojem"};
 
         for (String field : orderedFields) {
             addFieldIfExists(pojemMap, orderedPojem, field);
@@ -304,6 +304,8 @@ public class JsonExporter {
 
         addMultilingualPropertyFromEitherNamespace(concept, pojemObj, namespace, POPIS);
 
+        addExactMatchProperty(concept, pojemObj);
+
         addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, USTANOVENI_NEVEREJNOST);
 
         addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, ZDROJ);
@@ -342,6 +344,36 @@ public class JsonExporter {
             addMultilingualProperty(concept, langDefault, labelDef, pojemObj);
         } else if (concept.hasProperty(langCustom)) {
             addMultilingualProperty(concept, langCustom, labelDef, pojemObj);
+        }
+    }
+
+    private void addExactMatchProperty(Resource concept, JSONObject pojemObj) throws JSONException {
+        Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
+
+        StmtIterator exactMatchIter = concept.listProperties(exactMatchProperty);
+        if (exactMatchIter.hasNext()) {
+            JSONArray exactMatchArray = new JSONArray();
+
+            while (exactMatchIter.hasNext()) {
+                Statement exactMatchStmt = exactMatchIter.next();
+
+                if (exactMatchStmt.getObject().isResource()) {
+                    JSONObject exactMatchObj = new JSONObject();
+                    exactMatchObj.put("@id", exactMatchStmt.getObject().asResource().getURI());
+                    exactMatchArray.put(exactMatchObj);
+                } else if (exactMatchStmt.getObject().isLiteral()) {
+                    String literalValue = exactMatchStmt.getString();
+                    if (literalValue != null && !literalValue.trim().isEmpty()) {
+                        JSONObject exactMatchObj = new JSONObject();
+                        exactMatchObj.put("@id", literalValue);
+                        exactMatchArray.put(exactMatchObj);
+                    }
+                }
+            }
+
+            if (exactMatchArray.length() > 0) {
+                pojemObj.put(EKVIVALENTNI_POJEM, exactMatchArray);
+            }
         }
     }
 
