@@ -391,10 +391,19 @@ public class OFNDataTransformer {
     }
 
     private void addClassSpecificMetadata(Resource classResource, ClassData classData) {
+        addAlternativeName(classResource, classData);
+        addEquivalentConcept(classResource, classData);
+        addAgenda(classResource, classData);
+        addAgendaInformationSystem(classResource, classData);
+    }
+
+    private void addAlternativeName(Resource classResource, ClassData classData) {
         if (classData.getAlternativeName() != null && !classData.getAlternativeName().trim().isEmpty()) {
             addAlternativeNames(classResource, classData.getAlternativeName());
         }
+    }
 
+    private void addEquivalentConcept(Resource classResource, ClassData classData) {
         if (classData.getEquivalentConcept() != null && !classData.getEquivalentConcept().trim().isEmpty()) {
             Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
             String equivalentConcept = classData.getEquivalentConcept();
@@ -407,18 +416,108 @@ public class OFNDataTransformer {
                 log.debug("Added equivalent concept as typed literal: {}", equivalentConcept);
             }
         }
+    }
 
+    private void addAgenda(Resource classResource, ClassData classData) {
         if (classData.getAgendaCode() != null && !classData.getAgendaCode().trim().isEmpty()) {
-            Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AGENDA);
-            DataTypeConverter.addTypedProperty(classResource, agendaProperty,
-                    classData.getAgendaCode(), null, ontModel);
+            String agendaCode = classData.getAgendaCode().trim();
+
+            if (isValidAgendaValue(agendaCode)) {
+                String transformedAgenda = transformAgendaValue(agendaCode);
+                Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AGENDA);
+
+                if (DataTypeConverter.isUri(transformedAgenda)) {
+                    classResource.addProperty(agendaProperty, ontModel.createResource(transformedAgenda));
+                    log.debug("Added valid agenda as URI: {} -> {}", agendaCode, transformedAgenda);
+                } else {
+                    DataTypeConverter.addTypedProperty(classResource, agendaProperty, transformedAgenda, null, ontModel);
+                    log.debug("Added valid agenda as literal: {} -> {}", agendaCode, transformedAgenda);
+                }
+            } else {
+                log.warn("Invalid agenda code '{}' for class '{}' - skipping", agendaCode, classData.getName());
+            }
+        }
+    }
+
+    private void addAgendaInformationSystem(Resource classResource, ClassData classData) {
+        if (classData.getAgendaSystemCode() != null && !classData.getAgendaSystemCode().trim().isEmpty()) {
+            String aisCode = classData.getAgendaSystemCode().trim();
+
+            if (isValidAISValue(aisCode)) {
+                String transformedAIS = transformAISValue(aisCode);
+                Property aisProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AIS);
+
+                if (DataTypeConverter.isUri(transformedAIS)) {
+                    classResource.addProperty(aisProperty, ontModel.createResource(transformedAIS));
+                    log.debug("Added valid AIS as URI: {} -> {}", aisCode, transformedAIS);
+                } else {
+                    DataTypeConverter.addTypedProperty(classResource, aisProperty, transformedAIS, null, ontModel);
+                    log.debug("Added valid AIS as literal: {} -> {}", aisCode, transformedAIS);
+                }
+            } else {
+                log.warn("Invalid AIS code '{}' for class '{}' - skipping", aisCode, classData.getName());
+            }
+        }
+    }
+
+    private boolean isValidAgendaValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return false;
+        }
+        value = value.trim();
+
+        if (value.matches("^(\\d+)$")) {
+            return true;
         }
 
-        if (classData.getAgendaSystemCode() != null && !classData.getAgendaSystemCode().trim().isEmpty()) {
-            Property aisProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AIS);
-            DataTypeConverter.addTypedProperty(classResource, aisProperty,
-                    classData.getAgendaSystemCode(), null, ontModel);
+        if (value.matches("^A(\\d+)$")) {
+            return true;
         }
+
+        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/agenda/A)(\\d+)$");
+    }
+
+    private String transformAgendaValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return value;
+        }
+        value = value.trim();
+
+        if (value.matches("^(\\d+)$")) {
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A" + value;
+        }
+
+        if (value.matches("^A(\\d+)$")) {
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/" + value;
+        }
+
+        return value;
+    }
+
+    private boolean isValidAISValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return false;
+        }
+        value = value.trim();
+
+        if (value.matches("^(\\d+)$")) {
+            return true;
+        }
+
+        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/isvs/)(\\d+)$");
+    }
+
+    private String transformAISValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return value;
+        }
+        value = value.trim();
+
+        if (value.matches("^(\\d+)$")) {
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/" + value;
+        }
+
+        return value;
     }
 
     private void addAlternativeNames(Resource resource, String altNamesValue) {
