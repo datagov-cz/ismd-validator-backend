@@ -551,51 +551,73 @@ public class OFNDataTransformer {
     }
 
     private void addPublicOrNonPublicData(Resource propertyResource, PropertyData propertyData) {
-        if (propertyData.getIsPublic() != null && !propertyData.getIsPublic().trim().isEmpty()) {
-            String value = propertyData.getIsPublic();
+        String isPublicValue = propertyData.getIsPublic();
+        String privacyProvision = propertyData.getPrivacyProvision();
 
-            if (isBooleanValue(value)) {
-                Boolean isPublic = normalizeCzechBoolean(value);
+        if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+            handleNonPublicData(propertyResource, propertyData, privacyProvision);
+            return;
+        }
+
+        if (isPublicValue != null && !isPublicValue.trim().isEmpty()) {
+            if (isBooleanValue(isPublicValue)) {
+                Boolean isPublic = normalizeCzechBoolean(isPublicValue);
 
                 if (Boolean.TRUE.equals(isPublic)) {
-                    propertyResource.addProperty(RDF.type,
-                            ontModel.getResource(uriGenerator.getEffectiveNamespace() + VEREJNY_UDAJ));
+                    if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+                        log.warn("Concept '{}' marked as public but has privacy provision '{}' - treating as non-public",
+                                propertyData.getName(), privacyProvision);
+                        handleNonPublicData(propertyResource, propertyData, privacyProvision);
+                    } else {
+                        propertyResource.addProperty(RDF.type,
+                                ontModel.getResource(uriGenerator.getEffectiveNamespace() + VEREJNY_UDAJ));
+                        log.debug("Added public data type for concept: {}", propertyData.getName());
+                    }
                 } else {
-                    propertyResource.addProperty(RDF.type,
-                            ontModel.getResource(uriGenerator.getEffectiveNamespace() + NEVEREJNY_UDAJ));
-
-                    addPrivacyProvision(propertyResource, propertyData);
+                    if (privacyProvision == null || privacyProvision.trim().isEmpty()) {
+                        log.warn("Concept '{}' marked as non-public but has no privacy provision - adding non-public type anyway",
+                                propertyData.getName());
+                    }
+                    handleNonPublicData(propertyResource, propertyData, privacyProvision);
                 }
             } else {
-                log.warn("Unrecognized boolean value for public property: '{}'", value);
+                log.warn("Unrecognized boolean value for public property: '{}' for concept '{}'",
+                        isPublicValue, propertyData.getName());
             }
         }
     }
 
-    private void addPrivacyProvision(Resource propertyResource, PropertyData propertyData) {
-        if (propertyData.getPrivacyProvision() != null && !propertyData.getPrivacyProvision().trim().isEmpty()) {
-            String provision = propertyData.getPrivacyProvision().trim();
+    private void handleNonPublicData(Resource propertyResource, PropertyData propertyData, String privacyProvision) {
+        propertyResource.addProperty(RDF.type,
+                ontModel.getResource(uriGenerator.getEffectiveNamespace() + NEVEREJNY_UDAJ));
 
-            String transformedProvision = UtilityMethods.transformEliPrivacyProvision(provision, removeELI);
+        log.debug("Added non-public data type for concept: {}", propertyData.getName());
 
-            if (Boolean.TRUE.equals(removeELI) && transformedProvision == null) {
-                log.debug("Skipping privacy provision '{}' - invalid ELI and removeELI=true", provision);
-                return;
-            }
+        if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+            validateAndAddPrivacyProvision(propertyResource, propertyData, privacyProvision);
+        }
+    }
 
-            if (transformedProvision != null && !transformedProvision.trim().isEmpty()) {
-                Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
+    private void validateAndAddPrivacyProvision(Resource propertyResource, PropertyData propertyData, String provision) {
+        String trimmedProvision = provision.trim();
 
-                if (DataTypeConverter.isUri(transformedProvision)) {
-                    propertyResource.addProperty(provisionProperty, ontModel.createResource(transformedProvision));
-                    log.debug("Added privacy provision as URI: {} -> {}", provision, transformedProvision);
-                } else {
-                    DataTypeConverter.addTypedProperty(propertyResource, provisionProperty, transformedProvision, null, ontModel);
-                    log.debug("Added privacy provision as literal: {} -> {}", provision, transformedProvision);
-                }
+        String transformedProvision = UtilityMethods.transformEliPrivacyProvision(trimmedProvision, removeELI);
+
+        if (transformedProvision != null && !transformedProvision.trim().isEmpty()) {
+            Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
+
+            if (DataTypeConverter.isUri(transformedProvision)) {
+                propertyResource.addProperty(provisionProperty, ontModel.createResource(transformedProvision));
+                log.debug("Added privacy provision as URI for concept '{}': {} -> {}",
+                        propertyData.getName(), trimmedProvision, transformedProvision);
             } else {
-                log.warn("Privacy provision transformation resulted in empty value: '{}'", provision);
+                DataTypeConverter.addTypedProperty(propertyResource, provisionProperty, transformedProvision, null, ontModel);
+                log.debug("Added privacy provision as literal for concept '{}': {} -> {}",
+                        propertyData.getName(), trimmedProvision, transformedProvision);
             }
+        } else {
+            log.warn("Privacy provision transformation resulted in empty value for concept '{}': '{}'",
+                    propertyData.getName(), trimmedProvision);
         }
     }
 

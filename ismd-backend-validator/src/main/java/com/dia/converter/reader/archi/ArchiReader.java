@@ -325,14 +325,86 @@ public class ArchiReader {
         propertyData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
         propertyData.setDataType(properties.get(DATOVY_TYP));
 
+        extractAndValidatePublicityData(propertyData, properties, name);
+
         propertyData.setSharedInPPDF(properties.get(JE_PPDF));
-        propertyData.setIsPublic(properties.get(JE_VEREJNY));
-        propertyData.setPrivacyProvision(properties.get(USTANOVENI_NEVEREJNOST));
         propertyData.setSharingMethod(properties.get(ZPUSOB_SDILENI));
         propertyData.setAcquisitionMethod(properties.get(ZPUSOB_ZISKANI));
         propertyData.setContentType(properties.get(TYP_OBSAHU));
 
         return propertyData;
+    }
+
+    private void extractAndValidatePublicityData(PropertyData propertyData, Map<String, String> properties, String conceptName) {
+        String isPublicValue = properties.get(JE_VEREJNY);
+        String privacyProvision = properties.get(USTANOVENI_NEVEREJNOST);
+
+        isPublicValue = cleanBooleanValue(isPublicValue);
+        privacyProvision = cleanProvisionValue(privacyProvision);
+
+        propertyData.setIsPublic(isPublicValue);
+        propertyData.setPrivacyProvision(privacyProvision);
+
+        validatePublicityConsistency(conceptName, isPublicValue, privacyProvision);
+    }
+
+    private String cleanBooleanValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+
+        String cleaned = value.trim();
+
+        String normalized = cleaned.toLowerCase();
+        if ("true".equals(normalized) || "ano".equals(normalized) || "yes".equals(normalized)) {
+            return "true";
+        } else if ("false".equals(normalized) || "ne".equals(normalized) || "no".equals(normalized)) {
+            return "false";
+        }
+
+        return cleaned;
+    }
+
+    private String cleanProvisionValue(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String cleaned = value.trim();
+
+        if (cleaned.isEmpty() ||
+                "null".equalsIgnoreCase(cleaned) ||
+                "n/a".equalsIgnoreCase(cleaned) ||
+                "není".equalsIgnoreCase(cleaned) ||
+                "none".equalsIgnoreCase(cleaned)) {
+            return null;
+        }
+
+        return cleaned;
+    }
+
+    private void validatePublicityConsistency(String conceptName, String isPublicValue, String privacyProvision) {
+        if (isPublicValue == null && privacyProvision == null) {
+            log.debug("Concept '{}' has no publicity data - will be treated as neutral", conceptName);
+            return;
+        }
+
+        boolean isPublic = "true".equalsIgnoreCase(isPublicValue);
+        boolean hasProvision = privacyProvision != null && !privacyProvision.trim().isEmpty();
+
+        if (isPublic && hasProvision) {
+            log.warn("INCONSISTENCY: Concept '{}' marked as public but has privacy provision '{}' - will be treated as non-public",
+                    conceptName, privacyProvision);
+        }
+
+        if (!isPublic && isPublicValue != null && !hasProvision) {
+            log.warn("INCONSISTENCY: Concept '{}' marked as non-public but has no privacy provision", conceptName);
+        }
+
+        if (hasProvision && !UtilityMethods.containsEliPattern(privacyProvision)) {
+            log.warn("INVALID ELI: Concept '{}' has invalid ELI format for privacy provision: '{}'",
+                    conceptName, privacyProvision);
+        }
     }
 
     private List<RelationshipData> extractRelationships() {
