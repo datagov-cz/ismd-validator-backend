@@ -221,7 +221,7 @@ public class JsonExporter {
     private Map<String, Object> orderPojemFields(Map<String, Object> pojemMap) {
         Map<String, Object> orderedPojem = new LinkedHashMap<>();
 
-        String[] orderedFields = {"iri", "typ", "název", "alternativní název", "popis", "definice", "ekvivalentní pojem"};
+        String[] orderedFields = {"iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice", "ekvivalentní pojem"};
 
         for (String field : orderedFields) {
             addFieldIfExists(pojemMap, orderedPojem, field);
@@ -301,6 +301,8 @@ public class JsonExporter {
         addAlternativeNamesFromEitherNamespace(concept, pojemObj, namespace);
 
         addMultilingualPropertyFromEitherNamespace(concept, pojemObj, namespace, DEFINICE);
+
+        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, IDENTIFIKATOR);
 
         addMultilingualPropertyFromEitherNamespace(concept, pojemObj, namespace, POPIS);
 

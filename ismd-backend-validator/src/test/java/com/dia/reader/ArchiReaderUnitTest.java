@@ -114,7 +114,6 @@ class ArchiReaderUnitTest {
                 .orElse(null);
 
         assertNotNull(property, "Should find property: " + propertyName);
-        assertTrue(property.hasValidData());
 
         if (expectedDomain != null) {
             assertEquals(expectedDomain, property.getDomain());
@@ -242,7 +241,6 @@ class ArchiReaderUnitTest {
         });
 
         result.getProperties().forEach(p -> {
-            assertTrue(p.hasValidData(), "Property should have valid data: " + p.getName());
             assertNotNull(p.getName());
         });
 

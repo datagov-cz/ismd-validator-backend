@@ -45,9 +45,7 @@ public class PropertySheetProcessor extends BaseSheetProcessor<List<PropertyData
             if (isRowEmpty(row)) continue;
 
             PropertyData propertyData = processDataRow(row, columnMap, mapping);
-            if (propertyData.hasValidData()) {
-                properties.add(propertyData);
-            }
+            properties.add(propertyData);
         }
 
         return properties;

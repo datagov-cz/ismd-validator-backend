@@ -108,7 +108,6 @@ class EnterpriseArchitectUnitTest {
         if (expectedDomain != null) {
             assertEquals(expectedDomain, property.getDomain());
         }
-        assertTrue(property.hasValidData());
     }
 
     @ParameterizedTest
@@ -187,7 +186,6 @@ class EnterpriseArchitectUnitTest {
 
         // Validate data quality
         result.getClasses().forEach(c -> assertTrue(c.hasValidData()));
-        result.getProperties().forEach(p -> assertTrue(p.hasValidData()));
         result.getRelationships().stream()
                 .filter(RelationshipData::hasValidData)
                 .forEach(r -> assertNotNull(r.getName()));

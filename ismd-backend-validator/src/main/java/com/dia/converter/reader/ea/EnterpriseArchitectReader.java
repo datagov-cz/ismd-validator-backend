@@ -237,10 +237,8 @@ public class EnterpriseArchitectReader {
                 }
             } else if (STEREOTYPE_TYP_VLASTNOSTI.equals(stereotype)) {
                 PropertyData propertyData = parsePropertyData(umlClass, extensionElement);
-                if (propertyData.hasValidData()) {
-                    properties.add(propertyData);
-                    log.debug("Added property: {}", propertyData.getName());
-                }
+                properties.add(propertyData);
+                log.debug("Added property: {}", propertyData.getName());
             }
         }
     }
@@ -267,7 +265,7 @@ public class EnterpriseArchitectReader {
         classData.setRelatedSource(getTagValue(extensionElement, TAG_SOUVISEJICI_ZDROJ));
         classData.setAlternativeName(getTagValue(extensionElement, TAG_ALTERNATIVNI_NAZEV));
         classData.setEquivalentConcept(getTagValue(extensionElement, TAG_EKVIVALENTNI_POJEM));
-        classData.setIdentifier(getTagValue(extensionElement, TAG_IDENTIFIKATOR));
+        classData.setId(getTagValue(extensionElement, TAG_IDENTIFIKATOR));
         classData.setAgendaCode(getTagValue(extensionElement, TAG_AGENDA));
         classData.setAgendaSystemCode(getTagValue(extensionElement, TAG_AGENDOVY_INFORMACNI_SYSTEM));
 

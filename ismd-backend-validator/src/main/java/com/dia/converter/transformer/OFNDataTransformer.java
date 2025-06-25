@@ -245,13 +245,13 @@ public class OFNDataTransformer {
     }
 
     private Resource createClassResource(ClassData classData) {
-        String classURI = uriGenerator.generateClassURI(classData.getName(), classData.getIdentifier());
+        String classURI = uriGenerator.generateClassURI(classData.getName(), classData.getId());
         Resource classResource = ontModel.createResource(classURI);
 
         classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
         addSpecificClassType(classResource, classData);
         addResourceMetadata(classResource, classData.getName(), classData.getDescription(),
-                classData.getDefinition(), classData.getSource());
+                classData.getDefinition(), classData.getSource(), classData.getIdentifier());
         addClassSpecificMetadata(classResource, classData);
         addSchemeRelationship(classResource);
         return classResource;
@@ -271,10 +271,6 @@ public class OFNDataTransformer {
     private void transformProperties(List<PropertyData> properties) {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
-            if (!propertyData.hasValidData()) {
-                log.warn("Skipping invalid property: {}", propertyData.getName());
-                continue;
-            }
             try {
                 Resource propertyResource = createPropertyResource(propertyData);
                 propertyResources.put(propertyData.getName(), propertyResource);
@@ -294,7 +290,7 @@ public class OFNDataTransformer {
         propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + VLASTNOST));
 
         addResourceMetadata(propertyResource, propertyData.getName(), propertyData.getDescription(),
-                propertyData.getDefinition(), propertyData.getSource());
+                propertyData.getDefinition(), propertyData.getSource(), propertyData.getIdentifier());
         addDomainRelationship(propertyResource, propertyData);
         addRangeInformation(propertyResource, propertyData);
         addDataGovernanceMetadata(propertyResource, propertyData);
@@ -330,14 +326,14 @@ public class OFNDataTransformer {
         relationshipResource.addProperty(RDF.type, ontModel.getProperty("http://www.w3.org/2002/07/owl#ObjectProperty"));
 
         addResourceMetadata(relationshipResource, relationshipData.getName(), relationshipData.getDescription(),
-                relationshipData.getDefinition(), relationshipData.getSource());
+                relationshipData.getDefinition(), relationshipData.getSource(), relationshipData.getIdentifier());
         addDomainRangeRelationships(relationshipResource, relationshipData);
         addSchemeRelationship(relationshipResource);
         return relationshipResource;
     }
 
     private void addResourceMetadata(Resource resource, String name, String description,
-                                     String definition, String source) {
+                                     String definition, String source, String identifier) {
         if (name != null && !name.trim().isEmpty()) {
             DataTypeConverter.addTypedProperty(resource, RDFS.label, name, DEFAULT_LANG, ontModel);
         }
@@ -350,6 +346,19 @@ public class OFNDataTransformer {
         if (definition != null && !definition.trim().isEmpty()) {
             Property defProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICE);
             DataTypeConverter.addTypedProperty(resource, defProperty, definition, DEFAULT_LANG, ontModel);
+        }
+
+        // Add custom identifier if present
+        if (identifier != null && !identifier.trim().isEmpty()) {
+            Property identifierProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + IDENTIFIKATOR);
+
+            if (DataTypeConverter.isUri(identifier)) {
+                resource.addProperty(identifierProperty, ontModel.createResource(identifierProperty));
+                log.debug("Added identifier as URI: {}", identifier);
+            } else {
+                DataTypeConverter.addTypedProperty(resource, identifierProperty, identifier, null, ontModel);
+                log.debug("Added identifier as literal: {}", identifier);
+            }
         }
 
         if (source != null && !source.trim().isEmpty()) {

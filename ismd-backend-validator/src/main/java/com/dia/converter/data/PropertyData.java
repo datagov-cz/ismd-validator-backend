@@ -26,9 +26,4 @@ public class PropertyData {
     private String sharingMethod;
     private String acquisitionMethod;
     private String contentType;
-
-    public boolean hasValidData() {
-        return name != null && !name.trim().isEmpty() &&
-                identifier != null && !identifier.trim().isEmpty();
-    }
 }

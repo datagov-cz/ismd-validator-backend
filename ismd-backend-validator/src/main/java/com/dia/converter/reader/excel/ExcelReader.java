@@ -103,7 +103,7 @@ public class ExcelReader {
                 .withColumn(NADRAZENY_POJEM, ClassData::setSuperClass)
                 .withColumn(ALT_NAZEV, ClassData::setAlternativeName)
                 .withColumn(EKVIVALENTNI_POJEM, ClassData::setEquivalentConcept)
-                .withColumn(IDENTIFIKATOR, ClassData::setIdentifier)
+                .withColumn(IDENTIFIKATOR, ClassData::setId)
                 .withColumn(AGENDA, ClassData::setAgendaCode)
                 .withColumn(AIS, ClassData::setAgendaSystemCode)
                 .build();

@@ -21,7 +21,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.TypeMappings.*;
@@ -184,12 +183,11 @@ public class ArchiReader {
             Map<String, String> elementProperties = getElementProperties(element);
 
             String elementType = elementProperties.getOrDefault(TYP, "").trim();
-            if (isClassType(elementType)) {
-                ClassData classData = createClassData(name, id, elementType, elementProperties);
-                if (classData.hasValidData()) {
-                    classes.add(classData);
-                    log.debug("Extracted class: {}", classData.getName());
-                }
+
+            ClassData classData = createClassData(name, id, elementType, elementProperties);
+            if (classData.hasValidData()) {
+                classes.add(classData);
+                log.debug("Extracted class: {}", classData.getName());
             }
         }
 
@@ -200,12 +198,13 @@ public class ArchiReader {
     private ClassData createClassData(String name, String id, String elementType, Map<String, String> properties) {
         ClassData classData = new ClassData();
         classData.setName(name);
-        classData.setIdentifier(id);
+        classData.setId(id);
 
         classData.setType(mapArchiType(elementType));
 
         classData.setDescription(properties.get(POPIS));
         classData.setDefinition(properties.get(DEFINICE));
+        classData.setIdentifier(properties.get(IDENTIFIKATOR));
         classData.setSource(properties.get(ZDROJ));
         classData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         classData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
@@ -234,18 +233,20 @@ public class ArchiReader {
             Map<String, String> elementProperties = getElementProperties(element);
 
             String elementType = elementProperties.getOrDefault(TYP, "").trim();
+
             if (isPropertyType(elementType)) {
                 PropertyData propertyData = createPropertyData(name, id, elementProperties);
-                if (propertyData.hasValidData()) {
-                    properties.add(propertyData);
-                    log.debug("Extracted property: {}", propertyData.getName());
-                }
+                properties.add(propertyData);
+                log.debug("Extracted property: {} (type: {})", propertyData.getName(), elementType);
+            } else {
+                log.debug("Skipping '{}' - not a property type (type: '{}')", name, elementType);
             }
         }
 
         processPropertyDomains(properties);
 
         log.debug("Extracted {} properties", properties.size());
+        logPropertyMappings();
         return properties;
     }
 
@@ -293,6 +294,7 @@ public class ArchiReader {
 
         propertyData.setDescription(properties.get(POPIS));
         propertyData.setDefinition(properties.get(DEFINICE));
+        propertyData.setIdentifier(properties.get(IDENTIFIKATOR));
         propertyData.setSource(properties.get(ZDROJ));
         propertyData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         propertyData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
@@ -377,6 +379,7 @@ public class ArchiReader {
         Map<String, String> properties = getElementProperties(relationship);
         relationshipData.setDescription(properties.get(POPIS));
         relationshipData.setDefinition(properties.get(DEFINICE));
+        relationshipData.setIdentifier(properties.get(IDENTIFIKATOR));
         relationshipData.setSource(properties.get(ZDROJ));
         relationshipData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         relationshipData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
@@ -440,6 +443,7 @@ public class ArchiReader {
 
         if (propName.contains("typ")) {
             propertyMapping.put(propId, TYP);
+            log.debug("Mapped propId '{}' with name '{}' to TYP constant", propId, propName);
         } else if (propName.contains("adresa lokálního katalogu dat")) {
             propertyMapping.put(propId, LOKALNI_KATALOG);
         }
@@ -450,6 +454,15 @@ public class ArchiReader {
         for (Map.Entry<String, String> entry : propertyMapping.entrySet()) {
             log.debug("  {} -> {}", entry.getKey(), entry.getValue());
         }
+
+        String typMapping = null;
+        for (Map.Entry<String, String> entry : propertyMapping.entrySet()) {
+            if (TYP.equals(entry.getValue())) {
+                typMapping = entry.getKey();
+                break;
+            }
+        }
+        log.debug("TYP constant '{}' is mapped from propid: {}", TYP, typMapping);
     }
 
     private Map<String, String> getModelProperties() {
