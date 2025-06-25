@@ -3,6 +3,7 @@ package com.dia.converter.reader.archi;
 import com.dia.converter.data.*;
 import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.FileParsingException;
+import com.dia.utility.DataTypeConverter;
 import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -202,9 +203,21 @@ public class ArchiReader {
 
         classData.setType(mapArchiType(elementType));
 
+        String rawIdentifier = properties.get(IDENTIFIKATOR);
+        if (rawIdentifier != null && !rawIdentifier.trim().isEmpty()) {
+            String trimmedIdentifier = rawIdentifier.trim();
+
+            if (UtilityMethods.isValidIRI(trimmedIdentifier)) {
+                classData.setIdentifier(trimmedIdentifier);
+                log.debug("Valid identifier set for class '{}': {}", name, trimmedIdentifier);
+            } else {
+                log.warn("Invalid identifier '{}' for class '{}' - not a valid IRI/URI, ignoring",
+                        trimmedIdentifier, name);
+            }
+        }
+
         classData.setDescription(properties.get(POPIS));
         classData.setDefinition(properties.get(DEFINICE));
-        classData.setIdentifier(properties.get(IDENTIFIKATOR));
         classData.setSource(properties.get(ZDROJ));
         classData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         classData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
@@ -290,11 +303,23 @@ public class ArchiReader {
     private PropertyData createPropertyData(String name, String id, Map<String, String> properties) {
         PropertyData propertyData = new PropertyData();
         propertyData.setName(name);
-        propertyData.setIdentifier(id);
+        propertyData.setId(id);
+
+        String rawIdentifier = properties.get(IDENTIFIKATOR);
+        if (rawIdentifier != null && !rawIdentifier.trim().isEmpty()) {
+            String trimmedIdentifier = rawIdentifier.trim();
+
+            if (UtilityMethods.isValidIRI(trimmedIdentifier)) {
+                propertyData.setIdentifier(trimmedIdentifier);
+                log.debug("Valid identifier set for property '{}': {}", name, trimmedIdentifier);
+            } else {
+                log.warn("Invalid identifier '{}' for property '{}' - not a valid IRI/URI, ignoring",
+                        trimmedIdentifier, name);
+            }
+        }
 
         propertyData.setDescription(properties.get(POPIS));
         propertyData.setDefinition(properties.get(DEFINICE));
-        propertyData.setIdentifier(properties.get(IDENTIFIKATOR));
         propertyData.setSource(properties.get(ZDROJ));
         propertyData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         propertyData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
@@ -377,6 +402,22 @@ public class ArchiReader {
         relationshipData.setRelationshipType(type);
 
         Map<String, String> properties = getElementProperties(relationship);
+        relationshipData.setDescription(properties.get(POPIS));
+        relationshipData.setDefinition(properties.get(DEFINICE));
+
+        String rawIdentifier = properties.get(IDENTIFIKATOR);
+        if (rawIdentifier != null && !rawIdentifier.trim().isEmpty()) {
+            String trimmedIdentifier = rawIdentifier.trim();
+
+            if (UtilityMethods.isValidIRI(trimmedIdentifier)) {
+                relationshipData.setIdentifier(trimmedIdentifier);
+                log.debug("Valid identifier set for relationship '{}': {}", name, trimmedIdentifier);
+            } else {
+                log.warn("Invalid identifier '{}' for relationship '{}' - not a valid IRI/URI, ignoring",
+                        trimmedIdentifier, name);
+            }
+        }
+
         relationshipData.setDescription(properties.get(POPIS));
         relationshipData.setDefinition(properties.get(DEFINICE));
         relationshipData.setIdentifier(properties.get(IDENTIFIKATOR));

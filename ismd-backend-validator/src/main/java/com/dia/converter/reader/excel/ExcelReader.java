@@ -103,7 +103,7 @@ public class ExcelReader {
                 .withColumn(NADRAZENY_POJEM, ClassData::setSuperClass)
                 .withColumn(ALT_NAZEV, ClassData::setAlternativeName)
                 .withColumn(EKVIVALENTNI_POJEM, ClassData::setEquivalentConcept)
-                .withColumn(IDENTIFIKATOR, ClassData::setId)
+                .withColumn(IDENTIFIKATOR, ClassData::setIdentifier)
                 .withColumn(AGENDA, ClassData::setAgendaCode)
                 .withColumn(AIS, ClassData::setAgendaSystemCode)
                 .build();
@@ -122,6 +122,7 @@ public class ExcelReader {
                 .withColumn(NADRAZENY_POJEM, PropertyData::setSuperProperty)
                 .withColumn(ALT_NAZEV, PropertyData::setAlternativeName)
                 .withColumn(EKVIVALENTNI_POJEM, PropertyData::setEquivalentConcept)
+                // TODO verify whether Id or Identifier is required
                 .withColumn(IDENTIFIKATOR, PropertyData::setIdentifier)
                 .withColumn(DATOVY_TYP, PropertyData::setDataType)
                 .withColumn(JE_PPDF, PropertyData::setSharedInPPDF)

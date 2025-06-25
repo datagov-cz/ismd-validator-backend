@@ -44,7 +44,8 @@ public class DataValidator {
             if (property.getName() == null || property.getName().trim().isEmpty()) {
                 throw new ExcelReadingException("Property name is required for all properties.");
             }
-            if (property.getIdentifier() == null || property.getIdentifier().trim().isEmpty()) {
+            // TODO verify whether Id or Identifier is required
+            if (property.getId() == null || property.getId().trim().isEmpty()) {
                 throw new ExcelReadingException("Property identifier is required: " + property.getName());
             }
         }

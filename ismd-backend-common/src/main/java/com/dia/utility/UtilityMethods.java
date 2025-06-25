@@ -283,4 +283,80 @@ public class UtilityMethods {
 
         return null;
     }
+
+    public static boolean isValidIRI(String iri) {
+        if (iri == null || iri.trim().isEmpty()) {
+            return false;
+        }
+
+        String trimmed = iri.trim();
+
+        if (containsInvalidPatterns(trimmed)) {
+            return false;
+        }
+
+        if (!hasValidIRIStructure(trimmed)) {
+            return false;
+        }
+
+        return isValidIRIPattern(trimmed);
+    }
+
+    private static boolean containsInvalidPatterns(String iri) {
+        String lower = iri.toLowerCase();
+
+        return lower.contains(" text") ||
+                lower.startsWith("ne-") ||
+                lower.equals("invalid") ||
+                lower.equals("n/a") ||
+                lower.equals("tbd") ||
+                lower.equals("todo") ||
+                iri.contains(" ") ||
+                iri.contains("\t") ||
+                iri.contains("\n") ||
+                iri.contains("\r");
+    }
+
+    private static boolean hasValidIRIStructure(String iri) {
+        if (!iri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*:.*")) {
+            return false;
+        }
+
+        if (iri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*://.*")) {
+            String afterScheme = iri.substring(iri.indexOf("://") + 3);
+            return !afterScheme.isEmpty();
+        }
+
+        return true;
+    }
+
+    private static boolean isValidIRIPattern(String iri) {
+        if (!iri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*:.*")) {
+            return false;
+        }
+
+        if (iri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*://.*")) {
+            String afterScheme = iri.substring(iri.indexOf("://") + 3);
+
+            if (afterScheme.isEmpty()) {
+                return false;
+            }
+
+            return !afterScheme.contains(" ") &&
+                    !afterScheme.contains("\t") &&
+                    !afterScheme.contains("\n") &&
+                    !afterScheme.contains("\r") &&
+                    !afterScheme.contains("<") &&
+                    !afterScheme.contains(">") &&
+                    !afterScheme.contains("\"") &&
+                    !afterScheme.contains("{") &&
+                    !afterScheme.contains("}") &&
+                    !afterScheme.contains("|") &&
+                    !afterScheme.contains("\\") &&
+                    !afterScheme.contains("^") &&
+                    !afterScheme.contains("`");
+        }
+
+        return true;
+    }
 }

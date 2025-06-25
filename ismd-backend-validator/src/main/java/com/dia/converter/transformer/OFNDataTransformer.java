@@ -348,12 +348,11 @@ public class OFNDataTransformer {
             DataTypeConverter.addTypedProperty(resource, defProperty, definition, DEFAULT_LANG, ontModel);
         }
 
-        // Add custom identifier if present
         if (identifier != null && !identifier.trim().isEmpty()) {
             Property identifierProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + IDENTIFIKATOR);
 
             if (DataTypeConverter.isUri(identifier)) {
-                resource.addProperty(identifierProperty, ontModel.createResource(identifierProperty));
+                resource.addProperty(identifierProperty, ontModel.createResource(identifier));
                 log.debug("Added identifier as URI: {}", identifier);
             } else {
                 DataTypeConverter.addTypedProperty(resource, identifierProperty, identifier, null, ontModel);

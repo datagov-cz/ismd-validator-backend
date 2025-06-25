@@ -265,6 +265,7 @@ public class EnterpriseArchitectReader {
         classData.setRelatedSource(getTagValue(extensionElement, TAG_SOUVISEJICI_ZDROJ));
         classData.setAlternativeName(getTagValue(extensionElement, TAG_ALTERNATIVNI_NAZEV));
         classData.setEquivalentConcept(getTagValue(extensionElement, TAG_EKVIVALENTNI_POJEM));
+        // TODO verify whether Id or Identifier is required
         classData.setId(getTagValue(extensionElement, TAG_IDENTIFIKATOR));
         classData.setAgendaCode(getTagValue(extensionElement, TAG_AGENDA));
         classData.setAgendaSystemCode(getTagValue(extensionElement, TAG_AGENDOVY_INFORMACNI_SYSTEM));
@@ -282,6 +283,7 @@ public class EnterpriseArchitectReader {
         propertyData.setRelatedSource(getTagValue(extensionElement, TAG_SOUVISEJICI_ZDROJ));
         propertyData.setAlternativeName(getTagValue(extensionElement, TAG_ALTERNATIVNI_NAZEV));
         propertyData.setEquivalentConcept(getTagValue(extensionElement, TAG_EKVIVALENTNI_POJEM));
+        // TODO verify whether Id or Identifier is required
         propertyData.setIdentifier(getTagValue(extensionElement, TAG_IDENTIFIKATOR));
         propertyData.setDataType(getTagValue(extensionElement, TAG_DATOVY_TYP));
 
