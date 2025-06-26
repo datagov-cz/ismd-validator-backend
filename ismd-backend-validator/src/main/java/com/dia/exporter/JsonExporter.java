@@ -361,13 +361,13 @@ public class JsonExporter {
 
                 if (exactMatchStmt.getObject().isResource()) {
                     JSONObject exactMatchObj = new JSONObject();
-                    exactMatchObj.put("@id", exactMatchStmt.getObject().asResource().getURI());
+                    exactMatchObj.put("id", exactMatchStmt.getObject().asResource().getURI());
                     exactMatchArray.put(exactMatchObj);
                 } else if (exactMatchStmt.getObject().isLiteral()) {
                     String literalValue = exactMatchStmt.getString();
                     if (literalValue != null && !literalValue.trim().isEmpty()) {
                         JSONObject exactMatchObj = new JSONObject();
-                        exactMatchObj.put("@id", literalValue);
+                        exactMatchObj.put("id", literalValue);
                         exactMatchArray.put(exactMatchObj);
                     }
                 }

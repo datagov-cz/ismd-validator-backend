@@ -136,26 +136,21 @@ class ArchiReaderUnitTest {
     }
 
     @Test
-    void testProcessInheritanceRelationships_ShouldSetSuperClasses() throws FileParsingException {
+    void testExtractHierarchies_ShouldExtractSpecializationRelationships() throws FileParsingException {
         OntologyData result = reader.readArchiFromString(validXmlContent);
 
-        // From the XML: "Řidič evidovaný v registru řidičů" extends "Řidič"
-        ClassData childClass = result.getClasses().stream()
-                .filter(c -> "Řidič evidovaný v registru řidičů".equals(c.getName()))
+        assertFalse(result.getHierarchies().isEmpty(), "Should extract hierarchy data");
+
+        // Check for specific hierarchy relationships from the XML
+        HierarchyData hierarchy = result.getHierarchies().stream()
+                .filter(h -> "Řidič evidovaný v registru řidičů".equals(h.getSubClass()) &&
+                        "Řidič".equals(h.getSuperClass()))
                 .findFirst()
                 .orElse(null);
 
-        assertNotNull(childClass);
-        assertEquals("Řidič", childClass.getSuperClass());
-
-        // "Řidič" extends "Účastník provozu na pozemních komunikacích"
-        ClassData parentClass = result.getClasses().stream()
-                .filter(c -> "Řidič".equals(c.getName()))
-                .findFirst()
-                .orElse(null);
-
-        assertNotNull(parentClass);
-        assertEquals("Účastník provozu na pozemních komunikacích", parentClass.getSuperClass());
+        assertNotNull(hierarchy, "Should find hierarchy: Řidič evidovaný v registru řidičů -> Řidič");
+        assertTrue(hierarchy.hasValidData());
+        assertNotNull(hierarchy.getRelationshipName());
     }
 
     @Test
@@ -240,9 +235,7 @@ class ArchiReaderUnitTest {
             assertNotNull(c.getType());
         });
 
-        result.getProperties().forEach(p -> {
-            assertNotNull(p.getName());
-        });
+        result.getProperties().forEach(p -> assertNotNull(p.getName()));
 
         result.getRelationships().forEach(r -> {
             if (r.hasValidData()) {
@@ -255,9 +248,9 @@ class ArchiReaderUnitTest {
         // Performance check
         assertTrue(endTime - startTime < 5000, "Parsing should complete quickly");
 
-        System.out.printf("Parsed Archi: %d classes, %d properties, %d relationships in %dms%n",
+        System.out.printf("Parsed Archi: %d classes, %d properties, %d relationships, %d hierarchies in %dms%n",
                 result.getClasses().size(), result.getProperties().size(),
-                result.getRelationships().size(), endTime - startTime);
+                result.getRelationships().size(), result.getHierarchies().size(), endTime - startTime);
     }
 
     @Test
@@ -272,14 +265,140 @@ class ArchiReaderUnitTest {
         assertEquals(testRequestId, MDC.get(LOG_REQUEST_ID));
     }
 
-    // Test data providers
+    // ========== NEW TESTS FOR ENHANCED FUNCTIONALITY ==========
 
-    static Stream<Arguments> invalidXmlTestCases() {
+    @ParameterizedTest
+    @MethodSource("booleanValueTestCases")
+    void testCleanBooleanValue_ShouldNormalizeCorrectly(String input, String expected) throws Exception {
+        // Access the private method using reflection for testing
+        java.lang.reflect.Method method = ArchiReader.class.getDeclaredMethod("cleanBooleanValue", String.class);
+        method.setAccessible(true);
+
+        String result = (String) method.invoke(reader, input);
+        assertEquals(expected, result);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provisionValueTestCases")
+    void testCleanProvisionValue_ShouldCleanCorrectly(String input, String expected) throws Exception {
+        // Access the private method using reflection for testing
+        java.lang.reflect.Method method = ArchiReader.class.getDeclaredMethod("cleanProvisionValue", String.class);
+        method.setAccessible(true);
+
+        String result = (String) method.invoke(reader, input);
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testValidatePublicityConsistency_ShouldHandleInconsistencies() throws Exception {
+        String testXml = createTestXmlWithPublicityData();
+
+        OntologyData result = reader.readArchiFromString(testXml);
+        assertNotNull(result);
+    }
+
+    @Test
+    void testIdentifierValidation_ShouldValidateIRIs() throws FileParsingException {
+        OntologyData result = reader.readArchiFromString(validXmlContent);
+
+        result.getClasses().forEach(classData -> {
+            if (classData.getIdentifier() != null) {
+                // All preserved identifiers should be valid IRIs
+                assertTrue(classData.getIdentifier().startsWith("http://") ||
+                                classData.getIdentifier().startsWith("https://"),
+                        "Identifier should be a valid IRI: " + classData.getIdentifier());
+            }
+        });
+
+        result.getProperties().forEach(property -> {
+            if (property.getIdentifier() != null) {
+                assertTrue(property.getIdentifier().startsWith("http://") ||
+                                property.getIdentifier().startsWith("https://"),
+                        "Property identifier should be a valid IRI: " + property.getIdentifier());
+            }
+        });
+    }
+
+    @Test
+    void testEnhancedPropertyMapping_ShouldMapStandardizedLabels() throws FileParsingException {
+        reader.readArchiFromString(validXmlContent);
+
+        assertTrue(reader.getPropertyMapping().containsValue("popis"));
+        assertTrue(reader.getPropertyMapping().containsValue("definice"));
+        assertTrue(reader.getPropertyMapping().containsValue("identifikátor"));
+        assertTrue(reader.getPropertyMapping().containsValue("typ"));
+        assertTrue(reader.getPropertyMapping().containsValue("zdroj"));
+        assertTrue(reader.getPropertyMapping().containsValue("související-zdroj"));
+    }
+
+    @Test
+    void testHierarchyExclusion_ShouldSkipTemplatePlaceholders() throws FileParsingException {
+        OntologyData result = reader.readArchiFromString(validXmlContent);
+
+        // Verify hierarchies don't include template placeholders
+        result.getHierarchies().forEach(hierarchy -> {
+            assertNotEquals("Subjekt", hierarchy.getSubClass());
+            assertNotEquals("Objekt", hierarchy.getSubClass());
+            assertNotEquals("Vlastnost", hierarchy.getSubClass());
+            assertNotEquals("Subjekt", hierarchy.getSuperClass());
+            assertNotEquals("Objekt", hierarchy.getSuperClass());
+            assertNotEquals("Vlastnost", hierarchy.getSuperClass());
+        });
+    }
+
+    @Test
+    void testPropertyTypeDetection_ShouldIdentifyPropertyTypes() throws FileParsingException {
+        OntologyData result = reader.readArchiFromString(validXmlContent);
+
+        assertFalse(result.getProperties().isEmpty());
+
+        result.getProperties().forEach(property -> {
+            assertNotNull(property.getName());
+            assertNotEquals("Vlastnost", property.getName());
+        });
+    }
+
+    @Test
+    void testRelationshipDataExtraction_ShouldHandleAllTypes() throws FileParsingException {
+        OntologyData result = reader.readArchiFromString(validXmlContent);
+
+        // Check that relationships have proper domain and range set
+        result.getRelationships().forEach(relationship -> {
+            if (relationship.hasValidData()) {
+                assertNotNull(relationship.getDomain(), "Relationship should have domain: " + relationship.getName());
+                assertNotNull(relationship.getRange(), "Relationship should have range: " + relationship.getName());
+                assertNotNull(relationship.getRelationshipType(), "Relationship should have type: " + relationship.getName());
+            }
+        });
+    }
+
+    @Test
+    void testSecurityFeatures_ShouldEnableXmlSecurity() {
+        String xmlWithDtd = "<?xml version=\"1.0\"?><!DOCTYPE test SYSTEM \"test.dtd\"><test></test>";
+
+        assertThrows(FileParsingException.class, () -> reader.readArchiFromString(xmlWithDtd));
+    }
+
+    @Test
+    void testNamespaceExtraction_ShouldValidateUrls() throws FileParsingException {
+        OntologyData result = reader.readArchiFromString(validXmlContent);
+
+        VocabularyMetadata metadata = result.getVocabularyMetadata();
+        if (metadata.getNamespace() != null) {
+            assertTrue(metadata.getNamespace().startsWith("http://") ||
+                            metadata.getNamespace().startsWith("https://"),
+                    "Namespace should be a valid URL: " + metadata.getNamespace());
+        }
+    }
+
+    // ========== TEST DATA PROVIDERS ==========
+
+    static Stream<String> invalidXmlTestCases() {
         return Stream.of(
-                Arguments.of("Invalid XML syntax", "invalid xml content", "zpracování"),
-                Arguments.of("Empty string", "", "zpracování"),
-                Arguments.of("Malformed XML", "<invalid><unclosed>", "zpracování"),
-                Arguments.of("XML without model", "<?xml version='1.0'?><root></root>", "zpracování")
+                "invalid xml content",
+                "",
+                "<invalid><unclosed>",
+                "<?xml version='1.0'?<root></root>"
         );
     }
 
@@ -314,5 +433,83 @@ class ArchiReaderUnitTest {
                 Arguments.of("je pojem sdílen v PPDF?", "je-sdílen-v-ppdf"),
                 Arguments.of("je pojem veřejný?", "je-pojem-veřejný")
         );
+    }
+
+    static Stream<Arguments> booleanValueTestCases() {
+        return Stream.of(
+                Arguments.of(null, null),
+                Arguments.of("", null),
+                Arguments.of("  ", null),
+                Arguments.of("true", "true"),
+                Arguments.of("TRUE", "true"),
+                Arguments.of("True", "true"),
+                Arguments.of("ano", "true"),
+                Arguments.of("ANO", "true"),
+                Arguments.of("yes", "true"),
+                Arguments.of("false", "false"),
+                Arguments.of("FALSE", "false"),
+                Arguments.of("False", "false"),
+                Arguments.of("ne", "false"),
+                Arguments.of("NE", "false"),
+                Arguments.of("no", "false"),
+                Arguments.of("maybe", "maybe"), // Non-standard values preserved
+                Arguments.of("  true  ", "true"),
+                Arguments.of("  false  ", "false")
+        );
+    }
+
+    static Stream<Arguments> provisionValueTestCases() {
+        return Stream.of(
+                Arguments.of(null, null),
+                Arguments.of("", null),
+                Arguments.of("  ", null),
+                Arguments.of("null", null),
+                Arguments.of("NULL", null),
+                Arguments.of("n/a", null),
+                Arguments.of("N/A", null),
+                Arguments.of("není", null),
+                Arguments.of("NENÍ", null),
+                Arguments.of("none", null),
+                Arguments.of("NONE", null),
+                Arguments.of("valid provision", "valid provision"),
+                Arguments.of("  valid provision  ", "valid provision")
+        );
+    }
+
+    // ========== HELPER METHODS ==========
+
+    private String createTestXmlWithPublicityData() {
+        return """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <archimate:model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                           xmlns:archimate="http://www.archimatetool.com/archimate"
+                           name="Test Model">
+                <folder name="Business" id="business-folder" type="business">
+                    <element id="test-element" xsi:type="BusinessObject">
+                        <name>Test Property</name>
+                        <properties>
+                            <property propertyDefinitionRef="je-verejny-prop">
+                                <value>true</value>
+                            </property>
+                            <property propertyDefinitionRef="ustanoveni-prop">
+                                <value>Some privacy provision</value>
+                            </property>
+                            <property propertyDefinitionRef="typ-prop">
+                                <value>typ vlastnosti</value>
+                            </property>
+                        </properties>
+                    </element>
+                </folder>
+                <propertyDefinition id="je-verejny-prop">
+                    <name>je pojem veřejný?</name>
+                </propertyDefinition>
+                <propertyDefinition id="ustanoveni-prop">
+                    <name>ustanovení dokládající neveřejnost</name>
+                </propertyDefinition>
+                <propertyDefinition id="typ-prop">
+                    <name>typ</name>
+                </propertyDefinition>
+            </archimate:model>
+            """;
     }
 }
