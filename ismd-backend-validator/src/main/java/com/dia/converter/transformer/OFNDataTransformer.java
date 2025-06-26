@@ -22,10 +22,7 @@ import org.apache.jena.vocabulary.SKOS;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.TypeMappings.*;
@@ -82,7 +79,7 @@ public class OFNDataTransformer {
             transformClasses(ontologyData.getClasses());
             transformProperties(ontologyData.getProperties());
             transformRelationships(ontologyData.getRelationships());
-            //transformHierarchies(ontologyData.getHierarchies());
+            transformHierarchies(ontologyData.getHierarchies());
 
             Map<String, String> modelProperties = createModelProperties(ontologyData.getVocabularyMetadata());
 
@@ -330,6 +327,167 @@ public class OFNDataTransformer {
         addDomainRangeRelationships(relationshipResource, relationshipData);
         addSchemeRelationship(relationshipResource);
         return relationshipResource;
+    }
+
+    private void transformHierarchies(List<HierarchyData> hierarchies) {
+        log.debug("Transforming {} hierarchical relationships", hierarchies.size());
+
+        if (hierarchies.isEmpty()) {
+            log.debug("No hierarchies to process");
+            return;
+        }
+
+        validateHierarchies(hierarchies);
+
+        int processedHierarchies = 0;
+        int skippedHierarchies = 0;
+
+        for (HierarchyData hierarchyData : hierarchies) {
+            if (!hierarchyData.hasValidData()) {
+                log.warn("Skipping invalid hierarchy: {}", hierarchyData);
+                skippedHierarchies++;
+                continue;
+            }
+
+            try {
+                boolean success = createHierarchyRelationship(hierarchyData);
+                if (success) {
+                    processedHierarchies++;
+                    log.debug("Processed hierarchy: {} IS-A {}",
+                            hierarchyData.getSubClass(), hierarchyData.getSuperClass());
+                } else {
+                    skippedHierarchies++;
+                }
+            } catch (Exception e) {
+                log.error("Failed to create hierarchy relationship: {} -> {}",
+                        hierarchyData.getSubClass(), hierarchyData.getSuperClass(), e);
+                skippedHierarchies++;
+            }
+        }
+
+        log.info("Hierarchy transformation completed: {} processed, {} skipped",
+                processedHierarchies, skippedHierarchies);
+    }
+
+    private boolean createHierarchyRelationship(HierarchyData hierarchyData) {
+        String subClassName = hierarchyData.getSubClass();
+        String superClassName = hierarchyData.getSuperClass();
+
+        Resource subClassResource = findClassResource(subClassName);
+        Resource superClassResource = findClassResource(superClassName);
+
+        if (subClassResource == null) {
+            log.warn("Subclass resource not found: {}", subClassName);
+            return false;
+        }
+
+        if (superClassResource == null) {
+            log.warn("Superclass resource not found: {}", superClassName);
+            return false;
+        }
+
+        subClassResource.addProperty(RDFS.subClassOf, superClassResource);
+
+        String namespace = uriGenerator.getEffectiveNamespace();
+        Property hierarchyProperty = ontModel.createProperty(namespace + "nadřazená-třída");
+        subClassResource.addProperty(hierarchyProperty, superClassResource);
+
+        log.debug("Created hierarchy relationship: {} rdfs:subClassOf {}",
+                subClassResource.getURI(), superClassResource.getURI());
+
+        addHierarchyMetadata(subClassResource, hierarchyData);
+
+        return true;
+    }
+
+    private Resource findClassResource(String className) {
+        Resource resource = classResources.get(className);
+        if (resource != null) {
+            return resource;
+        }
+
+        resource = propertyResources.get(className);
+        if (resource != null) {
+            return resource;
+        }
+
+        resource = resourceMap.get(className);
+        if (resource != null) {
+            log.debug("Found resource in general resource map: {}", className);
+            return resource;
+        }
+
+        return null;
+    }
+
+    private void addHierarchyMetadata(Resource subClassResource, HierarchyData hierarchyData) {
+        String namespace = uriGenerator.getEffectiveNamespace();
+
+        if (hierarchyData.getDescription() != null && !hierarchyData.getDescription().trim().isEmpty()) {
+            Property hierarchyDescProperty = ontModel.createProperty(namespace + "popis-hierarchie");
+            DataTypeConverter.addTypedProperty(subClassResource, hierarchyDescProperty,
+                    hierarchyData.getDescription(), DEFAULT_LANG, ontModel);
+            log.debug("Added hierarchy description for {}: {}",
+                    subClassResource.getLocalName(), hierarchyData.getDescription());
+        }
+
+        if (hierarchyData.getRelationshipName() != null &&
+                !hierarchyData.getRelationshipName().trim().isEmpty() &&
+                !hierarchyData.getRelationshipName().startsWith("HIER-")) {
+
+            Property relationshipNameProperty = ontModel.createProperty(namespace + "název-vztahu");
+            DataTypeConverter.addTypedProperty(subClassResource, relationshipNameProperty,
+                    hierarchyData.getRelationshipName(), DEFAULT_LANG, ontModel);
+            log.debug("Added relationship name for {}: {}",
+                    subClassResource.getLocalName(), hierarchyData.getRelationshipName());
+        }
+    }
+
+    private void validateHierarchies(List<HierarchyData> hierarchies) {
+        Map<String, Set<String>> hierarchyMap = new HashMap<>();
+        Set<String> circularDependencies = new HashSet<>();
+
+        for (HierarchyData hierarchy : hierarchies) {
+            if (hierarchy.hasValidData()) {
+                hierarchyMap.computeIfAbsent(hierarchy.getSubClass(), k -> new HashSet<>())
+                        .add(hierarchy.getSuperClass());
+            }
+        }
+
+        for (String className : hierarchyMap.keySet()) {
+            Set<String> visited = new HashSet<>();
+            Set<String> recursionStack = new HashSet<>();
+
+            if (hasCircularDependency(className, hierarchyMap, visited, recursionStack)) {
+                circularDependencies.add(className);
+            }
+        }
+
+        if (!circularDependencies.isEmpty()) {
+            log.warn("Detected circular dependencies in hierarchy: {}", circularDependencies);
+        }
+    }
+
+    private boolean hasCircularDependency(String className, Map<String, Set<String>> hierarchyMap,
+                                          Set<String> visited, Set<String> recursionStack) {
+        visited.add(className);
+        recursionStack.add(className);
+
+        Set<String> superClasses = hierarchyMap.get(className);
+        if (superClasses != null) {
+            for (String superClass : superClasses) {
+                if (!visited.contains(superClass)) {
+                    if (hasCircularDependency(superClass, hierarchyMap, visited, recursionStack)) {
+                        return true;
+                    }
+                } else if (recursionStack.contains(superClass)) {
+                    return true;
+                }
+            }
+        }
+
+        recursionStack.remove(className);
+        return false;
     }
 
     private void addResourceMetadata(Resource resource, String name, String description,

@@ -16,6 +16,7 @@ public class RelationshipData {
     private String source;
 
     private String relatedSource;
+    // Excel only
     private String superRelation;
     private String alternativeName;
     private String equivalentConcept;

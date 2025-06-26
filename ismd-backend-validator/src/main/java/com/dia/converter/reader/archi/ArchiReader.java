@@ -3,7 +3,6 @@ package com.dia.converter.reader.archi;
 import com.dia.converter.data.*;
 import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.FileParsingException;
-import com.dia.utility.DataTypeConverter;
 import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -106,7 +105,7 @@ public class ArchiReader {
         List<ClassData> classes = extractClasses();
         List<PropertyData> properties = extractProperties();
         List<RelationshipData> relationships = extractRelationships();
-        //List<HierarchyData> hierarchies = extractHierarchies(classes);
+        List<HierarchyData> hierarchies = extractHierarchies();
 
         log.info("Extracted {} classes, {} properties, {} relationships",
                 classes.size(), properties.size(), relationships.size());
@@ -116,7 +115,7 @@ public class ArchiReader {
                 .classes(classes)
                 .properties(properties)
                 .relationships(relationships)
-                //.hierarchies(hierarchies)
+                .hierarchies(hierarchies)
                 .build();
     }
 
@@ -444,6 +443,82 @@ public class ArchiReader {
         log.info("Extracted {} total relationships", relationships.size());
         return relationships;
     }
+
+    private List<HierarchyData> extractHierarchies() {
+        List<HierarchyData> hierarchies = new ArrayList<>();
+        NodeList relationshipElements = archiDoc.getElementsByTagNameNS(ARCHI_NS, "relationship");
+
+        log.debug("Processing {} relationship elements for hierarchy extraction", relationshipElements.getLength());
+
+        Map<String, String> idToNameMap = buildIdToNameMap();
+
+        for (int i = 0; i < relationshipElements.getLength(); i++) {
+            Element relationship = (Element) relationshipElements.item(i);
+            String type = relationship.getAttribute("xsi:type");
+
+            if ("Specialization".equals(type)) {
+                HierarchyData hierarchyData = createHierarchyData(relationship, idToNameMap);
+                if (hierarchyData != null && hierarchyData.hasValidData()) {
+                    hierarchies.add(hierarchyData);
+                    log.debug("Extracted hierarchy: {} -> {} ({})",
+                            hierarchyData.getSubClass(), hierarchyData.getSuperClass(),
+                            hierarchyData.getRelationshipName());
+                }
+            }
+        }
+
+        log.info("Extracted {} hierarchical relationships", hierarchies.size());
+        return hierarchies;
+    }
+
+    private HierarchyData createHierarchyData(Element relationship, Map<String, String> idToNameMap) {
+        String relationshipId = relationship.getAttribute(IDENT);
+        String sourceId = relationship.getAttribute("source");
+        String targetId = relationship.getAttribute("target");
+        String relationshipName = getRelationshipName(relationship);
+
+        String subClassName = idToNameMap.get(sourceId);
+        String superClassName = idToNameMap.get(targetId);
+
+        if (subClassName == null || superClassName == null) {
+            log.warn("Could not resolve source '{}' or target '{}' names for hierarchy relationship: {}",
+                    sourceId, targetId, relationshipName);
+            return null;
+        }
+
+        if ("Subjekt".equals(subClassName) || "Objekt".equals(superClassName) || "Vlastnost".equals(subClassName) ||
+                "Subjekt".equals(superClassName) || "Objekt".equals(subClassName) || "Vlastnost".equals(superClassName)) {
+            log.debug("Skipping hierarchy with template elements: {} -> {}", subClassName, superClassName);
+            return null;
+        }
+
+        HierarchyData hierarchyData = new HierarchyData(subClassName, superClassName, relationshipId, relationshipName);
+
+        Map<String, String> properties = getElementProperties(relationship);
+        hierarchyData.setDescription(properties.get(POPIS));
+        hierarchyData.setDefinition(properties.get(DEFINICE));
+        hierarchyData.setSource(properties.get(ZDROJ));
+
+        log.debug("Created hierarchy data: {} IS-A {} (relationship: {})",
+                subClassName, superClassName, relationshipName);
+        return hierarchyData;
+    }
+
+    private Map<String, String> buildIdToNameMap() {
+        Map<String, String> idToNameMap = new HashMap<>();
+        NodeList elements = archiDoc.getElementsByTagNameNS(ARCHI_NS, "element");
+
+        for (int i = 0; i < elements.getLength(); i++) {
+            Element element = (Element) elements.item(i);
+            String id = element.getAttribute(IDENT);
+            String name = getElementName(element);
+            idToNameMap.put(id, name);
+        }
+
+        log.debug("Built ID to name mapping with {} entries", idToNameMap.size());
+        return idToNameMap;
+    }
+
 
     private RelationshipData createRelationshipData(Element relationship, Map<String, String> idToNameMap) {
         String name = getRelationshipName(relationship);
