@@ -11,6 +11,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.dia.constants.ExcelConstants.*;
@@ -39,14 +40,20 @@ public class ExcelReader {
         try (inputStream; Workbook workbook = workbookProcessor.openWorkbook(inputStream)) {
             builder = OntologyData.builder();
 
-            builder.vocabularyMetadata(processVocabularySheet(workbook))
-                    .classes(processClassesSheet(workbook))
-                    .properties(processPropertiesSheet(workbook))
-                    .relationships(processRelationshipsSheet(workbook));
+            VocabularyMetadata metadata = processVocabularySheet(workbook);
+            List<ClassData> classes = processClassesSheet(workbook);
+            List<PropertyData> properties = processPropertiesSheet(workbook);
+            List<RelationshipData> relationships = processRelationshipsSheet(workbook);
+            List<HierarchyData> hierarchies = extractHierarchiesFromData(classes, properties);
+
+            builder.vocabularyMetadata(metadata)
+                    .classes(classes)
+                    .properties(properties)
+                    .relationships(relationships)
+                    .hierarchies(hierarchies);
 
             OntologyData data = builder.build();
             validator.validateOntologyData(data);
-            log.debug("Processed {} classes from Excel", data.getClasses().size());
             return data;
         } catch (Exception e) {
             throw new ExcelReadingException("Failed to read ontology from Excel.", e);
@@ -93,6 +100,85 @@ public class ExcelReader {
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, VZTAHY);
         return new RelationshipSheetProcessor(mappingRegistry).process(sheet);
+    }
+
+    private List<HierarchyData> extractHierarchiesFromData(List<ClassData> classes, List<PropertyData> properties) {
+        List<HierarchyData> hierarchies = new ArrayList<>();
+
+        log.debug("Extracting hierarchies from {} classes and {} properties", classes.size(), properties.size());
+
+        for (ClassData classData : classes) {
+            if (classData.getSuperClass() != null && !classData.getSuperClass().trim().isEmpty()) {
+                String superClass = classData.getSuperClass().trim();
+
+                if (isValidForHierarchy(classData.getName(), superClass)) {
+                    HierarchyData hierarchyData = createHierarchyData(
+                            classData.getName(),
+                            superClass,
+                            "CLASS-HIER-" + classData.getName(),
+                            "IS-A relationship",
+                            classData.getDescription()
+                    );
+                    hierarchies.add(hierarchyData);
+
+                    log.debug("Extracted class hierarchy: {} -> {}", classData.getName(), superClass);
+                }
+            }
+        }
+
+        for (PropertyData propertyData : properties) {
+            if (propertyData.getSuperProperty() != null && !propertyData.getSuperProperty().trim().isEmpty()) {
+                String superProperty = propertyData.getSuperProperty().trim();
+
+                if (isValidForHierarchy(propertyData.getName(), superProperty)) {
+                    HierarchyData hierarchyData = createHierarchyData(
+                            propertyData.getName(),
+                            superProperty,
+                            "PROP-HIER-" + propertyData.getName(),
+                            "subPropertyOf relationship",
+                            propertyData.getDescription()
+                    );
+                    hierarchies.add(hierarchyData);
+
+                    log.debug("Extracted property hierarchy: {} -> {}", propertyData.getName(), superProperty);
+                }
+            }
+        }
+
+        log.info("Extracted {} hierarchical relationships from Excel data", hierarchies.size());
+        return hierarchies;
+    }
+
+    private HierarchyData createHierarchyData(String childName, String parentName, String relationshipId,
+                                              String relationshipName, String description) {
+        HierarchyData hierarchyData = new HierarchyData(childName, parentName, relationshipId, relationshipName);
+        hierarchyData.setDescription(description);
+        return hierarchyData;
+    }
+
+    private boolean isValidForHierarchy(String childName, String parentName) {
+        if (childName == null || childName.trim().isEmpty() ||
+                parentName == null || parentName.trim().isEmpty()) {
+            return false;
+        }
+
+        if ("Subjekt".equals(childName) || "Objekt".equals(childName) || "Vlastnost".equals(childName) ||
+                "Subjekt".equals(parentName) || "Objekt".equals(parentName) || "Vlastnost".equals(parentName)) {
+            log.debug("Skipping template concept hierarchy: {} -> {}", childName, parentName);
+            return false;
+        }
+
+        if (parentName.startsWith("http://") || parentName.startsWith("https://")) {
+            log.debug("Skipping external URI parent: {} -> {}", childName, parentName);
+            return false;
+        }
+
+        if (childName.equals(parentName)) {
+            log.debug("Skipping self-referential hierarchy: {}", childName);
+            return false;
+        }
+
+        return true;
     }
 
     private void initializeDefaultMappings() {
