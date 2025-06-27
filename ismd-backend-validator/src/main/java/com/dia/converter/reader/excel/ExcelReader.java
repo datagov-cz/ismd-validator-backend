@@ -122,7 +122,7 @@ public class ExcelReader {
                 .withColumn(NADRAZENY_POJEM, PropertyData::setSuperProperty)
                 .withColumn(ALT_NAZEV, PropertyData::setAlternativeName)
                 .withColumn(EKVIVALENTNI_POJEM, PropertyData::setEquivalentConcept)
-                // TODO verify whether Id or Identifier is required
+                // TODO check
                 .withColumn(IDENTIFIKATOR, PropertyData::setIdentifier)
                 .withColumn(DATOVY_TYP, PropertyData::setDataType)
                 .withColumn(JE_PPDF, PropertyData::setSharedInPPDF)

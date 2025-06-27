@@ -546,6 +546,12 @@ public class OFNDataTransformer {
         }
 
         String transformedUrl = UtilityMethods.transformEliUrl(url, removeELI);
+
+        if (transformedUrl == null || transformedUrl.trim().isEmpty()) {
+            log.debug("Skipping invalid/filtered source: {}", url);
+            return;
+        }
+
         Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ZDROJ);
 
         if (DataTypeConverter.isUri(transformedUrl)) {
@@ -660,12 +666,17 @@ public class OFNDataTransformer {
         String dataType = propertyData.getDataType();
 
         if (dataType != null && !dataType.trim().isEmpty()) {
-            Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + OBOR_HODNOT);
+            Property rangeProperty = RDFS.range;
 
             if (dataType.startsWith("xsd:")) {
                 String xsdType = XSD + dataType.substring(4);
-                propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
-                log.debug("Added XSD range type: {}", xsdType);
+                if (DataTypeConverter.isValidXSDType(dataType.substring(4))) {
+                    propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
+                    log.debug("Added valid XSD range type: {}", xsdType);
+                } else {
+                    propertyResource.addProperty(rangeProperty, ontModel.createLiteral(dataType));
+                    log.debug("Added invalid XSD type '{}' as plain string literal", dataType);
+                }
             } else if (DataTypeConverter.isUri(dataType)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(dataType));
                 log.debug("Added URI range type: {}", dataType);
@@ -675,9 +686,8 @@ public class OFNDataTransformer {
                     propertyResource.addProperty(rangeProperty, existingClass);
                     log.debug("Added local class range: {}", dataType);
                 } else {
-                    String xsdType = mapToXSDType(dataType);
-                    propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
-                    log.debug("Mapped data type '{}' to XSD type: {}", dataType, xsdType);
+                    propertyResource.addProperty(rangeProperty, ontModel.createLiteral(dataType));
+                    log.debug("Added unknown data type '{}' as plain string literal", dataType);
                 }
             }
         }

@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -246,5 +247,21 @@ public class DataTypeConverter {
             }
         }
         return false;
+    }
+
+    public static boolean isValidXSDType(String xsdType) {
+        Set<String> validXSDTypes = Set.of(
+                "string", "boolean", "decimal", "float", "double", "duration",
+                "dateTime", "time", "date", "gYearMonth", "gYear", "gMonthDay",
+                "gDay", "gMonth", "hexBinary", "base64Binary", "anyURI", "QName",
+                "NOTATION", "normalizedString", "token", "language", "NMTOKEN",
+                "NMTOKENS", "Name", "NCName", "ID", "IDREF", "IDREFS", "ENTITY",
+                "ENTITIES", "integer", "nonPositiveInteger", "negativeInteger",
+                "long", "int", "short", "byte", "nonNegativeInteger",
+                "unsignedLong", "unsignedInt", "unsignedShort", "unsignedByte",
+                "positiveInteger"
+        );
+
+        return validXSDTypes.contains(xsdType);
     }
 }
