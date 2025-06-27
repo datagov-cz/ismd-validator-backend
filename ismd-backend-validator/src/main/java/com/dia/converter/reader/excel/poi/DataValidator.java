@@ -33,9 +33,6 @@ public class DataValidator {
             if (classData.getName() == null || classData.getName().trim().isEmpty()) {
                 throw new ExcelReadingException("Class name is required for all classes.");
             }
-            if (classData.getId() == null || classData.getId().trim().isEmpty()) {
-                throw new ExcelReadingException("Class identifier is required: " + classData.getName());
-            }
         }
     }
 

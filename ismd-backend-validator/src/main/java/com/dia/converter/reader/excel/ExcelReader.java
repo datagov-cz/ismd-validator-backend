@@ -46,6 +46,7 @@ public class ExcelReader {
 
             OntologyData data = builder.build();
             validator.validateOntologyData(data);
+            log.debug("Processed {} classes from Excel", data.getClasses().size());
             return data;
         } catch (Exception e) {
             throw new ExcelReadingException("Failed to read ontology from Excel.", e);
@@ -62,10 +63,19 @@ public class ExcelReader {
 
     private List<ClassData> processClassesSheet(Workbook workbook) throws ExcelReadingException {
         if (!workbookProcessor.hasSheet(workbook, SUBJEKTY_OBJEKTY_PRAVA)) {
+            log.debug("Available sheets in workbook:");
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                String sheetName = workbook.getSheetName(i);
+                log.debug("  Sheet {}: '{}'", i, sheetName);
+            }
             throw new ExcelReadingException("Workbook does not have Subjekty a objekty práva sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, SUBJEKTY_OBJEKTY_PRAVA);
-        return new ClassSheetProcessor(mappingRegistry).process(sheet);
+        List<ClassData> classes = new ClassSheetProcessor(mappingRegistry).process(sheet);
+
+        log.debug("ClassSheetProcessor returned {} classes", classes.size());
+
+        return classes;
     }
 
     private List<PropertyData> processPropertiesSheet(Workbook workbook) throws ExcelReadingException {
