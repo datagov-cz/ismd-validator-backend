@@ -163,19 +163,25 @@ public class UtilityMethods {
         return true;
     }
 
-    public String transformEliUrl(String url, Boolean removeELI) {
-        if (Boolean.FALSE.equals(removeELI)) {
+    public String transformEliUrl(String url, Boolean removeInvalidSources) {
+        if (url == null || url.trim().isEmpty()) {
             return url;
         }
 
+        String trimmed = url.trim();
+
         Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
-        Matcher matcher = eliPattern.matcher(url);
+        Matcher matcher = eliPattern.matcher(trimmed);
 
         if (matcher.matches()) {
             String eliPart = matcher.group(1);
             return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
         } else {
-            return url;
+            if (Boolean.TRUE.equals(removeInvalidSources)) {
+                return "";
+            } else {
+                return trimmed;
+            }
         }
     }
 
