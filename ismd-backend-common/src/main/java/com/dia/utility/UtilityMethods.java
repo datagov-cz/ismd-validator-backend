@@ -185,16 +185,12 @@ public class UtilityMethods {
                 !trimmed.matches("^[a-zA-Z]{100,}$");
     }
 
-    public String transformEliUrl(String url, Boolean removeELI) {
+    public String transformEliUrl(String url, Boolean removeInvalidSources) {
         if (url == null || url.trim().isEmpty()) {
             return url;
         }
 
         String trimmed = url.trim();
-
-        if (Boolean.TRUE.equals(removeELI) && !isValidSource(trimmed)) {
-            return "";
-        }
 
         Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
         Matcher matcher = eliPattern.matcher(trimmed);
@@ -203,7 +199,11 @@ public class UtilityMethods {
             String eliPart = matcher.group(1);
             return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
         } else {
-            return trimmed;
+            if (Boolean.TRUE.equals(removeInvalidSources)) {
+                return "";
+            } else {
+                return trimmed;
+            }
         }
     }
 

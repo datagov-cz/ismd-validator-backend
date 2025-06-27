@@ -248,7 +248,7 @@ public class OFNDataTransformer {
         classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
         addSpecificClassType(classResource, classData);
         addResourceMetadata(classResource, classData.getName(), classData.getDescription(),
-                classData.getDefinition(), classData.getSource(), classData.getIdentifier());
+                classData.getDefinition(), classData.getSource(), classData.getRelatedSource(), classData.getIdentifier());
         addClassSpecificMetadata(classResource, classData);
         addSchemeRelationship(classResource);
         return classResource;
@@ -287,7 +287,7 @@ public class OFNDataTransformer {
         propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + VLASTNOST));
 
         addResourceMetadata(propertyResource, propertyData.getName(), propertyData.getDescription(),
-                propertyData.getDefinition(), propertyData.getSource(), propertyData.getIdentifier());
+                propertyData.getDefinition(), propertyData.getSource(), propertyData.getRelatedSource(), propertyData.getIdentifier());
         addDomainRelationship(propertyResource, propertyData);
         addRangeInformation(propertyResource, propertyData);
         addDataGovernanceMetadata(propertyResource, propertyData);
@@ -323,7 +323,7 @@ public class OFNDataTransformer {
         relationshipResource.addProperty(RDF.type, ontModel.getProperty("http://www.w3.org/2002/07/owl#ObjectProperty"));
 
         addResourceMetadata(relationshipResource, relationshipData.getName(), relationshipData.getDescription(),
-                relationshipData.getDefinition(), relationshipData.getSource(), relationshipData.getIdentifier());
+                relationshipData.getDefinition(), relationshipData.getSource(), relationshipData.getRelatedSource(), relationshipData.getIdentifier());
         addDomainRangeRelationships(relationshipResource, relationshipData);
         addSchemeRelationship(relationshipResource);
         return relationshipResource;
@@ -491,7 +491,7 @@ public class OFNDataTransformer {
     }
 
     private void addResourceMetadata(Resource resource, String name, String description,
-                                     String definition, String source, String identifier) {
+                                     String definition, String source, String relatedSource, String identifier) {
         if (name != null && !name.trim().isEmpty()) {
             DataTypeConverter.addTypedProperty(resource, RDFS.label, name, DEFAULT_LANG, ontModel);
         }
@@ -519,28 +519,32 @@ public class OFNDataTransformer {
         }
 
         if (source != null && !source.trim().isEmpty()) {
-            addSourceReferences(resource, source);
+            addSourceReferences(resource, source, ZDROJ);
+        }
+
+        if (relatedSource != null && !relatedSource.trim().isEmpty()) {
+            addSourceReferences(resource, relatedSource, SOUVISEJICI_ZDROJ);
         }
     }
 
-    private void addSourceReferences(Resource resource, String sourceUrls) {
+    private void addSourceReferences(Resource resource, String sourceUrls, String constant) {
         if (sourceUrls.contains(";")) {
-            addMultipleSourceUrls(resource, sourceUrls);
+            addMultipleSourceUrls(resource, sourceUrls, constant);
         } else {
-            addSingleSourceUrl(resource, sourceUrls);
+            addSingleSourceUrl(resource, sourceUrls, constant);
         }
     }
 
-    private void addMultipleSourceUrls(Resource resource, String sourceUrlString) {
+    private void addMultipleSourceUrls(Resource resource, String sourceUrlString, String constant) {
         String[] urls = sourceUrlString.split(";");
         for (String url : urls) {
             if (url != null && !url.trim().isEmpty()) {
-                addSingleSourceUrl(resource, url.trim());
+                addSingleSourceUrl(resource, url.trim(), constant);
             }
         }
     }
 
-    private void addSingleSourceUrl(Resource resource, String url) {
+    private void addSingleSourceUrl(Resource resource, String url, String constant) {
         if (url == null || url.trim().isEmpty()) {
             return;
         }
@@ -552,14 +556,32 @@ public class OFNDataTransformer {
             return;
         }
 
-        Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ZDROJ);
+        switch (constant) {
+            case ZDROJ -> {
+                Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ZDROJ);
 
-        if (DataTypeConverter.isUri(transformedUrl)) {
-            resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
-            log.debug("Added source URL as resource: {}", transformedUrl);
-        } else {
-            DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
-            log.debug("Added source URL as typed literal: {}", transformedUrl);
+                if (DataTypeConverter.isUri(transformedUrl)) {
+                    resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
+                    log.debug("Added source URL as resource: {}", transformedUrl);
+                } else {
+                    DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
+                    log.debug("Added source URL as typed literal: {}", transformedUrl);
+                }
+            }
+            case SOUVISEJICI_ZDROJ -> {
+                Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + SOUVISEJICI_ZDROJ);
+
+                if (DataTypeConverter.isUri(transformedUrl)) {
+                    resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
+                    log.debug("Added related source URL as resource: {}", transformedUrl);
+                } else {
+                    DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
+                    log.debug("Added related source URL as typed literal: {}", transformedUrl);
+                }
+            }
+            default -> {
+                // continue
+            }
         }
     }
 
