@@ -251,7 +251,7 @@ public class OFNDataTransformer {
     }
 
     private Resource createClassResource(ClassData classData) {
-        String classURI = uriGenerator.generateClassURI(classData.getName(), classData.getId());
+        String classURI = uriGenerator.generateClassURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
         classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
