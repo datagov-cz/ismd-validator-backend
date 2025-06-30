@@ -163,28 +163,6 @@ public class UtilityMethods {
         return true;
     }
 
-    public static boolean isValidSource(String source) {
-        if (source == null || source.trim().isEmpty()) {
-            return false;
-        }
-
-        String trimmed = source.trim();
-
-
-        if (trimmed.matches(".*\uD83D\uDD0D.*") ||
-                trimmed.contains("<") || trimmed.contains(">") ||
-                trimmed.matches("^[#$%^&*]+$")) {
-            return false;
-        }
-
-        if (isValidUrl(trimmed)) {
-            return true;
-        }
-
-        return trimmed.matches(".*[a-zA-ZáčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ].*") &&
-                !trimmed.matches("^[a-zA-Z]{100,}$");
-    }
-
     public String transformEliUrl(String url, Boolean removeInvalidSources) {
         if (url == null || url.trim().isEmpty()) {
             return url;
