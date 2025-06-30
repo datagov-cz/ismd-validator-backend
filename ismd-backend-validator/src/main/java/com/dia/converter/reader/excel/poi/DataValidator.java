@@ -64,11 +64,9 @@ public class DataValidator {
                 .collect(java.util.stream.Collectors.toSet());
 
         for (PropertyData property : data.getProperties()) {
-            if (property.getDomain() != null && !property.getDomain().isEmpty()) {
-                if (!classNames.contains(property.getDomain())) {
-                    throw new ExcelReadingException(
-                            "Vlastnost '" + property.getName() + "' references unknown class: " + property.getDomain());
-                }
+            if (property.getDomain() != null && !property.getDomain().isEmpty() && !classNames.contains(property.getDomain())) {
+                throw new ExcelReadingException(
+                        "Vlastnost '" + property.getName() + "' references unknown class: " + property.getDomain());
             }
         }
 

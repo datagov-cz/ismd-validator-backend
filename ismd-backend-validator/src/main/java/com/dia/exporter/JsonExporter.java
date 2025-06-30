@@ -24,6 +24,8 @@ import java.util.*;
 
 import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ExcelConstants.TYP_OBSAHU_UDAJE;
+import static com.dia.constants.ExcelConstants.ZPUSOB_ZISKANI_UDEJE;
 import static com.dia.constants.ExportConstants.*;
 
 @Slf4j
@@ -221,7 +223,7 @@ public class JsonExporter {
     private Map<String, Object> orderPojemFields(Map<String, Object> pojemMap) {
         Map<String, Object> orderedPojem = new LinkedHashMap<>();
 
-        String[] orderedFields = {"iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice", "ekvivalentní pojem"};
+        String[] orderedFields = {"iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice", "ekvivalentní pojem", "způsob-sdílení-údaje", "způsob-získání-údaje", "typ-obsahu-údaje"};
 
         for (String field : orderedFields) {
             addFieldIfExists(pojemMap, orderedPojem, field);
@@ -318,9 +320,123 @@ public class JsonExporter {
 
         addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, NADRAZENA_TRIDA);
 
+        addGovernanceProperties(concept, pojemObj, namespace);
+
         addRppMetadataWithBothNamespaces(concept, pojemObj, namespace);
 
         return pojemObj;
+    }
+
+    private void addGovernanceProperties(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+        log.debug("Processing governance properties for concept: {}", concept.getLocalName());
+
+        addGovernancePropertyWithFallback(concept, pojemObj, namespace,
+                "Způsob sdílení údaje", ZPUSOB_SDILENI, "způsob-sdílení-údaje");
+
+        addGovernancePropertyWithFallback(concept, pojemObj, namespace,
+                ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údaje");
+
+        addGovernancePropertyWithFallback(concept, pojemObj, namespace,
+                TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údaje");
+    }
+
+    private void addGovernancePropertyWithFallback(Resource concept, JSONObject pojemObj, String namespace,
+                                                   String excelConstant, String originalConstant, String jsonFieldName) throws JSONException {
+
+        Property excelProperty = ontModel.getProperty(namespace + excelConstant);
+        if (concept.hasProperty(excelProperty)) {
+            addGovernancePropertyArray(concept, excelProperty, jsonFieldName, pojemObj);
+            return;
+        }
+
+        Property excelDefaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + excelConstant);
+        if (concept.hasProperty(excelDefaultProperty)) {
+            addGovernancePropertyArray(concept, excelDefaultProperty, jsonFieldName, pojemObj);
+            return;
+        }
+
+        Property originalProperty = ontModel.getProperty(namespace + originalConstant);
+        if (concept.hasProperty(originalProperty)) {
+            addGovernancePropertyArray(concept, originalProperty, jsonFieldName, pojemObj);
+            return;
+        }
+
+        Property originalDefaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + originalConstant);
+        if (concept.hasProperty(originalDefaultProperty)) {
+            addGovernancePropertyArray(concept, originalDefaultProperty, jsonFieldName, pojemObj);
+            return;
+        }
+
+        Property hyphenatedProperty = ontModel.getProperty(namespace + jsonFieldName);
+        if (concept.hasProperty(hyphenatedProperty)) {
+            addGovernancePropertyArray(concept, hyphenatedProperty, jsonFieldName, pojemObj);
+            return;
+        }
+
+        log.debug("No governance property {} found for concept: {}", jsonFieldName, concept.getLocalName());
+    }
+
+    private void addGovernancePropertyArray(Resource concept, Property property, String jsonFieldName,
+                                            JSONObject pojemObj) throws JSONException {
+        List<String> allValues = extractGovernancePropertyValues(concept, property);
+
+        if (!allValues.isEmpty()) {
+            JSONArray propArray = createJsonArray(allValues);
+            pojemObj.put(jsonFieldName, propArray);
+            log.debug("Added governance property array '{}' with {} values to concept: {}",
+                    jsonFieldName, propArray.length(), concept.getLocalName());
+        }
+    }
+
+    private List<String> extractGovernancePropertyValues(Resource concept, Property property) {
+        List<String> allValues = new ArrayList<>();
+
+        StmtIterator propIter = concept.listProperties(property);
+        while (propIter.hasNext()) {
+            Statement propStmt = propIter.next();
+            String value = extractStatementValue(propStmt);
+
+            if (value != null && !value.trim().isEmpty()) {
+                allValues.addAll(splitMultipleValues(value));
+            }
+        }
+
+        return allValues;
+    }
+
+    private String extractStatementValue(Statement statement) {
+        if (statement.getObject().isLiteral()) {
+            return statement.getString();
+        } else if (statement.getObject().isResource()) {
+            return statement.getObject().asResource().getURI();
+        }
+        return null;
+    }
+
+    private List<String> splitMultipleValues(String value) {
+        List<String> values = new ArrayList<>();
+
+        if (value.contains(";")) {
+            String[] splitValues = value.split(";");
+            for (String singleValue : splitValues) {
+                String trimmedValue = singleValue.trim();
+                if (!trimmedValue.isEmpty()) {
+                    values.add(trimmedValue);
+                }
+            }
+        } else {
+            values.add(value.trim());
+        }
+
+        return values;
+    }
+
+    private JSONArray createJsonArray(List<String> values) {
+        JSONArray array = new JSONArray();
+        for (String value : values) {
+            array.put(value);
+        }
+        return array;
     }
 
     private void addResourceArrayPropertyFromEitherNamespace(Resource concept,

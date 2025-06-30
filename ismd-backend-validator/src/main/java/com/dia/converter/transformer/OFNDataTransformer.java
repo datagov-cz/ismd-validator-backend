@@ -25,7 +25,16 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.dia.constants.ArchiConstants.*;
-import static com.dia.constants.TypeMappings.*;
+import static com.dia.constants.ArchiConstants.AGENDA;
+import static com.dia.constants.ArchiConstants.AIS;
+import static com.dia.constants.ArchiConstants.DEFINICE;
+import static com.dia.constants.ArchiConstants.IDENTIFIKATOR;
+import static com.dia.constants.ArchiConstants.JE_PPDF;
+import static com.dia.constants.ArchiConstants.NAZEV;
+import static com.dia.constants.ArchiConstants.POPIS;
+import static com.dia.constants.ArchiConstants.SOUVISEJICI_ZDROJ;
+import static com.dia.constants.ArchiConstants.ZDROJ;
+import static com.dia.constants.ExcelConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 
@@ -288,11 +297,30 @@ public class OFNDataTransformer {
 
         addResourceMetadata(propertyResource, propertyData.getName(), propertyData.getDescription(),
                 propertyData.getDefinition(), propertyData.getSource(), propertyData.getRelatedSource(), propertyData.getIdentifier());
+
+        addPropertySpecificMetadata(propertyResource, propertyData);
+
         addDomainRelationship(propertyResource, propertyData);
         addRangeInformation(propertyResource, propertyData);
         addDataGovernanceMetadata(propertyResource, propertyData);
         addSchemeRelationship(propertyResource);
         return propertyResource;
+    }
+
+    private void addPropertySpecificMetadata(Resource propertyResource, PropertyData propertyData) {
+        log.debug("Adding property-specific metadata for: {}", propertyData.getName());
+
+        if (propertyData.getAlternativeName() != null && !propertyData.getAlternativeName().trim().isEmpty()) {
+            log.debug("Processing alternative names for property {}: '{}'", propertyData.getName(), propertyData.getAlternativeName());
+            addAlternativeNames(propertyResource, propertyData.getAlternativeName());
+        } else {
+            log.debug("No alternative names found for property: {}", propertyData.getName());
+        }
+
+        if (propertyData.getEquivalentConcept() != null && !propertyData.getEquivalentConcept().trim().isEmpty()) {
+            log.debug("Processing equivalent concept for property {}: '{}'", propertyData.getName(), propertyData.getEquivalentConcept());
+            addEquivalentConcept(propertyResource, propertyData.getEquivalentConcept(), "property");
+        }
     }
 
     private void transformRelationships(List<RelationshipData> relationships) {
@@ -324,9 +352,28 @@ public class OFNDataTransformer {
 
         addResourceMetadata(relationshipResource, relationshipData.getName(), relationshipData.getDescription(),
                 relationshipData.getDefinition(), relationshipData.getSource(), relationshipData.getRelatedSource(), relationshipData.getIdentifier());
+
+        addRelationshipSpecificMetadata(relationshipResource, relationshipData);
+
         addDomainRangeRelationships(relationshipResource, relationshipData);
         addSchemeRelationship(relationshipResource);
         return relationshipResource;
+    }
+
+    private void addRelationshipSpecificMetadata(Resource relationshipResource, RelationshipData relationshipData) {
+        log.debug("Adding relationship-specific metadata for: {}", relationshipData.getName());
+
+        if (relationshipData.getAlternativeName() != null && !relationshipData.getAlternativeName().trim().isEmpty()) {
+            log.debug("Processing alternative names for relationship {}: '{}'", relationshipData.getName(), relationshipData.getAlternativeName());
+            addAlternativeNames(relationshipResource, relationshipData.getAlternativeName());
+        } else {
+            log.debug("No alternative names found for relationship: {}", relationshipData.getName());
+        }
+
+        if (relationshipData.getEquivalentConcept() != null && !relationshipData.getEquivalentConcept().trim().isEmpty()) {
+            log.debug("Processing equivalent concept for relationship {}: '{}'", relationshipData.getName(), relationshipData.getEquivalentConcept());
+            addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), "relationship");
+        }
     }
 
     private void transformHierarchies(List<HierarchyData> hierarchies) {
@@ -600,17 +647,22 @@ public class OFNDataTransformer {
 
     private void addEquivalentConcept(Resource classResource, ClassData classData) {
         if (classData.getEquivalentConcept() != null && !classData.getEquivalentConcept().trim().isEmpty()) {
-            Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
-            String equivalentConcept = classData.getEquivalentConcept();
-
-            if (DataTypeConverter.isUri(equivalentConcept)) {
-                classResource.addProperty(exactMatchProperty, ontModel.createResource(equivalentConcept));
-                log.debug("Added equivalent concept as URI: {}", equivalentConcept);
-            } else {
-                DataTypeConverter.addTypedProperty(classResource, exactMatchProperty, equivalentConcept, null, ontModel);
-                log.debug("Added equivalent concept as typed literal: {}", equivalentConcept);
-            }
+            log.debug("Processing equivalent concept for class {}: '{}'", classData.getName(), classData.getEquivalentConcept());
+            addEquivalentConcept(classResource, classData.getEquivalentConcept(), "class");
         }
+    }
+
+    private void addEquivalentConcept(Resource resource, String equivalentConcept, String entityType) {
+        if (!UtilityMethods.isValidIRI(equivalentConcept)) {
+            log.warn("Skipping invalid equivalent concept for {} '{}': '{}' is not a valid IRI",
+                    entityType, resource.getLocalName(), equivalentConcept);
+            return;
+        }
+
+        Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
+        resource.addProperty(exactMatchProperty, ontModel.createResource(equivalentConcept));
+        log.debug("Added valid equivalent concept IRI for {} '{}': {}",
+                entityType, resource.getLocalName(), equivalentConcept);
     }
 
     private void addAgenda(Resource classResource, ClassData classData) {
@@ -657,24 +709,35 @@ public class OFNDataTransformer {
 
     private void addAlternativeNames(Resource resource, String altNamesValue) {
         if (altNamesValue == null || altNamesValue.isEmpty()) {
+            log.debug("No alternative names to add for resource: {}", resource.getLocalName());
             return;
         }
+
+        log.debug("Processing alternative names for {}: '{}'", resource.getLocalName(),
+                altNamesValue.length() > 100 ? altNamesValue.substring(0, 100) + "..." : altNamesValue);
 
         Property altNameProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ALTERNATIVNI_NAZEV);
 
         if (!altNamesValue.contains(";")) {
             DataTypeConverter.addTypedProperty(resource, altNameProperty, altNamesValue, DEFAULT_LANG, ontModel);
-            log.debug("Added single alternative name: {}", altNamesValue);
+            log.debug("Added single alternative name for {}: {}", resource.getLocalName(),
+                    altNamesValue.length() > 50 ? altNamesValue.substring(0, 50) + "..." : altNamesValue);
             return;
         }
 
-        Arrays.stream(altNamesValue.split(";"))
-                .map(String::trim)
-                .filter(name -> !name.isEmpty())
-                .forEach(name -> {
-                    DataTypeConverter.addTypedProperty(resource, altNameProperty, name, DEFAULT_LANG, ontModel);
-                    log.debug("Added alternative name: {}", name);
-                });
+        String[] altNames = altNamesValue.split(";");
+        log.debug("Found {} alternative names separated by semicolons for {}", altNames.length, resource.getLocalName());
+
+        for (String name : altNames) {
+            String trimmedName = name.trim();
+            if (!trimmedName.isEmpty()) {
+                DataTypeConverter.addTypedProperty(resource, altNameProperty, trimmedName, DEFAULT_LANG, ontModel);
+                log.debug("Added alternative name for {}: {}", resource.getLocalName(),
+                        trimmedName.length() > 50 ? trimmedName.substring(0, 50) + "..." : trimmedName);
+            }
+        }
+
+        log.debug("Finished processing alternative names for {}", resource.getLocalName());
     }
 
     private void addDomainRelationship(Resource propertyResource, PropertyData propertyData) {
@@ -718,9 +781,9 @@ public class OFNDataTransformer {
     private void addDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
         addPPDFData(propertyResource, propertyData);
         addPublicOrNonPublicData(propertyResource, propertyData);
-        addGovernanceProperty(propertyResource, propertyData.getSharingMethod(), ZPUSOB_SDILENI);
-        addGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), ZPUSOB_ZISKANI);
-        addGovernanceProperty(propertyResource, propertyData.getContentType(), TYP_OBSAHU);
+        handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(propertyResource, propertyData.getContentType(), "content-type");
     }
 
     private void addPPDFData(Resource propertyResource, PropertyData propertyData) {
@@ -728,8 +791,8 @@ public class OFNDataTransformer {
             String value = propertyData.getSharedInPPDF();
             Property ppdfProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + JE_PPDF);
 
-            if (isBooleanValue(value)) {
-                Boolean boolValue = normalizeCzechBoolean(value);
+            if (UtilityMethods.isBooleanValue(value)) {
+                Boolean boolValue = UtilityMethods.normalizeCzechBoolean(value);
                 DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty,
                         boolValue.toString(), null, ontModel);
                 log.debug("Added normalized PPDF boolean: {} -> {}", value, boolValue);
@@ -750,8 +813,8 @@ public class OFNDataTransformer {
         }
 
         if (isPublicValue != null && !isPublicValue.trim().isEmpty()) {
-            if (isBooleanValue(isPublicValue)) {
-                Boolean isPublic = normalizeCzechBoolean(isPublicValue);
+            if (UtilityMethods.isBooleanValue(isPublicValue)) {
+                Boolean isPublic = UtilityMethods.normalizeCzechBoolean(isPublicValue);
 
                 if (Boolean.TRUE.equals(isPublic)) {
                     if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
@@ -808,6 +871,40 @@ public class OFNDataTransformer {
         } else {
             log.warn("Privacy provision transformation resulted in empty value for concept '{}': '{}'",
                     propertyData.getName(), trimmedProvision);
+        }
+    }
+
+    private void handleGovernanceProperty(Resource resource, String value, String propertyType) {
+        if (value == null || value.trim().isEmpty()) {
+            log.debug("Skipping empty governance property '{}' for resource: {}", propertyType, resource.getLocalName());
+            return;
+        }
+
+        String propertyConstant = getGovernancePropertyConstant(propertyType);
+
+        log.debug("Using constant '{}' for governance property type '{}'", propertyConstant, propertyType);
+        addGovernanceProperty(resource, value, propertyConstant);
+    }
+
+    private String getGovernancePropertyConstant(String propertyType) {
+        return switch (propertyType) {
+            case "sharing-method" -> getConstantValue(ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údaje");
+            case "acquisition-method" -> getConstantValue(ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údaje");
+            case "content-type" -> getConstantValue(TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údaje");
+            default -> {
+                log.warn("Unknown governance property type: {}", propertyType);
+                yield null;
+            }
+        };
+    }
+
+    private String getConstantValue(String optionOne, String optionTwo, String defaultValue) {
+        if (optionOne != null && !optionOne.trim().isEmpty()) {
+            return UtilityMethods.sanitizeForIRI(optionOne);
+        } else if (optionTwo != null && !optionTwo.trim().isEmpty()) {
+            return optionTwo;
+        } else {
+            return defaultValue;
         }
     }
 
