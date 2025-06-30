@@ -1,6 +1,6 @@
 package com.dia.engine;
 
-import com.dia.converter.archi.ArchiConverter;
+import com.dia.converter.reader.archi.ArchiReader;
 import com.dia.converter.reader.ea.EnterpriseArchitectReader;
 import com.dia.converter.data.OntologyData;
 import com.dia.converter.reader.excel.ExcelReader;
@@ -17,33 +17,42 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Map;
 
-import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class ConverterEngine {
 
-    private final ArchiConverter archiConverter;
-    private final ExcelReader excelReader;
-    private final OFNDataTransformer OFNDataTransformer;
+    private final OFNDataTransformer ofnDataTransformer;
+    private final ArchiReader archiReader;
     private final EnterpriseArchitectReader eaReader;
+    private final ExcelReader excelReader;
 
-    private TransformationResult excelTransformationResult;
-    private OntologyData excelOntologyData;
+    private OntologyData archiOntologyData;
     private OntologyData eaOntologyData;
+    private OntologyData excelOntologyData;
+
+    private TransformationResult archiTransformationResult;
     private TransformationResult eaTransformationResult;
+    private TransformationResult excelTransformationResult;
 
     private final Map<FileFormat, ConverterAdapter> converterRegistry = Map.of(
             FileFormat.ARCHI_XML, new ConverterAdapter() {
                 @Override
                 public String exportToJson() throws JsonExportException {
-                    return archiConverter.exportToJson();
+                    if (archiTransformationResult == null) {
+                        throw new JsonExportException("Archi transformation result is not available.");
+                    }
+                    return ofnDataTransformer.exportToJson(archiTransformationResult);
                 }
 
                 @Override
                 public String exportToTurtle() throws TurtleExportException {
-                    return archiConverter.exportToTurtle();
+                    if (archiTransformationResult == null) {
+                        throw new TurtleExportException("Archi transformation result is not available.");
+                    }
+                    return ofnDataTransformer.exportToTurtle(archiTransformationResult);
                 }
             },
             FileFormat.XLSX, new ConverterAdapter() {
@@ -52,7 +61,7 @@ public class ConverterEngine {
                     if (excelTransformationResult == null) {
                         throw new JsonExportException("Excel transformation result is not available.");
                     }
-                    return OFNDataTransformer.exportToJson(excelTransformationResult);
+                    return ofnDataTransformer.exportToJson(excelTransformationResult);
                 }
 
                 @Override
@@ -60,7 +69,7 @@ public class ConverterEngine {
                     if (excelTransformationResult == null) {
                         throw new TurtleExportException("Excel transformation result is not available.");
                     }
-                    return OFNDataTransformer.exportToTurtle(excelTransformationResult);
+                    return ofnDataTransformer.exportToTurtle(excelTransformationResult);
                 }
             },
             FileFormat.XMI, new ConverterAdapter() {
@@ -69,7 +78,7 @@ public class ConverterEngine {
                     if (eaTransformationResult == null) {
                         throw new JsonExportException("EA transformation result is not available.");
                     }
-                    return OFNDataTransformer.exportToJson(eaTransformationResult);
+                    return ofnDataTransformer.exportToJson(eaTransformationResult);
                 }
 
                 @Override
@@ -77,33 +86,27 @@ public class ConverterEngine {
                     if (eaTransformationResult == null) {
                         throw new TurtleExportException("EA transformation result is not available.");
                     }
-                    return OFNDataTransformer.exportToTurtle(eaTransformationResult);
+                    return ofnDataTransformer.exportToTurtle(eaTransformationResult);
                 }
             }
     );
 
     public void parseArchiFromString(String content) throws FileParsingException {
         String requestId = MDC.get(LOG_REQUEST_ID);
-        int contentLength = content != null ? content.length() : 0;
-
-        log.info("Starting Archi XML parsing: requestId={}, contentLength={}",
-                requestId, contentLength);
+        log.info("Starting Archi file parsing: requestId={}", requestId);
 
         try {
             long startTime = System.currentTimeMillis();
-            archiConverter.parseFromString(content);
+            archiOntologyData = archiReader.readArchiFromString(content);
             long duration = System.currentTimeMillis() - startTime;
-
-            log.info("Archi XML parsing completed: requestId={}, durationMs={}",
+            log.info("Archi file parsing completed: requestId={}, durationMs={}",
                     requestId, duration);
         } catch (FileParsingException e) {
-            log.error("Failed to parse Archi XML: requestId={}, error={}",
-                    requestId, e.getMessage(), e);
+            log.error("Failed to parse Archi file: requestId={}", requestId, e);
             throw e;
         } catch (Exception e) {
-            log.error("Unexpected error during Archi XML parsing: requestId={}",
-                    requestId, e);
-            throw new FileParsingException("Během čtení souboru došlo k nečekané chybě.", e);
+            log.error("Failed to parse Archi file: requestId={}", requestId, e);
+            throw new FileParsingException("Během čtení souboru došlo k chybě.", e);
         }
     }
 
@@ -111,13 +114,11 @@ public class ConverterEngine {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Archi model conversion: requestId={}", requestId);
         log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
-
         try {
             long startTime = System.currentTimeMillis();
-            archiConverter.setRemoveELI(removeInvalidSources);
-            archiConverter.convert();
+            ofnDataTransformer.setRemoveELI(removeInvalidSources);
+            archiTransformationResult = ofnDataTransformer.transform(archiOntologyData);
             long duration = System.currentTimeMillis() - startTime;
-
             log.info("Archi model conversion completed: requestId={}, durationMs={}",
                     requestId, duration);
         } catch (ConversionException e) {
@@ -203,7 +204,7 @@ public class ConverterEngine {
             log.error("Failed to parse Excel file: requestId={}, error={}",
                     requestId, e.getMessage(), e);
             throw e;
-        } catch (ExcelReadingException e) {
+        } catch (Exception e) {
             log.error("Unexpected error during Excel file parsing: requestId={}",
                     requestId, e);
             throw new ExcelReadingException("Během čtení souboru došlo k nečekané chybě.", e);
@@ -216,8 +217,8 @@ public class ConverterEngine {
         log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
         try {
             long startTime = System.currentTimeMillis();
-            OFNDataTransformer.setRemoveELI(removeInvalidSources);
-            excelTransformationResult = OFNDataTransformer.transform(excelOntologyData);
+            ofnDataTransformer.setRemoveELI(removeInvalidSources);
+            excelTransformationResult = ofnDataTransformer.transform(excelOntologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("Excel model conversion completed: requestId={}, durationMs={}",
                     requestId, duration);
@@ -245,7 +246,7 @@ public class ConverterEngine {
         } catch (IOException e) {
             log.error("Failed to parse EA file: requestId={}", requestId, e);
             throw e;
-        } catch (FileParsingException e) {
+        } catch (Exception e) {
             log.error("Failed to parse EA file: requestId={}", requestId, e);
             throw new FileParsingException("Během čtení souboru došlo k chybě.", e);
         }
@@ -257,8 +258,8 @@ public class ConverterEngine {
         log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
         try {
             long startTime = System.currentTimeMillis();
-            OFNDataTransformer.setRemoveELI(removeInvalidSources);
-            eaTransformationResult = OFNDataTransformer.transform(eaOntologyData);
+            ofnDataTransformer.setRemoveELI(removeInvalidSources);
+            eaTransformationResult = ofnDataTransformer.transform(eaOntologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("EA model conversion completed: requestId={}, durationMs={}",
                     requestId, duration);
@@ -271,6 +272,5 @@ public class ConverterEngine {
                     requestId, e);
             throw new ConversionException("Během konverze EnterpriseArchitect souboru došlo k nečekané chybě.");
         }
-
     }
 }

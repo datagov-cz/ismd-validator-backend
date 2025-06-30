@@ -6,15 +6,17 @@ import lombok.Setter;
 @Getter
 @Setter
 public class RelationshipData {
-    private String domain;  // First "Subjekt nebo objekt práva" column
+    private String domain;
     private String name;
-    private String range;   // Second "Subjekt nebo objekt práva" column
+    private String range;
+    private String relationshipType;
 
     private String description;
     private String definition;
     private String source;
 
     private String relatedSource;
+    // Excel only
     private String superRelation;
     private String alternativeName;
     private String equivalentConcept;

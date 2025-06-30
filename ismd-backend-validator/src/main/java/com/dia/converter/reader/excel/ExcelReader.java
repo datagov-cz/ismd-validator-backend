@@ -13,10 +13,11 @@ import org.springframework.stereotype.Component;
 import java.io.InputStream;
 import java.util.List;
 
-import static com.dia.constants.ExcelOntologyConstants.*;
+import static com.dia.constants.ExcelConstants.*;
 
 /**
  * ExcelReader - Reads and pareses ontology data from Excel files
+ * TODO: verify possibility of TypeMappings usage
  */
 @Component
 @Slf4j
@@ -121,6 +122,7 @@ public class ExcelReader {
                 .withColumn(NADRAZENY_POJEM, PropertyData::setSuperProperty)
                 .withColumn(ALT_NAZEV, PropertyData::setAlternativeName)
                 .withColumn(EKVIVALENTNI_POJEM, PropertyData::setEquivalentConcept)
+                // TODO verify whether Id or Identifier is required
                 .withColumn(IDENTIFIKATOR, PropertyData::setIdentifier)
                 .withColumn(DATOVY_TYP, PropertyData::setDataType)
                 .withColumn(JE_PPDF, PropertyData::setSharedInPPDF)

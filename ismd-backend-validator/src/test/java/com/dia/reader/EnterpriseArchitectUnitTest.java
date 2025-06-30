@@ -18,7 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-import static com.dia.constants.ArchiOntologyConstants.NS;
+import static com.dia.constants.ArchiConstants.DEFAULT_NS;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -108,7 +108,6 @@ class EnterpriseArchitectUnitTest {
         if (expectedDomain != null) {
             assertEquals(expectedDomain, property.getDomain());
         }
-        assertTrue(property.hasValidData());
     }
 
     @ParameterizedTest
@@ -154,7 +153,7 @@ class EnterpriseArchitectUnitTest {
 
         // Should generate namespace if not present
         String namespace = metadata.getNamespace();
-        assertTrue(namespace == null || namespace.isEmpty() || namespace.startsWith(NS));
+        assertTrue(namespace == null || namespace.isEmpty() || namespace.startsWith(DEFAULT_NS));
     }
 
     @Test
@@ -187,7 +186,6 @@ class EnterpriseArchitectUnitTest {
 
         // Validate data quality
         result.getClasses().forEach(c -> assertTrue(c.hasValidData()));
-        result.getProperties().forEach(p -> assertTrue(p.hasValidData()));
         result.getRelationships().stream()
                 .filter(RelationshipData::hasValidData)
                 .forEach(r -> assertNotNull(r.getName()));

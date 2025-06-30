@@ -1,6 +1,7 @@
 package com.dia.utility;
 
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -9,10 +10,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.dia.constants.ArchiOntologyConstants.XSD;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @UtilityClass
+@Slf4j
 public class UtilityMethods {
 
     public boolean isValidFirstChar(char ch) {
@@ -162,35 +163,206 @@ public class UtilityMethods {
         return true;
     }
 
-    public String transformEliUrl(String url, Boolean removeELI) {
-        if (Boolean.FALSE.equals(removeELI)) {
+    public String transformEliUrl(String url, Boolean removeInvalidSources) {
+        if (url == null || url.trim().isEmpty()) {
             return url;
         }
 
+        String trimmed = url.trim();
+
         Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
-        Matcher matcher = eliPattern.matcher(url);
+        Matcher matcher = eliPattern.matcher(trimmed);
 
         if (matcher.matches()) {
             String eliPart = matcher.group(1);
             return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
         } else {
-            return url;
+            if (Boolean.TRUE.equals(removeInvalidSources)) {
+                return "";
+            } else {
+                return trimmed;
+            }
         }
     }
 
-    public String mapDataTypeToXSD(String dataType) {
-        String normalized = dataType.toLowerCase().trim();
+    public boolean isValidAgendaValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return false;
+        }
+        value = value.trim();
 
-        return switch (normalized) {
-            case "string", "text", "řetězec" -> XSD + "string";
-            case "boolean", "bool", "logický" -> XSD + "boolean";
-            case "integer", "int", "celé číslo" -> XSD + "integer";
-            case "decimal", "float", "double", "desetinné číslo" -> XSD + "decimal";
-            case "date", "datum" -> XSD + "date";
-            case "time", "čas" -> XSD + "time";
-            case "datetime", "datum a čas" -> XSD + "dateTime";
-            case "uri", "url", "anyuri" -> XSD + "anyURI";
-            default -> XSD + "string"; // Safe fallback
-        };
+        if (value.matches("^(\\d+)$")) {
+            return true;
+        }
+
+        if (value.matches("^A(\\d+)$")) {
+            return true;
+        }
+
+        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/agenda/A)(\\d+)$");
+    }
+
+    public String transformAgendaValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return value;
+        }
+        value = value.trim();
+
+        if (value.matches("^(\\d+)$")) {
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A" + value;
+        }
+
+        if (value.matches("^A(\\d+)$")) {
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/" + value;
+        }
+
+        return value;
+    }
+
+    public boolean isValidAISValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return false;
+        }
+        value = value.trim();
+
+        if (value.matches("^(\\d+)$")) {
+            return true;
+        }
+
+        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/isvs/)(\\d+)$");
+    }
+
+    public String transformAISValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return value;
+        }
+        value = value.trim();
+
+        if (value.matches("^(\\d+)$")) {
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/" + value;
+        }
+
+        return value;
+    }
+
+    public String transformEliPrivacyProvision(String provision, Boolean removeELI) {
+        if (provision == null || provision.trim().isEmpty()) {
+            return null;
+        }
+
+        provision = provision.trim();
+
+        if (containsEliPattern(provision)) {
+            String eliPart = extractEliPart(provision);
+            if (eliPart != null) {
+                String transformed = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+                log.debug("Transformed ELI provision: {} -> {}", provision, transformed);
+                return transformed;
+            }
+        }
+
+        if (Boolean.TRUE.equals(removeELI)) {
+            log.debug("Filtering out non-ELI provision (removeELI=true): {}", provision);
+            return null;
+        }
+
+        return provision;
+    }
+
+    public boolean containsEliPattern(String provision) {
+        return provision.matches(".*[/\\\\]eli[/\\\\]cz[/\\\\].*");
+    }
+
+    public String extractEliPart(String provision) {
+        String pattern = ".*?([/\\\\]eli[/\\\\]cz[/\\\\].*)";
+        java.util.regex.Pattern regex = java.util.regex.Pattern.compile(pattern);
+        java.util.regex.Matcher matcher = regex.matcher(provision);
+
+        if (matcher.find()) {
+            String eliPart = matcher.group(1);
+            eliPart = eliPart.replace('\\', '/');
+            if (eliPart.startsWith("/")) {
+                eliPart = eliPart.substring(1);
+            }
+            return eliPart;
+        }
+
+        return null;
+    }
+
+    public static boolean isValidIRI(String iri) {
+        if (iri == null || iri.trim().isEmpty()) {
+            return false;
+        }
+
+        String trimmed = iri.trim();
+
+        if (containsInvalidPatterns(trimmed)) {
+            return false;
+        }
+
+        if (!hasValidIRIStructure(trimmed)) {
+            return false;
+        }
+
+        return isValidIRIPattern(trimmed);
+    }
+
+    private static boolean containsInvalidPatterns(String iri) {
+        String lower = iri.toLowerCase();
+
+        return lower.contains(" text") ||
+                lower.startsWith("ne-") ||
+                lower.equals("invalid") ||
+                lower.equals("n/a") ||
+                lower.equals("tbd") ||
+                lower.equals("todo") ||
+                iri.contains(" ") ||
+                iri.contains("\t") ||
+                iri.contains("\n") ||
+                iri.contains("\r");
+    }
+
+    private static boolean hasValidIRIStructure(String iri) {
+        if (!iri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*:.*")) {
+            return false;
+        }
+
+        if (iri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*://.*")) {
+            String afterScheme = iri.substring(iri.indexOf("://") + 3);
+            return !afterScheme.isEmpty();
+        }
+
+        return true;
+    }
+
+    private static boolean isValidIRIPattern(String iri) {
+        if (!iri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*:.*")) {
+            return false;
+        }
+
+        if (iri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*://.*")) {
+            String afterScheme = iri.substring(iri.indexOf("://") + 3);
+
+            if (afterScheme.isEmpty()) {
+                return false;
+            }
+
+            return !afterScheme.contains(" ") &&
+                    !afterScheme.contains("\t") &&
+                    !afterScheme.contains("\n") &&
+                    !afterScheme.contains("\r") &&
+                    !afterScheme.contains("<") &&
+                    !afterScheme.contains(">") &&
+                    !afterScheme.contains("\"") &&
+                    !afterScheme.contains("{") &&
+                    !afterScheme.contains("}") &&
+                    !afterScheme.contains("|") &&
+                    !afterScheme.contains("\\") &&
+                    !afterScheme.contains("^") &&
+                    !afterScheme.contains("`");
+        }
+
+        return true;
     }
 }

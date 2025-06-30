@@ -26,8 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.dia.constants.ArchiOntologyConstants.*;
-import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ArchiConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
@@ -47,7 +47,7 @@ class TurtleExporterUnitTest {
         resourceMap = new HashMap<>();
         modelName = "Test Vocabulary";
         modelProperties = new HashMap<>();
-        effectiveNamespace = NS; // Add effectiveNamespace
+        effectiveNamespace = DEFAULT_NS; // Add effectiveNamespace
         modelProperties.put("adresa lokálního katalogu dat", effectiveNamespace);
         MDC.put(LOG_REQUEST_ID, "test-request-123");
         // Fix constructor call - add effectiveNamespace parameter
@@ -227,12 +227,12 @@ class TurtleExporterUnitTest {
     @TestFactory
     Stream<DynamicTest> propertyMappingTests() {
         return Stream.of(
-                dynamicTest("DCTerms.source mapping", () -> testPropertyMapping(LABEL_ZDROJ, DCTerms.source, "http://example.org/source")),
-                dynamicTest("DCTerms.references mapping", () -> testPropertyMapping(LABEL_SZ, DCTerms.references, "http://example.org/related")),
-                dynamicTest("RDFS.subClassOf mapping", () -> testPropertyMapping(LABEL_NT, RDFS.subClassOf, effectiveNamespace + "super-class")),
+                dynamicTest("DCTerms.source mapping", () -> testPropertyMapping(ZDROJ, DCTerms.source, "http://example.org/source")),
+                dynamicTest("DCTerms.references mapping", () -> testPropertyMapping(SOUVISEJICI_ZDROJ, DCTerms.references, "http://example.org/related")),
+                dynamicTest("RDFS.subClassOf mapping", () -> testPropertyMapping(NADRAZENA_TRIDA, RDFS.subClassOf, effectiveNamespace + "super-class")),
                 dynamicTest("Boolean property mapping", this::testBooleanPropertyMapping),
-                dynamicTest("AIS property mapping", () -> testComplexPropertyMapping(LABEL_AIS, NS + AGENDOVY_104 + LABEL_UDAJE_AIS, "AIS-value")),
-                dynamicTest("AGENDA property mapping", () -> testComplexPropertyMapping(LABEL_AGENDA, NS + AGENDOVY_104 + AGENDA_LONG, "agenda-value"))
+                dynamicTest("AIS property mapping", () -> testComplexPropertyMapping(AIS, DEFAULT_NS + AGENDOVY_104 + UDAJE_AIS, "AIS-value")),
+                dynamicTest("AGENDA property mapping", () -> testComplexPropertyMapping(AGENDA, DEFAULT_NS + AGENDOVY_104 + AGENDA_LONG, "agenda-value"))
         );
     }
 
@@ -261,10 +261,10 @@ class TurtleExporterUnitTest {
 
     static Stream<Arguments> advancedConceptTypeArguments() {
         return Stream.of(
-                Arguments.of("TSP type mapping", NS + VS_POJEM + LABEL_TSP),
-                Arguments.of("TOP type mapping", NS + VS_POJEM + LABEL_TOP),
-                Arguments.of("Public data type mapping", NS + LEGISLATIVNI_111_VU),
-                Arguments.of("Non-public data type mapping", NS + LEGISLATIVNI_111_NVU)
+                Arguments.of("TSP type mapping", DEFAULT_NS + VS_POJEM + TSP),
+                Arguments.of("TOP type mapping", DEFAULT_NS + VS_POJEM + TOP),
+                Arguments.of("Public data type mapping", DEFAULT_NS + LEGISLATIVNI_111_VU),
+                Arguments.of("Non-public data type mapping", DEFAULT_NS + LEGISLATIVNI_111_NVU)
         );
     }
 
@@ -423,10 +423,10 @@ class TurtleExporterUnitTest {
     }
 
     private void testBooleanPropertyMapping() {
-        setupModelWithCustomProperty(LABEL_JE_PPDF, "true");
+        setupModelWithCustomProperty(JE_PPDF, "true");
         Model parsedModel = exportAndParseModel();
 
-        String expectedPropertyURI = NS + AGENDOVY_104 + LABEL_JE_PPDF_LONG;
+        String expectedPropertyURI = DEFAULT_NS + AGENDOVY_104 + JE_PPDF_LONG;
         Property expectedProperty = parsedModel.createProperty(expectedPropertyURI);
 
         assertTrue(parsedModel.contains(null, expectedProperty, (RDFNode) null),
@@ -489,7 +489,7 @@ class TurtleExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         // Use the sanitized constants - these now work correctly
-        OntClass pojemClass = ontModel.createClass(namespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.createClass(namespace + POJEM);
         Resource testConcept = ontModel.createResource(namespace + "test-concept");
         testConcept.addProperty(RDF.type, pojemClass);
         testConcept.addProperty(RDFS.label, "Test Concept", "cs");
@@ -498,7 +498,7 @@ class TurtleExporterUnitTest {
 
     private void setupModelWithConcepts() {
         setupMinimalOntologyModel();
-        OntClass pojemClass = ontModel.getOntClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.getOntClass(effectiveNamespace + POJEM);
 
         Resource concept2 = ontModel.createResource(effectiveNamespace + "concept-2");
         concept2.addProperty(RDF.type, pojemClass);
@@ -521,7 +521,7 @@ class TurtleExporterUnitTest {
     private void setupModelWithBooleanValue(String booleanValue) {
         setupMinimalOntologyModel();
         Resource concept = resourceMap.get("test-concept");
-        Property ppdfProp = ontModel.createProperty(effectiveNamespace + LABEL_JE_PPDF);
+        Property ppdfProp = ontModel.createProperty(effectiveNamespace + JE_PPDF);
         concept.addProperty(ppdfProp, booleanValue);
     }
 
@@ -530,7 +530,7 @@ class TurtleExporterUnitTest {
         ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
         Resource concept = ontModel.createResource(effectiveNamespace + "multilingual-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(RDFS.label, "Czech Concept", "cs");
@@ -543,10 +543,10 @@ class TurtleExporterUnitTest {
         ontology.addProperty(RDF.type, OWL2.Ontology);
 
         // Use sanitized constants
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
-        OntClass tridaClass = ontModel.createClass(effectiveNamespace + TYP_TRIDA);
-        OntClass vlastnostClass = ontModel.createClass(effectiveNamespace + TYP_VLASTNOST);
-        OntClass vztahClass = ontModel.createClass(effectiveNamespace + TYP_VZTAH);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
+        OntClass tridaClass = ontModel.createClass(effectiveNamespace + TRIDA);
+        OntClass vlastnostClass = ontModel.createClass(effectiveNamespace + VLASTNOST);
+        OntClass vztahClass = ontModel.createClass(effectiveNamespace + VZTAH);
 
         // Class concept
         Resource classConcept = ontModel.createResource(effectiveNamespace + "class-concept");
@@ -572,12 +572,12 @@ class TurtleExporterUnitTest {
         ontology.addProperty(RDF.type, OWL2.Ontology);
 
         // Use sanitized constants
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
-        OntClass tridaClass = ontModel.createClass(effectiveNamespace + TYP_TRIDA);
-        OntClass tspClass = ontModel.createClass(effectiveNamespace + TYP_TSP);
-        OntClass topClass = ontModel.createClass(effectiveNamespace + TYP_TOP);
-        OntClass verejnyUdajClass = ontModel.createClass(effectiveNamespace + TYP_VEREJNY_UDAJ);
-        OntClass neverejnyUdajClass = ontModel.createClass(effectiveNamespace + TYP_NEVEREJNY_UDAJ);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
+        OntClass tridaClass = ontModel.createClass(effectiveNamespace + TRIDA);
+        OntClass tspClass = ontModel.createClass(effectiveNamespace + TSP);
+        OntClass topClass = ontModel.createClass(effectiveNamespace + TOP);
+        OntClass verejnyUdajClass = ontModel.createClass(effectiveNamespace + VEREJNY_UDAJ);
+        OntClass neverejnyUdajClass = ontModel.createClass(effectiveNamespace + NEVEREJNY_UDAJ);
 
         // TSP concept (needs both TYP_TRIDA and TYP_TSP)
         Resource tspConcept = ontModel.createResource(effectiveNamespace + "tsp-concept");
@@ -612,7 +612,7 @@ class TurtleExporterUnitTest {
         Resource ontology2 = ontModel.createOntology(effectiveNamespace + "vocab-2");
         ontology2.addProperty(RDF.type, OWL2.Ontology);
 
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
 
         Resource concept1 = ontModel.createResource(effectiveNamespace + "concept-1");
         concept1.addProperty(RDF.type, pojemClass);
@@ -627,7 +627,7 @@ class TurtleExporterUnitTest {
         Resource ontology = ontModel.createOntology(effectiveNamespace + "large-vocab");
         ontology.addProperty(RDF.type, OWL2.Ontology);
 
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + TYP_POJEM);
+        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
 
         for (int i = 0; i < 1000; i++) {
             Resource concept = ontModel.createResource(effectiveNamespace + "concept-" + i);

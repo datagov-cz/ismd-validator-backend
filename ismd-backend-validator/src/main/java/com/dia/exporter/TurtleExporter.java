@@ -20,8 +20,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dia.constants.ArchiOntologyConstants.*;
-import static com.dia.constants.ConvertorControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.ExportConstants.Turtle.*;
+import static com.dia.constants.ExportConstants.Common.*;
+import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 
 @Slf4j
 public class TurtleExporter {
@@ -36,12 +38,12 @@ public class TurtleExporter {
     private static final Map<String, String> STANDARD_PREFIXES = new HashMap<>();
 
     static {
-        STANDARD_PREFIXES.put("dct", DCTerms.getURI());
-        STANDARD_PREFIXES.put("owl", OWL2.getURI());
-        STANDARD_PREFIXES.put("rdf", RDF.getURI());
-        STANDARD_PREFIXES.put("rdfs", RDFS.getURI());
-        STANDARD_PREFIXES.put("skos", SKOS.getURI());
-        STANDARD_PREFIXES.put("xsd", XSD);
+        STANDARD_PREFIXES.put(PREFIX_DCT, DCTerms.getURI());
+        STANDARD_PREFIXES.put(PREFIX_OWL, OWL2.getURI());
+        STANDARD_PREFIXES.put(PREFIX_RDF, RDF.getURI());
+        STANDARD_PREFIXES.put(PREFIX_RDFS, RDFS.getURI());
+        STANDARD_PREFIXES.put(PREFIX_SKOS, SKOS.getURI());
+        STANDARD_PREFIXES.put(PREFIX_XSD, XSD);
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
@@ -116,7 +118,7 @@ public class TurtleExporter {
     }
 
     private void cleanupNamespaceProperties(OntModel model) {
-        for (String propName : LABELS) {
+        for (String propName : PropertySets.ALL_PROPERTIES) {
             Property property = model.createProperty(effectiveNamespace + propName);
             removeEmptyPropertyValues(model, property);
         }
@@ -175,7 +177,7 @@ public class TurtleExporter {
 
     private String determineMainPrefix(String namespace) {
         if (namespace == null || namespace.isEmpty()) {
-            return "domain";
+            return DEFAULT_PREFIX;
         }
 
         log.debug("Determining prefix for namespace: {}", namespace);
@@ -211,8 +213,8 @@ public class TurtleExporter {
             }
         }
 
-        log.debug("Falling back to default prefix: domain");
-        return "domain";
+        log.debug("Falling back to default prefix: {}", DEFAULT_PREFIX);
+        return DEFAULT_PREFIX;
     }
 
     private void createConceptScheme(OntModel transformedModel) {
@@ -234,18 +236,18 @@ public class TurtleExporter {
 
         if (modelName != null && !modelName.isEmpty()) {
             resource.removeAll(SKOS.prefLabel);
-            resource.addProperty(SKOS.prefLabel, modelName, "cs");
+            resource.addProperty(SKOS.prefLabel, modelName, DEFAULT_LANG);
         }
 
-        String description = modelProperties.getOrDefault(LABEL_POPIS, "");
+        String description = modelProperties.getOrDefault(POPIS, "");
         if (description != null && !description.isEmpty()) {
             resource.removeAll(DCTerms.description);
-            resource.addProperty(DCTerms.description, description, "cs");
+            resource.addProperty(DCTerms.description, description, DEFAULT_LANG);
         }
     }
 
     private void transformResourcesToSKOSConcepts(OntModel transformedModel) {
-        Resource pojemType = transformedModel.createResource(effectiveNamespace + LABEL_POJEM);
+        Resource pojemType = transformedModel.createResource(effectiveNamespace + POJEM);
         ResIterator pojemResources = transformedModel.listSubjectsWithProperty(RDF.type, pojemType);
 
         while (pojemResources.hasNext()) {
@@ -258,15 +260,15 @@ public class TurtleExporter {
     }
 
     private void mapResourceTypes(Resource resource, OntModel transformedModel) {
-        String baseNamespace = NS;
+        String baseNamespace = DEFAULT_NS;
         String verejnySektorNamespace = baseNamespace + VS_POJEM;
 
-        if (hasResourceType(resource, transformedModel, TYP_TRIDA)) {
+        if (hasResourceType(resource, transformedModel, TRIDA)) {
             addResourceType(resource, OWL2.Class);
             mapSubjectOrObjectType(resource, transformedModel, verejnySektorNamespace);
-        } else if (hasResourceType(resource, transformedModel, TYP_VLASTNOST)) {
+        } else if (hasResourceType(resource, transformedModel, VLASTNOST)) {
             mapPropertyType(resource, transformedModel);
-        } else if (hasResourceType(resource, transformedModel, TYP_VZTAH)) {
+        } else if (hasResourceType(resource, transformedModel, VZTAH)) {
             addResourceType(resource, OWL2.ObjectProperty);
         }
 
@@ -283,15 +285,15 @@ public class TurtleExporter {
     }
 
     private void mapSubjectOrObjectType(Resource resource, OntModel model, String vsNamespace) {
-        if (hasResourceType(resource, model, TYP_TSP)) {
-            addResourceType(resource, model.createResource(vsNamespace + LABEL_TSP));
-        } else if (hasResourceType(resource, model, TYP_TOP)) {
-            addResourceType(resource, model.createResource(vsNamespace + LABEL_TOP));
+        if (hasResourceType(resource, model, TSP)) {
+            addResourceType(resource, model.createResource(vsNamespace + TSP));
+        } else if (hasResourceType(resource, model, TOP)) {
+            addResourceType(resource, model.createResource(vsNamespace + TOP));
         }
     }
 
     private void mapPropertyType(Resource resource, OntModel model) {
-        Property rangeProperty = model.createProperty(effectiveNamespace + LABEL_OBOR_HODNOT);
+        Property rangeProperty = model.createProperty(effectiveNamespace + OBOR_HODNOT);
         Statement rangeStmt = resource.getProperty(rangeProperty);
 
         if (rangeStmt != null && rangeStmt.getObject().isResource()) {
@@ -306,12 +308,11 @@ public class TurtleExporter {
         }
     }
 
-
     private void mapDataAccessType(Resource resource, OntModel model, String baseNamespace) {
-        if (hasResourceType(resource, model, TYP_VEREJNY_UDAJ)) {
+        if (hasResourceType(resource, model, VEREJNY_UDAJ)) {
             String publicDataUri = baseNamespace + LEGISLATIVNI_111_VU;
             addResourceType(resource, model.createResource(publicDataUri));
-        } else if (hasResourceType(resource, model, TYP_NEVEREJNY_UDAJ)) {
+        } else if (hasResourceType(resource, model, NEVEREJNY_UDAJ)) {
             String nonPublicDataUri = baseNamespace + LEGISLATIVNI_111_NVU;
             addResourceType(resource, model.createResource(nonPublicDataUri));
         }
@@ -334,7 +335,7 @@ public class TurtleExporter {
                 }
 
                 if (lang == null || lang.isEmpty()) {
-                    lang = "cs";
+                    lang = DEFAULT_LANG;
                 }
 
                 resourceLabels.computeIfAbsent(subject, k -> new HashMap<>()).put(lang, text);
@@ -357,7 +358,7 @@ public class TurtleExporter {
     }
 
     private void transformDefinitionsToSKOS(OntModel transformedModel) {
-        Property defProperty = transformedModel.createProperty(effectiveNamespace + LABEL_DEF);
+        Property defProperty = transformedModel.createProperty(effectiveNamespace + DEFINICE);
         StmtIterator defStmts = transformedModel.listStatements(null, defProperty, (RDFNode) null);
 
         List<Statement> toAdd = new ArrayList<>();
@@ -386,7 +387,7 @@ public class TurtleExporter {
                     toAdd.add(transformedModel.createStatement(
                             stmt.getSubject(),
                             SKOS.definition,
-                            transformedModel.createLiteral(value, "cs")
+                            transformedModel.createLiteral(value, DEFAULT_LANG)
                     ));
                 }
             }
@@ -398,7 +399,7 @@ public class TurtleExporter {
     }
 
     private void ensureDomainRangeProperties(OntModel transformedModel) {
-        Property defOProperty = transformedModel.createProperty(effectiveNamespace + LABEL_DEF_O);
+        Property defOProperty = transformedModel.createProperty(effectiveNamespace + DEFINICNI_OBOR);
         StmtIterator domainStmts = transformedModel.listStatements(null, defOProperty, (RDFNode) null);
 
         List<Statement> toAdd = new ArrayList<>();
@@ -419,7 +420,7 @@ public class TurtleExporter {
         transformedModel.remove(toRemove);
         transformedModel.add(toAdd);
 
-        Property rangeProperty = transformedModel.createProperty(effectiveNamespace + LABEL_OBOR_HODNOT);
+        Property rangeProperty = transformedModel.createProperty(effectiveNamespace + OBOR_HODNOT);
         StmtIterator rangeStmts = transformedModel.listStatements(null, rangeProperty, (RDFNode) null);
 
         toAdd = new ArrayList<>();
@@ -444,39 +445,43 @@ public class TurtleExporter {
     }
 
     private void mapCustomPropertiesToStandard(OntModel transformedModel) {
-        String baseNamespace = NS;
+        String baseNamespace = DEFAULT_NS;
         String agendovyNamespace = baseNamespace + AGENDOVY_104;
         String legislativniNamespace = baseNamespace + LEGISLATIVNI_111;
 
         mapProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + LABEL_ZDROJ),
+                transformedModel.createProperty(effectiveNamespace + ZDROJ),
                 DCTerms.source);
 
         mapProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + LABEL_SZ),
+                transformedModel.createProperty(effectiveNamespace + SOUVISEJICI_ZDROJ),
                 DCTerms.references);
 
+        mapProperty(transformedModel,
+                transformedModel.createProperty(effectiveNamespace + IDENTIFIKATOR),
+                DCTerms.identifier);
+
         mapBooleanProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + LABEL_JE_PPDF),
-                transformedModel.createProperty(agendovyNamespace + LABEL_JE_PPDF_LONG));
+                transformedModel.createProperty(effectiveNamespace + JE_PPDF),
+                transformedModel.createProperty(agendovyNamespace + JE_PPDF_LONG));
 
         mapProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + LABEL_SUPP),
-                transformedModel.createProperty(legislativniNamespace + LABEL_SUPP_LONG));
+                transformedModel.createProperty(effectiveNamespace + USTANOVENI_NEVEREJNOST),
+                transformedModel.createProperty(legislativniNamespace + USTANOVENI_LONG));
 
         mapProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + LABEL_NT),
+                transformedModel.createProperty(effectiveNamespace + NADRAZENA_TRIDA),
                 RDFS.subClassOf);
 
         mapProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + LABEL_AIS),
-                transformedModel.createProperty(agendovyNamespace + LABEL_UDAJE_AIS));
+                transformedModel.createProperty(effectiveNamespace + AIS),
+                transformedModel.createProperty(agendovyNamespace + UDAJE_AIS));
 
         mapProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + LABEL_AGENDA),
+                transformedModel.createProperty(effectiveNamespace + AGENDA),
                 transformedModel.createProperty(agendovyNamespace + AGENDA_LONG));
 
-        Property opisProperty = transformedModel.createProperty(effectiveNamespace + LABEL_POPIS);
+        Property opisProperty = transformedModel.createProperty(effectiveNamespace + POPIS);
         StmtIterator opisStmts = transformedModel.listStatements(null, opisProperty, (RDFNode) null);
         List<Statement> toRemove = new ArrayList<>();
 

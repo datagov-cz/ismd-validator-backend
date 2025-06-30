@@ -33,7 +33,7 @@ public class DataValidator {
             if (classData.getName() == null || classData.getName().trim().isEmpty()) {
                 throw new ExcelReadingException("Class name is required for all classes.");
             }
-            if (classData.getIdentifier() == null || classData.getIdentifier().trim().isEmpty()) {
+            if (classData.getId() == null || classData.getId().trim().isEmpty()) {
                 throw new ExcelReadingException("Class identifier is required: " + classData.getName());
             }
         }
@@ -43,9 +43,6 @@ public class DataValidator {
         for (PropertyData property : properties) {
             if (property.getName() == null || property.getName().trim().isEmpty()) {
                 throw new ExcelReadingException("Property name is required for all properties.");
-            }
-            if (property.getIdentifier() == null || property.getIdentifier().trim().isEmpty()) {
-                throw new ExcelReadingException("Property identifier is required: " + property.getName());
             }
         }
     }
