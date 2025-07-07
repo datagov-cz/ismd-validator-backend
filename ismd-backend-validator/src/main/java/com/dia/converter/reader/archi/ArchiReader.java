@@ -338,48 +338,13 @@ public class ArchiReader {
         String isPublicValue = properties.get(JE_VEREJNY);
         String privacyProvision = properties.get(USTANOVENI_NEVEREJNOST);
 
-        isPublicValue = cleanBooleanValue(isPublicValue);
-        privacyProvision = cleanProvisionValue(privacyProvision);
+        isPublicValue = UtilityMethods.cleanBooleanValue(isPublicValue);
+        privacyProvision = UtilityMethods.cleanProvisionValue(privacyProvision);
 
         propertyData.setIsPublic(isPublicValue);
         propertyData.setPrivacyProvision(privacyProvision);
 
         validatePublicityConsistency(conceptName, isPublicValue, privacyProvision);
-    }
-
-    private String cleanBooleanValue(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-
-        String cleaned = value.trim();
-
-        String normalized = cleaned.toLowerCase();
-        if ("true".equals(normalized) || "ano".equals(normalized) || "yes".equals(normalized)) {
-            return "true";
-        } else if ("false".equals(normalized) || "ne".equals(normalized) || "no".equals(normalized)) {
-            return "false";
-        }
-
-        return cleaned;
-    }
-
-    private String cleanProvisionValue(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String cleaned = value.trim();
-
-        if (cleaned.isEmpty() ||
-                "null".equalsIgnoreCase(cleaned) ||
-                "n/a".equalsIgnoreCase(cleaned) ||
-                "není".equalsIgnoreCase(cleaned) ||
-                "none".equalsIgnoreCase(cleaned)) {
-            return null;
-        }
-
-        return cleaned;
     }
 
     private void validatePublicityConsistency(String conceptName, String isPublicValue, String privacyProvision) {

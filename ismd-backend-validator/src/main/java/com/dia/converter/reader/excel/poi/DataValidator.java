@@ -33,9 +33,6 @@ public class DataValidator {
             if (classData.getName() == null || classData.getName().trim().isEmpty()) {
                 throw new ExcelReadingException("Class name is required for all classes.");
             }
-            if (classData.getId() == null || classData.getId().trim().isEmpty()) {
-                throw new ExcelReadingException("Class identifier is required: " + classData.getName());
-            }
         }
     }
 
@@ -67,11 +64,9 @@ public class DataValidator {
                 .collect(java.util.stream.Collectors.toSet());
 
         for (PropertyData property : data.getProperties()) {
-            if (property.getDomain() != null && !property.getDomain().isEmpty()) {
-                if (!classNames.contains(property.getDomain())) {
-                    throw new ExcelReadingException(
-                            "Vlastnost '" + property.getName() + "' references unknown class: " + property.getDomain());
-                }
+            if (property.getDomain() != null && !property.getDomain().isEmpty() && !classNames.contains(property.getDomain())) {
+                throw new ExcelReadingException(
+                        "Vlastnost '" + property.getName() + "' references unknown class: " + property.getDomain());
             }
         }
 

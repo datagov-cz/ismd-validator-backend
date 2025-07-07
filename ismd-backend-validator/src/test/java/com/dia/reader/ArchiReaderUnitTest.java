@@ -3,6 +3,7 @@ package com.dia.reader;
 import com.dia.converter.data.*;
 import com.dia.converter.reader.archi.ArchiReader;
 import com.dia.exceptions.FileParsingException;
+import com.dia.utility.UtilityMethods;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -271,7 +272,7 @@ class ArchiReaderUnitTest {
     @MethodSource("booleanValueTestCases")
     void testCleanBooleanValue_ShouldNormalizeCorrectly(String input, String expected) throws Exception {
         // Access the private method using reflection for testing
-        java.lang.reflect.Method method = ArchiReader.class.getDeclaredMethod("cleanBooleanValue", String.class);
+        java.lang.reflect.Method method = UtilityMethods.class.getDeclaredMethod("cleanBooleanValue", String.class);
         method.setAccessible(true);
 
         String result = (String) method.invoke(reader, input);
@@ -282,7 +283,7 @@ class ArchiReaderUnitTest {
     @MethodSource("provisionValueTestCases")
     void testCleanProvisionValue_ShouldCleanCorrectly(String input, String expected) throws Exception {
         // Access the private method using reflection for testing
-        java.lang.reflect.Method method = ArchiReader.class.getDeclaredMethod("cleanProvisionValue", String.class);
+        java.lang.reflect.Method method = UtilityMethods.class.getDeclaredMethod("cleanProvisionValue", String.class);
         method.setAccessible(true);
 
         String result = (String) method.invoke(reader, input);

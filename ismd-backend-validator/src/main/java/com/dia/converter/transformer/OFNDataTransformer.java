@@ -25,7 +25,16 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.dia.constants.ArchiConstants.*;
-import static com.dia.constants.TypeMappings.*;
+import static com.dia.constants.ArchiConstants.AGENDA;
+import static com.dia.constants.ArchiConstants.AIS;
+import static com.dia.constants.ArchiConstants.DEFINICE;
+import static com.dia.constants.ArchiConstants.IDENTIFIKATOR;
+import static com.dia.constants.ArchiConstants.JE_PPDF;
+import static com.dia.constants.ArchiConstants.NAZEV;
+import static com.dia.constants.ArchiConstants.POPIS;
+import static com.dia.constants.ArchiConstants.SOUVISEJICI_ZDROJ;
+import static com.dia.constants.ArchiConstants.ZDROJ;
+import static com.dia.constants.ExcelConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 
@@ -242,13 +251,13 @@ public class OFNDataTransformer {
     }
 
     private Resource createClassResource(ClassData classData) {
-        String classURI = uriGenerator.generateClassURI(classData.getName(), classData.getId());
+        String classURI = uriGenerator.generateClassURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
         classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
         addSpecificClassType(classResource, classData);
         addResourceMetadata(classResource, classData.getName(), classData.getDescription(),
-                classData.getDefinition(), classData.getSource(), classData.getIdentifier());
+                classData.getDefinition(), classData.getSource(), classData.getRelatedSource(), classData.getIdentifier());
         addClassSpecificMetadata(classResource, classData);
         addSchemeRelationship(classResource);
         return classResource;
@@ -287,12 +296,31 @@ public class OFNDataTransformer {
         propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + VLASTNOST));
 
         addResourceMetadata(propertyResource, propertyData.getName(), propertyData.getDescription(),
-                propertyData.getDefinition(), propertyData.getSource(), propertyData.getIdentifier());
+                propertyData.getDefinition(), propertyData.getSource(), propertyData.getRelatedSource(), propertyData.getIdentifier());
+
+        addPropertySpecificMetadata(propertyResource, propertyData);
+
         addDomainRelationship(propertyResource, propertyData);
         addRangeInformation(propertyResource, propertyData);
         addDataGovernanceMetadata(propertyResource, propertyData);
         addSchemeRelationship(propertyResource);
         return propertyResource;
+    }
+
+    private void addPropertySpecificMetadata(Resource propertyResource, PropertyData propertyData) {
+        log.debug("Adding property-specific metadata for: {}", propertyData.getName());
+
+        if (propertyData.getAlternativeName() != null && !propertyData.getAlternativeName().trim().isEmpty()) {
+            log.debug("Processing alternative names for property {}: '{}'", propertyData.getName(), propertyData.getAlternativeName());
+            addAlternativeNames(propertyResource, propertyData.getAlternativeName());
+        } else {
+            log.debug("No alternative names found for property: {}", propertyData.getName());
+        }
+
+        if (propertyData.getEquivalentConcept() != null && !propertyData.getEquivalentConcept().trim().isEmpty()) {
+            log.debug("Processing equivalent concept for property {}: '{}'", propertyData.getName(), propertyData.getEquivalentConcept());
+            addEquivalentConcept(propertyResource, propertyData.getEquivalentConcept(), "property");
+        }
     }
 
     private void transformRelationships(List<RelationshipData> relationships) {
@@ -323,10 +351,29 @@ public class OFNDataTransformer {
         relationshipResource.addProperty(RDF.type, ontModel.getProperty("http://www.w3.org/2002/07/owl#ObjectProperty"));
 
         addResourceMetadata(relationshipResource, relationshipData.getName(), relationshipData.getDescription(),
-                relationshipData.getDefinition(), relationshipData.getSource(), relationshipData.getIdentifier());
+                relationshipData.getDefinition(), relationshipData.getSource(), relationshipData.getRelatedSource(), relationshipData.getIdentifier());
+
+        addRelationshipSpecificMetadata(relationshipResource, relationshipData);
+
         addDomainRangeRelationships(relationshipResource, relationshipData);
         addSchemeRelationship(relationshipResource);
         return relationshipResource;
+    }
+
+    private void addRelationshipSpecificMetadata(Resource relationshipResource, RelationshipData relationshipData) {
+        log.debug("Adding relationship-specific metadata for: {}", relationshipData.getName());
+
+        if (relationshipData.getAlternativeName() != null && !relationshipData.getAlternativeName().trim().isEmpty()) {
+            log.debug("Processing alternative names for relationship {}: '{}'", relationshipData.getName(), relationshipData.getAlternativeName());
+            addAlternativeNames(relationshipResource, relationshipData.getAlternativeName());
+        } else {
+            log.debug("No alternative names found for relationship: {}", relationshipData.getName());
+        }
+
+        if (relationshipData.getEquivalentConcept() != null && !relationshipData.getEquivalentConcept().trim().isEmpty()) {
+            log.debug("Processing equivalent concept for relationship {}: '{}'", relationshipData.getName(), relationshipData.getEquivalentConcept());
+            addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), "relationship");
+        }
     }
 
     private void transformHierarchies(List<HierarchyData> hierarchies) {
@@ -491,7 +538,7 @@ public class OFNDataTransformer {
     }
 
     private void addResourceMetadata(Resource resource, String name, String description,
-                                     String definition, String source, String identifier) {
+                                     String definition, String source, String relatedSource, String identifier) {
         if (name != null && !name.trim().isEmpty()) {
             DataTypeConverter.addTypedProperty(resource, RDFS.label, name, DEFAULT_LANG, ontModel);
         }
@@ -519,41 +566,69 @@ public class OFNDataTransformer {
         }
 
         if (source != null && !source.trim().isEmpty()) {
-            addSourceReferences(resource, source);
+            addSourceReferences(resource, source, ZDROJ);
+        }
+
+        if (relatedSource != null && !relatedSource.trim().isEmpty()) {
+            addSourceReferences(resource, relatedSource, SOUVISEJICI_ZDROJ);
         }
     }
 
-    private void addSourceReferences(Resource resource, String sourceUrls) {
+    private void addSourceReferences(Resource resource, String sourceUrls, String constant) {
         if (sourceUrls.contains(";")) {
-            addMultipleSourceUrls(resource, sourceUrls);
+            addMultipleSourceUrls(resource, sourceUrls, constant);
         } else {
-            addSingleSourceUrl(resource, sourceUrls);
+            addSingleSourceUrl(resource, sourceUrls, constant);
         }
     }
 
-    private void addMultipleSourceUrls(Resource resource, String sourceUrlString) {
+    private void addMultipleSourceUrls(Resource resource, String sourceUrlString, String constant) {
         String[] urls = sourceUrlString.split(";");
         for (String url : urls) {
             if (url != null && !url.trim().isEmpty()) {
-                addSingleSourceUrl(resource, url.trim());
+                addSingleSourceUrl(resource, url.trim(), constant);
             }
         }
     }
 
-    private void addSingleSourceUrl(Resource resource, String url) {
+    private void addSingleSourceUrl(Resource resource, String url, String constant) {
         if (url == null || url.trim().isEmpty()) {
             return;
         }
 
         String transformedUrl = UtilityMethods.transformEliUrl(url, removeELI);
-        Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ZDROJ);
 
-        if (DataTypeConverter.isUri(transformedUrl)) {
-            resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
-            log.debug("Added source URL as resource: {}", transformedUrl);
-        } else {
-            DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
-            log.debug("Added source URL as typed literal: {}", transformedUrl);
+        if (transformedUrl == null || transformedUrl.trim().isEmpty()) {
+            log.debug("Skipping invalid/filtered source: {}", url);
+            return;
+        }
+
+        switch (constant) {
+            case ZDROJ -> {
+                Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ZDROJ);
+
+                if (DataTypeConverter.isUri(transformedUrl)) {
+                    resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
+                    log.debug("Added source URL as resource: {}", transformedUrl);
+                } else {
+                    DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
+                    log.debug("Added source URL as typed literal: {}", transformedUrl);
+                }
+            }
+            case SOUVISEJICI_ZDROJ -> {
+                Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + SOUVISEJICI_ZDROJ);
+
+                if (DataTypeConverter.isUri(transformedUrl)) {
+                    resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
+                    log.debug("Added related source URL as resource: {}", transformedUrl);
+                } else {
+                    DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
+                    log.debug("Added related source URL as typed literal: {}", transformedUrl);
+                }
+            }
+            default -> {
+                // continue
+            }
         }
     }
 
@@ -572,17 +647,22 @@ public class OFNDataTransformer {
 
     private void addEquivalentConcept(Resource classResource, ClassData classData) {
         if (classData.getEquivalentConcept() != null && !classData.getEquivalentConcept().trim().isEmpty()) {
-            Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
-            String equivalentConcept = classData.getEquivalentConcept();
-
-            if (DataTypeConverter.isUri(equivalentConcept)) {
-                classResource.addProperty(exactMatchProperty, ontModel.createResource(equivalentConcept));
-                log.debug("Added equivalent concept as URI: {}", equivalentConcept);
-            } else {
-                DataTypeConverter.addTypedProperty(classResource, exactMatchProperty, equivalentConcept, null, ontModel);
-                log.debug("Added equivalent concept as typed literal: {}", equivalentConcept);
-            }
+            log.debug("Processing equivalent concept for class {}: '{}'", classData.getName(), classData.getEquivalentConcept());
+            addEquivalentConcept(classResource, classData.getEquivalentConcept(), "class");
         }
+    }
+
+    private void addEquivalentConcept(Resource resource, String equivalentConcept, String entityType) {
+        if (!UtilityMethods.isValidIRI(equivalentConcept)) {
+            log.warn("Skipping invalid equivalent concept for {} '{}': '{}' is not a valid IRI",
+                    entityType, resource.getLocalName(), equivalentConcept);
+            return;
+        }
+
+        Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
+        resource.addProperty(exactMatchProperty, ontModel.createResource(equivalentConcept));
+        log.debug("Added valid equivalent concept IRI for {} '{}': {}",
+                entityType, resource.getLocalName(), equivalentConcept);
     }
 
     private void addAgenda(Resource classResource, ClassData classData) {
@@ -629,24 +709,35 @@ public class OFNDataTransformer {
 
     private void addAlternativeNames(Resource resource, String altNamesValue) {
         if (altNamesValue == null || altNamesValue.isEmpty()) {
+            log.debug("No alternative names to add for resource: {}", resource.getLocalName());
             return;
         }
+
+        log.debug("Processing alternative names for {}: '{}'", resource.getLocalName(),
+                altNamesValue.length() > 100 ? altNamesValue.substring(0, 100) + "..." : altNamesValue);
 
         Property altNameProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ALTERNATIVNI_NAZEV);
 
         if (!altNamesValue.contains(";")) {
             DataTypeConverter.addTypedProperty(resource, altNameProperty, altNamesValue, DEFAULT_LANG, ontModel);
-            log.debug("Added single alternative name: {}", altNamesValue);
+            log.debug("Added single alternative name for {}: {}", resource.getLocalName(),
+                    altNamesValue.length() > 50 ? altNamesValue.substring(0, 50) + "..." : altNamesValue);
             return;
         }
 
-        Arrays.stream(altNamesValue.split(";"))
-                .map(String::trim)
-                .filter(name -> !name.isEmpty())
-                .forEach(name -> {
-                    DataTypeConverter.addTypedProperty(resource, altNameProperty, name, DEFAULT_LANG, ontModel);
-                    log.debug("Added alternative name: {}", name);
-                });
+        String[] altNames = altNamesValue.split(";");
+        log.debug("Found {} alternative names separated by semicolons for {}", altNames.length, resource.getLocalName());
+
+        for (String name : altNames) {
+            String trimmedName = name.trim();
+            if (!trimmedName.isEmpty()) {
+                DataTypeConverter.addTypedProperty(resource, altNameProperty, trimmedName, DEFAULT_LANG, ontModel);
+                log.debug("Added alternative name for {}: {}", resource.getLocalName(),
+                        trimmedName.length() > 50 ? trimmedName.substring(0, 50) + "..." : trimmedName);
+            }
+        }
+
+        log.debug("Finished processing alternative names for {}", resource.getLocalName());
     }
 
     private void addDomainRelationship(Resource propertyResource, PropertyData propertyData) {
@@ -660,12 +751,17 @@ public class OFNDataTransformer {
         String dataType = propertyData.getDataType();
 
         if (dataType != null && !dataType.trim().isEmpty()) {
-            Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + OBOR_HODNOT);
+            Property rangeProperty = RDFS.range;
 
             if (dataType.startsWith("xsd:")) {
                 String xsdType = XSD + dataType.substring(4);
-                propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
-                log.debug("Added XSD range type: {}", xsdType);
+                if (DataTypeConverter.isValidXSDType(dataType.substring(4))) {
+                    propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
+                    log.debug("Added valid XSD range type: {}", xsdType);
+                } else {
+                    propertyResource.addProperty(rangeProperty, ontModel.createLiteral(dataType));
+                    log.debug("Added invalid XSD type '{}' as plain string literal", dataType);
+                }
             } else if (DataTypeConverter.isUri(dataType)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(dataType));
                 log.debug("Added URI range type: {}", dataType);
@@ -675,9 +771,8 @@ public class OFNDataTransformer {
                     propertyResource.addProperty(rangeProperty, existingClass);
                     log.debug("Added local class range: {}", dataType);
                 } else {
-                    String xsdType = mapToXSDType(dataType);
-                    propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
-                    log.debug("Mapped data type '{}' to XSD type: {}", dataType, xsdType);
+                    propertyResource.addProperty(rangeProperty, ontModel.createLiteral(dataType));
+                    log.debug("Added unknown data type '{}' as plain string literal", dataType);
                 }
             }
         }
@@ -686,9 +781,9 @@ public class OFNDataTransformer {
     private void addDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
         addPPDFData(propertyResource, propertyData);
         addPublicOrNonPublicData(propertyResource, propertyData);
-        addGovernanceProperty(propertyResource, propertyData.getSharingMethod(), ZPUSOB_SDILENI);
-        addGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), ZPUSOB_ZISKANI);
-        addGovernanceProperty(propertyResource, propertyData.getContentType(), TYP_OBSAHU);
+        handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(propertyResource, propertyData.getContentType(), "content-type");
     }
 
     private void addPPDFData(Resource propertyResource, PropertyData propertyData) {
@@ -696,8 +791,8 @@ public class OFNDataTransformer {
             String value = propertyData.getSharedInPPDF();
             Property ppdfProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + JE_PPDF);
 
-            if (isBooleanValue(value)) {
-                Boolean boolValue = normalizeCzechBoolean(value);
+            if (UtilityMethods.isBooleanValue(value)) {
+                Boolean boolValue = UtilityMethods.normalizeCzechBoolean(value);
                 DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty,
                         boolValue.toString(), null, ontModel);
                 log.debug("Added normalized PPDF boolean: {} -> {}", value, boolValue);
@@ -718,8 +813,8 @@ public class OFNDataTransformer {
         }
 
         if (isPublicValue != null && !isPublicValue.trim().isEmpty()) {
-            if (isBooleanValue(isPublicValue)) {
-                Boolean isPublic = normalizeCzechBoolean(isPublicValue);
+            if (UtilityMethods.isBooleanValue(isPublicValue)) {
+                Boolean isPublic = UtilityMethods.normalizeCzechBoolean(isPublicValue);
 
                 if (Boolean.TRUE.equals(isPublic)) {
                     if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
@@ -776,6 +871,40 @@ public class OFNDataTransformer {
         } else {
             log.warn("Privacy provision transformation resulted in empty value for concept '{}': '{}'",
                     propertyData.getName(), trimmedProvision);
+        }
+    }
+
+    private void handleGovernanceProperty(Resource resource, String value, String propertyType) {
+        if (value == null || value.trim().isEmpty()) {
+            log.debug("Skipping empty governance property '{}' for resource: {}", propertyType, resource.getLocalName());
+            return;
+        }
+
+        String propertyConstant = getGovernancePropertyConstant(propertyType);
+
+        log.debug("Using constant '{}' for governance property type '{}'", propertyConstant, propertyType);
+        addGovernanceProperty(resource, value, propertyConstant);
+    }
+
+    private String getGovernancePropertyConstant(String propertyType) {
+        return switch (propertyType) {
+            case "sharing-method" -> getConstantValue(ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údaje");
+            case "acquisition-method" -> getConstantValue(ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údaje");
+            case "content-type" -> getConstantValue(TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údaje");
+            default -> {
+                log.warn("Unknown governance property type: {}", propertyType);
+                yield null;
+            }
+        };
+    }
+
+    private String getConstantValue(String optionOne, String optionTwo, String defaultValue) {
+        if (optionOne != null && !optionOne.trim().isEmpty()) {
+            return UtilityMethods.sanitizeForIRI(optionOne);
+        } else if (optionTwo != null && !optionTwo.trim().isEmpty()) {
+            return optionTwo;
+        } else {
+            return defaultValue;
         }
     }
 

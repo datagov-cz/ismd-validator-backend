@@ -365,4 +365,57 @@ public class UtilityMethods {
 
         return true;
     }
+
+    public boolean isBooleanValue(String value) {
+        if (value == null) return false;
+        String normalized = value.trim().toLowerCase();
+        return normalized.equals("true") || normalized.equals("false") ||
+                normalized.equals("ano") || normalized.equals("ne") ||
+                normalized.equals("yes") || normalized.equals("no");
+    }
+
+    public Boolean normalizeCzechBoolean(String value) {
+        if (value == null) return null;
+        String normalized = value.trim().toLowerCase();
+        switch (normalized) {
+            case "true", "ano", "yes" -> { return true; }
+            case "false", "ne", "no" -> { return false; }
+            default -> { return null; }
+        }
+    }
+
+    public String cleanBooleanValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+
+        String cleaned = value.trim();
+
+        String normalized = cleaned.toLowerCase();
+        if ("true".equals(normalized) || "ano".equals(normalized) || "yes".equals(normalized)) {
+            return "true";
+        } else if ("false".equals(normalized) || "ne".equals(normalized) || "no".equals(normalized)) {
+            return "false";
+        }
+
+        return cleaned;
+    }
+
+    public String cleanProvisionValue(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String cleaned = value.trim();
+
+        if (cleaned.isEmpty() ||
+                "null".equalsIgnoreCase(cleaned) ||
+                "n/a".equalsIgnoreCase(cleaned) ||
+                "není".equalsIgnoreCase(cleaned) ||
+                "none".equalsIgnoreCase(cleaned)) {
+            return null;
+        }
+
+        return cleaned;
+    }
 }

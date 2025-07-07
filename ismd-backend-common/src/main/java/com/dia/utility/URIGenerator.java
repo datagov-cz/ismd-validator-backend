@@ -14,8 +14,15 @@ public class URIGenerator {
     private String effectiveNamespace = DEFAULT_NS;
 
     public String generateClassURI(String className, String identifier) {
-        if (identifier != null && !identifier.trim().isEmpty() && UtilityMethods.isValidUrl(identifier)) {
-            return identifier;
+        if (identifier != null && !identifier.trim().isEmpty()) {
+            String trimmedIdentifier = identifier.trim();
+
+            if (UtilityMethods.isValidIRI(trimmedIdentifier)) {
+                return trimmedIdentifier;
+            }
+
+            String sanitizedIdentifier = UtilityMethods.sanitizeForIRI(trimmedIdentifier);
+            return effectiveNamespace + sanitizedIdentifier;
         }
 
         String sanitizedName = UtilityMethods.sanitizeForIRI(className);

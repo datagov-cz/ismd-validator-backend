@@ -23,7 +23,6 @@ public class ClassData {
     private String agendaSystemCode;
 
     public boolean hasValidData() {
-        return name != null && !name.trim().isEmpty() &&
-                id != null && !id.trim().isEmpty();
+        return name != null && !name.trim().isEmpty();
     }
 }
