@@ -1,6 +1,8 @@
 package com.dia.controller;
 
 import com.dia.controller.dto.ConversionResponseDto;
+import com.dia.converter.data.ConversionResult;
+import com.dia.converter.data.TransformationResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
 import com.dia.service.ConverterService;
@@ -18,6 +20,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +29,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -47,6 +51,7 @@ class ConverterControllerIntegrationTest {
     private ConverterService converterService;
     private String minimalArchiXML;
     private ObjectMapper objectMapper;
+    private ConversionResult mockConversionResult;
 
     static Stream<Arguments> outputFormatProvider() {
         return Stream.of(
@@ -123,6 +128,13 @@ class ConverterControllerIntegrationTest {
     public void setup() throws IOException {
         this.objectMapper = new ObjectMapper();
         minimalArchiXML = loadTestFile();
+
+        // Create a mock ConversionResult with a transformation result
+        mockConversionResult = mock(ConversionResult.class);
+
+        TransformationResult mockTransformationResult = mock(TransformationResult.class);
+        when(mockConversionResult.getTransformationResult()).thenReturn(mockTransformationResult);
+
         reset(converterService);
     }
 
@@ -141,13 +153,12 @@ class ConverterControllerIntegrationTest {
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
         // Configure mock service behavior
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(false);
+        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
 
         if ("json".equals(outputFormat)) {
-            when(converterService.exportToJson(FileFormat.ARCHI_XML)).thenReturn(expectedOutput);
+            when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(expectedOutput);
         } else {
-            when(converterService.exportToTurtle(FileFormat.ARCHI_XML)).thenReturn(expectedOutput);
+            when(converterService.exportToTurtle(eq(FileFormat.ARCHI_XML), any())).thenReturn(expectedOutput);
         }
 
         // Act & Assert
@@ -167,13 +178,12 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getErrorMessage());
 
         // Verify service interactions
-        verify(converterService).parseArchiFromString(anyString());
-        verify(converterService).convertArchi(false);
+        verify(converterService).processArchiFile(anyString(), any());
 
         if ("json".equals(outputFormat)) {
-            verify(converterService).exportToJson(FileFormat.ARCHI_XML);
+            verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
         } else {
-            verify(converterService).exportToTurtle(FileFormat.ARCHI_XML);
+            verify(converterService).exportToTurtle(eq(FileFormat.ARCHI_XML), any());
         }
     }
 
@@ -185,13 +195,12 @@ class ConverterControllerIntegrationTest {
                 "fake xlsx content".getBytes(StandardCharsets.UTF_8));
 
         // Configure mock service behavior
-        doNothing().when(converterService).parseExcelFromFile(any(MockMultipartFile.class));
-        doNothing().when(converterService).convertExcel(false);
+        when(converterService.processExcelFile(any(MultipartFile.class), any())).thenReturn(mockConversionResult);
 
         if ("json".equals(outputFormat)) {
-            when(converterService.exportToJson(FileFormat.XLSX)).thenReturn(expectedOutput);
+            when(converterService.exportToJson(eq(FileFormat.XLSX), any())).thenReturn(expectedOutput);
         } else {
-            when(converterService.exportToTurtle(FileFormat.XLSX)).thenReturn(expectedOutput);
+            when(converterService.exportToTurtle(eq(FileFormat.XLSX), any())).thenReturn(expectedOutput);
         }
 
         // Act & Assert
@@ -211,13 +220,55 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getErrorMessage());
 
         // Verify service interactions
-        verify(converterService).parseExcelFromFile(any(MockMultipartFile.class));
-        verify(converterService).convertExcel(false);
+        verify(converterService).processExcelFile(any(MultipartFile.class), any());
 
         if ("json".equals(outputFormat)) {
-            verify(converterService).exportToJson(FileFormat.XLSX);
+            verify(converterService).exportToJson(eq(FileFormat.XLSX), any());
         } else {
-            verify(converterService).exportToTurtle(FileFormat.XLSX);
+            verify(converterService).exportToTurtle(eq(FileFormat.XLSX), any());
+        }
+    }
+
+    @ParameterizedTest(name = "Successful XMI conversion to {0}")
+    @MethodSource("outputFormatProvider")
+    void testSuccessfulXmiConversion(String outputFormat, String expectedOutput) throws Exception {
+        String xmiContent = "<?xml version=\"1.0\"?>\n<xmi:XMI xmi:version=\"2.0\"><test/></xmi:XMI>";
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "test.xmi", "application/xml",
+                xmiContent.getBytes(StandardCharsets.UTF_8));
+
+        // Configure mock service behavior
+        when(converterService.processEAFile(any(MultipartFile.class), any())).thenReturn(mockConversionResult);
+
+        if ("json".equals(outputFormat)) {
+            when(converterService.exportToJson(eq(FileFormat.XMI), any())).thenReturn(expectedOutput);
+        } else {
+            when(converterService.exportToTurtle(eq(FileFormat.XMI), any())).thenReturn(expectedOutput);
+        }
+
+        // Act & Assert
+        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
+                        .file(file)
+                        .param("output", outputFormat))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andReturn();
+
+        // Parse and verify DTO response
+        String responseBody = result.getResponse().getContentAsString();
+        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+
+        assertNotNull(responseDto);
+        assertEquals(expectedOutput, responseDto.getOutput());
+        assertNull(responseDto.getErrorMessage());
+
+        // Verify service interactions
+        verify(converterService).processEAFile(any(MultipartFile.class), any());
+
+        if ("json".equals(outputFormat)) {
+            verify(converterService).exportToJson(eq(FileFormat.XMI), any());
+        } else {
+            verify(converterService).exportToTurtle(eq(FileFormat.XMI), any());
         }
     }
 
@@ -249,16 +300,15 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(false);
+        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
 
         String expectedOutput;
         if ("json".equals(expectedServiceMethod)) {
             expectedOutput = JSON_OUTPUT;
-            when(converterService.exportToJson(FileFormat.ARCHI_XML)).thenReturn(JSON_OUTPUT);
+            when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
         } else {
             expectedOutput = TTL_OUTPUT;
-            when(converterService.exportToTurtle(FileFormat.ARCHI_XML)).thenReturn(TTL_OUTPUT);
+            when(converterService.exportToTurtle(eq(FileFormat.ARCHI_XML), any())).thenReturn(TTL_OUTPUT);
         }
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
@@ -277,9 +327,9 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getErrorMessage());
 
         if ("json".equals(expectedServiceMethod)) {
-            verify(converterService).exportToJson(FileFormat.ARCHI_XML);
+            verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
         } else {
-            verify(converterService).exportToTurtle(FileFormat.ARCHI_XML);
+            verify(converterService).exportToTurtle(eq(FileFormat.ARCHI_XML), any());
         }
     }
 
@@ -292,17 +342,16 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(false);
+        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
 
         boolean isJson = outputFormat.equalsIgnoreCase("json");
         String expectedOutput;
         if (isJson) {
             expectedOutput = JSON_OUTPUT;
-            when(converterService.exportToJson(FileFormat.ARCHI_XML)).thenReturn(JSON_OUTPUT);
+            when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
         } else {
             expectedOutput = TTL_OUTPUT;
-            when(converterService.exportToTurtle(FileFormat.ARCHI_XML)).thenReturn(TTL_OUTPUT);
+            when(converterService.exportToTurtle(eq(FileFormat.ARCHI_XML), any())).thenReturn(TTL_OUTPUT);
         }
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
@@ -321,9 +370,9 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getErrorMessage());
 
         if (isJson) {
-            verify(converterService).exportToJson(FileFormat.ARCHI_XML);
+            verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
         } else {
-            verify(converterService).exportToTurtle(FileFormat.ARCHI_XML);
+            verify(converterService).exportToTurtle(eq(FileFormat.ARCHI_XML), any());
         }
     }
 
@@ -336,9 +385,8 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", contentType,
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(false);
-        when(converterService.exportToJson(FileFormat.ARCHI_XML)).thenReturn(JSON_OUTPUT);
+        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
                 .andExpect(status().isOk())
@@ -353,7 +401,7 @@ class ConverterControllerIntegrationTest {
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
         assertNull(responseDto.getErrorMessage());
 
-        verify(converterService).parseArchiFromString(anyString());
+        verify(converterService).processArchiFile(anyString(), eq(false));
     }
 
     // ========== FILE FORMAT DETECTION TESTS ==========
@@ -367,13 +415,11 @@ class ConverterControllerIntegrationTest {
                 content.getBytes(StandardCharsets.UTF_8));
 
         if (shouldCallService && filename.endsWith(".xlsx")) {
-            doNothing().when(converterService).parseExcelFromFile(any(MockMultipartFile.class));
-            doNothing().when(converterService).convertExcel(false);
-            when(converterService.exportToJson(FileFormat.XLSX)).thenReturn(JSON_OUTPUT);
+            when(converterService.processExcelFile(any(MultipartFile.class), any())).thenReturn(mockConversionResult);
+            when(converterService.exportToJson(eq(FileFormat.XLSX), any())).thenReturn(JSON_OUTPUT);
         } else if (shouldCallService) {
-            doNothing().when(converterService).parseArchiFromString(anyString());
-            doNothing().when(converterService).convertArchi(false);
-            when(converterService.exportToJson(FileFormat.ARCHI_XML)).thenReturn(JSON_OUTPUT);
+            when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+            when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
         }
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
@@ -404,9 +450,9 @@ class ConverterControllerIntegrationTest {
         }
 
         if (shouldCallService && filename.endsWith(".xlsx")) {
-            verify(converterService).parseExcelFromFile(any(MockMultipartFile.class));
+            verify(converterService).processExcelFile(any(MultipartFile.class), any());
         } else if (shouldCallService) {
-            verify(converterService).parseArchiFromString(anyString());
+            verify(converterService).processArchiFile(anyString(), any());
         } else {
             verifyNoInteractions(converterService);
         }
@@ -421,9 +467,8 @@ class ConverterControllerIntegrationTest {
                 "file", filename, "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(false);
-        when(converterService.exportToJson(FileFormat.ARCHI_XML)).thenReturn(JSON_OUTPUT);
+        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
                 .andExpect(status().isOk())
@@ -472,14 +517,13 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(false);
+        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
 
         if ("json".equals(outputFormat)) {
-            when(converterService.exportToJson(FileFormat.ARCHI_XML))
+            when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any()))
                     .thenThrow(new JsonExportException(exceptionMessage));
         } else {
-            when(converterService.exportToTurtle(FileFormat.ARCHI_XML))
+            when(converterService.exportToTurtle(eq(FileFormat.ARCHI_XML), any()))
                     .thenThrow(new JsonExportException(exceptionMessage));
         }
 
@@ -505,8 +549,7 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(false);
+        when(converterService.processArchiFile(anyString(), eq(false))).thenReturn(mockConversionResult);
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file)
@@ -532,8 +575,8 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doThrow(new RuntimeException("Service processing error"))
-                .when(converterService).parseArchiFromString(anyString());
+        when(converterService.processArchiFile(anyString(), any()))
+                .thenThrow(new RuntimeException("Service processing error"));
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
                 .andExpect(status().isInternalServerError())
@@ -555,9 +598,8 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(false);
-        when(converterService.exportToJson(FileFormat.ARCHI_XML)).thenReturn(JSON_OUTPUT);
+        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
                 .andExpect(status().isOk())
@@ -572,7 +614,7 @@ class ConverterControllerIntegrationTest {
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
         assertNull(responseDto.getErrorMessage());
 
-        verify(converterService).exportToJson(FileFormat.ARCHI_XML);
+        verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
     }
 
     @Test
@@ -581,9 +623,8 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(true);
-        when(converterService.exportToJson(FileFormat.ARCHI_XML)).thenReturn(JSON_OUTPUT);
+        when(converterService.processArchiFile(anyString(), eq(true))).thenReturn(mockConversionResult);
+        when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file)
@@ -600,7 +641,7 @@ class ConverterControllerIntegrationTest {
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
         assertNull(responseDto.getErrorMessage());
 
-        verify(converterService).convertArchi(true);
+        verify(converterService).processArchiFile(anyString(), eq(true));
     }
 
     @Test
@@ -609,9 +650,8 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(false);
-        when(converterService.exportToJson(FileFormat.ARCHI_XML)).thenReturn(JSON_OUTPUT);
+        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file)
@@ -629,7 +669,7 @@ class ConverterControllerIntegrationTest {
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
         assertNull(responseDto.getErrorMessage());
 
-        verify(converterService).exportToJson(FileFormat.ARCHI_XML);
+        verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
     }
 
     @Test
@@ -638,9 +678,8 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseArchiFromString(anyString());
-        doNothing().when(converterService).convertArchi(false);
-        when(converterService.exportToJson(FileFormat.ARCHI_XML)).thenReturn(JSON_OUTPUT);
+        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file)
@@ -657,7 +696,7 @@ class ConverterControllerIntegrationTest {
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
         assertNull(responseDto.getErrorMessage());
 
-        verify(converterService).exportToJson(FileFormat.ARCHI_XML);
+        verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
     }
 
     @Test
@@ -672,9 +711,8 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 "fake xlsx content".getBytes(StandardCharsets.UTF_8));
 
-        doNothing().when(converterService).parseExcelFromFile(any(MockMultipartFile.class));
-        doNothing().when(converterService).convertExcel(true);
-        when(converterService.exportToJson(FileFormat.XLSX)).thenReturn(JSON_OUTPUT);
+        when(converterService.processExcelFile(any(MultipartFile.class), eq(true))).thenReturn(mockConversionResult);
+        when(converterService.exportToJson(eq(FileFormat.XLSX), any())).thenReturn(JSON_OUTPUT);
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
                         .file(file)
@@ -691,6 +729,6 @@ class ConverterControllerIntegrationTest {
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
         assertNull(responseDto.getErrorMessage());
 
-        verify(converterService).convertExcel(true);
+        verify(converterService).processExcelFile(any(MultipartFile.class), eq(true));
     }
 }

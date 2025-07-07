@@ -1,10 +1,11 @@
 package com.dia.engine;
 
+import com.dia.converter.data.TransformationResult;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.TurtleExportException;
 
 public interface ConverterAdapter {
-    String exportToJson() throws JsonExportException;
+    String exportToJson(TransformationResult transformationResult) throws JsonExportException;
 
-    String exportToTurtle() throws TurtleExportException;
+    String exportToTurtle(TransformationResult transformationResult) throws TurtleExportException;
 }

@@ -1,6 +1,7 @@
 package com.dia.controller;
 
 import com.dia.controller.dto.ConversionResponseDto;
+import com.dia.converter.data.ConversionResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.UnsupportedFormatException;
@@ -84,30 +85,27 @@ public class ConverterController {
                 case ARCHI_XML -> {
                     log.debug("Processing Archi XML file: requestId={}", requestId);
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
-                    converterService.parseArchiFromString(xmlContent);
-                    converterService.convertArchi(removeInvalidSources != null && removeInvalidSources);
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, ARCHI_XML);
+                    ConversionResult conversionResult = converterService.processArchiFile(xmlContent, removeInvalidSources);
+                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                             requestId, fileFormat, output);
                     yield response;
                 }
                 case XMI -> {
                     log.debug("Processing XMI file: requestId={}", requestId);
-                    converterService.parseEAFromFile(file);
-                    converterService.convertEA(removeInvalidSources != null && removeInvalidSources);
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, XMI);
+                    ConversionResult conversionResult = converterService.processEAFile(file, removeInvalidSources);
+                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                             requestId, fileFormat, output);
                     yield response;
                 }
                 case XLSX -> {
                     log.debug("Processing XLSX file: requestId={}", requestId);
-                    converterService.parseExcelFromFile(file);
-                    converterService.convertExcel(removeInvalidSources != null && removeInvalidSources);
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, XLSX);
+                    ConversionResult conversionResult = converterService.processExcelFile(file, removeInvalidSources);
+                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                             requestId, fileFormat, output);
-                    yield  response;
+                    yield response;
                 }
                 case TURTLE -> ResponseEntity.ok(ConversionResponseDto.success("File processed successfully"));
                 default -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -219,14 +217,14 @@ public class ConverterController {
     }
 
     private ResponseEntity<ConversionResponseDto> getResponseEntity(
-            @RequestParam(value = "output", defaultValue = "json") String output, FileFormat fileFormat) throws JsonExportException {
+            String outputFormat, FileFormat fileFormat, ConversionResult conversionResult) throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
-        log.debug("Preparing response entity: requestId={}, outputFormat={}", requestId, output);
+        log.debug("Preparing response entity: requestId={}, outputFormat={}", requestId, outputFormat);
 
-        return switch (output.toLowerCase()) {
+        return switch (outputFormat.toLowerCase()) {
             case "json" -> {
                 log.debug("Exporting to JSON: requestId={}", requestId);
-                String jsonOutput = converterService.exportToJson(fileFormat);
+                String jsonOutput = converterService.exportToJson(fileFormat, conversionResult.getTransformationResult());
                 log.debug("JSON export completed: requestId={}, outputSize={}", requestId, jsonOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
@@ -234,15 +232,15 @@ public class ConverterController {
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
-                String ttlOutput = converterService.exportToTurtle(fileFormat);
+                String ttlOutput = converterService.exportToTurtle(fileFormat, conversionResult.getTransformationResult());
                 log.debug("Turtle export completed: requestId={}, outputSize={}", requestId, ttlOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(ConversionResponseDto.success(ttlOutput));
             }
             default -> {
-                log.warn("Unsupported output format requested: requestId={}, format={}", requestId, output);
-                throw new UnsupportedFormatException("Nepodporovaný výstupní formát: " + output);
+                log.warn("Unsupported output format requested: requestId={}, format={}", requestId, outputFormat);
+                throw new UnsupportedFormatException("Nepodporovaný výstupní formát: " + outputFormat);
             }
         };
     }

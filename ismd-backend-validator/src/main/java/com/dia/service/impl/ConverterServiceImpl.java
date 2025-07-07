@@ -1,14 +1,12 @@
 package com.dia.service.impl;
 
+import com.dia.converter.data.ConversionResult;
+import com.dia.converter.data.TransformationResult;
 import com.dia.engine.ConverterEngine;
 import com.dia.enums.FileFormat;
-import com.dia.exceptions.ExcelReadingException;
-import com.dia.exceptions.FileParsingException;
-import com.dia.exceptions.JsonExportException;
-import com.dia.exceptions.TurtleExportException;
+import com.dia.exceptions.*;
 import com.dia.service.ConverterService;
 import lombok.RequiredArgsConstructor;
-import org.apache.jena.ontology.ConversionException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,41 +19,27 @@ public class ConverterServiceImpl implements ConverterService {
     private final ConverterEngine converterEngine;
 
     @Override
-    public void parseArchiFromString(String content) throws FileParsingException {
-        converterEngine.parseArchiFromString(content);
-    }
-
-    public void convertArchi(Boolean removeInvalidSources) throws ConversionException {
-        converterEngine.convertArchi(removeInvalidSources);
+    public ConversionResult processArchiFile(String content, Boolean removeInvalidSources) throws FileParsingException, ConversionException {
+        return converterEngine.processArchiFile(content, removeInvalidSources);
     }
 
     @Override
-    public String exportToJson(FileFormat fileFormat) throws JsonExportException {
-        return converterEngine.exportToJson(fileFormat);
+    public ConversionResult processExcelFile(MultipartFile file, Boolean removeInvalidSources) throws ExcelReadingException, IOException, ConversionException {
+        return converterEngine.processExcelFile(file, removeInvalidSources);
     }
 
     @Override
-    public String exportToTurtle(FileFormat fileFormat) throws TurtleExportException {
-        return converterEngine.exportToTurtle(fileFormat);
+    public ConversionResult processEAFile(MultipartFile file, Boolean removeInvalidSources) throws FileParsingException, IOException, ConversionException {
+        return converterEngine.processEAFile(file, removeInvalidSources);
     }
 
     @Override
-    public void parseExcelFromFile(MultipartFile file) throws ExcelReadingException, IOException {
-        converterEngine.parseExcelFromFile(file);
+    public String exportToJson(FileFormat fileFormat, TransformationResult transformationResult) throws JsonExportException {
+        return converterEngine.exportToJson(fileFormat, transformationResult);
     }
 
     @Override
-    public void convertExcel(Boolean removeInvalidSources) throws ConversionException {
-        converterEngine.convertExcel(removeInvalidSources);
-    }
-
-    @Override
-    public void parseEAFromFile(MultipartFile file) throws FileParsingException, IOException {
-        converterEngine.parseEAFromFile(file);
-    }
-
-    @Override
-    public void convertEA(Boolean removeInvalidSources) throws ConversionException {
-        converterEngine.convertEA(removeInvalidSources);
+    public String exportToTurtle(FileFormat fileFormat, TransformationResult transformationResult) throws TurtleExportException {
+        return converterEngine.exportToTurtle(fileFormat, transformationResult);
     }
 }

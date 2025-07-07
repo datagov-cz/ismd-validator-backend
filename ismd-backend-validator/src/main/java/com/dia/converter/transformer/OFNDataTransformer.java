@@ -1,6 +1,7 @@
 package com.dia.converter.transformer;
 
 import com.dia.converter.data.*;
+import com.dia.converter.transformer.metadata.ResourceMetadata;
 import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.TurtleExportException;
@@ -11,7 +12,6 @@ import com.dia.utility.DataTypeConverter;
 import com.dia.utility.URIGenerator;
 import com.dia.utility.UtilityMethods;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.rdf.model.Property;
@@ -30,16 +30,16 @@ import static com.dia.constants.ArchiConstants.AIS;
 import static com.dia.constants.ArchiConstants.DEFINICE;
 import static com.dia.constants.ArchiConstants.IDENTIFIKATOR;
 import static com.dia.constants.ArchiConstants.JE_PPDF;
-import static com.dia.constants.ArchiConstants.NAZEV;
-import static com.dia.constants.ArchiConstants.POPIS;
 import static com.dia.constants.ArchiConstants.SOUVISEJICI_ZDROJ;
 import static com.dia.constants.ArchiConstants.ZDROJ;
 import static com.dia.constants.ExcelConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ExportConstants.Json.NAZEV;
+import static com.dia.constants.ExportConstants.Json.POPIS;
 
 /**
- * OFNDataTransformer - Transforms parsed data from Excel and EA ontologies into OFN ontology models
+ * OFNDataTransformer - Thread-safe transformer for converting parsed data from Excel and EA ontologies into OFN ontology models
  */
 @Component
 @Slf4j
@@ -48,27 +48,18 @@ public class OFNDataTransformer {
 
     private final OFNBaseModel baseModel;
     private final OntModel ontModel;
-    private final Map<String, Resource> resourceMap;
     private final URIGenerator uriGenerator;
-
-    private final Map<String, Resource> classResources = new HashMap<>();
-    private final Map<String, Resource> propertyResources = new HashMap<>();
-    private final Map<String, Resource> relationshipResources = new HashMap<>();
-
-    @Setter
-    private String modelName;
-
-    @Setter
-    private Boolean removeELI;
 
     public OFNDataTransformer() {
         this.baseModel = new OFNBaseModel();
         this.ontModel = baseModel.getOntModel();
-        this.resourceMap = new HashMap<>();
         this.uriGenerator = new URIGenerator();
     }
 
-    public TransformationResult transform(OntologyData ontologyData) throws ConversionException {
+    /**
+     * Transform ontology data into OFN format - now thread-safe with no shared state
+     */
+    public TransformationResult transform(OntologyData ontologyData, Boolean removeELI) throws ConversionException {
         try {
             log.info("Starting ontology data transformation...");
 
@@ -82,22 +73,27 @@ public class OFNDataTransformer {
             log.debug("Using effective namespace: {}", effectiveNamespace);
             log.debug("Model name: {}", ontologyData.getVocabularyMetadata().getName());
 
-            initializeCleanTypeClasses();
-            createOntologyResource(ontologyData.getVocabularyMetadata(), effectiveNamespace);
+            Map<String, Resource> localResourceMap = new HashMap<>();
+            Map<String, Resource> localClassResources = new HashMap<>();
+            Map<String, Resource> localPropertyResources = new HashMap<>();
+            Map<String, Resource> localRelationshipResources = new HashMap<>();
 
-            transformClasses(ontologyData.getClasses());
-            transformProperties(ontologyData.getProperties());
-            transformRelationships(ontologyData.getRelationships());
-            transformHierarchies(ontologyData.getHierarchies());
+            initializeCleanTypeClasses();
+            createOntologyResource(ontologyData.getVocabularyMetadata(), effectiveNamespace, localResourceMap);
+
+            transformClasses(ontologyData.getClasses(), localClassResources, localResourceMap, removeELI);
+            transformProperties(ontologyData.getProperties(), localPropertyResources, localResourceMap, removeELI);
+            transformRelationships(ontologyData.getRelationships(), localRelationshipResources, localResourceMap, removeELI);
+            transformHierarchies(ontologyData.getHierarchies(), localClassResources, localPropertyResources, localResourceMap);
 
             Map<String, String> modelProperties = createModelProperties(ontologyData.getVocabularyMetadata());
 
             log.info("Transformation completed successfully. Created {} classes, {} properties, {} relationships",
-                    classResources.size(), propertyResources.size(), relationshipResources.size());
+                    localClassResources.size(), localPropertyResources.size(), localRelationshipResources.size());
 
             return new TransformationResult(
                     ontModel,
-                    new HashMap<>(resourceMap),
+                    new HashMap<>(localResourceMap),
                     ontologyData.getVocabularyMetadata().getName(),
                     modelProperties,
                     effectiveNamespace
@@ -111,7 +107,7 @@ public class OFNDataTransformer {
 
     public String exportToJson(TransformationResult transformationResult) throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
-        log.info("Starting JSON export: requestId={}, modelName={}", requestId, modelName);
+        log.info("Starting JSON export: requestId={}", requestId);
 
         try {
             JsonExporter exporter = new JsonExporter(
@@ -132,7 +128,7 @@ public class OFNDataTransformer {
 
     public String exportToTurtle(TransformationResult transformationResult) throws TurtleExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
-        log.info("Starting Turtle export: requestId={}, modelName={}", requestId, modelName);
+        log.info("Starting Turtle export: requestId={}", requestId);
 
         try {
             TurtleExporter exporter = new TurtleExporter(
@@ -151,7 +147,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private void createOntologyResource(VocabularyMetadata metadata, String effectiveNamespace) {
+    private void createOntologyResource(VocabularyMetadata metadata, String effectiveNamespace, Map<String, Resource> localResourceMap) {
         String ontologyIRI = assembleOntologyIRI(metadata.getName(), effectiveNamespace);
         log.debug("Creating ontology resource with IRI: {}", ontologyIRI);
 
@@ -171,7 +167,7 @@ public class OFNDataTransformer {
                 DataTypeConverter.addTypedProperty(ontologyResource, descProperty, metadata.getDescription(), DEFAULT_LANG, ontModel);
             }
 
-            resourceMap.put("ontology", ontologyResource);
+            localResourceMap.put("ontology", ontologyResource);
             log.debug("Ontology resource created successfully: {}", ontologyIRI);
         }
     }
@@ -210,8 +206,8 @@ public class OFNDataTransformer {
         return DEFAULT_NS;
     }
 
-    private void addSchemeRelationship(Resource resource) {
-        Resource ontologyResource = resourceMap.get("ontology");
+    private void addSchemeRelationship(Resource resource, Map<String, Resource> localResourceMap) {
+        Resource ontologyResource = localResourceMap.get("ontology");
         if (ontologyResource != null && resource.hasProperty(RDF.type,
                 ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM))) {
             resource.addProperty(SKOS.inScheme, ontologyResource);
@@ -232,7 +228,8 @@ public class OFNDataTransformer {
         return properties;
     }
 
-    private void transformClasses(List<ClassData> classes) {
+    private void transformClasses(List<ClassData> classes, Map<String, Resource> localClassResources,
+                                  Map<String, Resource> localResourceMap, Boolean removeELI) {
         log.debug("Transforming {} classes", classes.size());
         for (ClassData classData : classes) {
             if (!classData.hasValidData()) {
@@ -240,9 +237,9 @@ public class OFNDataTransformer {
                 continue;
             }
             try {
-                Resource classResource = createClassResource(classData);
-                classResources.put(classData.getName(), classResource);
-                resourceMap.put(classData.getName(), classResource);
+                Resource classResource = createClassResource(classData, localResourceMap, removeELI);
+                localClassResources.put(classData.getName(), classResource);
+                localResourceMap.put(classData.getName(), classResource);
                 log.debug("Created class: {} -> {}", classData.getName(), classResource.getURI());
             } catch (Exception e) {
                 log.error("Failed to create class: {}", classData.getName(), e);
@@ -250,16 +247,17 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createClassResource(ClassData classData) {
+    private Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap, Boolean removeELI) {
         String classURI = uriGenerator.generateClassURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
         classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
         addSpecificClassType(classResource, classData);
-        addResourceMetadata(classResource, classData.getName(), classData.getDescription(),
-                classData.getDefinition(), classData.getSource(), classData.getRelatedSource(), classData.getIdentifier());
+
+        addResourceMetadata(classResource, ResourceMetadata.from(classData), removeELI);
+
         addClassSpecificMetadata(classResource, classData);
-        addSchemeRelationship(classResource);
+        addSchemeRelationship(classResource, localResourceMap);
         return classResource;
     }
 
@@ -274,13 +272,14 @@ public class OFNDataTransformer {
         classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TRIDA));
     }
 
-    private void transformProperties(List<PropertyData> properties) {
+    private void transformProperties(List<PropertyData> properties, Map<String, Resource> localPropertyResources,
+                                     Map<String, Resource> localResourceMap, Boolean removeELI) {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
             try {
-                Resource propertyResource = createPropertyResource(propertyData);
-                propertyResources.put(propertyData.getName(), propertyResource);
-                resourceMap.put(propertyData.getName(), propertyResource);
+                Resource propertyResource = createPropertyResource(propertyData, localResourceMap, removeELI);
+                localPropertyResources.put(propertyData.getName(), propertyResource);
+                localResourceMap.put(propertyData.getName(), propertyResource);
                 log.debug("Created property: {} -> {}", propertyData.getName(), propertyResource.getURI());
             } catch (Exception e) {
                 log.error("Failed to create property: {}", propertyData.getName(), e);
@@ -288,22 +287,18 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createPropertyResource(PropertyData propertyData) {
+    private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap, Boolean removeELI) {
         String propertyURI = uriGenerator.generatePropertyURI(propertyData.getName(), propertyData.getIdentifier());
         Resource propertyResource = ontModel.createResource(propertyURI);
 
         propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
         propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + VLASTNOST));
 
-        addResourceMetadata(propertyResource, propertyData.getName(), propertyData.getDescription(),
-                propertyData.getDefinition(), propertyData.getSource(), propertyData.getRelatedSource(), propertyData.getIdentifier());
+        addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData), removeELI);
 
         addPropertySpecificMetadata(propertyResource, propertyData);
-
-        addDomainRelationship(propertyResource, propertyData);
-        addRangeInformation(propertyResource, propertyData);
-        addDataGovernanceMetadata(propertyResource, propertyData);
-        addSchemeRelationship(propertyResource);
+        addDataGovernanceMetadata(propertyResource, propertyData, removeELI);
+        addSchemeRelationship(propertyResource, localResourceMap);
         return propertyResource;
     }
 
@@ -321,9 +316,17 @@ public class OFNDataTransformer {
             log.debug("Processing equivalent concept for property {}: '{}'", propertyData.getName(), propertyData.getEquivalentConcept());
             addEquivalentConcept(propertyResource, propertyData.getEquivalentConcept(), "property");
         }
+
+        if (propertyData.getDomain() != null && !propertyData.getDomain().trim().isEmpty()) {
+            Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICNI_OBOR);
+            addResourceReference(propertyResource, domainProperty, propertyData.getDomain());
+        }
+
+        addRangeInformation(propertyResource, propertyData);
     }
 
-    private void transformRelationships(List<RelationshipData> relationships) {
+    private void transformRelationships(List<RelationshipData> relationships, Map<String, Resource> localRelationshipResources,
+                                        Map<String, Resource> localResourceMap, Boolean removeELI) {
         log.debug("Transforming {} relationships", relationships.size());
         for (RelationshipData relationshipData : relationships) {
             if (!relationshipData.hasValidData()) {
@@ -331,9 +334,9 @@ public class OFNDataTransformer {
                 continue;
             }
             try {
-                Resource relationshipResource = createRelationshipResource(relationshipData);
-                relationshipResources.put(relationshipData.getName(), relationshipResource);
-                resourceMap.put(relationshipData.getName(), relationshipResource);
+                Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap, removeELI);
+                localRelationshipResources.put(relationshipData.getName(), relationshipResource);
+                localResourceMap.put(relationshipData.getName(), relationshipResource);
                 log.debug("Created relationship: {} -> {}", relationshipData.getName(), relationshipResource.getURI());
             } catch (Exception e) {
                 log.error("Failed to create relationship: {}", relationshipData.getName(), e);
@@ -341,7 +344,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createRelationshipResource(RelationshipData relationshipData) {
+    private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap, Boolean removeELI) {
         String relationshipURI = uriGenerator.generateRelationshipURI(relationshipData.getName(),
                 relationshipData.getIdentifier());
         Resource relationshipResource = ontModel.createResource(relationshipURI);
@@ -350,13 +353,11 @@ public class OFNDataTransformer {
         relationshipResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + VZTAH));
         relationshipResource.addProperty(RDF.type, ontModel.getProperty("http://www.w3.org/2002/07/owl#ObjectProperty"));
 
-        addResourceMetadata(relationshipResource, relationshipData.getName(), relationshipData.getDescription(),
-                relationshipData.getDefinition(), relationshipData.getSource(), relationshipData.getRelatedSource(), relationshipData.getIdentifier());
+        addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData), removeELI);
 
         addRelationshipSpecificMetadata(relationshipResource, relationshipData);
-
         addDomainRangeRelationships(relationshipResource, relationshipData);
-        addSchemeRelationship(relationshipResource);
+        addSchemeRelationship(relationshipResource, localResourceMap);
         return relationshipResource;
     }
 
@@ -376,7 +377,8 @@ public class OFNDataTransformer {
         }
     }
 
-    private void transformHierarchies(List<HierarchyData> hierarchies) {
+    private void transformHierarchies(List<HierarchyData> hierarchies, Map<String, Resource> localClassResources,
+                                      Map<String, Resource> localPropertyResources, Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} hierarchical relationships", hierarchies.size());
 
         if (hierarchies.isEmpty()) {
@@ -397,7 +399,7 @@ public class OFNDataTransformer {
             }
 
             try {
-                boolean success = createHierarchyRelationship(hierarchyData);
+                boolean success = createHierarchyRelationship(hierarchyData, localClassResources, localPropertyResources, localResourceMap);
                 if (success) {
                     processedHierarchies++;
                     log.debug("Processed hierarchy: {} IS-A {}",
@@ -416,12 +418,13 @@ public class OFNDataTransformer {
                 processedHierarchies, skippedHierarchies);
     }
 
-    private boolean createHierarchyRelationship(HierarchyData hierarchyData) {
+    private boolean createHierarchyRelationship(HierarchyData hierarchyData, Map<String, Resource> localClassResources,
+                                                Map<String, Resource> localPropertyResources, Map<String, Resource> localResourceMap) {
         String subClassName = hierarchyData.getSubClass();
         String superClassName = hierarchyData.getSuperClass();
 
-        Resource subClassResource = findClassResource(subClassName);
-        Resource superClassResource = findClassResource(superClassName);
+        Resource subClassResource = findClassResource(subClassName, localClassResources, localPropertyResources, localResourceMap);
+        Resource superClassResource = findClassResource(superClassName, localClassResources, localPropertyResources, localResourceMap);
 
         if (subClassResource == null) {
             log.warn("Subclass resource not found: {}", subClassName);
@@ -447,18 +450,19 @@ public class OFNDataTransformer {
         return true;
     }
 
-    private Resource findClassResource(String className) {
-        Resource resource = classResources.get(className);
+    private Resource findClassResource(String className, Map<String, Resource> localClassResources,
+                                       Map<String, Resource> localPropertyResources, Map<String, Resource> localResourceMap) {
+        Resource resource = localClassResources.get(className);
         if (resource != null) {
             return resource;
         }
 
-        resource = propertyResources.get(className);
+        resource = localPropertyResources.get(className);
         if (resource != null) {
             return resource;
         }
 
-        resource = resourceMap.get(className);
+        resource = localResourceMap.get(className);
         if (resource != null) {
             log.debug("Found resource in general resource map: {}", className);
             return resource;
@@ -537,61 +541,60 @@ public class OFNDataTransformer {
         return false;
     }
 
-    private void addResourceMetadata(Resource resource, String name, String description,
-                                     String definition, String source, String relatedSource, String identifier) {
-        if (name != null && !name.trim().isEmpty()) {
-            DataTypeConverter.addTypedProperty(resource, RDFS.label, name, DEFAULT_LANG, ontModel);
+    private void addResourceMetadata(Resource resource, ResourceMetadata metadata, Boolean removeELI) {
+        if (metadata.name() != null && !metadata.name().trim().isEmpty()) {
+            DataTypeConverter.addTypedProperty(resource, RDFS.label, metadata.name(), DEFAULT_LANG, ontModel);
         }
 
-        if (description != null && !description.trim().isEmpty()) {
+        if (metadata.description() != null && !metadata.description().trim().isEmpty()) {
             Property descProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + POPIS);
-            DataTypeConverter.addTypedProperty(resource, descProperty, description, DEFAULT_LANG, ontModel);
+            DataTypeConverter.addTypedProperty(resource, descProperty, metadata.description(), DEFAULT_LANG, ontModel);
         }
 
-        if (definition != null && !definition.trim().isEmpty()) {
+        if (metadata.definition() != null && !metadata.definition().trim().isEmpty()) {
             Property defProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICE);
-            DataTypeConverter.addTypedProperty(resource, defProperty, definition, DEFAULT_LANG, ontModel);
+            DataTypeConverter.addTypedProperty(resource, defProperty, metadata.definition(), DEFAULT_LANG, ontModel);
         }
 
-        if (identifier != null && !identifier.trim().isEmpty()) {
+        if (metadata.identifier() != null && !metadata.identifier().trim().isEmpty()) {
             Property identifierProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + IDENTIFIKATOR);
 
-            if (DataTypeConverter.isUri(identifier)) {
-                resource.addProperty(identifierProperty, ontModel.createResource(identifier));
-                log.debug("Added identifier as URI: {}", identifier);
+            if (DataTypeConverter.isUri(metadata.identifier())) {
+                resource.addProperty(identifierProperty, ontModel.createResource(metadata.identifier()));
+                log.debug("Added identifier as URI: {}", metadata.identifier());
             } else {
-                DataTypeConverter.addTypedProperty(resource, identifierProperty, identifier, null, ontModel);
-                log.debug("Added identifier as literal: {}", identifier);
+                DataTypeConverter.addTypedProperty(resource, identifierProperty, metadata.identifier(), null, ontModel);
+                log.debug("Added identifier as literal: {}", metadata.identifier());
             }
         }
 
-        if (source != null && !source.trim().isEmpty()) {
-            addSourceReferences(resource, source, ZDROJ);
+        if (metadata.source() != null && !metadata.source().trim().isEmpty()) {
+            addSourceReferences(resource, metadata.source(), ZDROJ, removeELI);
         }
 
-        if (relatedSource != null && !relatedSource.trim().isEmpty()) {
-            addSourceReferences(resource, relatedSource, SOUVISEJICI_ZDROJ);
+        if (metadata.relatedSource() != null && !metadata.relatedSource().trim().isEmpty()) {
+            addSourceReferences(resource, metadata.relatedSource(), SOUVISEJICI_ZDROJ, removeELI);
         }
     }
 
-    private void addSourceReferences(Resource resource, String sourceUrls, String constant) {
+    private void addSourceReferences(Resource resource, String sourceUrls, String constant, Boolean removeELI) {
         if (sourceUrls.contains(";")) {
-            addMultipleSourceUrls(resource, sourceUrls, constant);
+            addMultipleSourceUrls(resource, sourceUrls, constant, removeELI);
         } else {
-            addSingleSourceUrl(resource, sourceUrls, constant);
+            addSingleSourceUrl(resource, sourceUrls, constant, removeELI);
         }
     }
 
-    private void addMultipleSourceUrls(Resource resource, String sourceUrlString, String constant) {
+    private void addMultipleSourceUrls(Resource resource, String sourceUrlString, String constant, Boolean removeELI) {
         String[] urls = sourceUrlString.split(";");
         for (String url : urls) {
             if (url != null && !url.trim().isEmpty()) {
-                addSingleSourceUrl(resource, url.trim(), constant);
+                addSingleSourceUrl(resource, url.trim(), constant, removeELI);
             }
         }
     }
 
-    private void addSingleSourceUrl(Resource resource, String url, String constant) {
+    private void addSingleSourceUrl(Resource resource, String url, String constant, Boolean removeELI) {
         if (url == null || url.trim().isEmpty()) {
             return;
         }
@@ -740,13 +743,6 @@ public class OFNDataTransformer {
         log.debug("Finished processing alternative names for {}", resource.getLocalName());
     }
 
-    private void addDomainRelationship(Resource propertyResource, PropertyData propertyData) {
-        if (propertyData.getDomain() != null && !propertyData.getDomain().trim().isEmpty()) {
-            Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICNI_OBOR);
-            addResourceReference(propertyResource, domainProperty, propertyData.getDomain(), classResources);
-        }
-    }
-
     private void addRangeInformation(Resource propertyResource, PropertyData propertyData) {
         String dataType = propertyData.getDataType();
 
@@ -766,21 +762,15 @@ public class OFNDataTransformer {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(dataType));
                 log.debug("Added URI range type: {}", dataType);
             } else {
-                Resource existingClass = classResources.get(dataType);
-                if (existingClass != null) {
-                    propertyResource.addProperty(rangeProperty, existingClass);
-                    log.debug("Added local class range: {}", dataType);
-                } else {
-                    propertyResource.addProperty(rangeProperty, ontModel.createLiteral(dataType));
-                    log.debug("Added unknown data type '{}' as plain string literal", dataType);
-                }
+                propertyResource.addProperty(rangeProperty, ontModel.createLiteral(dataType));
+                log.debug("Added unknown data type '{}' as plain string literal", dataType);
             }
         }
     }
 
-    private void addDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
+    private void addDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData, Boolean removeELI) {
         addPPDFData(propertyResource, propertyData);
-        addPublicOrNonPublicData(propertyResource, propertyData);
+        addPublicOrNonPublicData(propertyResource, propertyData, removeELI);
         handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), "sharing-method");
         handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), "acquisition-method");
         handleGovernanceProperty(propertyResource, propertyData.getContentType(), "content-type");
@@ -803,12 +793,12 @@ public class OFNDataTransformer {
         }
     }
 
-    private void addPublicOrNonPublicData(Resource propertyResource, PropertyData propertyData) {
+    private void addPublicOrNonPublicData(Resource propertyResource, PropertyData propertyData, Boolean removeELI) {
         String isPublicValue = propertyData.getIsPublic();
         String privacyProvision = propertyData.getPrivacyProvision();
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
-            handleNonPublicData(propertyResource, propertyData, privacyProvision);
+            handleNonPublicData(propertyResource, propertyData, privacyProvision, removeELI);
             return;
         }
 
@@ -820,7 +810,7 @@ public class OFNDataTransformer {
                     if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
                         log.warn("Concept '{}' marked as public but has privacy provision '{}' - treating as non-public",
                                 propertyData.getName(), privacyProvision);
-                        handleNonPublicData(propertyResource, propertyData, privacyProvision);
+                        handleNonPublicData(propertyResource, propertyData, privacyProvision, removeELI);
                     } else {
                         propertyResource.addProperty(RDF.type,
                                 ontModel.getResource(uriGenerator.getEffectiveNamespace() + VEREJNY_UDAJ));
@@ -831,7 +821,7 @@ public class OFNDataTransformer {
                         log.warn("Concept '{}' marked as non-public but has no privacy provision - adding non-public type anyway",
                                 propertyData.getName());
                     }
-                    handleNonPublicData(propertyResource, propertyData, privacyProvision);
+                    handleNonPublicData(propertyResource, propertyData, privacyProvision, removeELI);
                 }
             } else {
                 log.warn("Unrecognized boolean value for public property: '{}' for concept '{}'",
@@ -840,18 +830,18 @@ public class OFNDataTransformer {
         }
     }
 
-    private void handleNonPublicData(Resource propertyResource, PropertyData propertyData, String privacyProvision) {
+    private void handleNonPublicData(Resource propertyResource, PropertyData propertyData, String privacyProvision, Boolean removeELI) {
         propertyResource.addProperty(RDF.type,
                 ontModel.getResource(uriGenerator.getEffectiveNamespace() + NEVEREJNY_UDAJ));
 
         log.debug("Added non-public data type for concept: {}", propertyData.getName());
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
-            validateAndAddPrivacyProvision(propertyResource, propertyData, privacyProvision);
+            validateAndAddPrivacyProvision(propertyResource, propertyData, privacyProvision, removeELI);
         }
     }
 
-    private void validateAndAddPrivacyProvision(Resource propertyResource, PropertyData propertyData, String provision) {
+    private void validateAndAddPrivacyProvision(Resource propertyResource, PropertyData propertyData, String provision, Boolean removeELI) {
         String trimmedProvision = provision.trim();
 
         String transformedProvision = UtilityMethods.transformEliPrivacyProvision(trimmedProvision, removeELI);
@@ -925,24 +915,16 @@ public class OFNDataTransformer {
     private void addDomainRangeRelationships(Resource relationshipResource, RelationshipData relationshipData) {
         if (relationshipData.getDomain() != null && !relationshipData.getDomain().trim().isEmpty()) {
             Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICNI_OBOR);
-            addResourceReference(relationshipResource, domainProperty, relationshipData.getDomain(), classResources);
+            addResourceReference(relationshipResource, domainProperty, relationshipData.getDomain());
         }
 
         if (relationshipData.getRange() != null && !relationshipData.getRange().trim().isEmpty()) {
             Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + OBOR_HODNOT);
-            addResourceReference(relationshipResource, rangeProperty, relationshipData.getRange(), classResources);
+            addResourceReference(relationshipResource, rangeProperty, relationshipData.getRange());
         }
     }
 
-    private void addResourceReference(Resource subject, Property property, String referenceName,
-                                      Map<String, Resource> resourceMap) {
-        Resource existingResource = resourceMap.get(referenceName);
-        if (existingResource != null) {
-            subject.addProperty(property, existingResource);
-            log.debug("Added local resource reference: {} -> {}", property.getLocalName(), referenceName);
-            return;
-        }
-
+    private void addResourceReference(Resource subject, Property property, String referenceName) {
         if (DataTypeConverter.isUri(referenceName)) {
             subject.addProperty(property, ontModel.createResource(referenceName));
             log.debug("Added URI resource reference: {} -> {}", property.getLocalName(), referenceName);

@@ -1,4 +1,4 @@
-package com.dia.converter.transformer;
+package com.dia.converter.data;
 
 import lombok.Getter;
 import org.apache.jena.ontology.OntModel;

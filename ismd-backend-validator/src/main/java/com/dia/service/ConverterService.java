@@ -1,5 +1,7 @@
 package com.dia.service;
 
+import com.dia.converter.data.ConversionResult;
+import com.dia.converter.data.TransformationResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -7,19 +9,14 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 public interface ConverterService {
-    void parseArchiFromString(String value) throws FileParsingException;
 
-    void convertArchi(Boolean removeInvalidSources) throws ConversionException;
+    ConversionResult processArchiFile(String content, Boolean removeInvalidSources) throws FileParsingException, ConversionException;
 
-    String exportToJson(FileFormat fileFormat) throws JsonExportException;
+    ConversionResult processEAFile(MultipartFile file, Boolean removeInvalidSources) throws FileParsingException, IOException, ConversionException;
 
-    String exportToTurtle(FileFormat fileFormat) throws TurtleExportException;
+    ConversionResult processExcelFile(MultipartFile file, Boolean removeInvalidSources) throws ExcelReadingException, IOException, ConversionException;
 
-    void parseExcelFromFile(MultipartFile file) throws FileParsingException, IOException, ExcelReadingException;
+    String exportToJson(FileFormat fileFormat, TransformationResult transformationResult) throws JsonExportException;
 
-    void convertExcel(Boolean removeInvalidSources) throws ConversionException;
-
-    void parseEAFromFile(MultipartFile file) throws FileParsingException, IOException;
-
-    void convertEA(Boolean removeInvalidSources) throws ConversionException;
+    String exportToTurtle(FileFormat fileFormat, TransformationResult transformationResult) throws TurtleExportException;
 }

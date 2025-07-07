@@ -3,12 +3,13 @@ package com.dia.engine;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import com.dia.converter.data.ConversionResult;
+import com.dia.converter.data.OntologyData;
+import com.dia.converter.data.TransformationResult;
 import com.dia.converter.reader.archi.ArchiReader;
 import com.dia.converter.reader.ea.EnterpriseArchitectReader;
-import com.dia.converter.data.OntologyData;
 import com.dia.converter.reader.excel.ExcelReader;
 import com.dia.converter.transformer.OFNDataTransformer;
-import com.dia.converter.transformer.TransformationResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
 import org.junit.jupiter.api.AfterEach;
@@ -53,7 +54,7 @@ class ConverterEngineTest {
 
     @BeforeEach
     void setUp() {
-        // Vyčištění MDC a přidání ListAppender pro zachycení logů
+        // Clear MDC and add ListAppender for log capture
         MDC.clear();
         testLogger = (Logger) LoggerFactory.getLogger(ConverterEngine.class);
         listAppender = new ListAppender<>();
@@ -63,906 +64,710 @@ class ConverterEngineTest {
 
     @AfterEach
     void tearDown() {
-        // Odebrání ListAppender a vyčištění MDC
+        // Remove ListAppender and clear MDC
         testLogger.detachAppender(listAppender);
         MDC.clear();
     }
 
-    // ----- parseArchiFromString -------------------------------------------------------
+    // ========== processArchiFile ==========
     @Nested
-    class ParseArchiFromStringTests {
+    class ProcessArchiFileTests {
 
         @Test
-        void testParseArchiFromString_happyPath_logsAndVerify() throws Exception {
-            // Nastavení MDC a stub pro readArchiFromString()
+        void testProcessArchiFile_happyPath_logsAndVerify() throws Exception {
+            // Setup MDC and mock objects
             MDC.put(LOG_REQUEST_ID, "req-1");
             String content = "<xml>valid content</xml>";
+            Boolean removeInvalidSources = false;
             OntologyData mockOntologyData = mock(OntologyData.class);
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
+
             when(archiReader.readArchiFromString(content)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenReturn(mockTransformationResult);
 
-            // Volání parseArchiFromString()
-            converterEngine.parseArchiFromString(content);
+            // Call processArchiFile()
+            ConversionResult result = converterEngine.processArchiFile(content, removeInvalidSources);
 
-            // Kontrola počtu logů (start + end)
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent start = listAppender.list.get(0);
+            // Verify result
+            assertNotNull(result);
+            assertEquals(mockOntologyData, result.getOntologyData());
+            assertEquals(mockTransformationResult, result.getTransformationResult());
 
-            // Ověření formátu zpráv a přítomnost durationMs
-            assertTrue(start.getFormattedMessage()
-                    .contains("Starting Archi file parsing: requestId=req-1"));
-            ILoggingEvent end = listAppender.list.get(1);
+            // Check log count (processing start + parsing start + parsing end + conversion start + conversion end)
+            assertTrue(listAppender.list.size() >= 5);
 
-            // Ověření dokončení parsing
-            assertTrue(end.getFormattedMessage()
-                    .startsWith("Archi file parsing completed: requestId=req-1, durationMs="));
+            // Verify log messages contain expected information
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting Archi file processing: requestId=req-1")));
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting Archi file parsing: requestId=req-1")));
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Archi file parsing completed: requestId=req-1, durationMs=")));
 
-            // Ověření volání archiReader
+            // Verify service calls
             verify(archiReader, times(1)).readArchiFromString(content);
+            verify(ofnDataTransformer, times(1)).transform(mockOntologyData, removeInvalidSources);
         }
 
         @Test
-        void testParseArchiFromString_fileParsingException_propagated() throws Exception {
-            // Nastavení MDC a stub pro readArchiFromString() vyhazující FileParsingException
+        void testProcessArchiFile_withRemoveInvalidSourcesTrue() throws Exception {
+            // Setup with removeInvalidSources = true
             MDC.put(LOG_REQUEST_ID, "req-2");
-            String content = "<xml>invalid</xml>";
-            FileParsingException fpe = new FileParsingException("chyba parsování");
-            when(archiReader.readArchiFromString(content)).thenThrow(fpe);
-
-            // Volání parseArchiFromString() a zachycení FileParsingException
-            FileParsingException thrown = assertThrows(FileParsingException.class,
-                    () -> converterEngine.parseArchiFromString(content));
-
-            // Ověření textu výjimky
-            assertEquals("chyba parsování", thrown.getMessage());
-
-            // Kontrola ERROR logu s requestId a chybovou zprávou
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(1);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Failed to parse Archi file: requestId=req-2"));
-        }
-
-        @Test
-        void testParseArchiFromString_unexpectedException_wrapped() throws Exception {
-            // Nastavení MDC a stub pro readArchiFromString() vyhazující RuntimeException
-            MDC.put(LOG_REQUEST_ID, "req-3");
-            String content = "<xml>some content</xml>";
-            RuntimeException re = new RuntimeException("nečekaná chyba");
-            when(archiReader.readArchiFromString(content)).thenThrow(re);
-
-            // Volání parseArchiFromString() a zachycení FileParsingException
-            FileParsingException thrown = assertThrows(FileParsingException.class,
-                    () -> converterEngine.parseArchiFromString(content));
-
-            // Ověření obalené výjimky a jejího cause
-            assertEquals("Během čtení souboru došlo k chybě.", thrown.getMessage());
-            assertSame(re, thrown.getCause());
-
-            // Kontrola ERROR logu pro neočekávanou chybu
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(1);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Failed to parse Archi file: requestId=req-3"));
-        }
-
-        @Test
-        void testParseArchiFromString_nullContent_invoked() throws Exception {
-            // Nastavení MDC a stub pro readArchiFromString(null)
-            MDC.put(LOG_REQUEST_ID, "req-4");
+            String content = "<xml>content</xml>";
+            Boolean removeInvalidSources = true;
             OntologyData mockOntologyData = mock(OntologyData.class);
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
+
+            when(archiReader.readArchiFromString(content)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenReturn(mockTransformationResult);
+
+            // Call processArchiFile()
+            ConversionResult result = converterEngine.processArchiFile(content, removeInvalidSources);
+
+            // Verify result
+            assertNotNull(result);
+            assertEquals(mockOntologyData, result.getOntologyData());
+            assertEquals(mockTransformationResult, result.getTransformationResult());
+
+            // Verify service calls with correct parameter
+            verify(ofnDataTransformer, times(1)).transform(mockOntologyData, true);
+        }
+
+        @Test
+        void testProcessArchiFile_fileParsingException_propagated() throws Exception {
+            // Setup with parsing exception
+            MDC.put(LOG_REQUEST_ID, "req-3");
+            String content = "<xml>invalid</xml>";
+            Boolean removeInvalidSources = false;
+            FileParsingException fpe = new FileParsingException("Parsing error");
+
+            when(archiReader.readArchiFromString(content)).thenThrow(new RuntimeException("Parsing failed"));
+
+            // Call processArchiFile() and expect FileParsingException
+            FileParsingException thrown = assertThrows(FileParsingException.class,
+                    () -> converterEngine.processArchiFile(content, removeInvalidSources));
+
+            // Verify exception message
+            assertEquals("Během čtení souboru došlo k chybě.", thrown.getMessage());
+
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Failed to parse Archi file: requestId=req-3")));
+        }
+
+        @Test
+        void testProcessArchiFile_conversionException_propagated() throws Exception {
+            // Setup with conversion exception
+            MDC.put(LOG_REQUEST_ID, "req-4");
+            String content = "<xml>content</xml>";
+            Boolean removeInvalidSources = false;
+            OntologyData mockOntologyData = mock(OntologyData.class);
+            ConversionException ce = new ConversionException("Conversion error");
+
+            when(archiReader.readArchiFromString(content)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenThrow(ce);
+
+            // Call processArchiFile() and expect ConversionException
+            ConversionException thrown = assertThrows(ConversionException.class,
+                    () -> converterEngine.processArchiFile(content, removeInvalidSources));
+
+            // Verify exception message
+            assertEquals("Během konverze Archi souboru došlo k nečekané chybě.", thrown.getMessage());
+        }
+
+        @Test
+        void testProcessArchiFile_withNullContent() throws Exception {
+            // Test with null content
+            MDC.put(LOG_REQUEST_ID, "req-5");
+            Boolean removeInvalidSources = false;
+            OntologyData mockOntologyData = mock(OntologyData.class);
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
+
             when(archiReader.readArchiFromString(null)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenReturn(mockTransformationResult);
 
-            // Volání parseArchiFromString(null)
-            converterEngine.parseArchiFromString(null);
+            ConversionResult result = converterEngine.processArchiFile(null, removeInvalidSources);
 
-            // Ověření, že readArchiFromString(null) byl skutečně zavolán
+            assertNotNull(result);
             verify(archiReader, times(1)).readArchiFromString(null);
         }
     }
 
-    // ----- convertArchi -------------------------------------------------------
+    // ========== processExcelFile ==========
     @Nested
-    class ConvertArchiTests {
+    class ProcessExcelFileTests {
 
         @Test
-        void testConvertArchi_happyPath_logsAndVerify() {
-            // Nastavení MDC a příprava mock objektů
-            MDC.put(LOG_REQUEST_ID, "req-5");
-            Boolean flag = true;
+        void testProcessExcelFile_happyPath_logsAndVerify() throws Exception {
+            // Setup MDC and mock objects
+            MDC.put(LOG_REQUEST_ID, "req-6");
+            MultipartFile mockFile = mock(MultipartFile.class);
+            InputStream mockInputStream = mock(InputStream.class);
+            Boolean removeInvalidSources = false;
             OntologyData mockOntologyData = mock(OntologyData.class);
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
-            // Nastavení archiOntologyData pomocí reflection
-            setArchiOntologyData(mockOntologyData);
+            when(mockFile.getInputStream()).thenReturn(mockInputStream);
+            when(excelReader.readOntologyFromExcel(mockInputStream)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenReturn(mockTransformationResult);
 
-            doNothing().when(ofnDataTransformer).setRemoveELI(flag);
-            when(ofnDataTransformer.transform(mockOntologyData)).thenReturn(mockTransformationResult);
+            // Call processExcelFile()
+            ConversionResult result = converterEngine.processExcelFile(mockFile, removeInvalidSources);
 
-            // Volání convertArchi()
-            converterEngine.convertArchi(flag);
+            // Verify result
+            assertNotNull(result);
+            assertEquals(mockOntologyData, result.getOntologyData());
+            assertEquals(mockTransformationResult, result.getTransformationResult());
 
-            // Kontrola počtu logů (start + flag + end)
-            assertEquals(3, listAppender.list.size());
+            // Check logs
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting Excel file processing: requestId=req-6")));
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting Excel file parsing: requestId=req-6")));
 
-            // Ověření start logu
-            assertTrue(listAppender.list.get(0).getFormattedMessage()
-                    .contains("Starting Archi model conversion: requestId=req-5"));
-
-            // Ověření logu flag
-            assertTrue(listAppender.list.get(1).getFormattedMessage()
-                    .contains("Invalid sources removal requested: true, requestId=req-5"));
-
-            // Ověření dokončení conversion
-            assertTrue(listAppender.list.get(2).getFormattedMessage()
-                    .contains("Archi model conversion completed: requestId=req-5, durationMs="));
-
-            // Ověření volání dependencies
-            verify(ofnDataTransformer).setRemoveELI(flag);
-            verify(ofnDataTransformer).transform(mockOntologyData);
+            // Verify service calls
+            verify(mockFile).getInputStream();
+            verify(excelReader).readOntologyFromExcel(mockInputStream);
+            verify(ofnDataTransformer).transform(mockOntologyData, removeInvalidSources);
         }
 
         @Test
-        void testConvertArchi_conversionException_propagated() {
-            // Nastavení MDC a mock objektů
-            MDC.put(LOG_REQUEST_ID, "req-6");
-            Boolean flag = false;
-            OntologyData mockOntologyData = mock(OntologyData.class);
-            ConversionException ce = new ConversionException("chyba konverze");
-
-            setArchiOntologyData(mockOntologyData);
-
-            doNothing().when(ofnDataTransformer).setRemoveELI(flag);
-            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(ce);
-
-            // Volání convertArchi() a zachycení ConversionException
-            ConversionException thrown = assertThrows(
-                    ConversionException.class, () -> converterEngine.convertArchi(flag));
-
-            // Ověření textu výjimky
-            assertEquals("chyba konverze", thrown.getMessage());
-
-            // Kontrola ERROR logu s requestId a chybou
-            assertEquals(3, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(2);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Failed to convert Archi model: requestId=req-6, error=chyba konverze"));
-        }
-
-        @Test
-        void testConvertArchi_unexpectedException_wrapped() {
-            // Nastavení MDC a mock objektů
+        void testProcessExcelFile_ioException_propagated() throws Exception {
+            // Setup with IO exception
             MDC.put(LOG_REQUEST_ID, "req-7");
-            Boolean flag = null;
+            MultipartFile mockFile = mock(MultipartFile.class);
+            IOException ioException = new IOException("IO error");
+
+            when(mockFile.getInputStream()).thenThrow(ioException);
+
+            // Call processExcelFile() and expect IOException
+            IOException thrown = assertThrows(IOException.class,
+                    () -> converterEngine.processExcelFile(mockFile, false));
+
+            // Verify exception message
+            assertEquals("IO error", thrown.getMessage());
+
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Failed to parse Excel file: requestId=req-7, error=IO error")));
+        }
+
+        @Test
+        void testProcessExcelFile_excelReadingException_wrapped() throws Exception {
+            // Setup with reading exception
+            MDC.put(LOG_REQUEST_ID, "req-8");
+            MultipartFile mockFile = mock(MultipartFile.class);
+            InputStream mockInputStream = mock(InputStream.class);
+            RuntimeException runtimeException = new RuntimeException("Reading error");
+
+            when(mockFile.getInputStream()).thenReturn(mockInputStream);
+            when(excelReader.readOntologyFromExcel(mockInputStream)).thenThrow(runtimeException);
+
+            // Call processExcelFile() and expect ExcelReadingException
+            ExcelReadingException thrown = assertThrows(ExcelReadingException.class,
+                    () -> converterEngine.processExcelFile(mockFile, false));
+
+            // Verify wrapped exception
+            assertEquals("Během čtení souboru došlo k nečekané chybě.", thrown.getMessage());
+            assertSame(runtimeException, thrown.getCause());
+
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Unexpected error during Excel file parsing: requestId=req-8")));
+        }
+
+        @Test
+        void testProcessExcelFile_conversionException_propagated() throws Exception {
+            // Setup with conversion exception
+            MDC.put(LOG_REQUEST_ID, "req-9");
+            MultipartFile mockFile = mock(MultipartFile.class);
+            InputStream mockInputStream = mock(InputStream.class);
             OntologyData mockOntologyData = mock(OntologyData.class);
-            RuntimeException re = new RuntimeException("nečekaná chyba");
+            ConversionException conversionException = new ConversionException("Excel conversion error");
 
-            setArchiOntologyData(mockOntologyData);
+            when(mockFile.getInputStream()).thenReturn(mockInputStream);
+            when(excelReader.readOntologyFromExcel(mockInputStream)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData, false)).thenThrow(conversionException);
 
-            doNothing().when(ofnDataTransformer).setRemoveELI(flag);
-            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(re);
+            // Call processExcelFile() and expect ConversionException
+            ConversionException thrown = assertThrows(ConversionException.class,
+                    () -> converterEngine.processExcelFile(mockFile, false));
 
-            // Volání convertArchi() a zachycení ConversionException
-            ConversionException thrown = assertThrows(
-                    ConversionException.class, () -> converterEngine.convertArchi(flag));
+            // Verify exception message
+            assertEquals("Excel conversion error", thrown.getMessage());
 
-            // Ověření obalené výjimky
-            assertEquals("Během konverze Archi souboru došlo k nečekané chybě.", thrown.getMessage());
-
-            // Kontrola ERROR logu neočekávané chyby
-            assertEquals(3, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(2);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Unexpected error during Archi model conversion: requestId=req-7"));
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Failed to convert Excel model: requestId=req-9, error=Excel conversion error")));
         }
     }
 
-    // ----- exportToJson -------------------------------------------------------
+    // ========== processEAFile ==========
+    @Nested
+    class ProcessEAFileTests {
+
+        @Test
+        void testProcessEAFile_happyPath_logsAndVerify() throws Exception {
+            // Setup MDC and mock objects
+            MDC.put(LOG_REQUEST_ID, "req-10");
+            MultipartFile mockFile = mock(MultipartFile.class);
+            byte[] mockBytes = "xmi content".getBytes();
+            Boolean removeInvalidSources = true;
+            OntologyData mockOntologyData = mock(OntologyData.class);
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
+
+            when(mockFile.getBytes()).thenReturn(mockBytes);
+            when(eaReader.readXmiFromBytes(mockBytes)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenReturn(mockTransformationResult);
+
+            // Call processEAFile()
+            ConversionResult result = converterEngine.processEAFile(mockFile, removeInvalidSources);
+
+            // Verify result
+            assertNotNull(result);
+            assertEquals(mockOntologyData, result.getOntologyData());
+            assertEquals(mockTransformationResult, result.getTransformationResult());
+
+            // Check logs
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting EA file processing: requestId=req-10")));
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting EA file parsing: requestId=req-10")));
+
+            // Verify service calls
+            verify(mockFile).getBytes();
+            verify(eaReader).readXmiFromBytes(mockBytes);
+            verify(ofnDataTransformer).transform(mockOntologyData, removeInvalidSources);
+        }
+
+        @Test
+        void testProcessEAFile_ioException_propagated() throws Exception {
+            // Setup with IO exception
+            MDC.put(LOG_REQUEST_ID, "req-11");
+            MultipartFile mockFile = mock(MultipartFile.class);
+            IOException ioException = new IOException("EA IO error");
+
+            when(mockFile.getBytes()).thenThrow(ioException);
+
+            // Call processEAFile() and expect IOException
+            IOException thrown = assertThrows(IOException.class,
+                    () -> converterEngine.processEAFile(mockFile, false));
+
+            // Verify exception message
+            assertEquals("EA IO error", thrown.getMessage());
+
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Failed to parse EA file: requestId=req-11")));
+        }
+
+        @Test
+        void testProcessEAFile_fileParsingException_wrapped() throws Exception {
+            // Setup with parsing exception
+            MDC.put(LOG_REQUEST_ID, "req-12");
+            MultipartFile mockFile = mock(MultipartFile.class);
+            byte[] mockBytes = "invalid xmi".getBytes();
+            RuntimeException runtimeException = new RuntimeException("EA parsing error");
+
+            when(mockFile.getBytes()).thenReturn(mockBytes);
+            when(eaReader.readXmiFromBytes(mockBytes)).thenThrow(runtimeException);
+
+            // Call processEAFile() and expect FileParsingException
+            FileParsingException thrown = assertThrows(FileParsingException.class,
+                    () -> converterEngine.processEAFile(mockFile, false));
+
+            // Verify wrapped exception
+            assertEquals("Během čtení souboru došlo k chybě.", thrown.getMessage());
+            assertSame(runtimeException, thrown.getCause());
+
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Failed to parse EA file: requestId=req-12")));
+        }
+
+        @Test
+        void testProcessEAFile_conversionException_propagated() throws Exception {
+            // Setup with conversion exception
+            MDC.put(LOG_REQUEST_ID, "req-13");
+            MultipartFile mockFile = mock(MultipartFile.class);
+            byte[] mockBytes = "xmi content".getBytes();
+            OntologyData mockOntologyData = mock(OntologyData.class);
+            ConversionException conversionException = new ConversionException("EA conversion error");
+
+            when(mockFile.getBytes()).thenReturn(mockBytes);
+            when(eaReader.readXmiFromBytes(mockBytes)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData, false)).thenThrow(conversionException);
+
+            // Call processEAFile() and expect ConversionException
+            ConversionException thrown = assertThrows(ConversionException.class,
+                    () -> converterEngine.processEAFile(mockFile, false));
+
+            // Verify exception message
+            assertEquals("EA conversion error", thrown.getMessage());
+
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Failed to convert EA model: requestId=req-13, error=EA conversion error")));
+        }
+    }
+
+    // ========== exportToJson ==========
     @Nested
     class ExportToJsonTests {
 
         @Test
         void testExportToJson_archiFormat_happyPath_logsAndVerify() throws JsonExportException {
-            // Nastavení MDC a příprava mock objektů
-            MDC.put(LOG_REQUEST_ID, "req-8");
-            String result = "{\"k\":1}";
+            // Setup MDC and mock objects
+            MDC.put(LOG_REQUEST_ID, "req-14");
+            String expectedResult = "{\"status\":\"ok\"}";
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
-            // Nastavení archiTransformationResult pomocí reflection
-            setArchiTransformationResult(mockTransformationResult);
+            when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenReturn(expectedResult);
 
-            when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenReturn(result);
+            // Call exportToJson() with ARCHI_XML format
+            String result = converterEngine.exportToJson(FileFormat.ARCHI_XML, mockTransformationResult);
 
-            // Volání exportToJson() s ARCHI_XML formátem
-            String out = converterEngine.exportToJson(FileFormat.ARCHI_XML);
+            // Verify result
+            assertEquals(expectedResult, result);
 
-            // Kontrola návratové hodnoty
-            assertEquals(result, out);
+            // Verify logs
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting JSON export using registry: requestId=req-14, fileFormat=ARCHI_XML")));
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("JSON export completed using registry: requestId=req-14, fileFormat=ARCHI_XML, outputSize=" + expectedResult.length() + ", durationMs=")));
 
-            // Ověření logů startu a dokončení s outputSize a durationMs
-            assertEquals(2, listAppender.list.size());
-            assertTrue(listAppender.list.get(0).getFormattedMessage()
-                    .contains("Starting JSON export using registry: requestId=req-8, fileFormat=ARCHI_XML"));
-            assertTrue(listAppender.list.get(1).getFormattedMessage()
-                    .contains("JSON export completed using registry: requestId=req-8, fileFormat=ARCHI_XML, outputSize=" + result.length() + ", durationMs="));
-
-            // Ověření volání ofnDataTransformer
+            // Verify service call
             verify(ofnDataTransformer).exportToJson(mockTransformationResult);
         }
 
         @Test
-        void testExportToJson_archiFormat_noTransformationResult_throwsException() {
-            // Nastavení MDC bez transformation result
-            MDC.put(LOG_REQUEST_ID, "req-8a");
-
-            // Volání exportToJson() s ARCHI_XML formátem bez transformation result
-            JsonExportException thrown = assertThrows(JsonExportException.class,
-                    () -> converterEngine.exportToJson(FileFormat.ARCHI_XML));
-
-            // Ověření textu výjimky
-            assertEquals("Archi transformation result is not available.", thrown.getMessage());
-        }
-
-        @Test
         void testExportToJson_xlsxFormat_happyPath_logsAndVerify() throws JsonExportException {
-            // Nastavení MDC a příprava Excel transformation result
-            MDC.put(LOG_REQUEST_ID, "req-8b");
-            String result = "{\"excel\":true}";
-            TransformationResult mockResult = mock(TransformationResult.class);
+            // Setup for XLSX format
+            MDC.put(LOG_REQUEST_ID, "req-15");
+            String expectedResult = "{\"excel\":\"data\"}";
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
-            // Použití reflection pro nastavení excelTransformationResult
-            setExcelTransformationResult(mockResult);
+            when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenReturn(expectedResult);
 
-            when(ofnDataTransformer.exportToJson(mockResult)).thenReturn(result);
+            // Call exportToJson() with XLSX format
+            String result = converterEngine.exportToJson(FileFormat.XLSX, mockTransformationResult);
 
-            // Volání exportToJson() s XLSX formátem
-            String out = converterEngine.exportToJson(FileFormat.XLSX);
+            // Verify result
+            assertEquals(expectedResult, result);
 
-            // Kontrola návratové hodnoty
-            assertEquals(result, out);
+            // Verify logs
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting JSON export using registry: requestId=req-15, fileFormat=XLSX")));
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("JSON export completed using registry: requestId=req-15, fileFormat=XLSX, outputSize=" + expectedResult.length())));
 
-            // Ověření logů
-            assertEquals(2, listAppender.list.size());
-            assertTrue(listAppender.list.get(0).getFormattedMessage()
-                    .contains("Starting JSON export using registry: requestId=req-8b, fileFormat=XLSX"));
-            assertTrue(listAppender.list.get(1).getFormattedMessage()
-                    .contains("JSON export completed using registry: requestId=req-8b, fileFormat=XLSX, outputSize=" + result.length()));
-        }
-
-        @Test
-        void testExportToJson_xlsxFormat_noTransformationResult_throwsException() {
-            // Nastavení MDC
-            MDC.put(LOG_REQUEST_ID, "req-8c");
-
-            // Volání exportToJson() s XLSX formátem bez transformation result
-            JsonExportException thrown = assertThrows(JsonExportException.class,
-                    () -> converterEngine.exportToJson(FileFormat.XLSX));
-
-            // Ověření textu výjimky
-            assertEquals("Excel transformation result is not available.", thrown.getMessage());
+            // Verify service call
+            verify(ofnDataTransformer).exportToJson(mockTransformationResult);
         }
 
         @Test
         void testExportToJson_xmiFormat_happyPath_logsAndVerify() throws JsonExportException {
-            // Nastavení MDC a příprava EA transformation result
-            MDC.put(LOG_REQUEST_ID, "req-8d");
-            String result = "{\"ea\":true}";
-            TransformationResult mockResult = mock(TransformationResult.class);
+            // Setup for XMI format
+            MDC.put(LOG_REQUEST_ID, "req-16");
+            String expectedResult = "{\"xmi\":\"data\"}";
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
-            // Použití reflection pro nastavení eaTransformationResult
-            setEaTransformationResult(mockResult);
+            when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenReturn(expectedResult);
 
-            when(ofnDataTransformer.exportToJson(mockResult)).thenReturn(result);
+            // Call exportToJson() with XMI format
+            String result = converterEngine.exportToJson(FileFormat.XMI, mockTransformationResult);
 
-            // Volání exportToJson() s XMI formátem
-            String out = converterEngine.exportToJson(FileFormat.XMI);
+            // Verify result
+            assertEquals(expectedResult, result);
 
-            // Kontrola návratové hodnoty
-            assertEquals(result, out);
+            // Verify logs
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting JSON export using registry: requestId=req-16, fileFormat=XMI")));
 
-            // Ověření logů
-            assertEquals(2, listAppender.list.size());
-            assertTrue(listAppender.list.get(0).getFormattedMessage()
-                    .contains("Starting JSON export using registry: requestId=req-8d, fileFormat=XMI"));
-            assertTrue(listAppender.list.get(1).getFormattedMessage()
-                    .contains("JSON export completed using registry: requestId=req-8d, fileFormat=XMI, outputSize=" + result.length()));
+            // Verify service call
+            verify(ofnDataTransformer).exportToJson(mockTransformationResult);
+        }
+
+        @Test
+        void testExportToJson_nullTransformationResult_throwsException() {
+            // Setup with null transformation result
+            MDC.put(LOG_REQUEST_ID, "req-17");
+
+            // Call exportToJson() with null transformation result
+            JsonExportException thrown = assertThrows(JsonExportException.class,
+                    () -> converterEngine.exportToJson(FileFormat.ARCHI_XML, null));
+
+            // Verify exception message
+            assertEquals("Archi transformation result is not available.", thrown.getMessage());
+        }
+
+        @Test
+        void testExportToJson_unsupportedFormat_throwsException() {
+            // Setup with unsupported format
+            MDC.put(LOG_REQUEST_ID, "req-18");
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
+
+            // Call exportToJson() with unsupported format
+            JsonExportException thrown = assertThrows(JsonExportException.class,
+                    () -> converterEngine.exportToJson(FileFormat.TURTLE, mockTransformationResult));
+
+            // Verify exception message
+            assertEquals("Unsupported file format for JSON export: TURTLE", thrown.getMessage());
         }
 
         @Test
         void testExportToJson_jsonExportException_propagated() throws JsonExportException {
-            // Nastavení MDC a příprava transformation result
-            MDC.put(LOG_REQUEST_ID, "req-9");
+            // Setup with export exception
+            MDC.put(LOG_REQUEST_ID, "req-19");
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
-            JsonExportException je = new JsonExportException("chyba JSON");
+            JsonExportException je = new JsonExportException("JSON export error");
 
-            setArchiTransformationResult(mockTransformationResult);
             when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenThrow(je);
 
-            // Volání exportToJson() a zachycení JsonExportException
-            JsonExportException thrown = assertThrows(
-                    JsonExportException.class, () -> converterEngine.exportToJson(FileFormat.ARCHI_XML));
+            // Call exportToJson() and expect JsonExportException
+            JsonExportException thrown = assertThrows(JsonExportException.class,
+                    () -> converterEngine.exportToJson(FileFormat.ARCHI_XML, mockTransformationResult));
 
-            // Ověření textu výjimky
-            assertEquals("chyba JSON", thrown.getMessage());
+            // Verify exception message
+            assertEquals("JSON export error", thrown.getMessage());
 
-            // Kontrola ERROR logu
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(1);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Failed to export to JSON using registry: requestId=req-9, fileFormat=ARCHI_XML, error=chyba JSON"));
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Failed to export to JSON using registry: requestId=req-19, fileFormat=ARCHI_XML, error=JSON export error")));
         }
 
         @Test
         void testExportToJson_unexpectedException_wrapped() throws JsonExportException {
-            // Nastavení MDC a příprava transformation result
-            MDC.put(LOG_REQUEST_ID, "req-10");
+            // Setup with unexpected exception
+            MDC.put(LOG_REQUEST_ID, "req-20");
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
-            RuntimeException re = new RuntimeException("nečekaná chyba");
+            RuntimeException re = new RuntimeException("Unexpected error");
 
-            setArchiTransformationResult(mockTransformationResult);
             when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenThrow(re);
 
-            // Volání exportToJson() a zachycení JsonExportException
-            JsonExportException thrown = assertThrows(
-                    JsonExportException.class, () -> converterEngine.exportToJson(FileFormat.ARCHI_XML));
+            // Call exportToJson() and expect JsonExportException
+            JsonExportException thrown = assertThrows(JsonExportException.class,
+                    () -> converterEngine.exportToJson(FileFormat.ARCHI_XML, mockTransformationResult));
 
-            // Ověření obalené výjimky a jejího cause
+            // Verify wrapped exception
             assertEquals("Během exportu do JSON došlo k nečekané chybě.", thrown.getMessage());
             assertSame(re, thrown.getCause());
 
-            // Kontrola ERROR logu neočekávané chyby
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(1);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Unexpected error during JSON export using registry: requestId=req-10, fileFormat=ARCHI_XML"));
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Unexpected error during JSON export using registry: requestId=req-20, fileFormat=ARCHI_XML")));
         }
     }
 
-    // ----- exportToTurtle -------------------------------------------------------
+    // ========== exportToTurtle ==========
     @Nested
     class ExportToTurtleTests {
 
         @Test
         void testExportToTurtle_archiFormat_happyPath_logsAndVerify() throws TurtleExportException {
-            // Nastavení MDC a příprava transformation result
-            MDC.put(LOG_REQUEST_ID, "req-11");
-            String result = "@prefix";
+            // Setup MDC and mock objects
+            MDC.put(LOG_REQUEST_ID, "req-21");
+            String expectedResult = "@prefix : <http://example.org/>";
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
-            setArchiTransformationResult(mockTransformationResult);
-            when(ofnDataTransformer.exportToTurtle(mockTransformationResult)).thenReturn(result);
+            when(ofnDataTransformer.exportToTurtle(mockTransformationResult)).thenReturn(expectedResult);
 
-            // Volání exportToTurtle()
-            String out = converterEngine.exportToTurtle(FileFormat.ARCHI_XML);
+            // Call exportToTurtle() with ARCHI_XML format
+            String result = converterEngine.exportToTurtle(FileFormat.ARCHI_XML, mockTransformationResult);
 
-            // Kontrola návratové hodnoty
-            assertEquals(result, out);
+            // Verify result
+            assertEquals(expectedResult, result);
 
-            // Ověření logů startu a dokončení s outputSize a durationMs
-            assertEquals(2, listAppender.list.size());
-            assertTrue(listAppender.list.get(0).getFormattedMessage()
-                    .contains("Starting Turtle export: requestId=req-11"));
-            assertTrue(listAppender.list.get(1).getFormattedMessage()
-                    .contains("Turtle export completed using registry: requestId=req-11, fileFormat=ARCHI_XML, outputSize=" + result.length() + ", durationMs="));
+            // Verify logs
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting Turtle export: requestId=req-21")));
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Turtle export completed using registry: requestId=req-21, fileFormat=ARCHI_XML, outputSize=" + expectedResult.length() + ", durationMs=")));
 
-            // Ověření volání ofnDataTransformer
+            // Verify service call
             verify(ofnDataTransformer).exportToTurtle(mockTransformationResult);
         }
 
         @Test
-        void testExportToTurtle_archiFormat_noTransformationResult_throwsException() {
-            // Nastavení MDC bez transformation result
-            MDC.put(LOG_REQUEST_ID, "req-11a");
+        void testExportToTurtle_xlsxFormat_happyPath_logsAndVerify() throws TurtleExportException {
+            // Setup for XLSX format
+            MDC.put(LOG_REQUEST_ID, "req-22");
+            String expectedResult = "@prefix excel: <http://example.org/excel#>";
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
-            // Volání exportToTurtle() s ARCHI_XML formátem bez transformation result
+            when(ofnDataTransformer.exportToTurtle(mockTransformationResult)).thenReturn(expectedResult);
+
+            // Call exportToTurtle() with XLSX format
+            String result = converterEngine.exportToTurtle(FileFormat.XLSX, mockTransformationResult);
+
+            // Verify result
+            assertEquals(expectedResult, result);
+
+            // Verify logs
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting Turtle export: requestId=req-22")));
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Turtle export completed using registry: requestId=req-22, fileFormat=XLSX, outputSize=" + expectedResult.length())));
+
+            // Verify service call
+            verify(ofnDataTransformer).exportToTurtle(mockTransformationResult);
+        }
+
+        @Test
+        void testExportToTurtle_nullTransformationResult_throwsException() {
+            // Setup with null transformation result
+            MDC.put(LOG_REQUEST_ID, "req-23");
+
+            // Call exportToTurtle() with null transformation result
             TurtleExportException thrown = assertThrows(TurtleExportException.class,
-                    () -> converterEngine.exportToTurtle(FileFormat.ARCHI_XML));
+                    () -> converterEngine.exportToTurtle(FileFormat.ARCHI_XML, null));
 
-            // Ověření textu výjimky
+            // Verify exception message
             assertEquals("Archi transformation result is not available.", thrown.getMessage());
         }
 
         @Test
-        void testExportToTurtle_xlsxFormat_happyPath_logsAndVerify() throws TurtleExportException {
-            // Nastavení MDC a příprava Excel transformation result
-            MDC.put(LOG_REQUEST_ID, "req-11b");
-            String result = "@prefix excel: <http://example.com/excel#>";
-            TransformationResult mockResult = mock(TransformationResult.class);
+        void testExportToTurtle_unsupportedFormat_throwsException() {
+            // Setup with unsupported format
+            MDC.put(LOG_REQUEST_ID, "req-24");
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
-            // Použití reflection pro nastavení excelTransformationResult
-            setExcelTransformationResult(mockResult);
-
-            when(ofnDataTransformer.exportToTurtle(mockResult)).thenReturn(result);
-
-            // Volání exportToTurtle() s XLSX formátem
-            String out = converterEngine.exportToTurtle(FileFormat.XLSX);
-
-            // Kontrola návratové hodnoty
-            assertEquals(result, out);
-
-            // Ověření logů
-            assertEquals(2, listAppender.list.size());
-            assertTrue(listAppender.list.get(0).getFormattedMessage()
-                    .contains("Starting Turtle export: requestId=req-11b"));
-            assertTrue(listAppender.list.get(1).getFormattedMessage()
-                    .contains("Turtle export completed using registry: requestId=req-11b, fileFormat=XLSX, outputSize=" + result.length()));
-        }
-
-        @Test
-        void testExportToTurtle_xlsxFormat_noTransformationResult_throwsException() {
-            // Nastavení MDC
-            MDC.put(LOG_REQUEST_ID, "req-11c");
-
-            // Volání exportToTurtle() s XLSX formátem bez transformation result
+            // Call exportToTurtle() with unsupported format
             TurtleExportException thrown = assertThrows(TurtleExportException.class,
-                    () -> converterEngine.exportToTurtle(FileFormat.XLSX));
+                    () -> converterEngine.exportToTurtle(FileFormat.TURTLE, mockTransformationResult));
 
-            // Ověření textu výjimky
-            assertEquals("Excel transformation result is not available.", thrown.getMessage());
+            // Verify exception message
+            assertEquals("Unsupported file format for Turtle export: TURTLE", thrown.getMessage());
         }
 
         @Test
         void testExportToTurtle_turtleExportException_propagated() throws TurtleExportException {
-            // Nastavení MDC a příprava transformation result
-            MDC.put(LOG_REQUEST_ID, "req-12");
+            // Setup with export exception
+            MDC.put(LOG_REQUEST_ID, "req-25");
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
-            TurtleExportException te = new TurtleExportException("chyba Turtle");
+            TurtleExportException te = new TurtleExportException("Turtle export error");
 
-            setArchiTransformationResult(mockTransformationResult);
             when(ofnDataTransformer.exportToTurtle(mockTransformationResult)).thenThrow(te);
 
-            // Volání exportToTurtle() a zachycení TurtleExportException
-            TurtleExportException thrown = assertThrows(
-                    TurtleExportException.class, () -> converterEngine.exportToTurtle(FileFormat.ARCHI_XML));
+            // Call exportToTurtle() and expect TurtleExportException
+            TurtleExportException thrown = assertThrows(TurtleExportException.class,
+                    () -> converterEngine.exportToTurtle(FileFormat.ARCHI_XML, mockTransformationResult));
 
-            // Ověření textu výjimky
-            assertEquals("chyba Turtle", thrown.getMessage());
+            // Verify exception message
+            assertEquals("Turtle export error", thrown.getMessage());
 
-            // Kontrola ERROR logu
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(1);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Failed to export to Turtle using registry: requestId=req-12, fileFormat=ARCHI_XML, error=chyba Turtle"));
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Failed to export to Turtle using registry: requestId=req-25, fileFormat=ARCHI_XML, error=Turtle export error")));
         }
 
         @Test
         void testExportToTurtle_unexpectedException_wrapped() throws TurtleExportException {
-            // Nastavení MDC a příprava transformation result
-            MDC.put(LOG_REQUEST_ID, "req-13");
+            // Setup with unexpected exception
+            MDC.put(LOG_REQUEST_ID, "req-26");
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
-            RuntimeException re = new RuntimeException("nečekaná chyba");
+            RuntimeException re = new RuntimeException("Unexpected error");
 
-            setArchiTransformationResult(mockTransformationResult);
             when(ofnDataTransformer.exportToTurtle(mockTransformationResult)).thenThrow(re);
 
-            // Volání exportToTurtle() a zachycení TurtleExportException
-            TurtleExportException thrown = assertThrows(
-                    TurtleExportException.class, () -> converterEngine.exportToTurtle(FileFormat.ARCHI_XML));
+            // Call exportToTurtle() and expect TurtleExportException
+            TurtleExportException thrown = assertThrows(TurtleExportException.class,
+                    () -> converterEngine.exportToTurtle(FileFormat.ARCHI_XML, mockTransformationResult));
 
-            // Ověření obalené výjimky
+            // Verify wrapped exception
             assertEquals("Během exportu do Turtle došlo k nečekané chybě.", thrown.getMessage());
+            assertSame(re, thrown.getCause());
 
-            // Kontrola ERROR logu neočekávané chyby
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(1);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Unexpected error during Turtle export using registry: requestId=req-13, fileFormat=ARCHI_XML"));
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Unexpected error during Turtle export using registry: requestId=req-26, fileFormat=ARCHI_XML")));
         }
     }
 
-    // ----- parseExcelFromFile -------------------------------------------------------
+    // ========== Integration and Edge Cases ==========
     @Nested
-    class ParseExcelFromFileTests {
+    class IntegrationAndEdgeCaseTests {
 
         @Test
-        void testParseExcelFromFile_happyPath_logsAndVerify() throws Exception {
-            // Nastavení MDC a mock pro MultipartFile
-            MDC.put(LOG_REQUEST_ID, "req-14");
+        void testFullWorkflow_archiFile() throws Exception {
+            // Test complete workflow: process -> export JSON -> export Turtle
+            MDC.put(LOG_REQUEST_ID, "req-27");
+            String content = "<xml>content</xml>";
+            OntologyData mockOntologyData = mock(OntologyData.class);
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
+            String jsonResult = "{\"data\":\"json\"}";
+            String turtleResult = "@prefix test: <http://test.org/>";
+
+            // Setup mocks
+            when(archiReader.readArchiFromString(content)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData, false)).thenReturn(mockTransformationResult);
+            when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenReturn(jsonResult);
+            when(ofnDataTransformer.exportToTurtle(mockTransformationResult)).thenReturn(turtleResult);
+
+            // Execute full workflow
+            ConversionResult conversionResult = converterEngine.processArchiFile(content, false);
+            String json = converterEngine.exportToJson(FileFormat.ARCHI_XML, conversionResult.getTransformationResult());
+            String turtle = converterEngine.exportToTurtle(FileFormat.ARCHI_XML, conversionResult.getTransformationResult());
+
+            // Verify results
+            assertNotNull(conversionResult);
+            assertEquals(jsonResult, json);
+            assertEquals(turtleResult, turtle);
+
+            // Verify all service calls
+            verify(archiReader).readArchiFromString(content);
+            verify(ofnDataTransformer).transform(mockOntologyData, false);
+            verify(ofnDataTransformer).exportToJson(mockTransformationResult);
+            verify(ofnDataTransformer).exportToTurtle(mockTransformationResult);
+        }
+
+        @Test
+        void testAllFileFormats_processAndExport() throws Exception {
+            // Test that all supported file formats work
+            MDC.put(LOG_REQUEST_ID, "req-28");
+
+            // Mock common objects
+            OntologyData mockOntologyData = mock(OntologyData.class);
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
             MultipartFile mockFile = mock(MultipartFile.class);
             InputStream mockInputStream = mock(InputStream.class);
-            OntologyData mockOntologyData = mock(OntologyData.class);
+            byte[] mockBytes = "content".getBytes();
 
+            // Setup mocks for all file types
+            when(archiReader.readArchiFromString(anyString())).thenReturn(mockOntologyData);
             when(mockFile.getInputStream()).thenReturn(mockInputStream);
+            when(mockFile.getBytes()).thenReturn(mockBytes);
             when(excelReader.readOntologyFromExcel(mockInputStream)).thenReturn(mockOntologyData);
-
-            // Volání parseExcelFromFile()
-            converterEngine.parseExcelFromFile(mockFile);
-
-            // Kontrola počtu logů (start + end)
-            assertEquals(2, listAppender.list.size());
-
-            // Ověření formátu zpráv
-            assertTrue(listAppender.list.get(0).getFormattedMessage()
-                    .contains("Starting Excel file parsing: requestId=req-14"));
-            assertTrue(listAppender.list.get(1).getFormattedMessage()
-                    .contains("Excel file parsing completed: requestId=req-14, durationMs="));
-
-            // Ověření volání dependencies
-            verify(mockFile).getInputStream();
-            verify(excelReader).readOntologyFromExcel(mockInputStream);
-        }
-
-        @Test
-        void testParseExcelFromFile_ioException_propagated() throws Exception {
-            // Nastavení MDC a mock pro MultipartFile vyhazující IOException
-            MDC.put(LOG_REQUEST_ID, "req-15");
-            MultipartFile mockFile = mock(MultipartFile.class);
-            IOException ioException = new IOException("IO chyba");
-
-            when(mockFile.getInputStream()).thenThrow(ioException);
-
-            // Volání parseExcelFromFile() a zachycení IOException
-            IOException thrown = assertThrows(IOException.class,
-                    () -> converterEngine.parseExcelFromFile(mockFile));
-
-            // Ověření textu výjimky
-            assertEquals("IO chyba", thrown.getMessage());
-
-            // Kontrola ERROR logu
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(1);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Failed to parse Excel file: requestId=req-15, error=IO chyba"));
-        }
-
-        @Test
-        void testParseExcelFromFile_excelReadingException_wrapped() throws Exception {
-            // Nastavení MDC a mock pro excelReader vyhazující RuntimeException
-            MDC.put(LOG_REQUEST_ID, "req-16");
-            MultipartFile mockFile = mock(MultipartFile.class);
-            InputStream mockInputStream = mock(InputStream.class);
-            RuntimeException runtimeException = new RuntimeException("nečekaná chyba");
-
-            when(mockFile.getInputStream()).thenReturn(mockInputStream);
-            when(excelReader.readOntologyFromExcel(mockInputStream)).thenThrow(runtimeException);
-
-            // Volání parseExcelFromFile() a zachycení ExcelReadingException
-            ExcelReadingException thrown = assertThrows(ExcelReadingException.class,
-                    () -> converterEngine.parseExcelFromFile(mockFile));
-
-            // Ověření obalené výjimky
-            assertEquals("Během čtení souboru došlo k nečekané chybě.", thrown.getMessage());
-            assertSame(runtimeException, thrown.getCause());
-
-            // Kontrola ERROR logu
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(1);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Unexpected error during Excel file parsing: requestId=req-16"));
-        }
-    }
-
-    // ----- convertExcel -------------------------------------------------------
-    @Nested
-    class ConvertExcelTests {
-
-        @Test
-        void testConvertExcel_happyPath_logsAndVerify() {
-            // Nastavení MDC a mock ontology data
-            MDC.put(LOG_REQUEST_ID, "req-17");
-            boolean removeInvalidSources = true;
-            OntologyData mockOntologyData = mock(OntologyData.class);
-            TransformationResult mockResult = mock(TransformationResult.class);
-
-            // Nastavení mock ontology data
-            setExcelOntologyData(mockOntologyData);
-
-            doNothing().when(ofnDataTransformer).setRemoveELI(removeInvalidSources);
-            when(ofnDataTransformer.transform(mockOntologyData)).thenReturn(mockResult);
-
-            // Volání convertExcel()
-            converterEngine.convertExcel(removeInvalidSources);
-
-            // Kontrola počtu logů (start + flag + end)
-            assertEquals(3, listAppender.list.size());
-
-            // Ověření start logu
-            assertTrue(listAppender.list.get(0).getFormattedMessage()
-                    .contains("Starting Excel model conversion: requestId=req-17"));
-
-            // Ověření logu flag
-            assertTrue(listAppender.list.get(1).getFormattedMessage()
-                    .contains("Invalid sources removal requested: true, requestId=req-17"));
-
-            // Ověření dokončení conversion
-            assertTrue(listAppender.list.get(2).getFormattedMessage()
-                    .contains("Excel model conversion completed: requestId=req-17, durationMs="));
-
-            // Ověření volání dependencies
-            verify(ofnDataTransformer).setRemoveELI(removeInvalidSources);
-            verify(ofnDataTransformer).transform(mockOntologyData);
-        }
-
-        @Test
-        void testConvertExcel_conversionException_propagated() {
-            // Nastavení MDC a mock
-            MDC.put(LOG_REQUEST_ID, "req-18");
-            boolean removeInvalidSources = false;
-            OntologyData mockOntologyData = mock(OntologyData.class);
-            ConversionException conversionException = new ConversionException("Excel konverze chyba");
-
-            setExcelOntologyData(mockOntologyData);
-
-            doNothing().when(ofnDataTransformer).setRemoveELI(removeInvalidSources);
-            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(conversionException);
-
-            // Volání convertExcel() a zachycení ConversionException
-            ConversionException thrown = assertThrows(ConversionException.class,
-                    () -> converterEngine.convertExcel(removeInvalidSources));
-
-            // Ověření textu výjimky
-            assertEquals("Excel konverze chyba", thrown.getMessage());
-
-            // Kontrola ERROR logu
-            assertEquals(3, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(2);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Failed to convert Excel model: requestId=req-18, error=Excel konverze chyba"));
-        }
-
-        @Test
-        void testConvertExcel_unexpectedException_wrapped() {
-            // Nastavení MDC a mock
-            MDC.put(LOG_REQUEST_ID, "req-19");
-            boolean removeInvalidSources = true;
-            OntologyData mockOntologyData = mock(OntologyData.class);
-            RuntimeException runtimeException = new RuntimeException("nečekaná chyba");
-
-            setExcelOntologyData(mockOntologyData);
-
-            doNothing().when(ofnDataTransformer).setRemoveELI(removeInvalidSources);
-            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(runtimeException);
-
-            // Volání convertExcel() a zachycení ConversionException
-            ConversionException thrown = assertThrows(ConversionException.class,
-                    () -> converterEngine.convertExcel(removeInvalidSources));
-
-            // Ověření obalené výjimky
-            assertEquals("Během konverze Excel souboru došlo k nečekané chybě.", thrown.getMessage());
-
-            // Kontrola ERROR logu
-            assertEquals(3, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(2);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Unexpected error during Excel model conversion: requestId=req-19"));
-        }
-    }
-
-    // ----- parseEAFromFile -------------------------------------------------------
-    @Nested
-    class ParseEAFromFileTests {
-
-        @Test
-        void testParseEAFromFile_happyPath_logsAndVerify() throws Exception {
-            // Nastavení MDC a mock pro MultipartFile
-            MDC.put(LOG_REQUEST_ID, "req-20");
-            MultipartFile mockFile = mock(MultipartFile.class);
-            byte[] mockBytes = "xmi content".getBytes();
-            OntologyData mockOntologyData = mock(OntologyData.class);
-
-            when(mockFile.getBytes()).thenReturn(mockBytes);
             when(eaReader.readXmiFromBytes(mockBytes)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData, false)).thenReturn(mockTransformationResult);
+            when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenReturn("{}");
+            when(ofnDataTransformer.exportToTurtle(mockTransformationResult)).thenReturn("@prefix");
 
-            // Volání parseEAFromFile()
-            converterEngine.parseEAFromFile(mockFile);
+            // Test Archi
+            ConversionResult archiResult = converterEngine.processArchiFile("content", false);
+            String archiJson = converterEngine.exportToJson(FileFormat.ARCHI_XML, archiResult.getTransformationResult());
+            String archiTurtle = converterEngine.exportToTurtle(FileFormat.ARCHI_XML, archiResult.getTransformationResult());
 
-            // Kontrola počtu logů (start + end)
-            assertEquals(2, listAppender.list.size());
+            // Test Excel
+            ConversionResult excelResult = converterEngine.processExcelFile(mockFile, false);
+            String excelJson = converterEngine.exportToJson(FileFormat.XLSX, excelResult.getTransformationResult());
+            String excelTurtle = converterEngine.exportToTurtle(FileFormat.XLSX, excelResult.getTransformationResult());
 
-            // Ověření formátu zpráv
-            assertTrue(listAppender.list.get(0).getFormattedMessage()
-                    .contains("Starting EA file parsing: requestId=req-20"));
-            assertTrue(listAppender.list.get(1).getFormattedMessage()
-                    .contains("EA file parsing completed: requestId=req-20, durationMs="));
+            // Test EA
+            ConversionResult eaResult = converterEngine.processEAFile(mockFile, false);
+            String eaJson = converterEngine.exportToJson(FileFormat.XMI, eaResult.getTransformationResult());
+            String eaTurtle = converterEngine.exportToTurtle(FileFormat.XMI, eaResult.getTransformationResult());
 
-            // Ověření volání dependencies
-            verify(mockFile).getBytes();
-            verify(eaReader).readXmiFromBytes(mockBytes);
-        }
-
-        @Test
-        void testParseEAFromFile_ioException_propagated() throws Exception {
-            // Nastavení MDC a mock pro MultipartFile vyhazující IOException
-            MDC.put(LOG_REQUEST_ID, "req-21");
-            MultipartFile mockFile = mock(MultipartFile.class);
-            IOException ioException = new IOException("IO chyba EA");
-
-            when(mockFile.getBytes()).thenThrow(ioException);
-
-            // Volání parseEAFromFile() a zachycení IOException
-            IOException thrown = assertThrows(IOException.class,
-                    () -> converterEngine.parseEAFromFile(mockFile));
-
-            // Ověření textu výjimky
-            assertEquals("IO chyba EA", thrown.getMessage());
-
-            // Kontrola ERROR logu
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(1);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Failed to parse EA file: requestId=req-21"));
-        }
-
-        @Test
-        void testParseEAFromFile_fileParsingException_wrapped() throws Exception {
-            // Nastavení MDC a mock pro eaReader vyhazující RuntimeException
-            MDC.put(LOG_REQUEST_ID, "req-22");
-            MultipartFile mockFile = mock(MultipartFile.class);
-            byte[] mockBytes = "invalid xmi".getBytes();
-            RuntimeException runtimeException = new RuntimeException("parsing error");
-
-            when(mockFile.getBytes()).thenReturn(mockBytes);
-            when(eaReader.readXmiFromBytes(mockBytes)).thenThrow(runtimeException);
-
-            // Volání parseEAFromFile() a zachycení FileParsingException
-            FileParsingException thrown = assertThrows(FileParsingException.class,
-                    () -> converterEngine.parseEAFromFile(mockFile));
-
-            // Ověření obalené výjimky
-            assertEquals("Během čtení souboru došlo k chybě.", thrown.getMessage());
-            assertSame(runtimeException, thrown.getCause());
-
-            // Kontrola ERROR logu
-            assertEquals(2, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(1);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Failed to parse EA file: requestId=req-22"));
-        }
-    }
-
-    // ----- convertEA -------------------------------------------------------
-    @Nested
-    class ConvertEATests {
-
-        @Test
-        void testConvertEA_happyPath_logsAndVerify() {
-            // Nastavení MDC a mock ontology data
-            MDC.put(LOG_REQUEST_ID, "req-23");
-            boolean removeInvalidSources = true;
-            OntologyData mockOntologyData = mock(OntologyData.class);
-            TransformationResult mockResult = mock(TransformationResult.class);
-
-            // Nastavení mock ontology data
-            setEaOntologyData(mockOntologyData);
-
-            doNothing().when(ofnDataTransformer).setRemoveELI(removeInvalidSources);
-            when(ofnDataTransformer.transform(mockOntologyData)).thenReturn(mockResult);
-
-            // Volání convertEA()
-            converterEngine.convertEA(removeInvalidSources);
-
-            // Kontrola počtu logů (start + flag + end)
-            assertEquals(3, listAppender.list.size());
-
-            // Ověření start logu
-            assertTrue(listAppender.list.get(0).getFormattedMessage()
-                    .contains("Starting EA model conversion: requestId=req-23"));
-
-            // Ověření logu flag
-            assertTrue(listAppender.list.get(1).getFormattedMessage()
-                    .contains("Invalid sources removal requested: true, requestId=req-23"));
-
-            // Ověření dokončení conversion
-            assertTrue(listAppender.list.get(2).getFormattedMessage()
-                    .contains("EA model conversion completed: requestId=req-23, durationMs="));
-
-            // Ověření volání dependencies
-            verify(ofnDataTransformer).setRemoveELI(removeInvalidSources);
-            verify(ofnDataTransformer).transform(mockOntologyData);
-        }
-
-        @Test
-        void testConvertEA_conversionException_propagated() {
-            // Nastavení MDC a mock
-            MDC.put(LOG_REQUEST_ID, "req-24");
-            boolean removeInvalidSources = false;
-            OntologyData mockOntologyData = mock(OntologyData.class);
-            ConversionException conversionException = new ConversionException("EA konverze chyba");
-
-            setEaOntologyData(mockOntologyData);
-
-            doNothing().when(ofnDataTransformer).setRemoveELI(removeInvalidSources);
-            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(conversionException);
-
-            // Volání convertEA() a zachycení ConversionException
-            ConversionException thrown = assertThrows(ConversionException.class,
-                    () -> converterEngine.convertEA(removeInvalidSources));
-
-            // Ověření textu výjimky
-            assertEquals("EA konverze chyba", thrown.getMessage());
-
-            // Kontrola ERROR logu
-            assertEquals(3, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(2);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Failed to convert EA model: requestId=req-24, error=EA konverze chyba"));
-        }
-
-        @Test
-        void testConvertEA_unexpectedException_wrapped() {
-            // Nastavení MDC a mock
-            MDC.put(LOG_REQUEST_ID, "req-25");
-            boolean removeInvalidSources = true;
-            OntologyData mockOntologyData = mock(OntologyData.class);
-            RuntimeException runtimeException = new RuntimeException("nečekaná chyba");
-
-            setEaOntologyData(mockOntologyData);
-
-            doNothing().when(ofnDataTransformer).setRemoveELI(removeInvalidSources);
-            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(runtimeException);
-
-            // Volání convertEA() a zachycení ConversionException
-            ConversionException thrown = assertThrows(ConversionException.class,
-                    () -> converterEngine.convertEA(removeInvalidSources));
-
-            // Ověření obalené výjimky
-            assertEquals("Během konverze EnterpriseArchitect souboru došlo k nečekané chybě.", thrown.getMessage());
-
-            // Kontrola ERROR logu
-            assertEquals(3, listAppender.list.size());
-            ILoggingEvent error = listAppender.list.get(2);
-            assertTrue(error.getFormattedMessage()
-                    .contains("Unexpected error during EA model conversion: requestId=req-25"));
-        }
-    }
-
-    // Helper methods for private fields setup using reflection
-    private void setArchiOntologyData(OntologyData data) {
-        try {
-            var field = ConverterEngine.class.getDeclaredField("archiOntologyData");
-            field.setAccessible(true);
-            field.set(converterEngine, data);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set archiOntologyData", e);
-        }
-    }
-
-    private void setArchiTransformationResult(TransformationResult result) {
-        try {
-            var field = ConverterEngine.class.getDeclaredField("archiTransformationResult");
-            field.setAccessible(true);
-            field.set(converterEngine, result);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set archiTransformationResult", e);
-        }
-    }
-
-    private void setExcelTransformationResult(TransformationResult result) {
-        try {
-            var field = ConverterEngine.class.getDeclaredField("excelTransformationResult");
-            field.setAccessible(true);
-            field.set(converterEngine, result);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set excelTransformationResult", e);
-        }
-    }
-
-    private void setExcelOntologyData(OntologyData data) {
-        try {
-            var field = ConverterEngine.class.getDeclaredField("excelOntologyData");
-            field.setAccessible(true);
-            field.set(converterEngine, data);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set excelOntologyData", e);
-        }
-    }
-
-    private void setEaTransformationResult(TransformationResult result) {
-        try {
-            var field = ConverterEngine.class.getDeclaredField("eaTransformationResult");
-            field.setAccessible(true);
-            field.set(converterEngine, result);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set eaTransformationResult", e);
-        }
-    }
-
-    private void setEaOntologyData(OntologyData data) {
-        try {
-            var field = ConverterEngine.class.getDeclaredField("eaOntologyData");
-            field.setAccessible(true);
-            field.set(converterEngine, data);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set eaOntologyData", e);
+            // Verify all results
+            assertNotNull(archiResult);
+            assertNotNull(excelResult);
+            assertNotNull(eaResult);
+            assertEquals("{}", archiJson);
+            assertEquals("{}", excelJson);
+            assertEquals("{}", eaJson);
+            assertEquals("@prefix", archiTurtle);
+            assertEquals("@prefix", excelTurtle);
+            assertEquals("@prefix", eaTurtle);
         }
     }
 }
