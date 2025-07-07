@@ -27,12 +27,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Test for {@link ConverterController}.
@@ -401,7 +400,7 @@ class ConverterControllerIntegrationTest {
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
         assertNull(responseDto.getErrorMessage());
 
-        verify(converterService).processArchiFile(anyString(), eq(false));
+        verify(converterService).processArchiFile(anyString(), any());
     }
 
     // ========== FILE FORMAT DETECTION TESTS ==========

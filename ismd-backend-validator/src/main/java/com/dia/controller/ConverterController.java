@@ -25,7 +25,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.dia.constants.ConverterControllerConstants.*;
-import static com.dia.enums.FileFormat.*;
+import static com.dia.enums.FileFormat.ARCHI_XML;
+import static com.dia.enums.FileFormat.XMI;
 
 @RestController
 @RequestMapping("/api/convertor")
