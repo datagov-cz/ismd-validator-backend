@@ -1,8 +1,6 @@
 package com.dia.exporter;
 
 import com.dia.exceptions.TurtleExportException;
-import com.dia.utility.Transliterator;
-import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
@@ -44,6 +42,10 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put(PREFIX_RDFS, RDFS.getURI());
         STANDARD_PREFIXES.put(PREFIX_SKOS, SKOS.getURI());
         STANDARD_PREFIXES.put(PREFIX_XSD, XSD);
+        STANDARD_PREFIXES.put("vsgov", "https://slovník.gov.cz/veřejný-sektor/pojem/");
+        STANDARD_PREFIXES.put("l111-2009", "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/");
+        STANDARD_PREFIXES.put("a104", "https://slovník.gov.cz/agendový/104/pojem/");
+        STANDARD_PREFIXES.put("slovníky", "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/");
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
@@ -170,152 +172,93 @@ public class TurtleExporter {
         for (Map.Entry<String, String> entry : STANDARD_PREFIXES.entrySet()) {
             transformedModel.setNsPrefix(entry.getKey(), entry.getValue());
         }
-
-        String prefix = determineMainPrefix(effectiveNamespace);
-        transformedModel.setNsPrefix(prefix, effectiveNamespace);
     }
 
-    private String determineMainPrefix(String namespace) {
-        if (namespace == null || namespace.isEmpty()) {
-            return DEFAULT_PREFIX;
+    private String getOntologyIRI() {
+        Resource ontologyResource = resourceMap.get("ontology");
+        if (ontologyResource != null) {
+            String ontologyIRI = ontologyResource.getURI();
+            log.debug("Found ontology IRI from resource map: {}", ontologyIRI);
+            return ontologyIRI;
         }
 
-        log.debug("Determining prefix for namespace: {}", namespace);
-
-        String domain = namespace
-                .replaceAll("^https?://", "")
-                .replaceAll("^www\\.", "");
-
-        if (domain.startsWith("urn:")) {
-            String[] urnParts = domain.split(":");
-            if (urnParts.length > 1) {
-                domain = urnParts[1];
-            }
+        StmtIterator iter = ontModel.listStatements(null, RDF.type, OWL2.Ontology);
+        if (iter.hasNext()) {
+            Resource resource = iter.next().getSubject();
+            String ontologyIRI = resource.getURI();
+            log.debug("Found ontology IRI from model: {}", ontologyIRI);
+            return ontologyIRI;
         }
 
-        String[] parts = domain.split("[./:#-]");
-
-        for (String part : parts) {
-            if (!part.isEmpty()) {
-                log.debug("Processing domain part: '{}'", part);
-
-                String transliterated = Transliterator.transliterate(part);
-                log.debug("After transliteration: '{}'", transliterated);
-
-                String cleaned = UtilityMethods.cleanForXMLName(transliterated);
-                log.debug("After XML cleaning: '{}'", cleaned);
-
-                if (UtilityMethods.isValidXMLNameStart(cleaned)) {
-                    String result = cleaned.toLowerCase();
-                    log.debug("Generated prefix: '{}'", result);
-                    return result;
-                }
-            }
+        String catalogNamespace = modelProperties.get(LOKALNI_KATALOG);
+        if (catalogNamespace != null && !catalogNamespace.isEmpty()) {
+            log.debug("Using catalog namespace as ontology IRI: {}", catalogNamespace);
+            return catalogNamespace;
         }
 
-        log.debug("Falling back to default prefix: {}", DEFAULT_PREFIX);
-        return DEFAULT_PREFIX;
+        log.warn("Could not determine ontology IRI from any source");
+        return null;
     }
 
     private void createConceptScheme(OntModel transformedModel) {
-        String ontologyUri = effectiveNamespace;
-        if (ontologyUri.endsWith("/") || ontologyUri.endsWith("#")) {
-            ontologyUri = ontologyUri.substring(0, ontologyUri.length() - 1);
+        String ontologyIRI = getOntologyIRI();
+        if (ontologyIRI == null) {
+            log.error("Cannot create ConceptScheme without ontology IRI");
+            return;
         }
 
-        Resource resource;
+        Resource ontologyResource;
+
         StmtIterator iter = transformedModel.listStatements(null, RDF.type, OWL2.Ontology);
         if (iter.hasNext()) {
-            resource = iter.next().getSubject();
+            ontologyResource = iter.next().getSubject();
+            log.debug("Using existing ontology resource: {}", ontologyResource.getURI());
         } else {
-            resource = transformedModel.createResource(ontologyUri);
-            resource.addProperty(RDF.type, OWL2.Ontology);
+            ontologyResource = transformedModel.createResource(ontologyIRI);
+            ontologyResource.addProperty(RDF.type, OWL2.Ontology);
+            log.debug("Created ontology resource: {}", ontologyIRI);
         }
 
-        resource.addProperty(RDF.type, SKOS.ConceptScheme);
+        if (!ontologyResource.hasProperty(RDF.type, SKOS.ConceptScheme)) {
+            ontologyResource.addProperty(RDF.type, SKOS.ConceptScheme);
+        }
+
+        Resource slovnikType = transformedModel.createResource("https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/slovník");
+        if (!ontologyResource.hasProperty(RDF.type, slovnikType)) {
+            ontologyResource.addProperty(RDF.type, slovnikType);
+        }
 
         if (modelName != null && !modelName.isEmpty()) {
-            resource.removeAll(SKOS.prefLabel);
-            resource.addProperty(SKOS.prefLabel, modelName, DEFAULT_LANG);
+            ontologyResource.removeAll(SKOS.prefLabel);
+            ontologyResource.addProperty(SKOS.prefLabel, modelName, DEFAULT_LANG);
         }
 
         String description = modelProperties.getOrDefault(POPIS, "");
         if (description != null && !description.isEmpty()) {
-            resource.removeAll(DCTerms.description);
-            resource.addProperty(DCTerms.description, description, DEFAULT_LANG);
+            ontologyResource.removeAll(DCTerms.description);
+            ontologyResource.addProperty(DCTerms.description, description, DEFAULT_LANG);
         }
+
+        log.debug("ConceptScheme configured: {}", ontologyResource.getURI());
     }
 
     private void transformResourcesToSKOSConcepts(OntModel transformedModel) {
-        Resource pojemType = transformedModel.createResource(effectiveNamespace + POJEM);
-        ResIterator pojemResources = transformedModel.listSubjectsWithProperty(RDF.type, pojemType);
+        Resource ofnPojemType = transformedModel.createResource("https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem");
+        ResIterator pojemResources = transformedModel.listSubjectsWithProperty(RDF.type, ofnPojemType);
 
+        int conceptCount = 0;
         while (pojemResources.hasNext()) {
             Resource resource = pojemResources.next();
+            conceptCount++;
 
-            resource.addProperty(RDF.type, SKOS.Concept);
-
-            mapResourceTypes(resource, transformedModel);
-        }
-    }
-
-    private void mapResourceTypes(Resource resource, OntModel transformedModel) {
-        String baseNamespace = DEFAULT_NS;
-        String verejnySektorNamespace = baseNamespace + VS_POJEM;
-
-        if (hasResourceType(resource, transformedModel, TRIDA)) {
-            addResourceType(resource, OWL2.Class);
-            mapSubjectOrObjectType(resource, transformedModel, verejnySektorNamespace);
-        } else if (hasResourceType(resource, transformedModel, VLASTNOST)) {
-            mapPropertyType(resource, transformedModel);
-        } else if (hasResourceType(resource, transformedModel, VZTAH)) {
-            addResourceType(resource, OWL2.ObjectProperty);
-        }
-
-        mapDataAccessType(resource, transformedModel, baseNamespace);
-    }
-
-    private boolean hasResourceType(Resource resource, OntModel model, String typeName) {
-        Resource typeResource = model.createResource(effectiveNamespace + typeName);
-        return resource.hasProperty(RDF.type, typeResource);
-    }
-
-    private void addResourceType(Resource resource, Resource type) {
-        resource.addProperty(RDF.type, type);
-    }
-
-    private void mapSubjectOrObjectType(Resource resource, OntModel model, String vsNamespace) {
-        if (hasResourceType(resource, model, TSP)) {
-            addResourceType(resource, model.createResource(vsNamespace + TSP));
-        } else if (hasResourceType(resource, model, TOP)) {
-            addResourceType(resource, model.createResource(vsNamespace + TOP));
-        }
-    }
-
-    private void mapPropertyType(Resource resource, OntModel model) {
-        Property rangeProperty = model.createProperty(effectiveNamespace + OBOR_HODNOT);
-        Statement rangeStmt = resource.getProperty(rangeProperty);
-
-        if (rangeStmt != null && rangeStmt.getObject().isResource()) {
-            String rangeUri = rangeStmt.getObject().asResource().getURI();
-            if (rangeUri.startsWith(XSD)) {
-                addResourceType(resource, OWL2.DatatypeProperty);
-            } else {
-                addResourceType(resource, OWL2.ObjectProperty);
+            if (!resource.hasProperty(RDF.type, SKOS.Concept)) {
+                resource.addProperty(RDF.type, SKOS.Concept);
             }
-        } else {
-            addResourceType(resource, OWL2.DatatypeProperty);
-        }
-    }
 
-    private void mapDataAccessType(Resource resource, OntModel model, String baseNamespace) {
-        if (hasResourceType(resource, model, VEREJNY_UDAJ)) {
-            String publicDataUri = baseNamespace + LEGISLATIVNI_111_VU;
-            addResourceType(resource, model.createResource(publicDataUri));
-        } else if (hasResourceType(resource, model, NEVEREJNY_UDAJ)) {
-            String nonPublicDataUri = baseNamespace + LEGISLATIVNI_111_NVU;
-            addResourceType(resource, model.createResource(nonPublicDataUri));
+            log.debug("Processing OFN pojem: {}", resource.getURI());
         }
+
+        log.debug("Found and processed {} OFN pojmy", conceptCount);
     }
 
     private void transformLabelsToSKOS(OntModel transformedModel) {
@@ -534,20 +477,29 @@ public class TurtleExporter {
     }
 
     private void addInSchemeRelationships(OntModel transformedModel) {
-        Resource conceptScheme;
-        StmtIterator iter = transformedModel.listStatements(null, RDF.type, SKOS.ConceptScheme);
-        if (iter.hasNext()) {
-            conceptScheme = iter.next().getSubject();
-        } else {
+        String ontologyIRI = getOntologyIRI();
+        if (ontologyIRI == null) {
+            log.warn("Cannot add skos:inScheme relationships without ontology IRI");
+            return;
+        }
+
+        Resource conceptScheme = transformedModel.getResource(ontologyIRI);
+        if (conceptScheme == null) {
+            log.warn("ConceptScheme resource not found: {}", ontologyIRI);
             return;
         }
 
         ResIterator conceptIter = transformedModel.listSubjectsWithProperty(RDF.type, SKOS.Concept);
+        int conceptCount = 0;
         while (conceptIter.hasNext()) {
             Resource concept = conceptIter.next();
             concept.removeAll(SKOS.inScheme);
             concept.addProperty(SKOS.inScheme, conceptScheme);
+            conceptCount++;
+            log.debug("Added skos:inScheme: {} -> {}", concept.getURI(), conceptScheme.getURI());
         }
+
+        log.debug("Added skos:inScheme relationships for {} concepts to full IRI: {}", conceptCount, ontologyIRI);
     }
 
     private <T> T handleTurtleOperation(TurtleSupplier<T> operation) throws TurtleExportException {
