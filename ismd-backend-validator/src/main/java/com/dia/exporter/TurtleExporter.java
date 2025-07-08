@@ -400,66 +400,57 @@ public class TurtleExporter {
 
     private void ensureDomainRangeProperties(OntModel transformedModel) {
         Property defOProperty = transformedModel.createProperty(effectiveNamespace + DEFINICNI_OBOR);
-        StmtIterator domainStmts = transformedModel.listStatements(null, defOProperty, (RDFNode) null);
+        if (transformedModel.listStatements(null, defOProperty, (RDFNode) null).hasNext()) {
+            log.warn("Found custom definiční-obor properties - these should have been rdfs:domain from the start");
+            StmtIterator domainStmts = transformedModel.listStatements(null, defOProperty, (RDFNode) null);
+            List<Statement> toAdd = new ArrayList<>();
+            List<Statement> toRemove = new ArrayList<>();
 
-        List<Statement> toAdd = new ArrayList<>();
-        List<Statement> toRemove = new ArrayList<>();
-
-        while (domainStmts.hasNext()) {
-            Statement stmt = domainStmts.next();
-            if (stmt.getObject().isResource()) {
-                toAdd.add(transformedModel.createStatement(
-                        stmt.getSubject(),
-                        RDFS.domain,
-                        stmt.getObject()
-                ));
-                toRemove.add(stmt);
+            while (domainStmts.hasNext()) {
+                Statement stmt = domainStmts.next();
+                if (stmt.getObject().isResource()) {
+                    toAdd.add(transformedModel.createStatement(
+                            stmt.getSubject(),
+                            RDFS.domain,
+                            stmt.getObject()
+                    ));
+                    toRemove.add(stmt);
+                }
             }
-        }
 
-        transformedModel.remove(toRemove);
-        transformedModel.add(toAdd);
+            transformedModel.remove(toRemove);
+            transformedModel.add(toAdd);
+        }
 
         Property rangeProperty = transformedModel.createProperty(effectiveNamespace + OBOR_HODNOT);
-        StmtIterator rangeStmts = transformedModel.listStatements(null, rangeProperty, (RDFNode) null);
+        if (transformedModel.listStatements(null, rangeProperty, (RDFNode) null).hasNext()) {
+            log.warn("Found custom obor-hodnot properties - these should have been rdfs:range from the start");
+            StmtIterator rangeStmts = transformedModel.listStatements(null, rangeProperty, (RDFNode) null);
+            List<Statement> toAdd = new ArrayList<>();
+            List<Statement> toRemove = new ArrayList<>();
 
-        toAdd = new ArrayList<>();
-        toRemove = new ArrayList<>();
-
-        while (rangeStmts.hasNext()) {
-            Statement stmt = rangeStmts.next();
-            if (stmt.getObject().isResource()) {
-                Resource rangeValue = stmt.getObject().asResource();
-
-                toAdd.add(transformedModel.createStatement(
-                        stmt.getSubject(),
-                        RDFS.range,
-                        rangeValue
-                ));
-                toRemove.add(stmt);
+            while (rangeStmts.hasNext()) {
+                Statement stmt = rangeStmts.next();
+                if (stmt.getObject().isResource()) {
+                    Resource rangeValue = stmt.getObject().asResource();
+                    toAdd.add(transformedModel.createStatement(
+                            stmt.getSubject(),
+                            RDFS.range,
+                            rangeValue
+                    ));
+                    toRemove.add(stmt);
+                }
             }
-        }
 
-        transformedModel.remove(toRemove);
-        transformedModel.add(toAdd);
+            transformedModel.remove(toRemove);
+            transformedModel.add(toAdd);
+        }
     }
 
     private void mapCustomPropertiesToStandard(OntModel transformedModel) {
         String baseNamespace = DEFAULT_NS;
         String agendovyNamespace = baseNamespace + AGENDOVY_104;
         String legislativniNamespace = baseNamespace + LEGISLATIVNI_111;
-
-        mapProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + ZDROJ),
-                DCTerms.source);
-
-        mapProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + SOUVISEJICI_ZDROJ),
-                DCTerms.references);
-
-        mapProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + IDENTIFIKATOR),
-                DCTerms.identifier);
 
         mapBooleanProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + JE_PPDF),
@@ -468,10 +459,6 @@ public class TurtleExporter {
         mapProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + USTANOVENI_NEVEREJNOST),
                 transformedModel.createProperty(legislativniNamespace + USTANOVENI_LONG));
-
-        mapProperty(transformedModel,
-                transformedModel.createProperty(effectiveNamespace + NADRAZENA_TRIDA),
-                RDFS.subClassOf);
 
         mapProperty(transformedModel,
                 transformedModel.createProperty(effectiveNamespace + AIS),

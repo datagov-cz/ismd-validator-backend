@@ -15,6 +15,7 @@ import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.vocabulary.SKOS;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -295,36 +296,40 @@ public class JsonExporter {
 
     private JSONObject createConceptObject(Resource concept) throws JSONException {
         JSONObject pojemObj = new JSONObject();
-        String namespace = effectiveNamespace;
 
         pojemObj.put("iri", concept.getURI());
         pojemObj.put("typ", getConceptTypes(concept));
 
-        addMultilingualProperty(concept, RDFS.label, Json.NAZEV, pojemObj);
+        addMultilingualProperty(concept, SKOS.prefLabel, Json.NAZEV, pojemObj);
 
-        addAlternativeNamesFromEitherNamespace(concept, pojemObj, namespace);
+        addAlternativeNamesFromStandardProperty(concept, pojemObj);
 
-        addMultilingualPropertyFromEitherNamespace(concept, pojemObj, namespace, DEFINICE);
+        Property definitionProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#definition");
+        addMultilingualProperty(concept, definitionProperty, DEFINICE, pojemObj);
 
-        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, IDENTIFIKATOR);
+        Property identifierProperty = ontModel.createProperty("http://purl.org/dc/terms/identifier");
+        addResourceArrayProperty(concept, identifierProperty, IDENTIFIKATOR, pojemObj);
 
-        addMultilingualPropertyFromEitherNamespace(concept, pojemObj, namespace, POPIS);
+        Property descriptionProperty = ontModel.createProperty("http://purl.org/dc/terms/description");
+        addMultilingualProperty(concept, descriptionProperty, POPIS, pojemObj);
 
         addExactMatchProperty(concept, pojemObj);
 
-        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, USTANOVENI_NEVEREJNOST);
+        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, effectiveNamespace, USTANOVENI_NEVEREJNOST);
 
-        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, ZDROJ);
+        Property sourceProperty = ontModel.createProperty("http://purl.org/dc/terms/source");
+        addResourceArrayProperty(concept, sourceProperty, ZDROJ, pojemObj);
 
-        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, SOUVISEJICI_ZDROJ);
+        Property referencesProperty = ontModel.createProperty("http://purl.org/dc/terms/references");
+        addResourceArrayProperty(concept, referencesProperty, SOUVISEJICI_ZDROJ, pojemObj);
 
-        addDomainAndRangeWithBothNamespaces(concept, pojemObj, namespace);
+        addDomainAndRangeFromStandardProperties(concept, pojemObj);
 
-        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, NADRAZENA_TRIDA);
+        addHierarchyFromStandardProperty(concept, pojemObj);
 
-        addGovernanceProperties(concept, pojemObj, namespace);
+        addGovernanceProperties(concept, pojemObj, effectiveNamespace);
 
-        addRppMetadataWithBothNamespaces(concept, pojemObj, namespace);
+        addRppMetadataWithBothNamespaces(concept, pojemObj, effectiveNamespace);
 
         return pojemObj;
     }
@@ -454,19 +459,6 @@ public class JsonExporter {
         }
     }
 
-    private void addMultilingualPropertyFromEitherNamespace(Resource concept,
-                                                            JSONObject pojemObj,
-                                                            String namespace,
-                                                            String labelDef) throws JSONException {
-        Property langDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + labelDef);
-        Property langCustom = ontModel.getProperty(namespace + labelDef);
-        if (concept.hasProperty(langDefault)) {
-            addMultilingualProperty(concept, langDefault, labelDef, pojemObj);
-        } else if (concept.hasProperty(langCustom)) {
-            addMultilingualProperty(concept, langCustom, labelDef, pojemObj);
-        }
-    }
-
     private void addExactMatchProperty(Resource concept, JSONObject pojemObj) throws JSONException {
         Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
 
@@ -497,9 +489,45 @@ public class JsonExporter {
         }
     }
 
-    private void addAlternativeNamesFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+    private void addDomainAndRangeFromStandardProperties(Resource concept, JSONObject pojemObj) throws JSONException {
+        Statement domainStmt = concept.getProperty(RDFS.domain);
+        if (domainStmt != null && domainStmt.getObject().isResource()) {
+            pojemObj.put(DEFINICNI_OBOR, domainStmt.getObject().asResource().getURI());
+        }
+
+        Statement rangeStmt = concept.getProperty(RDFS.range);
+        if (rangeStmt != null && rangeStmt.getObject().isResource()) {
+            String rangeUri = rangeStmt.getObject().asResource().getURI();
+
+            if (rangeUri.startsWith(ArchiConstants.XSD)) {
+                pojemObj.put(OBOR_HODNOT, "xsd:" + rangeUri.substring(ArchiConstants.XSD.length()));
+            } else {
+                pojemObj.put(OBOR_HODNOT, rangeUri);
+            }
+        }
+    }
+
+    private void addHierarchyFromStandardProperty(Resource concept, JSONObject pojemObj) throws JSONException {
+        StmtIterator subClassIter = concept.listProperties(RDFS.subClassOf);
+        if (subClassIter.hasNext()) {
+            JSONArray hierarchyArray = new JSONArray();
+
+            while (subClassIter.hasNext()) {
+                Statement stmt = subClassIter.next();
+                if (stmt.getObject().isResource()) {
+                    hierarchyArray.put(stmt.getObject().asResource().getURI());
+                }
+            }
+
+            if (hierarchyArray.length() > 0) {
+                pojemObj.put(NADRAZENA_TRIDA, hierarchyArray);
+            }
+        }
+    }
+
+    private void addAlternativeNamesFromStandardProperty(Resource concept, JSONObject pojemObj) throws JSONException {
         Property anPropDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + ALTERNATIVNI_NAZEV);
-        Property anPropCustom = ontModel.getProperty(namespace + ALTERNATIVNI_NAZEV);
+        Property anPropCustom = ontModel.getProperty(effectiveNamespace + ALTERNATIVNI_NAZEV);
 
         StmtIterator stmtIter = concept.listProperties(anPropDefault);
         if (!stmtIter.hasNext()) {
@@ -523,13 +551,6 @@ public class JsonExporter {
         }
     }
 
-    private void addDomainAndRangeWithBothNamespaces(Resource concept, JSONObject pojemObj,
-                                                     String namespace) throws JSONException {
-        addSingleResourcePropertyFromEitherNamespace(concept, pojemObj, namespace, DEFINICNI_OBOR);
-
-        addRangePropertyWithBothNamespaces(concept, pojemObj, namespace);
-    }
-
     private void addSingleResourcePropertyFromEitherNamespace(Resource concept, JSONObject pojemObj,
                                                               String namespace, String labelDefO) throws JSONException {
         Property domainDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + labelDefO);
@@ -539,27 +560,6 @@ public class JsonExporter {
             addResourceProperty(concept, ArchiConstants.DEFAULT_NS + labelDefO, labelDefO, pojemObj);
         } else if (concept.hasProperty(domainCustom)) {
             addResourceProperty(concept, namespace + labelDefO, labelDefO, pojemObj);
-        }
-    }
-
-    private void addRangePropertyWithBothNamespaces(Resource concept, JSONObject pojemObj,
-                                                    String namespace) throws JSONException {
-        Property rangeDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + OBOR_HODNOT);
-        Property rangeCustom = ontModel.getProperty(namespace + OBOR_HODNOT);
-
-        Statement rangeStmt = concept.getProperty(rangeDefault);
-        if (rangeStmt == null) {
-            rangeStmt = concept.getProperty(rangeCustom);
-        }
-
-        if (rangeStmt != null && rangeStmt.getObject().isResource()) {
-            String rangeUri = rangeStmt.getObject().asResource().getURI();
-
-            if (rangeUri.startsWith(ArchiConstants.XSD)) {
-                pojemObj.put(OBOR_HODNOT, "xsd:" + rangeUri.substring(ArchiConstants.XSD.length()));
-            } else {
-                pojemObj.put(OBOR_HODNOT, rangeUri);
-            }
         }
     }
 

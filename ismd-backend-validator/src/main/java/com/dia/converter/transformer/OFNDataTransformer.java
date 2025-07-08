@@ -27,11 +27,7 @@ import java.util.*;
 import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ArchiConstants.AGENDA;
 import static com.dia.constants.ArchiConstants.AIS;
-import static com.dia.constants.ArchiConstants.DEFINICE;
-import static com.dia.constants.ArchiConstants.IDENTIFIKATOR;
 import static com.dia.constants.ArchiConstants.JE_PPDF;
-import static com.dia.constants.ArchiConstants.SOUVISEJICI_ZDROJ;
-import static com.dia.constants.ArchiConstants.ZDROJ;
 import static com.dia.constants.ExcelConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
@@ -298,8 +294,6 @@ public class OFNDataTransformer {
         if (propertyData.getAlternativeName() != null && !propertyData.getAlternativeName().trim().isEmpty()) {
             log.debug("Processing alternative names for property {}: '{}'", propertyData.getName(), propertyData.getAlternativeName());
             addAlternativeNames(propertyResource, propertyData.getAlternativeName());
-        } else {
-            log.debug("No alternative names found for property: {}", propertyData.getName());
         }
 
         if (propertyData.getEquivalentConcept() != null && !propertyData.getEquivalentConcept().trim().isEmpty()) {
@@ -308,8 +302,7 @@ public class OFNDataTransformer {
         }
 
         if (propertyData.getDomain() != null && !propertyData.getDomain().trim().isEmpty()) {
-            Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICNI_OBOR);
-            addResourceReference(propertyResource, domainProperty, propertyData.getDomain());
+            addResourceReference(propertyResource, RDFS.domain, propertyData.getDomain());
         }
 
         addRangeInformation(propertyResource, propertyData);
@@ -533,21 +526,20 @@ public class OFNDataTransformer {
 
     private void addResourceMetadata(Resource resource, ResourceMetadata metadata, Boolean removeELI) {
         if (metadata.name() != null && !metadata.name().trim().isEmpty()) {
-            DataTypeConverter.addTypedProperty(resource, RDFS.label, metadata.name(), DEFAULT_LANG, ontModel);
+            DataTypeConverter.addTypedProperty(resource, SKOS.prefLabel, metadata.name(), DEFAULT_LANG, ontModel);
         }
 
         if (metadata.description() != null && !metadata.description().trim().isEmpty()) {
-            Property descProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + POPIS);
+            Property descProperty = ontModel.createProperty("http://purl.org/dc/terms/description");
             DataTypeConverter.addTypedProperty(resource, descProperty, metadata.description(), DEFAULT_LANG, ontModel);
         }
 
         if (metadata.definition() != null && !metadata.definition().trim().isEmpty()) {
-            Property defProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICE);
-            DataTypeConverter.addTypedProperty(resource, defProperty, metadata.definition(), DEFAULT_LANG, ontModel);
+            DataTypeConverter.addTypedProperty(resource, SKOS.definition, metadata.definition(), DEFAULT_LANG, ontModel);
         }
 
         if (metadata.identifier() != null && !metadata.identifier().trim().isEmpty()) {
-            Property identifierProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + IDENTIFIKATOR);
+            Property identifierProperty = ontModel.createProperty("http://purl.org/dc/terms/identifier");
 
             if (DataTypeConverter.isUri(metadata.identifier())) {
                 resource.addProperty(identifierProperty, ontModel.createResource(metadata.identifier()));
@@ -559,11 +551,11 @@ public class OFNDataTransformer {
         }
 
         if (metadata.source() != null && !metadata.source().trim().isEmpty()) {
-            addSourceReferences(resource, metadata.source(), ZDROJ, removeELI);
+            addSourceReferences(resource, metadata.source(), "dcterms:source", removeELI);
         }
 
         if (metadata.relatedSource() != null && !metadata.relatedSource().trim().isEmpty()) {
-            addSourceReferences(resource, metadata.relatedSource(), SOUVISEJICI_ZDROJ, removeELI);
+            addSourceReferences(resource, metadata.relatedSource(), "dcterms:references", removeELI);
         }
     }
 
@@ -596,32 +588,18 @@ public class OFNDataTransformer {
             return;
         }
 
-        switch (constant) {
-            case ZDROJ -> {
-                Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ZDROJ);
+        Property sourceProp = switch (constant) {
+            case "dcterms:source" -> ontModel.createProperty("http://purl.org/dc/terms/source");
+            case "dcterms:references" -> ontModel.createProperty("http://purl.org/dc/terms/references");
+            default -> ontModel.createProperty(uriGenerator.getEffectiveNamespace() + constant);
+        };
 
-                if (DataTypeConverter.isUri(transformedUrl)) {
-                    resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
-                    log.debug("Added source URL as resource: {}", transformedUrl);
-                } else {
-                    DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
-                    log.debug("Added source URL as typed literal: {}", transformedUrl);
-                }
-            }
-            case SOUVISEJICI_ZDROJ -> {
-                Property sourceProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + SOUVISEJICI_ZDROJ);
-
-                if (DataTypeConverter.isUri(transformedUrl)) {
-                    resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
-                    log.debug("Added related source URL as resource: {}", transformedUrl);
-                } else {
-                    DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
-                    log.debug("Added related source URL as typed literal: {}", transformedUrl);
-                }
-            }
-            default -> {
-                // continue
-            }
+        if (DataTypeConverter.isUri(transformedUrl)) {
+            resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
+            log.debug("Added source URL as resource: {}", transformedUrl);
+        } else {
+            DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
+            log.debug("Added source URL as typed literal: {}", transformedUrl);
         }
     }
 
@@ -904,13 +882,11 @@ public class OFNDataTransformer {
 
     private void addDomainRangeRelationships(Resource relationshipResource, RelationshipData relationshipData) {
         if (relationshipData.getDomain() != null && !relationshipData.getDomain().trim().isEmpty()) {
-            Property domainProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + DEFINICNI_OBOR);
-            addResourceReference(relationshipResource, domainProperty, relationshipData.getDomain());
+            addResourceReference(relationshipResource, RDFS.domain, relationshipData.getDomain());
         }
 
         if (relationshipData.getRange() != null && !relationshipData.getRange().trim().isEmpty()) {
-            Property rangeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + OBOR_HODNOT);
-            addResourceReference(relationshipResource, rangeProperty, relationshipData.getRange());
+            addResourceReference(relationshipResource, RDFS.range, relationshipData.getRange());
         }
     }
 
@@ -919,8 +895,14 @@ public class OFNDataTransformer {
             subject.addProperty(property, ontModel.createResource(referenceName));
             log.debug("Added URI resource reference: {} -> {}", property.getLocalName(), referenceName);
         } else {
-            DataTypeConverter.addTypedProperty(subject, property, referenceName, null, ontModel);
-            log.debug("Added typed literal reference: {} -> {}", property.getLocalName(), referenceName);
+            if (property.equals(RDFS.domain) || property.equals(RDFS.range)) {
+                String conceptUri = uriGenerator.generateConceptURI(referenceName, null);
+                subject.addProperty(property, ontModel.createResource(conceptUri));
+                log.debug("Added generated URI reference for domain/range: {} -> {}", property.getLocalName(), conceptUri);
+            } else {
+                DataTypeConverter.addTypedProperty(subject, property, referenceName, null, ontModel);
+                log.debug("Added typed literal reference: {} -> {}", property.getLocalName(), referenceName);
+            }
         }
     }
 }
