@@ -20,6 +20,16 @@ public class ExportConstants {
         public static final String TYPE_TEZAURUS = "Tezaurus";
         public static final String TYPE_KM = "Konceptuální model";
 
+        // =============== JSON-LD TYPE MAPPINGS ===============
+        public static final String POJEM_JSON_LD = "Pojem";
+        public static final String TRIDA_JSON_LD = "Trida";
+        public static final String VZTAH_JSON_LD = "Vztah";
+        public static final String VLASTNOST_JSON_LD = "Vlastnost";
+        public static final String TSP_JSON_LD = "Typ subjektu práva";
+        public static final String TOP_JSON_LD = "Typ objektu práva";
+        public static final String VEREJNY_UDAJ_JSON_LD = "Veřejný údaj";
+        public static final String NEVEREJNY_UDAJ_JSON_LD = "Neveřejný údaj";
+
         private Json() {
         }
     }
