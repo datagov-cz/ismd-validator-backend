@@ -27,7 +27,9 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.ArchiConstants.POPIS;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ExportConstants.Json.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -219,12 +221,12 @@ class JsonExporterUnitTest {
 
             boolean hasBaseType = false;
             for (JsonNode typ : typArray) {
-                if (POJEM.equals(typ.asText())) {
+                if (POJEM_JSON_LD.equals(typ.asText())) {
                     hasBaseType = true;
                     break;
                 }
             }
-            assertTrue(hasBaseType, "All concepts should have base type " + POJEM);
+            assertTrue(hasBaseType, "All concepts should have base type " + POJEM_JSON_LD);
         }
     }
 
@@ -409,9 +411,9 @@ class JsonExporterUnitTest {
         for (int i = 0; i < types.length(); i++) {
             typeSet.add(types.getString(i));
         }
-        assertTrue(typeSet.contains(POJEM));
-        assertTrue(typeSet.contains(VLASTNOST));
-        assertTrue(typeSet.contains(TRIDA));
+        assertTrue(typeSet.contains(POJEM_JSON_LD));
+        assertTrue(typeSet.contains(VLASTNOST_JSON_LD));
+        assertTrue(typeSet.contains(TRIDA_JSON_LD));
     }
 
     @Test
