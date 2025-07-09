@@ -69,6 +69,7 @@ public class OFNDataTransformer {
 
             String effectiveNamespace = determineEffectiveNamespace(ontologyData.getVocabularyMetadata());
             uriGenerator.setEffectiveNamespace(effectiveNamespace);
+            uriGenerator.setVocabularyName(ontologyData.getVocabularyMetadata().getName());
 
             log.debug("Using effective namespace: {}", effectiveNamespace);
             log.debug("Model name: {}", ontologyData.getVocabularyMetadata().getName());
@@ -79,7 +80,7 @@ public class OFNDataTransformer {
             Map<String, Resource> localRelationshipResources = new HashMap<>();
 
             initializeCleanTypeClasses();
-            createOntologyResource(ontologyData.getVocabularyMetadata(), effectiveNamespace, localResourceMap);
+            createOntologyResource(ontologyData.getVocabularyMetadata(), localResourceMap);
 
             transformClasses(ontologyData.getClasses(), localClassResources, localResourceMap, removeELI);
             transformProperties(ontologyData.getProperties(), localPropertyResources, localResourceMap, removeELI);
@@ -147,8 +148,8 @@ public class OFNDataTransformer {
         }
     }
 
-    private void createOntologyResource(VocabularyMetadata metadata, String effectiveNamespace, Map<String, Resource> localResourceMap) {
-        String ontologyIRI = assembleOntologyIRI(metadata.getName(), effectiveNamespace);
+    private void createOntologyResource(VocabularyMetadata metadata, Map<String, Resource> localResourceMap) {
+        String ontologyIRI = uriGenerator.generateVocabularyURI(metadata.getName(), null);
         log.debug("Creating ontology resource with IRI: {}", ontologyIRI);
 
         ontModel.createOntology(ontologyIRI);
@@ -185,17 +186,6 @@ public class OFNDataTransformer {
         ontModel.createResource(namespace + NEVEREJNY_UDAJ);
 
         log.debug("Initialized clean type classes with hyphenated URIs");
-    }
-
-    private String assembleOntologyIRI(String modelName, String effectiveNamespace) {
-        if (modelName == null || modelName.trim().isEmpty()) {
-            return effectiveNamespace;
-        }
-        String baseNamespace = effectiveNamespace;
-        if (baseNamespace.endsWith("/")) {
-            baseNamespace = baseNamespace.substring(0, baseNamespace.length() - 1);
-        }
-        return baseNamespace + "/" + UtilityMethods.sanitizeForIRI(modelName);
     }
 
     private String determineEffectiveNamespace(VocabularyMetadata metadata) {
@@ -248,7 +238,7 @@ public class OFNDataTransformer {
     }
 
     private Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap, Boolean removeELI) {
-        String classURI = uriGenerator.generateClassURI(classData.getName(), classData.getIdentifier());
+        String classURI = uriGenerator.generateConceptURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
         classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
@@ -288,7 +278,7 @@ public class OFNDataTransformer {
     }
 
     private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap, Boolean removeELI) {
-        String propertyURI = uriGenerator.generatePropertyURI(propertyData.getName(), propertyData.getIdentifier());
+        String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
         Resource propertyResource = ontModel.createResource(propertyURI);
 
         propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
@@ -345,7 +335,7 @@ public class OFNDataTransformer {
     }
 
     private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap, Boolean removeELI) {
-        String relationshipURI = uriGenerator.generateRelationshipURI(relationshipData.getName(),
+        String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(),
                 relationshipData.getIdentifier());
         Resource relationshipResource = ontModel.createResource(relationshipURI);
 

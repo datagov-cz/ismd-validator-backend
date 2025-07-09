@@ -23,10 +23,12 @@ import org.slf4j.MDC;
 import java.util.*;
 
 import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.ArchiConstants.POPIS;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 import static com.dia.constants.ExcelConstants.TYP_OBSAHU_UDAJE;
 import static com.dia.constants.ExcelConstants.ZPUSOB_ZISKANI_UDEJE;
 import static com.dia.constants.ExportConstants.*;
+import static com.dia.constants.ExportConstants.Json.*;
 
 @Slf4j
 public class JsonExporter {
@@ -585,16 +587,16 @@ public class JsonExporter {
 
     private JSONArray getConceptTypes(Resource concept) {
         JSONArray types = new JSONArray();
-        types.put(POJEM);
+        types.put(POJEM_JSON_LD);
 
         String[][] typeMapping = {
-                {TRIDA, TRIDA},
-                {VZTAH, VZTAH},
-                {VLASTNOST, VLASTNOST},
-                {TSP, TSP},
-                {TOP, TOP},
-                {VEREJNY_UDAJ, VEREJNY_UDAJ},
-                {NEVEREJNY_UDAJ, NEVEREJNY_UDAJ}
+                {TRIDA, TRIDA_JSON_LD},
+                {VZTAH, VZTAH_JSON_LD},
+                {VLASTNOST, VLASTNOST_JSON_LD},
+                {TSP, TSP_JSON_LD},
+                {TOP, TOP_JSON_LD},
+                {VEREJNY_UDAJ, VEREJNY_UDAJ_JSON_LD},
+                {NEVEREJNY_UDAJ, NEVEREJNY_UDAJ_JSON_LD}
         };
 
         for (String[] mapping : typeMapping) {

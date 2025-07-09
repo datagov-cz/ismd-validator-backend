@@ -13,7 +13,9 @@ import static com.dia.constants.ArchiConstants.DEFAULT_NS;
 public class URIGenerator {
     private String effectiveNamespace = DEFAULT_NS;
 
-    public String generateClassURI(String className, String identifier) {
+    private String vocabularyName;
+
+    public String generateConceptURI(String conceptName, String identifier) {
         if (identifier != null && !identifier.trim().isEmpty()) {
             String trimmedIdentifier = identifier.trim();
 
@@ -22,18 +24,55 @@ public class URIGenerator {
             }
 
             String sanitizedIdentifier = UtilityMethods.sanitizeForIRI(trimmedIdentifier);
-            return effectiveNamespace + sanitizedIdentifier;
+            return buildConceptURI(sanitizedIdentifier);
         }
 
-        String sanitizedName = UtilityMethods.sanitizeForIRI(className);
-        return effectiveNamespace + sanitizedName;
+        String sanitizedName = UtilityMethods.sanitizeForIRI(conceptName);
+        return buildConceptURI(sanitizedName);
     }
 
-    public String generatePropertyURI(String propertyName, String identifier) {
-        return generateClassURI(propertyName, identifier);
+    private String buildConceptURI(String sanitizedConceptName) {
+        StringBuilder uriBuilder = new StringBuilder(effectiveNamespace);
+
+        if (uriBuilder.toString().endsWith("/")) {
+            uriBuilder.setLength(uriBuilder.length() - 1);
+        }
+
+        if (vocabularyName != null && !vocabularyName.trim().isEmpty()) {
+            String sanitizedVocabName = UtilityMethods.sanitizeForIRI(vocabularyName);
+            uriBuilder.append("/").append(sanitizedVocabName);
+        }
+
+        uriBuilder.append("/pojem/").append(sanitizedConceptName);
+
+        return uriBuilder.toString();
     }
 
-    public String generateRelationshipURI(String relationshipName, String identifier) {
-        return generateClassURI(relationshipName, identifier);
+    public String generateVocabularyURI(String vocabularyName, String identifier) {
+        if (identifier != null && !identifier.trim().isEmpty()) {
+            String trimmedIdentifier = identifier.trim();
+
+            if (UtilityMethods.isValidIRI(trimmedIdentifier)) {
+                return trimmedIdentifier;
+            }
+
+            String sanitizedIdentifier = UtilityMethods.sanitizeForIRI(trimmedIdentifier);
+            return buildVocabularyURI(sanitizedIdentifier);
+        }
+
+        if (vocabularyName == null || vocabularyName.trim().isEmpty()) {
+            return effectiveNamespace;
+        }
+
+        String sanitizedName = UtilityMethods.sanitizeForIRI(vocabularyName);
+        return buildVocabularyURI(sanitizedName);
+    }
+
+    private String buildVocabularyURI(String sanitizedVocabularyName) {
+        String baseNamespace = effectiveNamespace;
+        if (baseNamespace.endsWith("/")) {
+            baseNamespace = baseNamespace.substring(0, baseNamespace.length() - 1);
+        }
+        return baseNamespace + "/" + sanitizedVocabularyName;
     }
 }
