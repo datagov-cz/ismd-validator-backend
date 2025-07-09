@@ -23,12 +23,12 @@ import org.slf4j.MDC;
 
 import java.util.*;
 
-import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ArchiConstants.POPIS;
+import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 import static com.dia.constants.ExcelConstants.TYP_OBSAHU_UDAJE;
 import static com.dia.constants.ExcelConstants.ZPUSOB_ZISKANI_UDEJE;
-import static com.dia.constants.ExportConstants.*;
+import static com.dia.constants.ExportConstants.Json;
 import static com.dia.constants.ExportConstants.Json.*;
 
 @Slf4j
@@ -316,7 +316,7 @@ public class JsonExporter {
 
         addExactMatchProperty(concept, pojemObj);
 
-        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, effectiveNamespace, USTANOVENI_NEVEREJNOST);
+        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, effectiveNamespace);
 
         Property sourceProperty = ontModel.createProperty("http://purl.org/dc/terms/source");
         addResourceArrayProperty(concept, sourceProperty, ZDROJ, pojemObj);
@@ -449,14 +449,13 @@ public class JsonExporter {
 
     private void addResourceArrayPropertyFromEitherNamespace(Resource concept,
                                                              JSONObject pojemObj,
-                                                             String namespace,
-                                                             String labelSupp) throws JSONException {
-        Property suppDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + labelSupp);
-        Property suppCustom = ontModel.getProperty(namespace + labelSupp);
+                                                             String namespace) throws JSONException {
+        Property suppDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + ArchiConstants.USTANOVENI_NEVEREJNOST);
+        Property suppCustom = ontModel.getProperty(namespace + ArchiConstants.USTANOVENI_NEVEREJNOST);
         if (concept.hasProperty(suppDefault)) {
-            addResourceArrayProperty(concept, suppDefault, labelSupp, pojemObj);
+            addResourceArrayProperty(concept, suppDefault, ArchiConstants.USTANOVENI_NEVEREJNOST, pojemObj);
         } else if (concept.hasProperty(suppCustom)) {
-            addResourceArrayProperty(concept, suppCustom, labelSupp, pojemObj);
+            addResourceArrayProperty(concept, suppCustom, ArchiConstants.USTANOVENI_NEVEREJNOST, pojemObj);
         }
     }
 
@@ -583,7 +582,7 @@ public class JsonExporter {
 
         addSingleResourcePropertyFromEitherNamespace(concept, pojemObj, namespace, AGENDA);
 
-        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace, USTANOVENI_NEVEREJNOST);
+        addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, namespace);
     }
 
     private JSONArray getConceptTypes(Resource concept) {

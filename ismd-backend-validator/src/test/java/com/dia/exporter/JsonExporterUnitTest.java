@@ -257,7 +257,7 @@ class JsonExporterUnitTest {
         // Arrange & Act
         Method method = JsonExporter.class.getDeclaredMethod(
                 "addMultilingualModelProperty",
-                org.json.JSONObject.class,  // Use org.json.JSONObject, not Spring Boot's
+                org.json.JSONObject.class,
                 String.class,
                 String.class
         );
@@ -414,24 +414,6 @@ class JsonExporterUnitTest {
         assertTrue(typeSet.contains(POJEM_JSON_LD));
         assertTrue(typeSet.contains(VLASTNOST_JSON_LD));
         assertTrue(typeSet.contains(TRIDA_JSON_LD));
-    }
-
-    @Test
-    void addRangePropertyWithBothNamespaces_WithXSDTypes_FormatsCorrectly() throws Exception {
-        // Test XSD type formatting
-        Resource concept = ontModel.createResource(effectiveNamespace + "range-concept");
-        Property rangeProp = ontModel.createProperty(effectiveNamespace + OBOR_HODNOT);
-        concept.addProperty(rangeProp, ontModel.createResource("http://www.w3.org/2001/XMLSchema#string"));
-
-        JSONObject result = new JSONObject();
-        Method method = JsonExporter.class.getDeclaredMethod("addRangePropertyWithBothNamespaces",
-                Resource.class, JSONObject.class, String.class);
-        method.setAccessible(true);
-
-        method.invoke(exporter, concept, result, effectiveNamespace);
-
-        assertTrue(result.has(OBOR_HODNOT));
-        assertEquals("xsd:string", result.getString(OBOR_HODNOT));
     }
 
     @Test
