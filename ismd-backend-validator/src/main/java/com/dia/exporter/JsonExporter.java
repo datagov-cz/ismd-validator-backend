@@ -41,6 +41,7 @@ public class JsonExporter {
     private final Map<String, String> modelProperties;
     private final String effectiveNamespace;
 
+
     public JsonExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName,
                         Map<String, String> modelProperties, String effectiveNamespace) {
         this.ontModel = ontModel;
@@ -280,7 +281,7 @@ public class JsonExporter {
             throw new JsonExportException("Ontology model is null or empty.");
         }
         JSONArray pojmy = new JSONArray();
-        Resource pojemType = ontModel.getResource(effectiveNamespace + POJEM);
+        Resource pojemType = ontModel.getResource(OFN_NAMESPACE + POJEM);
 
         ontModel.listSubjectsWithProperty(RDF.type, pojemType)
                 .forEachRemaining(concept -> {
@@ -600,7 +601,7 @@ public class JsonExporter {
         };
 
         for (String[] mapping : typeMapping) {
-            if (concept.hasProperty(RDF.type, ontModel.getResource(effectiveNamespace + mapping[0]))) {
+            if (concept.hasProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + mapping[0]))) {
                 types.put(mapping[1]);
             }
         }

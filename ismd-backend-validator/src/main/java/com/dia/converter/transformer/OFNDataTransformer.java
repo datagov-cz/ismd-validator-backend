@@ -170,18 +170,16 @@ public class OFNDataTransformer {
     }
 
     private void initializeCleanTypeClasses() {
-        String namespace = uriGenerator.getEffectiveNamespace();
+        ontModel.createResource(OFN_NAMESPACE + POJEM);
+        ontModel.createResource(OFN_NAMESPACE + TRIDA);
+        ontModel.createResource(OFN_NAMESPACE + VZTAH);
+        ontModel.createResource(OFN_NAMESPACE + VLASTNOST);
+        ontModel.createResource(OFN_NAMESPACE + TSP);
+        ontModel.createResource(OFN_NAMESPACE + TOP);
+        ontModel.createResource(OFN_NAMESPACE + VEREJNY_UDAJ);
+        ontModel.createResource(OFN_NAMESPACE + NEVEREJNY_UDAJ);
 
-        ontModel.createResource(namespace + POJEM);
-        ontModel.createResource(namespace + TRIDA);
-        ontModel.createResource(namespace + VZTAH);
-        ontModel.createResource(namespace + VLASTNOST);
-        ontModel.createResource(namespace + TSP);
-        ontModel.createResource(namespace + TOP);
-        ontModel.createResource(namespace + VEREJNY_UDAJ);
-        ontModel.createResource(namespace + NEVEREJNY_UDAJ);
-
-        log.debug("Initialized clean type classes with hyphenated URIs");
+        log.debug("Initialized clean type classes with OFN namespace");
     }
 
     private String determineEffectiveNamespace(VocabularyMetadata metadata) {
@@ -195,7 +193,7 @@ public class OFNDataTransformer {
     private void addSchemeRelationship(Resource resource, Map<String, Resource> localResourceMap) {
         Resource ontologyResource = localResourceMap.get("ontology");
         if (ontologyResource != null && resource.hasProperty(RDF.type,
-                ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM))) {
+                ontModel.getResource(OFN_NAMESPACE + POJEM))) {
             resource.addProperty(SKOS.inScheme, ontologyResource);
         }
     }
@@ -237,7 +235,7 @@ public class OFNDataTransformer {
         String classURI = uriGenerator.generateConceptURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
-        classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
+        classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
         addSpecificClassType(classResource, classData);
 
         addResourceMetadata(classResource, ResourceMetadata.from(classData), removeELI);
@@ -251,11 +249,11 @@ public class OFNDataTransformer {
         String excelType = classData.getType();
 
         if ("Subjekt práva".equals(excelType)) {
-            classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TSP));
+            classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + TSP));
         } else if ("Objekt práva".equals(excelType)) {
-            classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TOP));
+            classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + TOP));
         }
-        classResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + TRIDA));
+        classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + TRIDA));
     }
 
     private void transformProperties(List<PropertyData> properties, Map<String, Resource> localPropertyResources,
@@ -277,8 +275,8 @@ public class OFNDataTransformer {
         String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
         Resource propertyResource = ontModel.createResource(propertyURI);
 
-        propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
-        propertyResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + VLASTNOST));
+        propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
+        propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VLASTNOST));
 
         addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData), removeELI);
 
@@ -332,8 +330,8 @@ public class OFNDataTransformer {
                 relationshipData.getIdentifier());
         Resource relationshipResource = ontModel.createResource(relationshipURI);
 
-        relationshipResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + POJEM));
-        relationshipResource.addProperty(RDF.type, ontModel.getResource(uriGenerator.getEffectiveNamespace() + VZTAH));
+        relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
+        relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VZTAH));
         relationshipResource.addProperty(RDF.type, ontModel.getProperty("http://www.w3.org/2002/07/owl#ObjectProperty"));
 
         addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData), removeELI);
@@ -781,7 +779,7 @@ public class OFNDataTransformer {
                         handleNonPublicData(propertyResource, propertyData, privacyProvision, removeELI);
                     } else {
                         propertyResource.addProperty(RDF.type,
-                                ontModel.getResource(uriGenerator.getEffectiveNamespace() + VEREJNY_UDAJ));
+                                ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
                         log.debug("Added public data type for concept: {}", propertyData.getName());
                     }
                 } else {
@@ -800,7 +798,7 @@ public class OFNDataTransformer {
 
     private void handleNonPublicData(Resource propertyResource, PropertyData propertyData, String privacyProvision, Boolean removeELI) {
         propertyResource.addProperty(RDF.type,
-                ontModel.getResource(uriGenerator.getEffectiveNamespace() + NEVEREJNY_UDAJ));
+                ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
 
         log.debug("Added non-public data type for concept: {}", propertyData.getName());
 
