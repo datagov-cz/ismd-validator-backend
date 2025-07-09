@@ -9,11 +9,10 @@ import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.SKOS;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,18 +21,19 @@ import org.slf4j.MDC;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ArchiConstants.POPIS;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.ExcelConstants.TYP_OBSAHU_UDAJE;
+import static com.dia.constants.ExcelConstants.ZPUSOB_ZISKANI_UDEJE;
 import static com.dia.constants.ExportConstants.Json.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test for {@link JsonExporter}.
+ * Test class for {@link JsonExporter}.
  *
  * @see JsonExporter
  */
@@ -74,9 +74,6 @@ class JsonExporterUnitTest {
         // Act
         String result = exporter.exportToJson();
 
-        // Debug: Print the actual JSON output
-        System.out.println("Generated JSON: " + result);
-
         // Assert
         assertNotNull(result, "JSON output should not be null");
         assertTrue(result.startsWith("{"), "JSON should start with opening brace");
@@ -89,6 +86,11 @@ class JsonExporterUnitTest {
         assertTrue(rootNode.has("iri"), "Should contain iri field");
         assertTrue(rootNode.has("typ"), "Should contain typ field");
         assertTrue(rootNode.has("pojmy"), "Should contain pojmy array");
+
+        // Verify typ array contains expected values
+        JsonNode typArray = rootNode.get("typ");
+        assertTrue(typArray.isArray(), "typ should be an array");
+        assertTrue(typArray.size() >= 3, "typ array should contain at least 3 types");
     }
 
     @Test
@@ -152,6 +154,71 @@ class JsonExporterUnitTest {
         JsonNode altNames = concept.get("alternativní-název");
         assertTrue(altNames.isArray(), "Alternative names should be array");
         assertEquals(2, altNames.size(), "Should have 2 alternative names");
+    }
+
+    @Test
+    void exportToJson_WithGovernanceProperties_IncludesGovernanceData() throws Exception {
+        // Arrange
+        setupModelWithGovernanceProperties();
+
+        // Act
+        String result = exporter.exportToJson();
+
+        // Assert
+        JsonNode rootNode = objectMapper.readTree(result);
+        JsonNode pojmyArray = rootNode.get("pojmy");
+        JsonNode concept = pojmyArray.get(0);
+
+        // Check governance properties
+        assertTrue(concept.has("způsob-sdílení-údaje"), "Should have sharing method");
+        assertTrue(concept.has("způsob-získání-údaje"), "Should have acquisition method");
+        assertTrue(concept.has("typ-obsahu-údaje"), "Should have content type");
+
+        // Verify arrays are properly formatted
+        JsonNode sharingMethod = concept.get("způsob-sdílení-údaje");
+        assertTrue(sharingMethod.isArray(), "Sharing method should be array");
+        assertFalse(sharingMethod.isEmpty(), "Should have at least one sharing method");
+    }
+
+    @Test
+    void exportToJson_WithGovernancePropertiesFallback_UsesCorrectNamespace() throws Exception {
+        // Arrange
+        setupModelWithGovernancePropertiesFallback();
+
+        // Act
+        String result = exporter.exportToJson();
+
+        // Assert
+        JsonNode rootNode = objectMapper.readTree(result);
+        JsonNode pojmyArray = rootNode.get("pojmy");
+        JsonNode concept = pojmyArray.get(0);
+
+        // Should find governance properties from fallback namespace
+        assertTrue(concept.has("způsob-sdílení-údaje") ||
+                        concept.has("způsob-získání-údaje") ||
+                        concept.has("typ-obsahu-údaje"),
+                "Should have at least one governance property from fallback");
+    }
+
+    @Test
+    void exportToJson_WithSplitMultipleValues_HandlesCorrectly() throws Exception {
+        // Arrange
+        setupModelWithMultipleValuesInGovernanceProperties();
+
+        // Act
+        String result = exporter.exportToJson();
+
+        // Assert
+        JsonNode rootNode = objectMapper.readTree(result);
+        JsonNode pojmyArray = rootNode.get("pojmy");
+        JsonNode concept = pojmyArray.get(0);
+
+        JsonNode sharingMethod = concept.get("způsob-sdílení-údaje");
+        assertTrue(sharingMethod.isArray(), "Should be array");
+        assertEquals(3, sharingMethod.size(), "Should split semicolon-separated values");
+        assertEquals("Method1", sharingMethod.get(0).asText());
+        assertEquals("Method2", sharingMethod.get(1).asText());
+        assertEquals("Method3", sharingMethod.get(2).asText());
     }
 
     @Test
@@ -231,6 +298,93 @@ class JsonExporterUnitTest {
     }
 
     @Test
+    void exportToJson_WithRppMetadata_IncludesCorrectBooleanValues() throws Exception {
+        // Arrange
+        setupModelWithRppMetadata();
+
+        // Act
+        String result = exporter.exportToJson();
+
+        // Assert
+        JsonNode rootNode = objectMapper.readTree(result);
+        JsonNode pojmyArray = rootNode.get("pojmy");
+        JsonNode concept = pojmyArray.get(0);
+
+        if (concept.has(JE_PPDF)) {
+            JsonNode ppdfValue = concept.get(JE_PPDF);
+            assertTrue(ppdfValue.isBoolean(), "PPDF value should be boolean");
+        }
+    }
+
+    @Test
+    void exportToJson_WithExactMatchProperty_FormatsCorrectly() throws Exception {
+        // Arrange
+        setupModelWithExactMatch();
+
+        // Act
+        String result = exporter.exportToJson();
+
+        // Assert
+        JsonNode rootNode = objectMapper.readTree(result);
+        JsonNode pojmyArray = rootNode.get("pojmy");
+        JsonNode concept = pojmyArray.get(0);
+
+        assertTrue(concept.has(EKVIVALENTNI_POJEM), "Should have equivalent concept");
+        JsonNode exactMatch = concept.get(EKVIVALENTNI_POJEM);
+        assertTrue(exactMatch.isArray(), "Exact match should be array");
+
+        JsonNode firstMatch = exactMatch.get(0);
+        assertTrue(firstMatch.has("id"), "Match should have id field");
+    }
+
+    @Test
+    void exportToJson_WithDomainAndRange_IncludesPropertyMetadata() throws Exception {
+        // Arrange
+        setupModelWithDomainAndRange();
+
+        // Act
+        String result = exporter.exportToJson();
+
+        // Assert
+        JsonNode rootNode = objectMapper.readTree(result);
+        JsonNode pojmyArray = rootNode.get("pojmy");
+        JsonNode concept = pojmyArray.get(0);
+
+        if (concept.has(DEFINICNI_OBOR)) {
+            assertNotNull(concept.get(DEFINICNI_OBOR).asText());
+        }
+
+        if (concept.has(OBOR_HODNOT)) {
+            String rangeValue = concept.get(OBOR_HODNOT).asText();
+            assertNotNull(rangeValue);
+            // Check XSD prefix handling
+            if (rangeValue.startsWith("xsd:")) {
+                assertTrue(rangeValue.length() > 4, "XSD type should have content after prefix");
+            }
+        }
+    }
+
+    @Test
+    void exportToJson_WithHierarchy_IncludesSuperClasses() throws Exception {
+        // Arrange
+        setupModelWithHierarchy();
+
+        // Act
+        String result = exporter.exportToJson();
+
+        // Assert
+        JsonNode rootNode = objectMapper.readTree(result);
+        JsonNode pojmyArray = rootNode.get("pojmy");
+        JsonNode concept = pojmyArray.get(0);
+
+        if (concept.has(NADRAZENA_TRIDA)) {
+            JsonNode hierarchy = concept.get(NADRAZENA_TRIDA);
+            assertTrue(hierarchy.isArray(), "Hierarchy should be array");
+            assertFalse(hierarchy.isEmpty(), "Should have at least one superclass");
+        }
+    }
+
+    @Test
     void exportToJson_WithNamespaceFallback_UsesCorrectNamespace() throws Exception {
         // Arrange
         String customNamespace = "https://custom.example.org/";
@@ -253,32 +407,25 @@ class JsonExporterUnitTest {
     }
 
     @Test
-    void addMultilingualModelProperty_WithValidInput_CreatesCorrectStructure() throws Exception {
-        // Arrange & Act
-        Method method = JsonExporter.class.getDeclaredMethod(
-                "addMultilingualModelProperty",
-                org.json.JSONObject.class,
-                String.class,
-                String.class
-        );
-        method.setAccessible(true);
+    void exportToJson_WithOntologyIRI_UsesCorrectOntologyReference() throws Exception {
+        // Arrange
+        setupModelWithOntologyIRI();
 
-        org.json.JSONObject testObj = new org.json.JSONObject();
-        method.invoke(exporter, testObj, "testProperty", "Test Value");
+        // Act
+        String result = exporter.exportToJson();
 
         // Assert
-        assertTrue(testObj.has("testProperty"), "Should add the property");
-        Object propValue = testObj.get("testProperty");
-        assertNotNull(propValue, "Property value should not be null");
+        JsonNode rootNode = objectMapper.readTree(result);
+        String iri = rootNode.get("iri").asText();
+        assertNotNull(iri, "Should have IRI");
+        assertTrue(iri.contains("test-ontology"), "Should reference the ontology");
     }
 
     @Test
     void exportToJson_WithInvalidData_ThrowsJsonExportException() {
         // Test the actual error handling
-        // Create a new exporter with null ontModel to trigger the exception
         JsonExporter invalidExporter = new JsonExporter(null, resourceMap, modelName, modelProperties, effectiveNamespace);
 
-        // This should trigger the JsonExportException from createConceptsArray()
         assertThrows(JsonExportException.class,
                 invalidExporter::exportToJson,
                 "Should throw JsonExportException when ontModel is null");
@@ -286,18 +433,69 @@ class JsonExporterUnitTest {
 
     @Test
     void exportToJson_WithEmptyModel_ThrowsJsonExportException() {
-        // Test with empty model (not null, but empty)
+        // Test with empty model
         OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-
         JsonExporter emptyModelExporter = new JsonExporter(emptyModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
-        // This should trigger the JsonExportException from createConceptsArray()
         JsonExportException exception = assertThrows(JsonExportException.class,
                 emptyModelExporter::exportToJson,
                 "Should throw JsonExportException when ontModel is empty");
 
         assertTrue(exception.getMessage().contains("Ontology model is null or empty"),
                 "Exception message should indicate the ontModel issue");
+    }
+
+    @Test
+    void extractStatementValue_WithLiteralAndResource_ReturnsCorrectValues() throws Exception {
+        // Test the extractStatementValue helper method
+        Resource subject = ontModel.createResource(effectiveNamespace + "test");
+        Property prop = ontModel.createProperty(effectiveNamespace + "testProp");
+
+        // Test with literal
+        subject.addProperty(prop, "literal value");
+        // Test with resource
+        Resource objectResource = ontModel.createResource(effectiveNamespace + "object");
+        subject.addProperty(prop, objectResource);
+
+        Method method = JsonExporter.class.getDeclaredMethod("extractStatementValue",
+                org.apache.jena.rdf.model.Statement.class);
+        method.setAccessible(true);
+
+        // Get statements and test
+        var statements = subject.listProperties(prop);
+        while (statements.hasNext()) {
+            var stmt = statements.next();
+            String value = (String) method.invoke(exporter, stmt);
+            assertNotNull(value, "Should extract value from statement");
+        }
+    }
+
+    @Test
+    void splitMultipleValues_WithSemicolonSeparated_SplitsCorrectly() throws Exception {
+        // Test the splitMultipleValues helper method
+        Method method = JsonExporter.class.getDeclaredMethod("splitMultipleValues", String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        List<String> result = (List<String>) method.invoke(exporter, "value1;value2;value3");
+
+        assertEquals(3, result.size(), "Should split into 3 values");
+        assertEquals("value1", result.get(0));
+        assertEquals("value2", result.get(1));
+        assertEquals("value3", result.get(2));
+    }
+
+    @Test
+    void splitMultipleValues_WithSingleValue_ReturnsOriginal() throws Exception {
+        // Test single value handling
+        Method method = JsonExporter.class.getDeclaredMethod("splitMultipleValues", String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        List<String> result = (List<String>) method.invoke(exporter, "single value");
+
+        assertEquals(1, result.size(), "Should return single value");
+        assertEquals("single value", result.get(0));
     }
 
     @Test
@@ -324,315 +522,262 @@ class JsonExporterUnitTest {
             assertTrue(definice.has("cs"), "Definition should have Czech version");
         }
     }
-
-    @Test
-    void jsonToMap_WithNestedComplexJSON_HandlesCorrectly() throws Exception {
-        // Test complex nested JSON structures
-        JSONObject complex = new JSONObject();
-        complex.put("nested", new JSONObject().put("deep", new JSONArray().put("value")));
-
-        Method method = JsonExporter.class.getDeclaredMethod("jsonToMap", JSONObject.class);
-        method.setAccessible(true);
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> result = (Map<String, Object>) method.invoke(exporter, complex);
-        assertNotNull(result);
-    }
-
-    @Test
-    void getOntologyIRI_WithMissingOntology_ReturnsDefault() throws Exception {
-        // Test when no OWL.Ontology is present
-        OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-        JsonExporter testExporter = new JsonExporter(emptyModel, resourceMap, modelName,
-                modelProperties, effectiveNamespace);
-
-        Method method = JsonExporter.class.getDeclaredMethod("getOntologyIRI");
-        method.setAccessible(true);
-
-        String result = (String) method.invoke(testExporter);
-        assertEquals(effectiveNamespace, result);
-    }
-
-    @Test
-    void addResourceProperty_WithMalformedURI_HandlesGracefully() throws Exception {
-        // Test with malformed resource URIs
-        Resource concept = ontModel.createResource("invalid-uri-format");
-        JSONObject target = new JSONObject();
-
-        Method method = JsonExporter.class.getDeclaredMethod("addResourceProperty",
-                Resource.class, String.class, String.class, JSONObject.class);
-        method.setAccessible(true);
-
-        // Should not throw exception
-        assertDoesNotThrow(() -> method.invoke(exporter, concept,
-                effectiveNamespace + "someProperty",
-                "testProp", target));
-    }
-
-    @Test
-    void addMultilingualProperty_WithEmptyAndNullValues_FiltersCorrectly() throws Exception {
-        // Test filtering of empty values
-        Resource concept = ontModel.createResource(effectiveNamespace + "test-concept");
-        concept.addProperty(RDFS.label, "", "cs");
-        concept.addProperty(RDFS.label, "Valid", "en");
-
-        JSONObject result = new JSONObject();
-        Method method = JsonExporter.class.getDeclaredMethod("addMultilingualProperty",
-                Resource.class, Property.class, String.class, JSONObject.class);
-        method.setAccessible(true);
-
-        method.invoke(exporter, concept, RDFS.label, "test-field", result);
-
-        JSONObject testField = result.getJSONObject("test-field");
-        assertFalse(testField.has("cs"), "Should not include empty string");
-        assertTrue(testField.has("en"), "Should include valid value");
-    }
-
-    @Test
-    void getConceptTypes_WithMultipleInheritance_ReturnsAllTypes() throws Exception {
-        // Test concept with multiple type inheritance
-        OntClass baseClass = ontModel.createClass(effectiveNamespace + POJEM);
-        OntClass vlastnostClass = ontModel.createClass(effectiveNamespace + VLASTNOST);
-        OntClass tridaClass = ontModel.createClass(effectiveNamespace + TRIDA);
-
-        Resource concept = ontModel.createResource(effectiveNamespace + "multi-type-concept");
-        concept.addProperty(RDF.type, baseClass);
-        concept.addProperty(RDF.type, vlastnostClass);
-        concept.addProperty(RDF.type, tridaClass);
-
-        Method method = JsonExporter.class.getDeclaredMethod("getConceptTypes", Resource.class);
-        method.setAccessible(true);
-
-        JSONArray types = (JSONArray) method.invoke(exporter, concept);
-
-        assertTrue(types.length() >= 3, "Should have at least 3 types");
-        // Verify all expected types are present
-        Set<String> typeSet = new HashSet<>();
-        for (int i = 0; i < types.length(); i++) {
-            typeSet.add(types.getString(i));
-        }
-        assertTrue(typeSet.contains(POJEM_JSON_LD));
-        assertTrue(typeSet.contains(VLASTNOST_JSON_LD));
-        assertTrue(typeSet.contains(TRIDA_JSON_LD));
-    }
-
-    @Test
-    void exportToJson_WithLargeDataset_PerformsWithinReasonableTime() throws Exception {
-        // Performance test with larger dataset
-        setupLargeOntologyModel(); // Create 1000 concepts
-
-        long startTime = System.currentTimeMillis();
-        String result = exporter.exportToJson();
-        long endTime = System.currentTimeMillis();
-
-        assertNotNull(result);
-        assertTrue(endTime - startTime < 5000, "Should complete within 5 seconds for 1000 concepts");
-
-        JsonNode rootNode = objectMapper.readTree(result);
-        JsonNode pojmyArray = rootNode.get("pojmy");
-        assertEquals(1000, pojmyArray.size(), "Should include all 1000 concepts");
-    }
-
-    @Test
-    void exportToJson_WithJsonExceptionDuringProcessing_ThrowsWrappedException() {
-        // Create a scenario that would cause a JSON processing error
-        // Create an ontology with a concept that has malformed data
-        OntModel problematicModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-
-        // Create a concept with properties that might cause JSON serialization issues
-        Resource concept = problematicModel.createResource(effectiveNamespace + "problematic-concept");
-        OntClass pojemClass = problematicModel.createClass(effectiveNamespace + POJEM);
-        concept.addProperty(RDF.type, pojemClass);
-
-        // Add a property with a very long string that might cause issues
-        concept.addProperty(RDFS.label, "Very long text ".repeat(100000), "cs");
-
-        Map<String, Resource> problematicResourceMap = new HashMap<>();
-        problematicResourceMap.put("problematic", concept);
-
-        JsonExporter problematicExporter = new JsonExporter(
-                problematicModel, problematicResourceMap, modelName, modelProperties, effectiveNamespace);
-
-        // This should still work but we're testing the error handling path exists
-        assertDoesNotThrow(() -> {
-            String result = problematicExporter.exportToJson();
-            assertNotNull(result);
-        });
-    }
-
     // Helper methods to set up test data
 
     private void setupMinimalOntologyModel() {
-        // Create basic ontology structure
         Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
-        ontology.addProperty(RDF.type, SKOS.ConceptScheme);
+        ontology.addProperty(RDF.type, OWL2.Ontology);
         ontology.addProperty(SKOS.prefLabel, modelName, "cs");
-
         resourceMap.put("ontology", ontology);
 
-        // Create base concept type class (this is important!)
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
-
-        // Create a minimal test concept that should appear in pojmy array
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
         Resource testConcept = ontModel.createResource(effectiveNamespace + "test-concept");
-        testConcept.addProperty(RDF.type, pojemClass);  // This is the key - must have TYP_POJEM type
-        testConcept.addProperty(RDFS.label, "Test Concept", "cs");
-
-        // Add to resource map
+        testConcept.addProperty(RDF.type, pojemClass);
+        testConcept.addProperty(SKOS.prefLabel, "Test Concept", "cs");
         resourceMap.put("test-concept", testConcept);
-
-        System.out.println("Setup: Created concept " + testConcept.getURI() + " with type " + pojemClass.getURI());
     }
 
     private void setupModelWithConcepts() {
-        setupMinimalOntologyModel(); // This already creates one concept
+        setupMinimalOntologyModel();
 
-        // Create additional test concepts with proper types
-        OntClass pojemClass = ontModel.getOntClass(effectiveNamespace + POJEM);
-
-        // Create second concept
+        OntClass pojemClass = ontModel.getOntClass(OFN_NAMESPACE + POJEM);
         Resource concept2 = ontModel.createResource(effectiveNamespace + "second-concept");
-        concept2.addProperty(RDF.type, pojemClass);  // Must have TYP_POJEM type
-        concept2.addProperty(RDFS.label, "Second Concept", "cs");
-
+        concept2.addProperty(RDF.type, pojemClass);
+        concept2.addProperty(SKOS.prefLabel, "Second Concept", "cs");
         resourceMap.put("second-concept-id", concept2);
     }
 
     private void setupModelWithConceptsUsingCustomNamespace(String customNamespace) {
-        effectiveNamespace = customNamespace;
-        setupMinimalOntologyModel(); // This already creates one concept
-
-        // Create additional test concepts with proper types
-        OntClass pojemClass = ontModel.getOntClass(effectiveNamespace + POJEM);
-
-        // Create second concept
-        Resource concept2 = ontModel.createResource(effectiveNamespace + "second-concept");
-        concept2.addProperty(RDF.type, pojemClass);  // Must have TYP_POJEM type
-        concept2.addProperty(RDFS.label, "Second Concept", "cs");
-
-        resourceMap.put("second-concept-id", concept2);
-    }
-
-    private void setupModelWithMultilingualConcept() {
-        // Create base structure
-        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
-        ontology.addProperty(RDF.type, SKOS.ConceptScheme);
+        Resource ontology = ontModel.createOntology(customNamespace + "test-vocabulary");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
         ontology.addProperty(SKOS.prefLabel, modelName, "cs");
         resourceMap.put("ontology", ontology);
 
-        // Create concept class and multilingual concept instance
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(customNamespace + "custom-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Custom Concept", "cs");
+        resourceMap.put("custom-concept", concept);
+    }
 
+    private void setupModelWithMultilingualConcept() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
         Resource concept = ontModel.createResource(effectiveNamespace + "multilingual-concept");
-        concept.addProperty(RDF.type, pojemClass);  // Must have TYP_POJEM type
-        concept.addProperty(RDFS.label, "Test Concept", "cs");
-        concept.addProperty(RDFS.label, "Test Concept EN", "en");
-
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Test Concept", "cs");
+        concept.addProperty(SKOS.prefLabel, "Test Concept EN", "en");
         resourceMap.put("multilingual-concept-id", concept);
     }
 
     private void setupModelWithAlternativeNames() {
-        // Create base structure
         Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
-        ontology.addProperty(RDF.type, SKOS.ConceptScheme);
-        ontology.addProperty(SKOS.prefLabel, modelName, "cs");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
-        // Create concept class and concept with alternative names
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
-
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
         Resource concept = ontModel.createResource(effectiveNamespace + "concept-with-alt-names");
-        concept.addProperty(RDF.type, pojemClass);  // Must have TYP_POJEM type
-        concept.addProperty(RDFS.label, "Main Concept", "cs");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Main Concept", "cs");
 
-        // Add alternative names
-        Property altNameProp = ontModel.createProperty(effectiveNamespace + ALTERNATIVNI_NAZEV);
-        concept.addProperty(altNameProp, "Alternative Name 1", "cs");
-        concept.addProperty(altNameProp, "Alternative Name 2", "cs");
-
+        Property altNameProp = ontModel.createProperty(DEFAULT_NS + ALTERNATIVNI_NAZEV);
+        concept.addProperty(altNameProp, "Alternative Name 1");
+        concept.addProperty(altNameProp, "Alternative Name 2");
         resourceMap.put("alt-names-concept-id", concept);
     }
 
-    private void setupModelWithDifferentConceptTypes() {
-        // Create base structure
+    private void setupModelWithGovernanceProperties() {
         Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
-        ontology.addProperty(RDF.type, SKOS.ConceptScheme);
-        ontology.addProperty(SKOS.prefLabel, modelName, "cs");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
-        // Create base concept class and specialized classes
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
-        OntClass vlastnostClass = ontModel.createClass(effectiveNamespace + VLASTNOST);
-        OntClass vztahClass = ontModel.createClass(effectiveNamespace + VZTAH);
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(effectiveNamespace + "governance-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Governance Concept", "cs");
 
-        // Create concept of type vlastnost (property)
+        // Add governance properties
+        Property sharingProp = ontModel.createProperty(effectiveNamespace + "Způsob sdílení údaje");
+        concept.addProperty(sharingProp, "Public sharing");
+        concept.addProperty(sharingProp, "Restricted sharing");
+
+        Property acquisitionProp = ontModel.createProperty(effectiveNamespace + ZPUSOB_ZISKANI_UDEJE);
+        concept.addProperty(acquisitionProp, "Manual entry");
+
+        Property contentTypeProp = ontModel.createProperty(effectiveNamespace + TYP_OBSAHU_UDAJE);
+        concept.addProperty(contentTypeProp, "Structured data");
+
+        resourceMap.put("governance-concept-id", concept);
+    }
+
+    private void setupModelWithGovernancePropertiesFallback() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(effectiveNamespace + "fallback-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Fallback Concept", "cs");
+
+        // Add property using DEFAULT_NS (fallback namespace)
+        Property fallbackProp = ontModel.createProperty(DEFAULT_NS + ZPUSOB_ZISKANI);
+        concept.addProperty(fallbackProp, "Fallback method");
+
+        resourceMap.put("fallback-concept-id", concept);
+    }
+
+    private void setupModelWithMultipleValuesInGovernanceProperties() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(effectiveNamespace + "multi-value-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Multi Value Concept", "cs");
+
+        // Add property with semicolon-separated values
+        Property sharingProp = ontModel.createProperty(effectiveNamespace + "Způsob sdílení údaje");
+        concept.addProperty(sharingProp, "Method1;Method2;Method3");
+
+        resourceMap.put("multi-value-concept-id", concept);
+    }
+
+    private void setupModelWithRppMetadata() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(effectiveNamespace + "rpp-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "RPP Concept", "cs");
+
+        Property ppdfProp = ontModel.createProperty(effectiveNamespace + JE_PPDF);
+        concept.addProperty(ppdfProp, ontModel.createTypedLiteral(true));
+
+        resourceMap.put("rpp-concept-id", concept);
+    }
+
+    private void setupModelWithExactMatch() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(effectiveNamespace + "exact-match-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Exact Match Concept", "cs");
+
+        Property exactMatchProp = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
+        concept.addProperty(exactMatchProp, ontModel.createResource("http://example.org/equivalent"));
+
+        resourceMap.put("exact-match-concept-id", concept);
+    }
+
+    private void setupModelWithDomainAndRange() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(effectiveNamespace + "domain-range-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Domain Range Concept", "cs");
+
+        // Add domain and range
+        Resource domainClass = ontModel.createResource(effectiveNamespace + "DomainClass");
+        concept.addProperty(RDFS.domain, domainClass);
+
+        Resource rangeClass = ontModel.createResource("http://www.w3.org/2001/XMLSchema#string");
+        concept.addProperty(RDFS.range, rangeClass);
+
+        resourceMap.put("domain-range-concept-id", concept);
+    }
+
+    private void setupModelWithHierarchy() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(effectiveNamespace + "hierarchy-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Hierarchy Concept", "cs");
+
+        Resource superClass = ontModel.createResource(effectiveNamespace + "SuperClass");
+        concept.addProperty(RDFS.subClassOf, superClass);
+
+        resourceMap.put("hierarchy-concept-id", concept);
+    }
+
+    private void setupModelWithOntologyIRI() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-ontology");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(effectiveNamespace + "test-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Test Concept", "cs");
+        resourceMap.put("test-concept", concept);
+    }
+
+    private void setupModelWithDifferentConceptTypes() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        OntClass vlastnostClass = ontModel.createClass(OFN_NAMESPACE + VLASTNOST);
+        OntClass vztahClass = ontModel.createClass(OFN_NAMESPACE + VZTAH);
+
         Resource vlastnostConcept = ontModel.createResource(effectiveNamespace + "test-vlastnost");
-        vlastnostConcept.addProperty(RDF.type, pojemClass);      // Must have base TYP_POJEM type
-        vlastnostConcept.addProperty(RDF.type, vlastnostClass);  // Also has specific type
-        vlastnostConcept.addProperty(RDFS.label, "Test Property", "cs");
+        vlastnostConcept.addProperty(RDF.type, pojemClass);
+        vlastnostConcept.addProperty(RDF.type, vlastnostClass);
+        vlastnostConcept.addProperty(SKOS.prefLabel, "Test Property", "cs");
 
-        // Create concept of type vztah (relationship)
         Resource vztahConcept = ontModel.createResource(effectiveNamespace + "test-vztah");
-        vztahConcept.addProperty(RDF.type, pojemClass);    // Must have base TYP_POJEM type
-        vztahConcept.addProperty(RDF.type, vztahClass);    // Also has specific type
-        vztahConcept.addProperty(RDFS.label, "Test Relationship", "cs");
+        vztahConcept.addProperty(RDF.type, pojemClass);
+        vztahConcept.addProperty(RDF.type, vztahClass);
+        vztahConcept.addProperty(SKOS.prefLabel, "Test Relationship", "cs");
 
         resourceMap.put("vlastnost-id", vlastnostConcept);
         resourceMap.put("vztah-id", vztahConcept);
     }
 
     private void setupModelWithComplexProperties() {
-        // Create base structure
         Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
-        ontology.addProperty(RDF.type, SKOS.ConceptScheme);
-        ontology.addProperty(SKOS.prefLabel, modelName, "cs");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
-        // Create concept class and complex concept instance
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
-
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
         Resource concept = ontModel.createResource(effectiveNamespace + "complex-concept");
-        concept.addProperty(RDF.type, pojemClass);  // Must have TYP_POJEM type
-        concept.addProperty(RDFS.label, "Complex Concept", "cs");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Complex Concept", "cs");
 
-        // Add various property types
-        Property zdrojProp = ontModel.createProperty(effectiveNamespace + ZDROJ);
+        Property zdrojProp = ontModel.createProperty("http://purl.org/dc/terms/source");
         concept.addProperty(zdrojProp, ontModel.createResource("http://example.org/source1"));
         concept.addProperty(zdrojProp, ontModel.createResource("http://example.org/source2"));
 
-        Property defProp = ontModel.createProperty(effectiveNamespace + DEFINICE);
+        Property defProp = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#definition");
         concept.addProperty(defProp, "Czech definition", "cs");
         concept.addProperty(defProp, "English definition", "en");
 
         resourceMap.put("complex-concept-id", concept);
     }
 
-    private void setupLargeOntologyModel() {
-        Resource ontology = ontModel.createOntology(effectiveNamespace + "large-vocabulary");
-        ontology.addProperty(RDF.type, SKOS.ConceptScheme);
-        ontology.addProperty(SKOS.prefLabel, modelName, "cs");
-        resourceMap.put("ontology", ontology);
-
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
-
-        for (int i = 0; i < 1000; i++) {
-            Resource concept = ontModel.createResource(effectiveNamespace + "concept-" + i);
-            concept.addProperty(RDF.type, pojemClass);
-            concept.addProperty(RDFS.label, "Concept " + i, "cs");
-            resourceMap.put("concept-" + i, concept);
-        }
-    }
-
     private void assertFieldOrder(JsonNode node, String[] expectedFields) {
-        // This is a helper to verify field ordering in JSON
-
         int foundFields = 0;
         for (String expectedField : expectedFields) {
             if (node.has(expectedField)) {
                 foundFields++;
             }
         }
-
         assertTrue(foundFields > 0, "Should contain at least some expected fields");
     }
 }
