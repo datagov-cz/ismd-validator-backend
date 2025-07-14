@@ -5,257 +5,391 @@ import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.ontology.OntProperty;
 import org.apache.jena.ontology.impl.OntModelImpl;
-import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Nested;
 
 import java.lang.reflect.Method;
+import java.util.Set;
 
 import static com.dia.constants.ArchiConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class OFNBaseModelTest {
 
-    private OntModel ontModel;
+    @Nested
+    class ConstructorTests {
 
-    @BeforeEach
-    void setUp() {
-        OFNBaseModel baseModel = new OFNBaseModel();
-        ontModel = baseModel.getOntModel();
+        @Test
+        void testDefaultConstructor_initializeModelAndPrefixes() {
+            // Test default constructor that creates minimal model with just POJEM
+            OFNBaseModel baseModel = new OFNBaseModel();
+            OntModel ontModel = baseModel.getOntModel();
+
+            assertNotNull(ontModel, "OntModel should be initialized by constructor");
+            assertInstanceOf(OntModelImpl.class, ontModel, "ontModel must be instance of OntModelImpl");
+            assertEquals(OntModelSpec.OWL_MEM, ontModel.getSpecification(), "Model specification must be OWL_MEM");
+
+            // Verify namespace prefixes
+            assertEquals(DEFAULT_NS, ontModel.getNsPrefixURI("cz"), "Prefix 'cz' should correspond to DEFAULT_NS");
+            assertEquals(RDF.getURI(), ontModel.getNsPrefixURI("rdf"), "Prefix 'rdf' should be registered");
+            assertEquals(RDFS.getURI(), ontModel.getNsPrefixURI("rdfs"), "Prefix 'rdfs' should be registered");
+            assertEquals(OWL2.getURI(), ontModel.getNsPrefixURI("owl"), "Prefix 'owl' should be registered");
+            assertEquals(XSD, ontModel.getNsPrefixURI("xsd"), "Prefix 'xsd' should correspond to XSD");
+
+            // Verify non-existent prefix returns null
+            assertNull(ontModel.getNsPrefixURI("nonexistent"), "Non-existent prefix should return null");
+        }
+
+        @Test
+        void testParameterizedConstructor_withRequiredSets() {
+            Set<String> requiredClasses = Set.of(POJEM, TRIDA, VLASTNOST);
+            Set<String> requiredProperties = Set.of(NAZEV, POPIS);
+
+            OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
+
+            assertNotNull(ontModel, "OntModel should be initialized");
+
+            // Verify only required classes are created
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + POJEM), "POJEM class should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + TRIDA), "TRIDA class should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + VLASTNOST), "VLASTNOST class should exist");
+
+            // Verify non-required classes are not created
+            assertNull(ontModel.getOntClass(DEFAULT_NS + TSP), "TSP class should not exist");
+            assertNull(ontModel.getOntClass(DEFAULT_NS + TOP), "TOP class should not exist");
+        }
+
+        @Test
+        void testConstructor_eachCallYieldsNewModel() {
+            OntModel m1 = new OFNBaseModel().getOntModel();
+            OntModel m2 = new OFNBaseModel().getOntModel();
+
+            assertNotSame(m1, m2, "Each constructor call should return new model instance");
+            assertEquals(m1.getNsPrefixURI("cz"), m2.getNsPrefixURI("cz"), "Prefixes 'cz' should be same");
+            assertEquals(m1.getNsPrefixURI("rdf"), m2.getNsPrefixURI("rdf"), "Prefixes 'rdf' should be same");
+        }
     }
 
-    // Test konstruktora: ověření inicializace modelu, OWL-MEM a namespace prefixů
-    @Test
-    void testConstructor_initializeModelAndPrefixes() {
-        assertNotNull(ontModel, "OntModel by měl být inicializován konstruktorem");
+    @Nested
+    class DynamicModelCreationTests {
 
-        assertInstanceOf(OntModelImpl.class, ontModel, "ontModel musí být instancí OntModelImpl");
-        assertEquals(OntModelSpec.OWL_MEM, ontModel.getSpecification(), "Specifikace modelu musí být OWL_MEM");
+        @Test
+        void testMinimalModel_onlyPOJEM() {
+            Set<String> requiredClasses = Set.of(POJEM);
+            Set<String> requiredProperties = Set.of();
 
-        assertEquals(DEFAULT_NS, ontModel.getNsPrefixURI("cz"), "Prefix 'cz' by měl odpovídat NS");
-        assertEquals(RDF.getURI(), ontModel.getNsPrefixURI("rdf"), "Prefix 'rdf' by měl být registrován");
-        assertEquals(RDFS.getURI(), ontModel.getNsPrefixURI("rdfs"), "Prefix 'rdfs' by měl být registrován");
-        assertEquals(OWL2.getURI(), ontModel.getNsPrefixURI("owl"), "Prefix 'owl' by měl být registrován");
-        assertEquals(XSD, ontModel.getNsPrefixURI("xsd"), "Prefix 'xsd' by měl odpovídat XSD");
+            OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
 
-        // Ověření neexistujicího prefixu vrací null
-        assertNull(ontModel.getNsPrefixURI("neexistujici"), "Neexistující prefix by měl vracel null");
+            // Should have POJEM
+            OntClass pojemClass = ontModel.getOntClass(DEFAULT_NS + POJEM);
+            assertNotNull(pojemClass, "POJEM class should exist");
+            assertEquals(POJEM, pojemClass.getLabel("cs"), "POJEM should have correct label");
+
+            // Should not have other classes
+            assertNull(ontModel.getOntClass(DEFAULT_NS + TRIDA), "TRIDA should not exist");
+            assertNull(ontModel.getOntClass(DEFAULT_NS + VLASTNOST), "VLASTNOST should not exist");
+            assertNull(ontModel.getOntClass(DEFAULT_NS + VZTAH), "VZTAH should not exist");
+        }
+
+        @Test
+        void testFullModel_allClassesAndProperties() {
+            Set<String> requiredClasses = Set.of(POJEM, TRIDA, TSP, TOP, VLASTNOST, VZTAH,
+                    DATOVY_TYP, VEREJNY_UDAJ, NEVEREJNY_UDAJ);
+            Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ZDROJ, JE_PPDF,
+                    AGENDA, AIS, USTANOVENI_NEVEREJNOST,
+                    DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENA_TRIDA,
+                    ZPUSOB_SDILENI, ZPUSOB_ZISKANI, TYP_OBSAHU);
+
+            OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
+
+            // Verify all classes exist
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + POJEM), "POJEM should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + TRIDA), "TRIDA should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + TSP), "TSP should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + TOP), "TOP should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + VLASTNOST), "VLASTNOST should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + VZTAH), "VZTAH should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + DATOVY_TYP), "DATOVY_TYP should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + VEREJNY_UDAJ), "VEREJNY_UDAJ should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + NEVEREJNY_UDAJ), "NEVEREJNY_UDAJ should exist");
+
+            // Verify all properties exist
+            assertNotNull(ontModel.getOntProperty(DEFAULT_NS + NAZEV), "NAZEV property should exist");
+            assertNotNull(ontModel.getOntProperty(DEFAULT_NS + POPIS), "POPIS property should exist");
+            assertNotNull(ontModel.getOntProperty(DEFAULT_NS + DEFINICE), "DEFINICE property should exist");
+        }
+
+        @Test
+        void testClassHierarchy_subclassRelationships() {
+            Set<String> requiredClasses = Set.of(POJEM, TRIDA, TSP, TOP, VLASTNOST, VZTAH);
+
+            OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, Set.of());
+            OntModel ontModel = baseModel.getOntModel();
+
+            OntClass pojemClass = ontModel.getOntClass(DEFAULT_NS + POJEM);
+            OntClass tridaClass = ontModel.getOntClass(DEFAULT_NS + TRIDA);
+            OntClass tspClass = ontModel.getOntClass(DEFAULT_NS + TSP);
+            OntClass topClass = ontModel.getOntClass(DEFAULT_NS + TOP);
+            OntClass vlastnostClass = ontModel.getOntClass(DEFAULT_NS + VLASTNOST);
+            OntClass vztahClass = ontModel.getOntClass(DEFAULT_NS + VZTAH);
+
+            // Verify hierarchy relationships
+            assertTrue(tridaClass.hasSuperClass(pojemClass), "TRIDA should be subclass of POJEM");
+            assertTrue(tspClass.hasSuperClass(tridaClass), "TSP should be subclass of TRIDA");
+            assertTrue(topClass.hasSuperClass(tridaClass), "TOP should be subclass of TRIDA");
+            assertTrue(vlastnostClass.hasSuperClass(pojemClass), "VLASTNOST should be subclass of POJEM");
+            assertTrue(vztahClass.hasSuperClass(pojemClass), "VZTAH should be subclass of POJEM");
+        }
+
+        @Test
+        void testConditionalClassCreation_missingParentClass() {
+            // Try to create TSP without TRIDA - should still work as TRIDA gets created
+            Set<String> requiredClasses = Set.of(POJEM, TSP);
+
+            OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, Set.of());
+            OntModel ontModel = baseModel.getOntModel();
+
+            OntClass pojemClass = ontModel.getOntClass(DEFAULT_NS + POJEM);
+            OntClass tridaClass = ontModel.getOntClass(DEFAULT_NS + TRIDA);
+            OntClass tspClass = ontModel.getOntClass(DEFAULT_NS + TSP);
+
+            assertNotNull(pojemClass, "POJEM should exist");
+            assertNotNull(tridaClass, "TRIDA should be created as parent of TSP");
+            assertNotNull(tspClass, "TSP should exist");
+            assertTrue(tspClass.hasSuperClass(tridaClass), "TSP should be subclass of TRIDA");
+        }
     }
 
-    // Ověření, že každé volání konstruktorem vrací novou instanci modelu se stejnými prefixy
-    @Test
-    void testConstructor_eachCallYieldsNewModel() {
-        OntModel m1 = new OFNBaseModel().getOntModel();
-        OntModel m2 = new OFNBaseModel().getOntModel();
-        assertNotSame(m1, m2, "Každé volání konstruktorem by mělo vracet novou instanci modelu");
+    @Nested
+    class PropertyCreationTests {
 
-        assertEquals(m1.getNsPrefixURI("cz"), m2.getNsPrefixURI("cz"), "Prefixy 'cz' by měli být stejné");
-        assertEquals(m1.getNsPrefixURI("rdf"), m2.getNsPrefixURI("rdf"), "Prefixy 'rdf' by měli být stejné");
+        @Test
+        void testPropertyCreation_withCorrectDomainRange() {
+            Set<String> requiredClasses = Set.of(POJEM, NEVEREJNY_UDAJ);
+            Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ZDROJ, JE_PPDF,
+                    AGENDA, AIS, USTANOVENI_NEVEREJNOST);
+
+            OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
+
+            OntClass pojemClass = ontModel.getOntClass(DEFAULT_NS + POJEM);
+            OntClass neverejnyUdajClass = ontModel.getOntClass(DEFAULT_NS + NEVEREJNY_UDAJ);
+
+            // Test string properties
+            OntProperty nazevProp = ontModel.getOntProperty(DEFAULT_NS + NAZEV);
+            assertNotNull(nazevProp, "NAZEV property should exist");
+            assertEquals(NAZEV, nazevProp.getLabel("cs"), "NAZEV should have correct label");
+            assertTrue(nazevProp.hasDomain(pojemClass), "NAZEV should have POJEM domain");
+            assertTrue(nazevProp.hasRange(ontModel.getOntClass(XSD + "string")), "NAZEV should have string range");
+
+            // Test URI property
+            OntProperty zdrojProp = ontModel.getOntProperty(DEFAULT_NS + ZDROJ);
+            assertNotNull(zdrojProp, "ZDROJ property should exist");
+            assertTrue(zdrojProp.hasRange(ontModel.getOntClass(XSD + "anyURI")), "ZDROJ should have anyURI range");
+
+            // Test boolean property
+            OntProperty ppdfProp = ontModel.getOntProperty(DEFAULT_NS + JE_PPDF);
+            assertNotNull(ppdfProp, "JE_PPDF property should exist");
+            assertTrue(ppdfProp.hasRange(ontModel.getOntClass(XSD + "boolean")), "JE_PPDF should have boolean range");
+
+            // Test resource properties
+            OntProperty agendaProp = ontModel.getOntProperty(DEFAULT_NS + AGENDA);
+            assertNotNull(agendaProp, "AGENDA property should exist");
+            assertTrue(agendaProp.hasRange(RDFS.Resource), "AGENDA should have Resource range");
+
+            // Test property with specific domain
+            OntProperty ustanoveniProp = ontModel.getOntProperty(DEFAULT_NS + USTANOVENI_NEVEREJNOST);
+            assertNotNull(ustanoveniProp, "USTANOVENI_NEVEREJNOST property should exist");
+            assertTrue(ustanoveniProp.hasDomain(neverejnyUdajClass), "USTANOVENI should have NEVEREJNY_UDAJ domain");
+        }
+
+        @Test
+        void testPropertyCreation_withoutDomainRange() {
+            Set<String> requiredProperties = Set.of(DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENA_TRIDA);
+
+            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
+
+            // These properties should exist but without specific domain/range
+            OntProperty definicniOborProp = ontModel.getOntProperty(DEFAULT_NS + DEFINICNI_OBOR);
+            assertNotNull(definicniOborProp, "DEFINICNI_OBOR property should exist");
+            assertEquals(DEFINICNI_OBOR, definicniOborProp.getLabel("cs"), "Should have correct label");
+
+            OntProperty oborHodnotProp = ontModel.getOntProperty(DEFAULT_NS + OBOR_HODNOT);
+            assertNotNull(oborHodnotProp, "OBOR_HODNOT property should exist");
+
+            OntProperty nadrazenaTrida = ontModel.getOntProperty(DEFAULT_NS + NADRAZENA_TRIDA);
+            assertNotNull(nadrazenaTrida, "NADRAZENA_TRIDA property should exist");
+        }
+
+        @Test
+        void testGovernanceProperties() {
+            Set<String> requiredProperties = Set.of(ZPUSOB_SDILENI, ZPUSOB_ZISKANI, TYP_OBSAHU);
+
+            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
+
+            OntClass pojemClass = ontModel.getOntClass(DEFAULT_NS + POJEM);
+
+            OntProperty zpusobSdileniProp = ontModel.getOntProperty(DEFAULT_NS + ZPUSOB_SDILENI);
+            assertNotNull(zpusobSdileniProp, "ZPUSOB_SDILENI property should exist");
+            assertTrue(zpusobSdileniProp.hasDomain(pojemClass), "Should have POJEM domain");
+            assertTrue(zpusobSdileniProp.hasRange(RDFS.Resource), "Should have Resource range");
+
+            OntProperty zpusobZiskaniProp = ontModel.getOntProperty(DEFAULT_NS + ZPUSOB_ZISKANI);
+            assertNotNull(zpusobZiskaniProp, "ZPUSOB_ZISKANI property should exist");
+
+            OntProperty typObsahuProp = ontModel.getOntProperty(DEFAULT_NS + TYP_OBSAHU);
+            assertNotNull(typObsahuProp, "TYP_OBSAHU property should exist");
+        }
+
+        @Test
+        void testPropertyCreation_missingPrerequisites() {
+            // Try to create properties that require POJEM class but don't provide it
+            Set<String> requiredProperties = Set.of(NAZEV, POPIS);
+
+            OFNBaseModel baseModel = new OFNBaseModel(Set.of(), requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
+
+            // Properties should not be created because POJEM class is missing
+            assertNull(ontModel.getOntProperty(DEFAULT_NS + NAZEV), "NAZEV should not exist without POJEM");
+            assertNull(ontModel.getOntProperty(DEFAULT_NS + POPIS), "POPIS should not exist without POJEM");
+        }
+
+        @Test
+        void testPropertyCreation_missingNEVEREJNY_UDAJ() {
+            // Try to create USTANOVENI_NEVEREJNOST without NEVEREJNY_UDAJ class
+            Set<String> requiredProperties = Set.of(USTANOVENI_NEVEREJNOST);
+
+            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
+
+            // Property should not be created because NEVEREJNY_UDAJ class is missing
+            assertNull(ontModel.getOntProperty(DEFAULT_NS + USTANOVENI_NEVEREJNOST),
+                    "USTANOVENI should not exist without NEVEREJNY_UDAJ");
+        }
     }
 
-    // Test createBaseModel(): ověření existence XSD tříd a základních ontologických tříd s popisky a hierarchií
-    @Test
-    void testCreateBaseModel_classesWithLabels() {
-        assertNotNull(ontModel.getOntClass(XSD + "string"), "XSD:string by měl existovat");
-        assertNotNull(ontModel.getOntClass(XSD + "boolean"), "XSD:boolean by měl existovat");
-        assertNotNull(ontModel.getOntClass(XSD + "anyURI"), "XSD:anyURI by měl existovat");
+    @Nested
+    class XSDTypesTests {
 
-        // Ověření, že třída 'pojem' existuje a má správný český popisek
-        OntClass pojemClass = ontModel.getOntClass(DEFAULT_NS + POJEM);
-        assertNotNull(pojemClass, "Třída TYP_POJEM by měla existovat");
-        assertEquals("pojem", pojemClass.getLabel("cs"), "Třída TYP_POJEM by měla mít správný popisek");
-        assertEquals(DEFAULT_NS + POJEM, pojemClass.getURI(), "URI třídy 'pojem' musí odpovídat NS+TYP_POJEM");
+        @Test
+        void testXSDTypes_createdWhenRequired() {
+            Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ZDROJ, JE_PPDF);
 
-        // Ověření, že třída 'vlastnost' existuje, má správný label a je podtřídou 'pojem'
-        OntClass vlastnostClass = ontModel.getOntClass(DEFAULT_NS + VLASTNOST);
-        assertNotNull(vlastnostClass, "Třída TYP_VLASTNOST by měla existovat");
-        assertEquals("vlastnost", vlastnostClass.getLabel("cs"), "Třída TYP_VLASTNOST by měla mít správný popisek");
-        assertTrue(vlastnostClass.hasSuperClass(pojemClass), "Třída TYP_VLASTNOST by měla rozšiřovat TYP_POJEM");
+            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
 
-        // Ověření, že třída 'vztah' existuje, má správný label a je podtřídou 'pojem'
-        OntClass vztahClass = ontModel.getOntClass(DEFAULT_NS + VZTAH);
-        assertNotNull(vztahClass, "Třída TYP_VZTAH by měla existovat");
-        assertEquals("vztah", vztahClass.getLabel("cs"), "Třída TYP_VZTAH by měla mít správný popisek");
-        assertTrue(vztahClass.hasSuperClass(pojemClass), "Třída TYP_VZTAH by měla rozšiřovat TYP_POJEM");
+            // XSD types should be created because properties require them
+            assertNotNull(ontModel.getOntClass(XSD + "string"), "XSD:string should be created");
+            assertNotNull(ontModel.getOntClass(XSD + "boolean"), "XSD:boolean should be created");
+            assertNotNull(ontModel.getOntClass(XSD + "anyURI"), "XSD:anyURI should be created");
+        }
 
-        // Ověření, že třída 'trida' existuje, má správný label a je podtřídou 'pojem'
-        OntClass tridaClass = ontModel.getOntClass(DEFAULT_NS + TRIDA);
-        assertNotNull(tridaClass, "Třída TYP_TRIDA by měla existovat");
-        assertEquals("třída", tridaClass.getLabel("cs"), "Třída TYP_TRIDA by měla mít správný popisek");
-        assertTrue(tridaClass.hasSuperClass(pojemClass), "Třída TYP_TRIDA by měla rozšiřovat TYP_POJEM");
+        @Test
+        void testXSDTypes_notCreatedWhenNotRequired() {
+            Set<String> requiredProperties = Set.of(AGENDA, AIS); // These don't require XSD types
 
-        // Ověření, že třída 'datovyTyp' (TYP_DT) existuje a má správný český popisek
-        OntClass datovyTyp = ontModel.getOntClass(DEFAULT_NS + DATOVY_TYP);
-        assertNotNull(datovyTyp, "Třída TYP_DT by měla existovat");
-        assertEquals(DATOVY_TYP, datovyTyp.getLabel("cs"), "Třída TYP_DT by měla mít správný popisek");
+            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
 
-        // Ověření, že třída 'typSubjektu' (TYP_TSP) existuje a je podtřídou 'trida'
-        OntClass typSubjektuClass = ontModel.getOntClass(DEFAULT_NS + TSP);
-        assertNotNull(typSubjektuClass, "Třída TYP_TSP by měla existovat");
-        assertTrue(typSubjektuClass.hasSuperClass(tridaClass), "Třída TYP_TSP by měla rozšiřovat TYP_TRIDA");
+            // XSD types should not be created
+            assertNull(ontModel.getOntClass(XSD + "string"), "XSD:string should not be created");
+            assertNull(ontModel.getOntClass(XSD + "boolean"), "XSD:boolean should not be created");
+            assertNull(ontModel.getOntClass(XSD + "anyURI"), "XSD:anyURI should not be created");
+        }
 
-        // Ověření, že třída 'typObjektu' (TYP_TOP) existuje a je podtřídou 'trida'
-        OntClass typObjektuClass = ontModel.getOntClass(DEFAULT_NS + TOP);
-        assertNotNull(typObjektuClass, "Třída TOP by měla existovat");
-        assertTrue(typObjektuClass.hasSuperClass(tridaClass), "Třída TYP_TOP by měla rozšiřovat TYP_TRIDA");
+        @Test
+        void testRequiresXSDTypes_logic() throws Exception {
+            // Test the requiresXSDTypes method via reflection
+            OFNBaseModel baseModel = new OFNBaseModel();
 
-        // Ověření, že třída 'verejnyUdaj' (TYP_VEREJNY_UDAJ) existuje a má správný český popisek
-        OntClass verejnyUdajClass = ontModel.getOntClass(DEFAULT_NS + VEREJNY_UDAJ);
-        assertNotNull(verejnyUdajClass, "Třída TYP_VEREJNY_UDAJ by měla existovat");
-        assertEquals(VEREJNY_UDAJ, verejnyUdajClass.getLabel("cs"), "Třída TYP_VEREJNY_UDAJ by měla mít správný popisek");
+            Method requiresXSDTypesMethod = OFNBaseModel.class.getDeclaredMethod("requiresXSDTypes", Set.class);
+            requiresXSDTypesMethod.setAccessible(true);
 
-        // Ověření, že třída 'neverejnyUdaj' (TYP_NEVEREJNY_UDAJ) existuje a má správný český popisek
-        OntClass neverejnyUdajClass = ontModel.getOntClass(DEFAULT_NS + NEVEREJNY_UDAJ);
-        assertNotNull(neverejnyUdajClass, "Třída TYP_NEVEREJNY_UDAJ by měla existovat");
-        assertEquals(NEVEREJNY_UDAJ, neverejnyUdajClass.getLabel("cs"), "Třída TYP_NEVEREJNY_UDAJ by měla mít správný popisek");
+            // Test cases that should require XSD types
+            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(NAZEV)),
+                    "NAZEV should require XSD types");
+            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(POPIS)),
+                    "POPIS should require XSD types");
+            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(DEFINICE)),
+                    "DEFINICE should require XSD types");
+            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(ZDROJ)),
+                    "ZDROJ should require XSD types");
+            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(JE_PPDF)),
+                    "JE_PPDF should require XSD types");
+
+            // Test cases that should not require XSD types
+            assertFalse((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(AGENDA)),
+                    "AGENDA should not require XSD types");
+            assertFalse((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of()),
+                    "Empty set should not require XSD types");
+        }
     }
 
-    // Test createBaseModel(): ověření existence a charakteristiky vlastností (label, domain, range)
-    @Test
-    void testCreateBaseModel_properties() {
-        OntClass pojemClass = ontModel.getOntClass(DEFAULT_NS + POJEM);
-        OntClass neverejnyUdajClass = ontModel.getOntClass(DEFAULT_NS + NEVEREJNY_UDAJ);
+    @Nested
+    class ReflectionTests {
 
-        // Ověření, že vlastnost 'nazev' existuje, má správný label, doménu TYP_POJEM a rozsah XSD:string
-        OntProperty nazevProp = ontModel.getOntProperty(DEFAULT_NS + NAZEV);
-        assertNotNull(nazevProp, "Vlastnost 'nazev' by měla existovat");
-        assertEquals(NAZEV, nazevProp.getLabel("cs"), "Vlastnost 'nazev' by měla mít český popisek");
-        assertTrue(nazevProp.hasDomain(pojemClass), "Vlastnost 'nazev' by měla mít doménu TYP_POJEM");
-        assertTrue(nazevProp.hasRange(ontModel.getOntClass(XSD + "string")), "Vlastnost 'nazev' by měla mít rozsah XSD:string");
-        assertEquals(DEFAULT_NS + NAZEV, nazevProp.getURI(), "URI vlastnosti 'nazev' musí odpovídat NS+LABEL_NAZEV");
+        @Test
+        void testCreateDynamicBaseModel_reflection() throws Exception {
+            // Create instance but don't use constructor to populate model
+            OFNBaseModel baseModel = new OFNBaseModel(Set.of(), Set.of()); // Empty model
 
-        // Ověření, že vlastnost 'popis' existuje, má správný label, doménu TYP_POJEM a rozsah XSD:string
-        OntProperty popisProp = ontModel.getOntProperty(DEFAULT_NS + POPIS);
-        assertNotNull(popisProp, "Vlastnost 'popis' by měla existovat");
-        assertEquals(POPIS, popisProp.getLabel("cs"), "Vlastnost 'popis' by měla mít český popisek");
-        assertTrue(popisProp.hasDomain(pojemClass), "Vlastnost 'popis' by měla mít doménu TYP_POJEM");
-        assertTrue(popisProp.hasRange(ontModel.getOntClass(XSD + "string")), "Vlastnost 'popis' by měla mít rozsah XSD:string");
+            // Use reflection to call createDynamicBaseModel with specific parameters
+            Method createDynamicBaseModelMethod = OFNBaseModel.class.getDeclaredMethod(
+                    "createDynamicBaseModel", Set.class, Set.class);
+            createDynamicBaseModelMethod.setAccessible(true);
 
-        // Ověření, že vlastnost 'definice' existuje, má správný label, doménu TYP_POJEM a rozsah XSD:string
-        OntProperty definiceProp = ontModel.getOntProperty(DEFAULT_NS + DEFINICE);
-        assertNotNull(definiceProp, "Vlastnost 'definice' by měla existovat");
-        assertEquals(DEFINICE, definiceProp.getLabel("cs"), "Vlastnost 'definice' by měla mít český popisek");
-        assertTrue(definiceProp.hasDomain(pojemClass), "Vlastnost 'definice' by měla mít doménu TYP_POJEM");
-        assertTrue(definiceProp.hasRange(ontModel.getOntClass(XSD + "string")), "Vlastnost 'definice' by měla mít rozsah XSD:string");
+            Set<String> testClasses = Set.of(POJEM, TRIDA);
+            Set<String> testProperties = Set.of(NAZEV);
 
-        // Ověření, že vlastnost 'zdroj' existuje, má správný label, doménu TYP_POJEM a rozsah XSD:anyURI
-        OntProperty zdrojProp = ontModel.getOntProperty(DEFAULT_NS + ZDROJ);
-        assertNotNull(zdrojProp, "Vlastnost 'zdroj' by měla existovat");
-        assertEquals(ZDROJ, zdrojProp.getLabel("cs"), "Vlastnost 'zdroj' by měla mít český popisek");
-        assertTrue(zdrojProp.hasDomain(pojemClass), "Vlastnost 'zdroj' by měla mít doménu TYP_POJEM");
-        assertTrue(zdrojProp.hasRange(ontModel.getOntClass(XSD + "anyURI")), "Vlastnost 'zdroj' by měla mít rozsah XSD:anyURI");
+            // Invoke the method
+            createDynamicBaseModelMethod.invoke(baseModel, testClasses, testProperties);
 
-        // Ověření, že vlastnost 'jeSdilenVPpdf' existuje, má správný label, doménu TYP_POJEM a rozsah XSD:boolean
-        OntProperty jeSdilenVPpdfProp = ontModel.getOntProperty(DEFAULT_NS + JE_PPDF);
-        assertNotNull(jeSdilenVPpdfProp, "Vlastnost 'jeSdilenVPpdf' by měla existovat");
-        assertEquals(JE_PPDF, jeSdilenVPpdfProp.getLabel("cs"), "Vlastnost 'jeSdilenvPpdf' by měla mít český popisek");
-        assertTrue(jeSdilenVPpdfProp.hasDomain(pojemClass), "Vlastnost 'jeSdilenVPpdf' by měla mít doménu TYP_POJEM");
-        assertTrue(jeSdilenVPpdfProp.hasRange(ontModel.getOntClass(XSD + "boolean")), "Vlastnost 'jeSdilenVPpdf' by měla mít rozsah XSD:boolean");
+            OntModel ontModel = baseModel.getOntModel();
 
-        // Ověření, že vlastnost 'agenda' existuje, má správný label, doménu TYP_POJEM a rozsah RDFS:Resource
-        OntProperty agendaProp = ontModel.getOntProperty(DEFAULT_NS + AGENDA);
-        assertNotNull(agendaProp, "Vlastnost 'agenda' by měla existovat");
-        assertEquals(AGENDA, agendaProp.getLabel("cs"), "Vlastnost 'agenda' by měla mít český popisek");
-        assertTrue(agendaProp.hasDomain(pojemClass), "Vlastnost 'agenda' by měla mít doménu TYP_POJEM");
-        assertTrue(agendaProp.hasRange(RDFS.Resource), "Vlastnost 'agenda' by měla mít rozsah RDFS:Resource");
+            // Verify the method created the expected classes
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + POJEM), "POJEM should be created");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + TRIDA), "TRIDA should be created");
+            assertNotNull(ontModel.getOntProperty(DEFAULT_NS + NAZEV), "NAZEV property should be created");
+        }
 
-        // Ověření, že vlastnost 'ais' existuje, má správný label, doménu TYP_POJEM a rozsah RDFS:Resource
-        OntProperty aisProp = ontModel.getOntProperty(DEFAULT_NS + AIS);
-        assertNotNull(aisProp, "Vlastnost 'ais' by měla existovat");
-        assertEquals(AIS, aisProp.getLabel("cs"), "Vlastnost 'ais' by měla mít český popisek");
-        assertTrue(aisProp.hasDomain(pojemClass), "Vlastnost 'ais' by měla mít doménu TYP_POJEM");
-        assertTrue(aisProp.hasRange(RDFS.Resource), "Vlastnost 'ais' by měla mít rozsah RDFS:Resource");
+        @Test
+        void testCreateRequiredProperties_reflection() throws Exception {
+            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), Set.of());
+            OntModel ontModel = baseModel.getOntModel();
 
-        // Ověření, že vlastnost 'ustanoveni' existuje, má správný label, doménu TYP_NEVEREJNY_UDAJ a rozsah RDFS:Resource
-        OntProperty ustanoveniProp = ontModel.getOntProperty(DEFAULT_NS + USTANOVENI_NEVEREJNOST);
-        assertNotNull(ustanoveniProp, "Vlastnost 'ustanoveni' by měla existovat");
-        assertEquals(USTANOVENI_NEVEREJNOST, ustanoveniProp.getLabel("cs"), "Vlastnost 'ustanoveni' by měla mít český popisek");
-        assertTrue(ustanoveniProp.hasDomain(neverejnyUdajClass), "Vlastnost 'ustanoveni' by měla mít doménu TYP_NEVEREJNY_UDAJ");
-        assertTrue(ustanoveniProp.hasRange(RDFS.Resource), "Vlastnost 'ustanoveni' by měla mít rozsah RDFS:Resource");
+            OntClass pojemClass = ontModel.getOntClass(DEFAULT_NS + POJEM);
 
-        // Ověření, že property 'definicniOborProp' existuje a má správný label, bez domény a rozsahu
-        OntProperty definicniOborProp = ontModel.getOntProperty(DEFAULT_NS + DEFINICNI_OBOR);
-        assertNotNull(definicniOborProp, "Vlastnost 'definicniObor' by měla existovat");
-        assertEquals(DEFINICNI_OBOR, definicniOborProp.getLabel("cs"), "Vlastnost 'definicniObor' by měla mít český popisek");
+            Method createRequiredPropertiesMethod = OFNBaseModel.class.getDeclaredMethod(
+                    "createRequiredProperties", Set.class, OntClass.class, OntClass.class);
+            createRequiredPropertiesMethod.setAccessible(true);
 
-        // Ověření, že property 'oborHodnotProp' existuje a má správný label, bez domény a rozsahu
-        OntProperty oborHodnotProp = ontModel.getOntProperty(DEFAULT_NS + OBOR_HODNOT);
-        assertNotNull(oborHodnotProp, "Vlastnost 'oborHodnot' by měla existovat");
-        assertEquals(OBOR_HODNOT, oborHodnotProp.getLabel("cs"), "Vlastnost 'oborHodnot' by měla mít český popisek");
+            Set<String> testProperties = Set.of(NAZEV, POPIS);
 
-        // Ověření, že property 'nadrazenaTrida' existuje a má správný label, bez domény a rozsahu
-        OntProperty nadrazenaTrida = ontModel.getOntProperty(DEFAULT_NS + NADRAZENA_TRIDA);
-        assertNotNull(nadrazenaTrida, "Vlastnost 'nadrazenaTrida' by měla existovat");
-        assertEquals(NADRAZENA_TRIDA, nadrazenaTrida.getLabel("cs"), "Vlastnost 'nadrazenaTrida' by měla mít český popisek");
+            // Invoke the method
+            createRequiredPropertiesMethod.invoke(baseModel, testProperties, pojemClass, null);
 
-        // Ověření, že property 'souvisejiciUstanoveni' existuje a má správný label, bez domény a rozsahu
-        OntProperty souvisejiciUstanoveni = ontModel.getOntProperty(DEFAULT_NS + SUPP);
-        assertNotNull(souvisejiciUstanoveni, "Vlastnost 'souvisejiciUstanoveni' by měla existovat");
-        assertEquals(SUPP, souvisejiciUstanoveni.getLabel("cs"), "Vlastnost 'souvisejiciUstanoveni' by měla mít český popisek");
-
-        // Ověření, že vlastnost 'zpusobSdileni' existuje, má správný label, doménu TYP_POJEM a rozsah RDFS:Resource
-        OntProperty zpusobSdileniProp = ontModel.getOntProperty(DEFAULT_NS + ZPUSOB_SDILENI);
-        assertNotNull(zpusobSdileniProp, "Vlastnost 'zpusobSdileni' by měla existovat");
-        assertEquals("má-způsob-sdílení-údaje", zpusobSdileniProp.getLabel("cs"), "Vlastnost 'zpusobSdileni' by měla mít český popisek");
-        assertTrue(zpusobSdileniProp.hasDomain(pojemClass), "Vlastnost 'zpusobSdileni' by měla mít doménu TYP_POJEM");
-        assertTrue(zpusobSdileniProp.hasRange(RDFS.Resource), "Vlastnost 'zpusobSdileni' by měla mít rozsah RDFS:Resource");
-
-        // Ověření, že property 'typObsahuProp' existuje a má správný label, bez domény a rozsahu
-        OntProperty zpusobZiskaniProp = ontModel.getOntProperty(DEFAULT_NS + ZPUSOB_ZISKANI);
-        assertNotNull(zpusobZiskaniProp, "Vlastnost 'zpusobZiskani' by měla existovat");
-        assertEquals("má-kategorii-údaje", zpusobZiskaniProp.getLabel("cs"), "Vlastnost 'zpusobZiskani' by měla mít český popisek");
-        assertTrue(zpusobZiskaniProp.hasDomain(pojemClass), "Vlastnost 'zpusobZiskani' by měla mít doménu TYP_POJEM");
-        assertTrue(zpusobZiskaniProp.hasRange(RDFS.Resource), "Vlastnost 'zpusobZiskani' by měla mít rozsah RDFS:Resource");
-
-        // Ověření, že property 'typObsahuProp' existuje a má správný label, bez domény a rozsahu
-        OntProperty typObsahuProp = ontModel.getOntProperty(DEFAULT_NS + TYP_OBSAHU);
-        assertNotNull(typObsahuProp, "Vlastnost 'typObsahu' by měla existovat");
-        assertEquals("má-typ-obsahu-údaje", typObsahuProp.getLabel("cs"), "Vlastnost 'typObsahu' by měla mít český popisek");
-        assertTrue(typObsahuProp.hasDomain(pojemClass), "Vlastnost 'typObsahu' by měla mít doménu TYP_POJEM");
-        assertTrue(typObsahuProp.hasRange(RDFS.Resource), "Vlastnost 'typObsahu' by měla mít rozsah RDFS:Resource");
-
-        // Negative cases pro neexistující resources
-        assertNull(ontModel.getOntProperty(DEFAULT_NS + "neexistujiciVlastnost"), "Neexistující vlastnost by měla vracel null");
-        assertNull(ontModel.getOntClass(DEFAULT_NS + "NeexistujiciTrida"), "Neexistující třída by měla vracet null");
+            // Verify properties were created
+            assertNotNull(ontModel.getOntProperty(DEFAULT_NS + NAZEV), "NAZEV should be created");
+            assertNotNull(ontModel.getOntProperty(DEFAULT_NS + POPIS), "POPIS should be created");
+        }
     }
 
     @Test
-    void testCreateBaseModel_Isolated() throws Exception {
-        // Create an instance of OFNBaseModel but we'll manually invoke createBaseModel
-        OFNBaseModel model = new OFNBaseModel();
+    void testUnknownProperty_loggedButIgnored() {
+        // Test that unknown properties are logged but don't cause errors
+        Set<String> requiredProperties = Set.of("unknown-property", NAZEV);
 
-        // Get a blank OntModel to replace the one created and populated in the constructor
-        OntModel freshOntModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
-
-        // Use reflection to access the private ontModel field and set it to our fresh model
-        java.lang.reflect.Field ontModelField = OFNBaseModel.class.getDeclaredField("ontModel");
-        ontModelField.setAccessible(true);
-        ontModelField.set(model, freshOntModel);
-
-        // Use reflection to access the private createBaseModel method
-        Method createBaseModelMethod = OFNBaseModel.class.getDeclaredMethod("createBaseModel");
-        createBaseModelMethod.setAccessible(true);
-
-        // Assert that model is empty before calling createBaseModel
-        assertEquals(0, freshOntModel.listClasses().toList().size(),
-                "OntModel should be empty before calling createBaseModel");
-
-        // Invoke the createBaseModel method
-        createBaseModelMethod.invoke(model);
-
-        // Verify that the model was populated correctly
-        assertNotNull(freshOntModel.getOntClass(XSD + "string"),
-                "XSD:string should be created by createBaseModel");
-
-        // Verify one class to prove the method executed successfully
-        OntClass pojemClass = freshOntModel.getOntClass(DEFAULT_NS + POJEM);
-        assertNotNull(pojemClass, "Class TYP_POJEM should be created by createBaseModel");
-        assertEquals("pojem", pojemClass.getLabel("cs"),
-                "Class TYP_POJEM should have the correct Czech label");
+        // This should not throw an exception
+        assertDoesNotThrow(() -> {
+            new OFNBaseModel(Set.of(POJEM), requiredProperties);
+        }, "Unknown properties should not cause exceptions");
     }
 }
-
-
