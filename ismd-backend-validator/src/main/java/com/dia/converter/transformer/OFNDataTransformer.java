@@ -27,10 +27,7 @@ import java.util.*;
 import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ArchiConstants.AGENDA;
 import static com.dia.constants.ArchiConstants.AIS;
-import static com.dia.constants.ArchiConstants.DEFINICE;
-import static com.dia.constants.ArchiConstants.EKVIVALENTNI_POJEM;
 import static com.dia.constants.ArchiConstants.JE_PPDF;
-import static com.dia.constants.ArchiConstants.ZDROJ;
 import static com.dia.constants.ExcelConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
@@ -150,126 +147,81 @@ public class OFNDataTransformer {
     private Set<String> analyzeRequiredBaseClasses(OntologyData ontologyData) {
         Set<String> requiredClasses = new HashSet<>();
 
-        boolean hasAnyContent = !ontologyData.getClasses().isEmpty() ||
-                !ontologyData.getProperties().isEmpty() ||
-                !ontologyData.getRelationships().isEmpty();
-
-        if (hasAnyContent) {
+        if (hasAnyContent(ontologyData)) {
             requiredClasses.add(POJEM);
         }
 
-        if (!ontologyData.getClasses().isEmpty()) {
-            requiredClasses.add(TRIDA);
-
-            for (ClassData classData : ontologyData.getClasses()) {
-                String type = classData.getType();
-                if (type != null) {
-                    if (type.contains("subjekt") || type.equalsIgnoreCase("typ subjektu") ||
-                            type.equalsIgnoreCase("Subjekt práva")) {
-                        requiredClasses.add(TSP);
-                    } else if (type.contains("objekt") || type.equalsIgnoreCase("typ objektu") ||
-                            type.equalsIgnoreCase("Objekt práva")) {
-                        requiredClasses.add(TOP);
-                    }
-                }
-            }
-        }
-
-        if (!ontologyData.getProperties().isEmpty()) {
-            requiredClasses.add(VLASTNOST);
-
-            for (PropertyData prop : ontologyData.getProperties()) {
-                if (hasPublicDataClassification(prop)) {
-                    requiredClasses.add(VEREJNY_UDAJ);
-                }
-                if (hasPrivateDataClassification(prop)) {
-                    requiredClasses.add(NEVEREJNY_UDAJ);
-                }
-            }
-        }
-
-        if (!ontologyData.getRelationships().isEmpty()) {
-            requiredClasses.add(VZTAH);
-        }
+        addClassSpecificRequirements(ontologyData, requiredClasses);
+        addPropertySpecificRequirements(ontologyData, requiredClasses);
+        addRelationshipSpecificRequirements(ontologyData, requiredClasses);
 
         log.debug("Analysis found {} required base classes", requiredClasses.size());
         return requiredClasses;
     }
 
+    private boolean hasAnyContent(OntologyData ontologyData) {
+        return !ontologyData.getClasses().isEmpty() ||
+                !ontologyData.getProperties().isEmpty() ||
+                !ontologyData.getRelationships().isEmpty();
+    }
+
+    private void addClassSpecificRequirements(OntologyData ontologyData, Set<String> requiredClasses) {
+        if (ontologyData.getClasses().isEmpty()) {
+            return;
+        }
+
+        requiredClasses.add(TRIDA);
+
+        for (ClassData classData : ontologyData.getClasses()) {
+            String type = classData.getType();
+            if (type != null) {
+                if (isSubjectType(type)) {
+                    requiredClasses.add(TSP);
+                } else if (isObjectType(type)) {
+                    requiredClasses.add(TOP);
+                }
+            }
+        }
+    }
+
+    private void addPropertySpecificRequirements(OntologyData ontologyData, Set<String> requiredClasses) {
+        if (ontologyData.getProperties().isEmpty()) {
+            return;
+        }
+
+        requiredClasses.add(VLASTNOST);
+
+        for (PropertyData prop : ontologyData.getProperties()) {
+            if (hasPublicDataClassification(prop)) {
+                requiredClasses.add(VEREJNY_UDAJ);
+            }
+            if (hasPrivateDataClassification(prop)) {
+                requiredClasses.add(NEVEREJNY_UDAJ);
+            }
+        }
+    }
+
+    private void addRelationshipSpecificRequirements(OntologyData ontologyData, Set<String> requiredClasses) {
+        if (!ontologyData.getRelationships().isEmpty()) {
+            requiredClasses.add(VZTAH);
+        }
+    }
+
+    private boolean isSubjectType(String type) {
+        return type.contains("subjekt") ||
+                type.equalsIgnoreCase("typ subjektu") ||
+                type.equalsIgnoreCase("Subjekt práva");
+    }
+
+    private boolean isObjectType(String type) {
+        return type.contains("objekt") ||
+                type.equalsIgnoreCase("typ objektu") ||
+                type.equalsIgnoreCase("Objekt práva");
+    }
+
     private Set<String> analyzeRequiredProperties(OntologyData ontologyData) {
-        Set<String> requiredProperties = new HashSet<>();
-
-        boolean hasNames = ontologyData.getClasses().stream().anyMatch(c -> hasNonEmptyValue(c.getName())) ||
-                ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getName())) ||
-                ontologyData.getRelationships().stream().anyMatch(r -> hasNonEmptyValue(r.getName()));
-
-        boolean hasDescriptions = ontologyData.getClasses().stream().anyMatch(c -> hasNonEmptyValue(c.getDescription())) ||
-                ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getDescription())) ||
-                ontologyData.getRelationships().stream().anyMatch(r -> hasNonEmptyValue(r.getDescription()));
-
-        boolean hasDefinitions = ontologyData.getClasses().stream().anyMatch(c -> hasNonEmptyValue(c.getDefinition())) ||
-                ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getDefinition())) ||
-                ontologyData.getRelationships().stream().anyMatch(r -> hasNonEmptyValue(r.getDefinition()));
-
-        boolean hasSources = ontologyData.getClasses().stream().anyMatch(c -> hasNonEmptyValue(c.getSource())) ||
-                ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getSource())) ||
-                ontologyData.getRelationships().stream().anyMatch(r -> hasNonEmptyValue(r.getSource()));
-
-        boolean hasRelatedSources = ontologyData.getClasses().stream().anyMatch(c -> hasNonEmptyValue(c.getRelatedSource())) ||
-                ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getRelatedSource())) ||
-                ontologyData.getRelationships().stream().anyMatch(r -> hasNonEmptyValue(r.getRelatedSource()));
-
-        boolean hasPPDFInfo = ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getSharedInPPDF()));
-
-        boolean hasAgendaCodes = ontologyData.getClasses().stream().anyMatch(c -> hasNonEmptyValue(c.getAgendaCode()));
-
-        boolean hasAISCodes = ontologyData.getClasses().stream().anyMatch(c -> hasNonEmptyValue(c.getAgendaSystemCode()));
-
-        boolean hasPrivacyProvisions = ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getPrivacyProvision()));
-
-        boolean hasAlternativeNames = ontologyData.getClasses().stream().anyMatch(c -> hasNonEmptyValue(c.getAlternativeName())) ||
-                ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getAlternativeName())) ||
-                ontologyData.getRelationships().stream().anyMatch(r -> hasNonEmptyValue(r.getAlternativeName()));
-
-        boolean hasEquivalentConcepts = ontologyData.getClasses().stream().anyMatch(c -> hasNonEmptyValue(c.getEquivalentConcept())) ||
-                ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getEquivalentConcept())) ||
-                ontologyData.getRelationships().stream().anyMatch(r -> hasNonEmptyValue(r.getEquivalentConcept()));
-
-        boolean hasDataTypes = ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getDataType()));
-
-        boolean hasDomainRangeInfo = ontologyData.getProperties().stream().anyMatch(p -> hasNonEmptyValue(p.getDomain())) ||
-                ontologyData.getRelationships().stream().anyMatch(r -> hasNonEmptyValue(r.getDomain()) || hasNonEmptyValue(r.getRange()));
-
-        boolean hasGovernanceProps = ontologyData.getProperties().stream().anyMatch(p ->
-                hasNonEmptyValue(p.getSharingMethod()) ||
-                        hasNonEmptyValue(p.getAcquisitionMethod()) ||
-                        hasNonEmptyValue(p.getContentType()));
-
-        if (hasNames) requiredProperties.add(NAZEV);
-        if (hasDescriptions) requiredProperties.add(POPIS);
-        if (hasDefinitions) requiredProperties.add(DEFINICE);
-        if (hasSources || hasRelatedSources) requiredProperties.add(ZDROJ);
-        if (hasPPDFInfo) requiredProperties.add(JE_PPDF);
-        if (hasAgendaCodes) requiredProperties.add(AGENDA);
-        if (hasAISCodes) requiredProperties.add(AIS);
-        if (hasPrivacyProvisions) requiredProperties.add(USTANOVENI_NEVEREJNOST);
-        if (hasAlternativeNames) requiredProperties.add(ALTERNATIVNI_NAZEV);
-        if (hasEquivalentConcepts) requiredProperties.add(EKVIVALENTNI_POJEM);
-        if (hasDataTypes || hasDomainRangeInfo) {
-            requiredProperties.add(DEFINICNI_OBOR);
-            requiredProperties.add(OBOR_HODNOT);
-        }
-        if (!ontologyData.getHierarchies().isEmpty()) {
-            requiredProperties.add(NADRAZENA_TRIDA);
-        }
-        if (hasGovernanceProps) {
-            requiredProperties.add(ZPUSOB_SDILENI);
-            requiredProperties.add(ZPUSOB_ZISKANI);
-            requiredProperties.add(TYP_OBSAHU);
-        }
-
-        log.debug("Analysis found {} required properties", requiredProperties.size());
-        return requiredProperties;
+        RequiredPropertiesAnalyzer analyzer = new RequiredPropertiesAnalyzer(ontologyData);
+        return analyzer.analyze();
     }
 
     private boolean hasPublicDataClassification(PropertyData prop) {
@@ -285,10 +237,6 @@ public class OFNDataTransformer {
                         prop.getIsPublic().toLowerCase().contains("false") ||
                         prop.getIsPublic().equalsIgnoreCase("no"))) ||
                 (prop.getPrivacyProvision() != null && !prop.getPrivacyProvision().trim().isEmpty());
-    }
-
-    private boolean hasNonEmptyValue(String value) {
-        return value != null && !value.trim().isEmpty();
     }
 
     private void createOntologyResource(VocabularyMetadata metadata, Map<String, Resource> localResourceMap) {
