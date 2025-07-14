@@ -13,10 +13,7 @@ import org.slf4j.MDC;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ExportConstants.Turtle.*;
@@ -134,16 +131,49 @@ public class TurtleExporter {
         OntModel newModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
 
         StmtIterator stmtIter = ontModel.listStatements();
+        int originalStatements = 0;
+        int filteredStatements = 0;
+
         while (stmtIter.hasNext()) {
             Statement stmt = stmtIter.next();
-            if (!isEmptyLiteralStatement(stmt)) {
-                newModel.add(stmt);
-            } else {
+            originalStatements++;
+
+            if (isEmptyLiteralStatement(stmt)) {
+                filteredStatements++;
                 log.debug("Filtering out empty literal statement: {}", stmt);
+                continue;
             }
+
+            Resource subject = stmt.getSubject();
+            if (isBaseSchemaResource(subject.getURI())) {
+                filteredStatements++;
+                log.debug("Filtering out base schema definition: {}", stmt);
+                continue;
+            }
+
+            newModel.add(stmt);
         }
 
+        log.debug("Model transformation: {} original statements, {} filtered out, {} retained",
+                originalStatements, filteredStatements, originalStatements - filteredStatements);
+
         return newModel;
+    }
+
+    private boolean isBaseSchemaResource(String uri) {
+        if (uri == null) return false;
+
+        if (uri.startsWith("http://www.w3.org/2001/XMLSchema#")) {
+            return true;
+        }
+
+        if (uri.startsWith("https://slovník.gov.cz/")) {
+            return !uri.contains("/legislativní/") &&
+                    !uri.contains("/agendový/") &&
+                    !uri.contains("/veřejný-sektor/");
+        }
+
+        return false;
     }
 
     private void applyTransformations(OntModel transformedModel) {
@@ -243,22 +273,43 @@ public class TurtleExporter {
     }
 
     private void transformResourcesToSKOSConcepts(OntModel transformedModel) {
-        Resource ofnPojemType = transformedModel.createResource("https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem");
+        Resource ofnPojemType = transformedModel.createResource(OFN_NAMESPACE + POJEM);
         ResIterator pojemResources = transformedModel.listSubjectsWithProperty(RDF.type, ofnPojemType);
 
+        Set<String> baseSchemaClasses = Set.of(
+                OFN_NAMESPACE + POJEM,
+                OFN_NAMESPACE + VLASTNOST,
+                OFN_NAMESPACE + VZTAH,
+                OFN_NAMESPACE + TRIDA,
+                OFN_NAMESPACE + TSP,
+                OFN_NAMESPACE + TOP,
+                OFN_NAMESPACE + VEREJNY_UDAJ,
+                OFN_NAMESPACE + NEVEREJNY_UDAJ
+        );
+
         int conceptCount = 0;
+        int filteredCount = 0;
+
         while (pojemResources.hasNext()) {
             Resource resource = pojemResources.next();
+
+            if (baseSchemaClasses.contains(resource.getURI())) {
+                filteredCount++;
+                log.debug("Filtering out base schema class from SKOS concepts: {}", resource.getURI());
+                continue;
+            }
+
             conceptCount++;
 
             if (!resource.hasProperty(RDF.type, SKOS.Concept)) {
                 resource.addProperty(RDF.type, SKOS.Concept);
             }
 
-            log.debug("Processing OFN pojem: {}", resource.getURI());
+            log.debug("Processing OFN pojem as SKOS concept: {}", resource.getURI());
         }
 
-        log.debug("Found and processed {} OFN pojmy", conceptCount);
+        log.debug("Found and processed {} OFN pojmy as SKOS concepts, filtered out {} base schema classes",
+                conceptCount, filteredCount);
     }
 
     private void transformLabelsToSKOS(OntModel transformedModel) {
