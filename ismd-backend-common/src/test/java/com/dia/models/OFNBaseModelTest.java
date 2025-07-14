@@ -149,7 +149,7 @@ class OFNBaseModelTest {
 
         @Test
         void testConditionalClassCreation_missingParentClass() {
-            // Try to create TSP without TRIDA - should still work as TRIDA gets created
+            // Try to create TSP without TRIDA - TSP won't be created because TRIDA is missing
             Set<String> requiredClasses = Set.of(POJEM, TSP);
 
             OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, Set.of());
@@ -160,8 +160,25 @@ class OFNBaseModelTest {
             OntClass tspClass = ontModel.getOntClass(DEFAULT_NS + TSP);
 
             assertNotNull(pojemClass, "POJEM should exist");
-            assertNotNull(tridaClass, "TRIDA should be created as parent of TSP");
-            assertNotNull(tspClass, "TSP should exist");
+            assertNull(tridaClass, "TRIDA should not be created when not explicitly requested");
+            assertNull(tspClass, "TSP should not be created when parent TRIDA is missing");
+        }
+
+        @Test
+        void testConditionalClassCreation_withParentClass() {
+            // Create TSP with TRIDA explicitly included
+            Set<String> requiredClasses = Set.of(POJEM, TRIDA, TSP);
+
+            OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, Set.of());
+            OntModel ontModel = baseModel.getOntModel();
+
+            OntClass pojemClass = ontModel.getOntClass(DEFAULT_NS + POJEM);
+            OntClass tridaClass = ontModel.getOntClass(DEFAULT_NS + TRIDA);
+            OntClass tspClass = ontModel.getOntClass(DEFAULT_NS + TSP);
+
+            assertNotNull(pojemClass, "POJEM should exist");
+            assertNotNull(tridaClass, "TRIDA should exist when explicitly requested");
+            assertNotNull(tspClass, "TSP should exist when parent TRIDA is available");
             assertTrue(tspClass.hasSuperClass(tridaClass), "TSP should be subclass of TRIDA");
         }
     }

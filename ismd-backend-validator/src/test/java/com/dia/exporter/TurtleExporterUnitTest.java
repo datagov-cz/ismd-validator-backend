@@ -2,7 +2,6 @@ package com.dia.exporter;
 
 import com.dia.exceptions.TurtleExportException;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
-import org.apache.jena.ontology.OntClass;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
@@ -31,7 +30,6 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 /**
  * Test class for {@link TurtleExporter}.
- *
  */
 @ExtendWith(MockitoExtension.class)
 class TurtleExporterUnitTest {
@@ -49,7 +47,10 @@ class TurtleExporterUnitTest {
         resourceMap = new HashMap<>();
         modelName = "Test Vocabulary";
         modelProperties = new HashMap<>();
-        effectiveNamespace = DEFAULT_NS;
+
+        // Use a specific vocabulary namespace that won't be filtered
+        effectiveNamespace = "https://slovník.gov.cz/legislativní/sbírka/test/2024/pojem/";
+
         modelProperties.put(LOKALNI_KATALOG, effectiveNamespace);
         MDC.put(LOG_REQUEST_ID, "test-request-123");
         exporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
@@ -264,6 +265,52 @@ class TurtleExporterUnitTest {
         );
     }
 
+    // ================= BASE SCHEMA FILTERING TESTS =================
+
+    @Test
+    void exportToTurtle_WithBaseSchemaResources_FiltersCorrectly() {
+        // Arrange
+        setupModelWithBaseSchemaResources();
+
+        // Act
+        Model parsedModel = exportAndParseModel();
+
+        // Assert
+        assertAll("Base schema filtering",
+                () -> assertFalse(hasBaseSchemaStatements(parsedModel),
+                        "Should filter out base schema statements"),
+                () -> assertFalse(hasXSDSchemaStatements(parsedModel),
+                        "Should filter out XSD schema statements")
+        );
+    }
+
+    @Test
+    void isBaseSchemaResource_WithVariousURIs_FiltersCorrectly() throws Exception {
+        // Test the isBaseSchemaResource helper method via reflection
+        Method method = TurtleExporter.class.getDeclaredMethod("isBaseSchemaResource", String.class);
+        method.setAccessible(true);
+
+        // Test XSD URIs
+        assertTrue((Boolean) method.invoke(exporter, "http://www.w3.org/2001/XMLSchema#string"),
+                "Should filter XSD schema URIs");
+
+        // Test government vocabulary URIs that should be filtered
+        assertTrue((Boolean) method.invoke(exporter, "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem"),
+                "Should filter generic OFN schema URIs");
+
+        // Test government vocabulary URIs that should NOT be filtered
+        assertFalse((Boolean) method.invoke(exporter, "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/test"),
+                "Should NOT filter legislative URIs");
+        assertFalse((Boolean) method.invoke(exporter, "https://slovník.gov.cz/agendový/104/pojem/test"),
+                "Should NOT filter agenda URIs");
+        assertFalse((Boolean) method.invoke(exporter, "https://slovník.gov.cz/veřejný-sektor/pojem/test"),
+                "Should NOT filter public sector URIs");
+
+        // Test null
+        assertFalse((Boolean) method.invoke(exporter, (String) null),
+                "Should not filter null URIs");
+    }
+
     // ================= EDGE CASE TESTS =================
 
     @Test
@@ -308,6 +355,27 @@ class TurtleExporterUnitTest {
                 () -> assertTrue(parsedModel.contains(null, DCTerms.description, (RDFNode) null),
                         "Should include description as DCTerms description")
         );
+    }
+
+    @Test
+    void exportToTurtle_WithOntologyFromDifferentSources_FindsCorrectIRI() {
+        // Test getOntologyIRI method's different sources
+
+        // Test 1: From resource map
+        setupMinimalOntologyModel();
+        String result1 = exporter.exportToTurtle();
+        assertNotNull(result1, "Should work with ontology from resource map");
+
+        // Test 2: From model statements (clear resource map)
+        resourceMap.clear();
+        exporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
+        String result2 = exporter.exportToTurtle();
+        assertNotNull(result2, "Should work with ontology from model statements");
+
+        // Test 3: From catalog namespace (clear ontology statements)
+        ontModel.removeAll(null, RDF.type, OWL2.Ontology);
+        String result3 = exporter.exportToTurtle();
+        assertNotNull(result3, "Should work with catalog namespace fallback");
     }
 
     // ================= ERROR HANDLING TESTS =================
@@ -355,6 +423,11 @@ class TurtleExporterUnitTest {
         Statement emptyStmt = ontModel.createStatement(subject, prop, ontModel.createLiteral(""));
         Boolean isEmpty = (Boolean) method.invoke(exporter, emptyStmt);
         assertTrue(isEmpty, "Should detect empty literal");
+
+        // Test with whitespace-only literal
+        Statement whitespaceStmt = ontModel.createStatement(subject, prop, ontModel.createLiteral("   "));
+        Boolean isWhitespaceEmpty = (Boolean) method.invoke(exporter, whitespaceStmt);
+        assertTrue(isWhitespaceEmpty, "Should detect whitespace-only literal as empty");
 
         // Test with non-empty literal
         Statement nonEmptyStmt = ontModel.createStatement(subject, prop, ontModel.createLiteral("value"));
@@ -488,7 +561,6 @@ class TurtleExporterUnitTest {
         StmtIterator schemeIter = model.listStatements(null, RDF.type, SKOS.ConceptScheme);
         while (schemeIter.hasNext()) {
             Resource conceptScheme = schemeIter.next().getSubject();
-            // Check if it also has the vocabulary type
             String vocabularyTypeURI = "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/slovník";
             Resource vocabularyType = model.createResource(vocabularyTypeURI);
             if (conceptScheme.hasProperty(RDF.type, vocabularyType)) {
@@ -513,6 +585,39 @@ class TurtleExporterUnitTest {
         return model.contains(null, customRangeProp, (RDFNode) null);
     }
 
+    private boolean hasBaseSchemaStatements(Model model) {
+        String[] baseSchemaURIs = {
+                DEFAULT_NS + POJEM,
+                DEFAULT_NS + VLASTNOST,
+                DEFAULT_NS + VZTAH,
+                DEFAULT_NS + TRIDA,
+                DEFAULT_NS + TSP,
+                DEFAULT_NS + TOP,
+                DEFAULT_NS + VEREJNY_UDAJ,
+                DEFAULT_NS + NEVEREJNY_UDAJ
+        };
+
+        for (String uri : baseSchemaURIs) {
+            Resource resource = model.createResource(uri);
+            if (model.containsResource(resource)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasXSDSchemaStatements(Model model) {
+        StmtIterator iter = model.listStatements();
+        while (iter.hasNext()) {
+            Statement stmt = iter.next();
+            Resource subject = stmt.getSubject();
+            if (subject.getURI() != null && subject.getURI().startsWith("http://www.w3.org/2001/XMLSchema#")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ================= SETUP METHODS =================
 
     private void setupMinimalOntologyModel() {
@@ -524,7 +629,7 @@ class TurtleExporterUnitTest {
         ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
-        Resource ofnPojemType = ontModel.createResource("https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem");
+        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
         Resource testConcept = ontModel.createResource(namespace + "test-concept");
         testConcept.addProperty(RDF.type, ofnPojemType);
         testConcept.addProperty(RDFS.label, "Test Concept", "cs");
@@ -534,7 +639,7 @@ class TurtleExporterUnitTest {
     private void setupModelWithConcepts() {
         setupMinimalOntologyModel();
 
-        Resource ofnPojemType = ontModel.createResource("https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem");
+        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
 
         Resource concept2 = ontModel.createResource(effectiveNamespace + "concept-2");
         concept2.addProperty(RDF.type, ofnPojemType);
@@ -547,8 +652,7 @@ class TurtleExporterUnitTest {
         ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
-        // Create OFN pojem type - use exact string from TurtleExporter
-        Resource ofnPojemType = ontModel.createResource("https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem");
+        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
 
         Resource concept = ontModel.createResource(effectiveNamespace + "ofn-concept");
         concept.addProperty(RDF.type, ofnPojemType);
@@ -624,9 +728,9 @@ class TurtleExporterUnitTest {
         ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
-        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
         Resource concept = ontModel.createResource(effectiveNamespace + "multilingual-concept");
-        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(RDF.type, ofnPojemType);
         concept.addProperty(RDFS.label, "Czech Concept", "cs");
         concept.addProperty(RDFS.label, "English Concept", "en");
         resourceMap.put("multilingual-concept", concept);
@@ -637,9 +741,9 @@ class TurtleExporterUnitTest {
         ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
-        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        OntClass tridaClass = ontModel.createClass(OFN_NAMESPACE + TRIDA);
-        OntClass vlastnostClass = ontModel.createClass(OFN_NAMESPACE + VLASTNOST);
+        Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
+        Resource tridaClass = ontModel.createResource(OFN_NAMESPACE + TRIDA);
+        Resource vlastnostClass = ontModel.createResource(OFN_NAMESPACE + VLASTNOST);
 
         // Class concept
         Resource classConcept = ontModel.createResource(effectiveNamespace + "class-concept");
@@ -654,6 +758,21 @@ class TurtleExporterUnitTest {
         propertyConcept.addProperty(RDFS.label, "Property Concept", "cs");
     }
 
+    private void setupModelWithBaseSchemaResources() {
+        setupMinimalOntologyModel();
+
+        // Add base schema classes that should be filtered
+        Resource pojemResource = ontModel.createResource(DEFAULT_NS + POJEM);
+        pojemResource.addProperty(RDFS.label, "Pojem", "cs");
+
+        Resource vlastnostResource = ontModel.createResource(DEFAULT_NS + VLASTNOST);
+        vlastnostResource.addProperty(RDFS.label, "Vlastnost", "cs");
+
+        // Add XSD schema resource that should be filtered
+        Resource xsdStringResource = ontModel.createResource("http://www.w3.org/2001/XMLSchema#string");
+        xsdStringResource.addProperty(RDFS.label, "string");
+    }
+
     private void setupModelWithMultipleOntologies() {
         Resource ontology1 = ontModel.createOntology(effectiveNamespace + "vocab-1");
         ontology1.addProperty(RDF.type, OWL2.Ontology);
@@ -661,7 +780,7 @@ class TurtleExporterUnitTest {
         Resource ontology2 = ontModel.createOntology(effectiveNamespace + "vocab-2");
         ontology2.addProperty(RDF.type, OWL2.Ontology);
 
-        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
 
         Resource concept1 = ontModel.createResource(effectiveNamespace + "concept-1");
         concept1.addProperty(RDF.type, pojemClass);
@@ -676,7 +795,7 @@ class TurtleExporterUnitTest {
 
     private void setupModelWithoutOntologyIRI() {
         // Create model without proper ontology setup
-        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
         Resource concept = ontModel.createResource(effectiveNamespace + "orphan-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(RDFS.label, "Orphan Concept", "cs");
