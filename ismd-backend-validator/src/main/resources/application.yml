@@ -1,0 +1,44 @@
+# Validation configuration
+validation:
+  rules:
+    # Rule enable/disable settings
+    enabled:
+      # Concept validation rules
+      concept-required-content: true      # Error: No description, definition, or source
+      concept-description: true           # Warning: No description or definition
+      concept-source: true               # Warning: No source
+      rpp-characteristics: false         # Info: RPP characteristics (TODO)
+
+      # Vocabulary validation rules
+      vocabulary-description: true       # Warning: No vocabulary description
+
+    # Directory containing SHACL rule files
+    rules-directory: "classpath:validation/rules/"
+
+    # Default validation timing
+    default-timing: BEFORE_EXPORT
+
+    # Validation execution settings
+    timeout-ms: 30000                  # 30 seconds
+    cache-results: true
+    continue-on-rule-error: true
+
+  # Logging configuration for validation
+  logging:
+    level: INFO
+    log-rule-execution: true
+    log-validation-details: false
+
+# Spring Boot configuration
+spring:
+  application:
+    name: dia-converter
+
+# Logging configuration
+logging:
+  level:
+    com.dia.converter.validation: INFO
+    org.apache.jena.shacl: WARN
+
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

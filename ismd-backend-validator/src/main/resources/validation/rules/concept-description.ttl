@@ -1,0 +1,26 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix ex: <http://example.org/shapes#> .
+
+# Warning rule: Concept should have description or definition
+ex:ConceptDescriptionRule
+    a sh:NodeShape ;
+    sh:targetClass skos:Concept ;
+    sh:name "Concept Description Rule" ;
+    sh:description "Ensures that each concept has either description or definition" ;
+    sh:message "Varování: Neexistuje popis ani definice" ;
+    sh:severity sh:Warning ;
+
+    # At least one of description or definition should exist
+    sh:or (
+        # Has rdfs:comment (description)
+        [ sh:path rdfs:comment ; sh:minCount 1 ]
+
+        # Has skos:definition (definition)
+        [ sh:path skos:definition ; sh:minCount 1 ]
+
+        # Has dct:description
+        [ sh:path dct:description ; sh:minCount 1 ]
+    ) .
