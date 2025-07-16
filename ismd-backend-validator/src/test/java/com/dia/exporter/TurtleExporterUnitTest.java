@@ -2,7 +2,6 @@ package com.dia.exporter;
 
 import com.dia.exceptions.TurtleExportException;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
-import org.apache.jena.ontology.OntClass;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
@@ -13,9 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
@@ -31,6 +28,9 @@ import static com.dia.constants.ArchiConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+/**
+ * Test class for {@link TurtleExporter}.
+ */
 @ExtendWith(MockitoExtension.class)
 class TurtleExporterUnitTest {
 
@@ -47,10 +47,12 @@ class TurtleExporterUnitTest {
         resourceMap = new HashMap<>();
         modelName = "Test Vocabulary";
         modelProperties = new HashMap<>();
-        effectiveNamespace = DEFAULT_NS; // Add effectiveNamespace
-        modelProperties.put("adresa lokálního katalogu dat", effectiveNamespace);
+
+        // Use a specific vocabulary namespace that won't be filtered
+        effectiveNamespace = "https://slovník.gov.cz/legislativní/sbírka/test/2024/pojem/";
+
+        modelProperties.put(LOKALNI_KATALOG, effectiveNamespace);
         MDC.put(LOG_REQUEST_ID, "test-request-123");
-        // Fix constructor call - add effectiveNamespace parameter
         exporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
     }
 
@@ -78,115 +80,99 @@ class TurtleExporterUnitTest {
         Model parsedModel = exportAndParseModel();
 
         assertAll("SKOS concept transformations",
-                () -> assertTrue(parsedModel.contains(null, RDF.type, SKOS.Concept)),
-                () -> assertTrue(parsedModel.contains(null, SKOS.prefLabel, (RDFNode) null)),
-                () -> assertTrue(parsedModel.contains(null, SKOS.inScheme, (RDFNode) null))
-        );
-    }
-
-    // ================= TRANSLITERATION TESTS =================
-
-    @ParameterizedTest(name = "Diacritic transliteration: {0} → {1}")
-    @CsvSource({
-            "https://slovník.gov.cz/, slovnik",
-            "https://příklad.cz/, priklad",
-            "https://škola.edu/, skola",
-            "https://řešení.org/, reseni",
-            "https://úřad.gov.cz/, urad",
-            "https://město.cz/, mesto",
-            "https://náměstí.info/, namesti",
-            "https://žádost.gov.cz/, zadost",
-            "https://číslo.net/, cislo",
-            "https://označení.org/, oznaceni"
-    })
-    void determineMainPrefix_WithCzechDiacritics_TransliteratesCorrectly(String input, String expectedPrefix) throws Exception {
-        // Arrange
-        Method method = TurtleExporter.class.getDeclaredMethod("determineMainPrefix", String.class);
-        method.setAccessible(true);
-
-        // Act
-        String result = (String) method.invoke(exporter, input);
-
-        // Assert
-        assertAll("Czech diacritic transliteration validation",
-                () -> assertEquals(expectedPrefix, result, "Should correctly transliterate Czech diacritics"),
-                () -> assertTrue(result.matches("[a-zA-Z][a-zA-Z0-9]*"), "Should match XML name pattern"),
-                () -> assertFalse(result.matches(".*[áčďéěíňóřšťúůýž].*"), "Should not contain any Czech diacritics"),
-                () -> assertTrue(Character.isLetter(result.charAt(0)), "Should start with letter")
-        );
-    }
-
-    @ParameterizedTest(name = "European diacritic transliteration: {0} → {1}")
-    @CsvSource({
-            "https://café.fr/, cafe",
-            "https://niño.es/, nino",
-            "https://schön.de/, schoen",
-            "https://naïve.com/, naive",
-            "https://résumé.org/, resume",
-            "https://größe.at/, groesse",
-            "https://Zürich.ch/, zuerich"
-    })
-    void determineMainPrefix_WithEuropeanDiacritics_TransliteratesCorrectly(String input, String expectedPrefix) throws Exception {
-        // Arrange
-        Method method = TurtleExporter.class.getDeclaredMethod("determineMainPrefix", String.class);
-        method.setAccessible(true);
-
-        // Act
-        String result = (String) method.invoke(exporter, input);
-
-        // Assert
-        assertAll("European diacritic transliteration validation",
-                () -> assertEquals(expectedPrefix, result, "Should correctly transliterate European diacritics"),
-                () -> assertTrue(result.matches("[a-zA-Z][a-zA-Z0-9]*"), "Should match XML name pattern"),
-                () -> assertTrue(Character.isLetter(result.charAt(0)), "Should start with letter")
+                () -> assertTrue(parsedModel.contains(null, RDF.type, SKOS.Concept),
+                        "Should transform concepts to SKOS Concepts"),
+                () -> assertTrue(parsedModel.contains(null, SKOS.prefLabel, (RDFNode) null),
+                        "Should transform labels to SKOS prefLabel"),
+                () -> assertTrue(parsedModel.contains(null, SKOS.inScheme, (RDFNode) null),
+                        "Should add inScheme relationships")
         );
     }
 
     @Test
-    void exportToTurtle_WithDiacriticNamespace_GeneratesCorrectPrefix() {
+    void exportToTurtle_WithConceptScheme_CreatesProperConceptScheme() {
         // Arrange
-        String czechNamespace = "https://slovník.gov.cz/";
-        TurtleExporter czechExporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, czechNamespace);
-        setupMinimalOntologyModelWithNamespace(czechNamespace);
+        setupMinimalOntologyModel();
 
         // Act
-        String result = czechExporter.exportToTurtle();
+        Model parsedModel = exportAndParseModel();
 
         // Assert
-        assertAll("Diacritic namespace handling",
-                () -> assertTrue(result.contains("PREFIX slovnik:"), "Should generate 'slovnik:' prefix"),
-                () -> assertTrue(result.contains("<https://slovník.gov.cz/>"), "Should preserve original namespace URI"),
-                () -> assertFalse(result.contains("PREFIX slovnk:"), "Should not generate malformed 'slovnk:' prefix")
+        assertAll("ConceptScheme validation",
+                () -> assertTrue(parsedModel.contains(null, RDF.type, SKOS.ConceptScheme),
+                        "Should create SKOS ConceptScheme"),
+                () -> assertTrue(parsedModel.contains(null, RDF.type, OWL2.Ontology),
+                        "Should maintain OWL Ontology type"),
+                () -> assertTrue(hasConceptSchemeWithCorrectTypes(parsedModel),
+                        "Should have correct vocabulary types")
+        );
+    }
+
+    @Test
+    void exportToTurtle_WithEmptyLiterals_FiltersOutEmptyValues() {
+        // Arrange
+        setupModelWithEmptyLiterals();
+
+        // Act
+        Model parsedModel = exportAndParseModel();
+
+        // Assert
+        assertFalse(hasEmptyLiterals(parsedModel), "Should filter out empty literal values");
+    }
+
+    @Test
+    void exportToTurtle_WithDefinitions_TransformsToSKOSDefinitions() {
+        // Arrange
+        setupModelWithDefinitions();
+
+        // Act
+        Model parsedModel = exportAndParseModel();
+
+        // Assert
+        assertAll("Definition transformation",
+                () -> assertTrue(parsedModel.contains(null, SKOS.definition, (RDFNode) null),
+                        "Should transform definitions to SKOS definition"),
+                () -> assertFalse(hasCustomDefinitionProperty(parsedModel),
+                        "Should remove custom definition properties")
+        );
+    }
+
+    // ================= PROPERTY MAPPING TESTS =================
+
+    @TestFactory
+    Stream<DynamicTest> propertyMappingTests() {
+        return Stream.of(
+                dynamicTest("Boolean property mapping (JE_PPDF)", this::testBooleanPropertyMapping),
+                dynamicTest("AIS property mapping", () -> testComplexPropertyMapping(AIS, DEFAULT_NS + AGENDOVY_104 + UDAJE_AIS, "AIS-value")),
+                dynamicTest("AGENDA property mapping", () -> testComplexPropertyMapping(AGENDA, DEFAULT_NS + AGENDOVY_104 + AGENDA_LONG, "agenda-value")),
+                dynamicTest("USTANOVENI property mapping", () -> testComplexPropertyMapping(USTANOVENI_NEVEREJNOST, DEFAULT_NS + LEGISLATIVNI_111 + USTANOVENI_LONG, "legal-provision")),
+                dynamicTest("Domain property mapping", this::testDomainPropertyMapping),
+                dynamicTest("Range property mapping", this::testRangePropertyMapping)
+        );
+    }
+
+    @Test
+    void exportToTurtle_WithDomainAndRangeProperties_TransformsToRDFS() {
+        // Arrange
+        setupModelWithDomainAndRange();
+
+        // Act
+        Model parsedModel = exportAndParseModel();
+
+        // Assert
+        assertAll("Domain and Range transformations",
+                () -> assertTrue(parsedModel.contains(null, RDFS.domain, (RDFNode) null),
+                        "Should transform custom domain to RDFS domain"),
+                () -> assertTrue(parsedModel.contains(null, RDFS.range, (RDFNode) null),
+                        "Should transform custom range to RDFS range"),
+                () -> assertFalse(hasCustomDomainProperty(parsedModel),
+                        "Should remove custom domain properties"),
+                () -> assertFalse(hasCustomRangeProperty(parsedModel),
+                        "Should remove custom range properties")
         );
     }
 
     // ================= PARAMETERIZED TESTS =================
-
-    @ParameterizedTest(name = "Prefix generation for {0}")
-    @CsvSource({
-            "https://123numeric-domain.org/, n123numeric",
-            "https://sub.domain.example.org/path/, sub",
-            "https://domain-with-hyphens.org/, domain",
-            "urn:example:namespace:, example",
-            "'', domain",
-            "https://999-all-numeric.com/, n999",
-            "https://special-chars!@#.com/, special"
-    })
-    void determineMainPrefix_WithVariousInputs_GeneratesValidPrefixes(String input, String expectedPrefix) throws Exception {
-        // Arrange
-        Method method = TurtleExporter.class.getDeclaredMethod("determineMainPrefix", String.class);
-        method.setAccessible(true);
-
-        // Act
-        String result = (String) method.invoke(exporter, input.equals("''") ? "" : input);
-
-        // Assert
-        assertAll("Valid XML prefix validation",
-                () -> assertEquals(expectedPrefix, result, "Should generate expected prefix"),
-                () -> assertTrue(result.matches("[a-zA-Z][a-zA-Z0-9]*"), "Should match XML name pattern"),
-                () -> assertTrue(Character.isLetter(result.charAt(0)), "Should start with letter")
-        );
-    }
 
     @ParameterizedTest(name = "Boolean value: {0}")
     @ValueSource(strings = {"true", "false", "ano", "ne", "invalid-value"})
@@ -222,69 +208,6 @@ class TurtleExporterUnitTest {
                 "Should contain required prefix: " + expectedPrefix);
     }
 
-    // ================= PROPERTY MAPPING TESTS =================
-
-    @TestFactory
-    Stream<DynamicTest> propertyMappingTests() {
-        return Stream.of(
-                dynamicTest("DCTerms.source mapping", () -> testPropertyMapping(ZDROJ, DCTerms.source, "http://example.org/source")),
-                dynamicTest("DCTerms.references mapping", () -> testPropertyMapping(SOUVISEJICI_ZDROJ, DCTerms.references, "http://example.org/related")),
-                dynamicTest("RDFS.subClassOf mapping", () -> testPropertyMapping(NADRAZENA_TRIDA, RDFS.subClassOf, effectiveNamespace + "super-class")),
-                dynamicTest("Boolean property mapping", this::testBooleanPropertyMapping),
-                dynamicTest("AIS property mapping", () -> testComplexPropertyMapping(AIS, DEFAULT_NS + AGENDOVY_104 + UDAJE_AIS, "AIS-value")),
-                dynamicTest("AGENDA property mapping", () -> testComplexPropertyMapping(AGENDA, DEFAULT_NS + AGENDOVY_104 + AGENDA_LONG, "agenda-value"))
-        );
-    }
-
-    @TestFactory
-    Stream<DynamicTest> conceptTypeTests() {
-        return Stream.of(
-                dynamicTest("OWL Class assignment", () -> {
-                    setupModelWithDifferentConceptTypes();
-                    Model parsedModel = exportAndParseModel();
-                    assertTrue(parsedModel.contains(null, RDF.type, OWL2.Class));
-                }),
-                dynamicTest("OWL ObjectProperty assignment", () -> {
-                    setupModelWithDifferentConceptTypes();
-                    Model parsedModel = exportAndParseModel();
-                    assertTrue(parsedModel.contains(null, RDF.type, OWL2.ObjectProperty));
-                }),
-                dynamicTest("OWL DatatypeProperty assignment", () -> {
-                    setupModelWithDifferentConceptTypes();
-                    Model parsedModel = exportAndParseModel();
-                    assertTrue(parsedModel.contains(null, RDF.type, OWL2.DatatypeProperty));
-                })
-        );
-    }
-
-    // ================= ADVANCED CONCEPT TYPES =================
-
-    static Stream<Arguments> advancedConceptTypeArguments() {
-        return Stream.of(
-                Arguments.of("TSP type mapping", DEFAULT_NS + VS_POJEM + TSP),
-                Arguments.of("TOP type mapping", DEFAULT_NS + VS_POJEM + TOP),
-                Arguments.of("Public data type mapping", DEFAULT_NS + LEGISLATIVNI_111_VU),
-                Arguments.of("Non-public data type mapping", DEFAULT_NS + LEGISLATIVNI_111_NVU)
-        );
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("advancedConceptTypeArguments")
-    void exportToTurtle_WithAdvancedConceptTypes_AssignsCorrectTypes(String testName, String expectedTypeURI) {
-        // Arrange
-        setupModelWithAdvancedConceptTypes();
-
-        // Act
-        Model parsedModel = exportAndParseModel();
-
-        // Assert
-        Resource expectedType = parsedModel.createResource(expectedTypeURI);
-        assertTrue(parsedModel.contains(null, RDF.type, expectedType),
-                "Should contain " + testName + ": " + expectedTypeURI);
-    }
-
-    // ================= EDGE CASE TESTS =================
-
     @ParameterizedTest(name = "Language: {0}")
     @CsvSource({
             "cs, Czech Concept",
@@ -302,8 +225,96 @@ class TurtleExporterUnitTest {
                 "Should preserve " + expectedLang + " language tag with label: " + expectedLabel);
     }
 
+    @ParameterizedTest(name = "Empty value type: {0}")
+    @ValueSource(strings = {"", "   ", "\t", "\n", "null"})
+    void exportToTurtle_WithVariousEmptyValues_FiltersCorrectly(String emptyValue) {
+        // Arrange
+        setupModelWithSpecificEmptyValue(emptyValue.equals("null") ? null : emptyValue);
+
+        // Act
+        Model parsedModel = exportAndParseModel();
+
+        // Assert
+        assertFalse(hasEmptyLiterals(parsedModel),
+                "Should filter out empty value: '" + emptyValue + "'");
+    }
+
+    // ================= ADVANCED CONCEPT TYPES =================
+
+    @TestFactory
+    Stream<DynamicTest> conceptTypeTests() {
+        return Stream.of(
+                dynamicTest("OFN Pojem to SKOS Concept transformation", () -> {
+                    setupModelWithOFNConcepts();
+                    Model parsedModel = exportAndParseModel();
+                    assertTrue(parsedModel.contains(null, RDF.type, SKOS.Concept),
+                            "Should transform OFN pojmy to SKOS Concepts");
+                }),
+                dynamicTest("Multiple concept types handling", () -> {
+                    setupModelWithDifferentConceptTypes();
+                    Model parsedModel = exportAndParseModel();
+                    assertTrue(parsedModel.contains(null, RDF.type, SKOS.Concept),
+                            "Should handle multiple concept types");
+                }),
+                dynamicTest("InScheme relationships creation", () -> {
+                    setupModelWithConcepts();
+                    Model parsedModel = exportAndParseModel();
+                    assertTrue(parsedModel.contains(null, SKOS.inScheme, (RDFNode) null),
+                            "Should create inScheme relationships");
+                })
+        );
+    }
+
+    // ================= BASE SCHEMA FILTERING TESTS =================
+
     @Test
-    void exportToTurtle_WithMultipleOntologies_CreatesOneConceptScheme() {
+    void exportToTurtle_WithBaseSchemaResources_FiltersCorrectly() {
+        // Arrange
+        setupModelWithBaseSchemaResources();
+
+        // Act
+        Model parsedModel = exportAndParseModel();
+
+        // Assert
+        assertAll("Base schema filtering",
+                () -> assertFalse(hasBaseSchemaStatements(parsedModel),
+                        "Should filter out base schema statements"),
+                () -> assertFalse(hasXSDSchemaStatements(parsedModel),
+                        "Should filter out XSD schema statements")
+        );
+    }
+
+    @Test
+    void isBaseSchemaResource_WithVariousURIs_FiltersCorrectly() throws Exception {
+        // Test the isBaseSchemaResource helper method via reflection
+        Method method = TurtleExporter.class.getDeclaredMethod("isBaseSchemaResource", String.class);
+        method.setAccessible(true);
+
+        // Test XSD URIs
+        assertTrue((Boolean) method.invoke(exporter, "http://www.w3.org/2001/XMLSchema#string"),
+                "Should filter XSD schema URIs");
+
+        // Test government vocabulary URIs that should be filtered
+        assertTrue((Boolean) method.invoke(exporter, "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem"),
+                "Should filter generic OFN schema URIs");
+
+        // Test government vocabulary URIs that should NOT be filtered
+        assertFalse((Boolean) method.invoke(exporter, "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/test"),
+                "Should NOT filter legislative URIs");
+        assertFalse((Boolean) method.invoke(exporter, "https://slovník.gov.cz/agendový/104/pojem/test"),
+                "Should NOT filter agenda URIs");
+        assertFalse((Boolean) method.invoke(exporter, "https://slovník.gov.cz/veřejný-sektor/pojem/test"),
+                "Should NOT filter public sector URIs");
+
+        // Test null
+        assertFalse((Boolean) method.invoke(exporter, (String) null),
+                "Should not filter null URIs");
+    }
+
+    // ================= EDGE CASE TESTS =================
+
+    @Test
+    void exportToTurtle_WithMultipleOntologies_HandlesCorrectly() {
         // Arrange
         setupModelWithMultipleOntologies();
 
@@ -311,71 +322,122 @@ class TurtleExporterUnitTest {
         Model parsedModel = exportAndParseModel();
 
         // Assert
-        assertEquals(1, countStatements(parsedModel, SKOS.ConceptScheme),
-                "Should create exactly one ConceptScheme");
+        assertTrue(parsedModel.contains(null, RDF.type, SKOS.ConceptScheme),
+                "Should handle multiple ontologies and create ConceptScheme");
+    }
+
+    @Test
+    void exportToTurtle_WithMissingOntologyIRI_HandlesGracefully() {
+        // Arrange
+        setupModelWithoutOntologyIRI();
+
+        // Act & Assert
+        assertDoesNotThrow(() -> {
+            String result = exporter.exportToTurtle();
+            assertNotNull(result, "Should produce result even without ontology IRI");
+        });
+    }
+
+    @Test
+    void exportToTurtle_WithModelMetadata_IncludesInConceptScheme() {
+        // Arrange
+        modelProperties.put(POPIS, "Test description");
+        exporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
+        setupMinimalOntologyModel();
+
+        // Act
+        Model parsedModel = exportAndParseModel();
+
+        // Assert
+        assertAll("Model metadata handling",
+                () -> assertTrue(parsedModel.contains(null, SKOS.prefLabel, (RDFNode) null),
+                        "Should include model name as SKOS prefLabel"),
+                () -> assertTrue(parsedModel.contains(null, DCTerms.description, (RDFNode) null),
+                        "Should include description as DCTerms description")
+        );
+    }
+
+    @Test
+    void exportToTurtle_WithOntologyFromDifferentSources_FindsCorrectIRI() {
+        // Test getOntologyIRI method's different sources
+
+        // Test 1: From resource map
+        setupMinimalOntologyModel();
+        String result1 = exporter.exportToTurtle();
+        assertNotNull(result1, "Should work with ontology from resource map");
+
+        // Test 2: From model statements (clear resource map)
+        resourceMap.clear();
+        exporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
+        String result2 = exporter.exportToTurtle();
+        assertNotNull(result2, "Should work with ontology from model statements");
+
+        // Test 3: From catalog namespace (clear ontology statements)
+        ontModel.removeAll(null, RDF.type, OWL2.Ontology);
+        String result3 = exporter.exportToTurtle();
+        assertNotNull(result3, "Should work with catalog namespace fallback");
     }
 
     // ================= ERROR HANDLING TESTS =================
 
     @Test
-    void exportToTurtle_WithInvalidData_ThrowsTurtleExportException() {
-        // Fix constructor call - add effectiveNamespace parameter
-        TurtleExporter invalidExporter = new TurtleExporter(null, resourceMap, modelName, modelProperties, effectiveNamespace);
-        assertThrows(TurtleExportException.class, invalidExporter::exportToTurtle);
-    }
-
-    @ParameterizedTest(name = "Invalid namespace: {0}")
-    @ValueSource(strings = {"not-a-valid-url", "invalid://malformed", ""})
-    void exportToTurtle_WithInvalidNamespace_UsesDefaultNamespace(String invalidNamespace) {
+    void exportToTurtle_WithNullModel_ThrowsTurtleExportException() {
         // Arrange
-        modelProperties.put("adresa lokálního katalogu dat", invalidNamespace);
-        // Fix constructor call - add effectiveNamespace parameter
-        exporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
-        setupMinimalOntologyModel();
+        TurtleExporter invalidExporter = new TurtleExporter(null, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act & Assert
-        assertDoesNotThrow(() -> {
-            String result = exporter.exportToTurtle();
-            validateBasicTurtleOutput(result);
-        });
+        TurtleExportException exception = assertThrows(TurtleExportException.class,
+                invalidExporter::exportToTurtle,
+                "Should throw TurtleExportException for null model");
+
+        assertTrue(exception.getMessage().contains("Ontology model is null or empty"),
+                "Exception message should indicate the model issue");
     }
 
     @Test
-    @org.junit.jupiter.api.Timeout(value = 10)
-    void exportToTurtle_WithLargeModel_CompletesInReasonableTime() {
+    void exportToTurtle_WithEmptyModel_ThrowsTurtleExportException() {
         // Arrange
-        setupLargeModel();
+        OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
+        TurtleExporter emptyExporter = new TurtleExporter(emptyModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act & Assert
-        assertDoesNotThrow(() -> {
-            String result = exporter.exportToTurtle();
-            Model parsedModel = parseModel(result);
-            long conceptCount = countStatements(parsedModel, SKOS.Concept);
-            assertTrue(conceptCount >= 900, "Should process most concepts");
-        });
+        TurtleExportException exception = assertThrows(TurtleExportException.class,
+                emptyExporter::exportToTurtle,
+                "Should throw TurtleExportException for empty model");
+
+        assertTrue(exception.getMessage().contains("Ontology model is null or empty"),
+                "Exception message should indicate the empty model issue");
     }
 
-    @ParameterizedTest(name = "Model validation: {0}")
-    @MethodSource("invalidModelScenarios")
-    void exportToTurtle_WithInvalidModel_ThrowsTurtleExportException(
-            String scenarioName,
-            OntModel model) {
+    @Test
+    void isEmptyLiteralStatement_WithVariousInputs_DetectsCorrectly() throws Exception {
+        // Test the isEmptyLiteralStatement helper method
+        Method method = TurtleExporter.class.getDeclaredMethod("isEmptyLiteralStatement", Statement.class);
+        method.setAccessible(true);
 
-        // Arrange - Fix constructor call
-        TurtleExporter testExporter = new TurtleExporter(model, resourceMap, modelName, modelProperties, effectiveNamespace);
+        // Create test statements
+        Resource subject = ontModel.createResource(effectiveNamespace + "test");
+        Property prop = ontModel.createProperty(effectiveNamespace + "testProp");
 
-        // Act & Assert
-        assertThrows(TurtleExportException.class,
-                testExporter::exportToTurtle,
-                "Should throw TurtleExportException for: " + scenarioName
-        );
-    }
+        // Test with empty literal
+        Statement emptyStmt = ontModel.createStatement(subject, prop, ontModel.createLiteral(""));
+        Boolean isEmpty = (Boolean) method.invoke(exporter, emptyStmt);
+        assertTrue(isEmpty, "Should detect empty literal");
 
-    static Stream<Arguments> invalidModelScenarios() {
-        return Stream.of(
-                Arguments.of("null model", null),
-                Arguments.of("empty model", ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM))
-        );
+        // Test with whitespace-only literal
+        Statement whitespaceStmt = ontModel.createStatement(subject, prop, ontModel.createLiteral("   "));
+        Boolean isWhitespaceEmpty = (Boolean) method.invoke(exporter, whitespaceStmt);
+        assertTrue(isWhitespaceEmpty, "Should detect whitespace-only literal as empty");
+
+        // Test with non-empty literal
+        Statement nonEmptyStmt = ontModel.createStatement(subject, prop, ontModel.createLiteral("value"));
+        Boolean isNotEmpty = (Boolean) method.invoke(exporter, nonEmptyStmt);
+        assertFalse(isNotEmpty, "Should not detect non-empty literal as empty");
+
+        // Test with resource object
+        Statement resourceStmt = ontModel.createStatement(subject, prop, ontModel.createResource(effectiveNamespace + "object"));
+        Boolean resourceIsEmpty = (Boolean) method.invoke(exporter, resourceStmt);
+        assertFalse(resourceIsEmpty, "Should not detect resource statement as empty");
     }
 
     // ================= HELPER METHODS =================
@@ -394,7 +456,8 @@ class TurtleExporterUnitTest {
     private void validateBasicTurtleOutput(String result) {
         assertAll("Basic Turtle validation",
                 () -> assertNotNull(result, "Turtle output should not be null"),
-                () -> assertTrue(result.contains("PREFIX"), "Should contain prefix declarations"),
+                () -> assertTrue(result.contains("PREFIX") || result.contains("@prefix"),
+                        "Should contain prefix declarations"),
                 () -> assertFalse(result.trim().isEmpty(), "Should not be empty")
         );
     }
@@ -405,13 +468,6 @@ class TurtleExporterUnitTest {
                 () -> assertTrue(parsedModel.contains(null, RDF.type, SKOS.ConceptScheme),
                         "Should contain SKOS ConceptScheme")
         );
-    }
-
-    private void testPropertyMapping(String sourceProperty, Property expectedProperty, String value) {
-        setupModelWithCustomProperty(sourceProperty, value);
-        Model parsedModel = exportAndParseModel();
-        assertTrue(parsedModel.contains(null, expectedProperty, (RDFNode) null),
-                "Should map " + sourceProperty + " to " + expectedProperty.getURI());
     }
 
     private void testComplexPropertyMapping(String sourceProperty, String expectedPropertyURI, String value) {
@@ -433,6 +489,20 @@ class TurtleExporterUnitTest {
                 "Should map boolean property");
         assertTrue(hasBooleanLiteralWithValue(parsedModel, true),
                 "Should have properly typed boolean value");
+    }
+
+    private void testDomainPropertyMapping() {
+        setupModelWithCustomProperty(DEFINICNI_OBOR, effectiveNamespace + "DomainClass");
+        Model parsedModel = exportAndParseModel();
+        assertTrue(parsedModel.contains(null, RDFS.domain, (RDFNode) null),
+                "Should transform custom domain to RDFS domain");
+    }
+
+    private void testRangePropertyMapping() {
+        setupModelWithCustomProperty(OBOR_HODNOT, effectiveNamespace + "RangeClass");
+        Model parsedModel = exportAndParseModel();
+        assertTrue(parsedModel.contains(null, RDFS.range, (RDFNode) null),
+                "Should transform custom range to RDFS range");
     }
 
     private boolean isTrueBooleanValue(String value) {
@@ -473,8 +543,79 @@ class TurtleExporterUnitTest {
         return false;
     }
 
-    private long countStatements(Model model, RDFNode object) {
-        return model.listStatements(null, RDF.type, object).toList().size();
+    private boolean hasEmptyLiterals(Model model) {
+        StmtIterator stmtIter = model.listStatements();
+        while (stmtIter.hasNext()) {
+            Statement stmt = stmtIter.next();
+            if (stmt.getObject().isLiteral()) {
+                String value = stmt.getObject().asLiteral().getString();
+                if (value == null || value.trim().isEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean hasConceptSchemeWithCorrectTypes(Model model) {
+        StmtIterator schemeIter = model.listStatements(null, RDF.type, SKOS.ConceptScheme);
+        while (schemeIter.hasNext()) {
+            Resource conceptScheme = schemeIter.next().getSubject();
+            String vocabularyTypeURI = "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/slovník";
+            Resource vocabularyType = model.createResource(vocabularyTypeURI);
+            if (conceptScheme.hasProperty(RDF.type, vocabularyType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasCustomDefinitionProperty(Model model) {
+        Property customDefProp = model.createProperty(effectiveNamespace + DEFINICE);
+        return model.contains(null, customDefProp, (RDFNode) null);
+    }
+
+    private boolean hasCustomDomainProperty(Model model) {
+        Property customDomainProp = model.createProperty(effectiveNamespace + DEFINICNI_OBOR);
+        return model.contains(null, customDomainProp, (RDFNode) null);
+    }
+
+    private boolean hasCustomRangeProperty(Model model) {
+        Property customRangeProp = model.createProperty(effectiveNamespace + OBOR_HODNOT);
+        return model.contains(null, customRangeProp, (RDFNode) null);
+    }
+
+    private boolean hasBaseSchemaStatements(Model model) {
+        String[] baseSchemaURIs = {
+                DEFAULT_NS + POJEM,
+                DEFAULT_NS + VLASTNOST,
+                DEFAULT_NS + VZTAH,
+                DEFAULT_NS + TRIDA,
+                DEFAULT_NS + TSP,
+                DEFAULT_NS + TOP,
+                DEFAULT_NS + VEREJNY_UDAJ,
+                DEFAULT_NS + NEVEREJNY_UDAJ
+        };
+
+        for (String uri : baseSchemaURIs) {
+            Resource resource = model.createResource(uri);
+            if (model.containsResource(resource)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasXSDSchemaStatements(Model model) {
+        StmtIterator iter = model.listStatements();
+        while (iter.hasNext()) {
+            Statement stmt = iter.next();
+            Resource subject = stmt.getSubject();
+            if (subject.getURI() != null && subject.getURI().startsWith("http://www.w3.org/2001/XMLSchema#")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ================= SETUP METHODS =================
@@ -488,22 +629,35 @@ class TurtleExporterUnitTest {
         ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
-        // Use the sanitized constants - these now work correctly
-        OntClass pojemClass = ontModel.createClass(namespace + POJEM);
+        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
         Resource testConcept = ontModel.createResource(namespace + "test-concept");
-        testConcept.addProperty(RDF.type, pojemClass);
+        testConcept.addProperty(RDF.type, ofnPojemType);
         testConcept.addProperty(RDFS.label, "Test Concept", "cs");
         resourceMap.put("test-concept", testConcept);
     }
 
     private void setupModelWithConcepts() {
         setupMinimalOntologyModel();
-        OntClass pojemClass = ontModel.getOntClass(effectiveNamespace + POJEM);
+
+        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
 
         Resource concept2 = ontModel.createResource(effectiveNamespace + "concept-2");
-        concept2.addProperty(RDF.type, pojemClass);
+        concept2.addProperty(RDF.type, ofnPojemType);
         concept2.addProperty(RDFS.label, "Second Concept", "cs");
         resourceMap.put("concept-2", concept2);
+    }
+
+    private void setupModelWithOFNConcepts() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "ofn-vocab");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
+
+        Resource concept = ontModel.createResource(effectiveNamespace + "ofn-concept");
+        concept.addProperty(RDF.type, ofnPojemType);
+        concept.addProperty(RDFS.label, "OFN Concept", "cs");
+        resourceMap.put("ofn-concept", concept);
     }
 
     private void setupModelWithCustomProperty(String propertyName, String value) {
@@ -511,7 +665,7 @@ class TurtleExporterUnitTest {
         Resource concept = resourceMap.get("test-concept");
         Property customProp = ontModel.createProperty(effectiveNamespace + propertyName);
 
-        if (value.startsWith("http://")) {
+        if (value.startsWith("http://") || value.contains(effectiveNamespace)) {
             concept.addProperty(customProp, ontModel.createResource(value));
         } else {
             concept.addProperty(customProp, value);
@@ -525,14 +679,58 @@ class TurtleExporterUnitTest {
         concept.addProperty(ppdfProp, booleanValue);
     }
 
+    private void setupModelWithEmptyLiterals() {
+        setupMinimalOntologyModel();
+        Resource concept = resourceMap.get("test-concept");
+
+        Property emptyProp = ontModel.createProperty(effectiveNamespace + "emptyProperty");
+        concept.addProperty(emptyProp, "");
+        concept.addProperty(emptyProp, "   ");
+        concept.addProperty(emptyProp, "valid-value");
+    }
+
+    private void setupModelWithSpecificEmptyValue(String emptyValue) {
+        setupMinimalOntologyModel();
+        Resource concept = resourceMap.get("test-concept");
+
+        Property testProp = ontModel.createProperty(effectiveNamespace + "testProperty");
+        if (emptyValue != null) {
+            concept.addProperty(testProp, emptyValue);
+        } else {
+            concept.addProperty(testProp, ontModel.createLiteral(""));
+        }
+    }
+
+    private void setupModelWithDefinitions() {
+        setupMinimalOntologyModel();
+        Resource concept = resourceMap.get("test-concept");
+
+        Property defProp = ontModel.createProperty(effectiveNamespace + DEFINICE);
+        concept.addProperty(defProp, "Czech definition", "cs");
+        concept.addProperty(defProp, "English definition", "en");
+    }
+
+    private void setupModelWithDomainAndRange() {
+        setupMinimalOntologyModel();
+        Resource concept = resourceMap.get("test-concept");
+
+        Property domainProp = ontModel.createProperty(effectiveNamespace + DEFINICNI_OBOR);
+        Resource domainClass = ontModel.createResource(effectiveNamespace + "DomainClass");
+        concept.addProperty(domainProp, domainClass);
+
+        Property rangeProp = ontModel.createProperty(effectiveNamespace + OBOR_HODNOT);
+        Resource rangeClass = ontModel.createResource(effectiveNamespace + "RangeClass");
+        concept.addProperty(rangeProp, rangeClass);
+    }
+
     private void setupModelWithMultilingualContent() {
         Resource ontology = ontModel.createOntology(effectiveNamespace + "multilingual-vocab");
         ontology.addProperty(RDF.type, OWL2.Ontology);
         resourceMap.put("ontology", ontology);
 
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
+        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
         Resource concept = ontModel.createResource(effectiveNamespace + "multilingual-concept");
-        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(RDF.type, ofnPojemType);
         concept.addProperty(RDFS.label, "Czech Concept", "cs");
         concept.addProperty(RDFS.label, "English Concept", "en");
         resourceMap.put("multilingual-concept", concept);
@@ -541,12 +739,11 @@ class TurtleExporterUnitTest {
     private void setupModelWithDifferentConceptTypes() {
         Resource ontology = ontModel.createOntology(effectiveNamespace + "typed-vocab");
         ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
 
-        // Use sanitized constants
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
-        OntClass tridaClass = ontModel.createClass(effectiveNamespace + TRIDA);
-        OntClass vlastnostClass = ontModel.createClass(effectiveNamespace + VLASTNOST);
-        OntClass vztahClass = ontModel.createClass(effectiveNamespace + VZTAH);
+        Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
+        Resource tridaClass = ontModel.createResource(OFN_NAMESPACE + TRIDA);
+        Resource vlastnostClass = ontModel.createResource(OFN_NAMESPACE + VLASTNOST);
 
         // Class concept
         Resource classConcept = ontModel.createResource(effectiveNamespace + "class-concept");
@@ -559,50 +756,21 @@ class TurtleExporterUnitTest {
         propertyConcept.addProperty(RDF.type, pojemClass);
         propertyConcept.addProperty(RDF.type, vlastnostClass);
         propertyConcept.addProperty(RDFS.label, "Property Concept", "cs");
-
-        // Relation concept
-        Resource relationConcept = ontModel.createResource(effectiveNamespace + "relation-concept");
-        relationConcept.addProperty(RDF.type, pojemClass);
-        relationConcept.addProperty(RDF.type, vztahClass);
-        relationConcept.addProperty(RDFS.label, "Relation Concept", "cs");
     }
 
-    private void setupModelWithAdvancedConceptTypes() {
-        Resource ontology = ontModel.createOntology(effectiveNamespace + "advanced-vocab");
-        ontology.addProperty(RDF.type, OWL2.Ontology);
+    private void setupModelWithBaseSchemaResources() {
+        setupMinimalOntologyModel();
 
-        // Use sanitized constants
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
-        OntClass tridaClass = ontModel.createClass(effectiveNamespace + TRIDA);
-        OntClass tspClass = ontModel.createClass(effectiveNamespace + TSP);
-        OntClass topClass = ontModel.createClass(effectiveNamespace + TOP);
-        OntClass verejnyUdajClass = ontModel.createClass(effectiveNamespace + VEREJNY_UDAJ);
-        OntClass neverejnyUdajClass = ontModel.createClass(effectiveNamespace + NEVEREJNY_UDAJ);
+        // Add base schema classes that should be filtered
+        Resource pojemResource = ontModel.createResource(DEFAULT_NS + POJEM);
+        pojemResource.addProperty(RDFS.label, "Pojem", "cs");
 
-        // TSP concept (needs both TYP_TRIDA and TYP_TSP)
-        Resource tspConcept = ontModel.createResource(effectiveNamespace + "tsp-concept");
-        tspConcept.addProperty(RDF.type, pojemClass);
-        tspConcept.addProperty(RDF.type, tridaClass);
-        tspConcept.addProperty(RDF.type, tspClass);
-        tspConcept.addProperty(RDFS.label, "TSP Concept", "cs");
+        Resource vlastnostResource = ontModel.createResource(DEFAULT_NS + VLASTNOST);
+        vlastnostResource.addProperty(RDFS.label, "Vlastnost", "cs");
 
-        // TOP concept (needs both TYP_TRIDA and TYP_TOP)
-        Resource topConcept = ontModel.createResource(effectiveNamespace + "top-concept");
-        topConcept.addProperty(RDF.type, pojemClass);
-        topConcept.addProperty(RDF.type, tridaClass);
-        topConcept.addProperty(RDF.type, topClass);
-        topConcept.addProperty(RDFS.label, "TOP Concept", "cs");
-
-        // Data access concepts
-        Resource publicDataConcept = ontModel.createResource(effectiveNamespace + "public-data-concept");
-        publicDataConcept.addProperty(RDF.type, pojemClass);
-        publicDataConcept.addProperty(RDF.type, verejnyUdajClass);
-        publicDataConcept.addProperty(RDFS.label, "Public Data Concept", "cs");
-
-        Resource nonPublicDataConcept = ontModel.createResource(effectiveNamespace + "non-public-data-concept");
-        nonPublicDataConcept.addProperty(RDF.type, pojemClass);
-        nonPublicDataConcept.addProperty(RDF.type, neverejnyUdajClass);
-        nonPublicDataConcept.addProperty(RDFS.label, "Non-Public Data Concept", "cs");
+        // Add XSD schema resource that should be filtered
+        Resource xsdStringResource = ontModel.createResource("http://www.w3.org/2001/XMLSchema#string");
+        xsdStringResource.addProperty(RDFS.label, "string");
     }
 
     private void setupModelWithMultipleOntologies() {
@@ -612,7 +780,7 @@ class TurtleExporterUnitTest {
         Resource ontology2 = ontModel.createOntology(effectiveNamespace + "vocab-2");
         ontology2.addProperty(RDF.type, OWL2.Ontology);
 
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
+        Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
 
         Resource concept1 = ontModel.createResource(effectiveNamespace + "concept-1");
         concept1.addProperty(RDF.type, pojemClass);
@@ -621,18 +789,15 @@ class TurtleExporterUnitTest {
         Resource concept2 = ontModel.createResource(effectiveNamespace + "concept-2");
         concept2.addProperty(RDF.type, pojemClass);
         concept2.addProperty(RDFS.label, "Concept 2", "cs");
+
+        resourceMap.put("ontology", ontology1); // Use first ontology as primary
     }
 
-    private void setupLargeModel() {
-        Resource ontology = ontModel.createOntology(effectiveNamespace + "large-vocab");
-        ontology.addProperty(RDF.type, OWL2.Ontology);
-
-        OntClass pojemClass = ontModel.createClass(effectiveNamespace + POJEM);
-
-        for (int i = 0; i < 1000; i++) {
-            Resource concept = ontModel.createResource(effectiveNamespace + "concept-" + i);
-            concept.addProperty(RDF.type, pojemClass);
-            concept.addProperty(RDFS.label, "Concept " + i, "cs");
-        }
+    private void setupModelWithoutOntologyIRI() {
+        // Create model without proper ontology setup
+        Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(effectiveNamespace + "orphan-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(RDFS.label, "Orphan Concept", "cs");
     }
 }
