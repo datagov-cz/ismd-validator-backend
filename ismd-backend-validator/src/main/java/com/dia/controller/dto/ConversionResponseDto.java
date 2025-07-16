@@ -9,10 +9,12 @@ import lombok.*;
 public class ConversionResponseDto {
     private String output;
     private String errorMessage;
+    private ValidationResultsDto validationResults;
 
-    public static ConversionResponseDto success(String output) {
+    public static ConversionResponseDto success(String output, ValidationResultsDto results) {
         return ConversionResponseDto.builder()
                 .output(output)
+                .validationResults(results)
                 .build();
     }
 
