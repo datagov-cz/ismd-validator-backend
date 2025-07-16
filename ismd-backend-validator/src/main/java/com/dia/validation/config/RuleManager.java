@@ -2,6 +2,7 @@ package com.dia.validation.config;
 
 import com.dia.exceptions.ValidationConfigurationException;
 import jakarta.annotation.PostConstruct;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -22,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RuleManager {
 
     private final ValidationConfiguration config;
+    @Getter
     private final ResourceLoader resourceLoader;
     private final Map<String, RuleDefinition> allRules = new ConcurrentHashMap<>();
     private final Map<String, Model> ruleModels = new ConcurrentHashMap<>();
@@ -32,9 +34,6 @@ public class RuleManager {
         this.resourceLoader = resourceLoader;
     }
 
-    /**
-     * Load all SHACL rules from the configured directory
-     */
     @PostConstruct
     public void loadRules() {
         log.info("Loading SHACL validation rules from: {}", config.getRulesDirectory());
@@ -59,9 +58,6 @@ public class RuleManager {
         }
     }
 
-    /**
-     * Load a single rule file
-     */
     private void loadRuleFile(Resource resource) {
         try (InputStream inputStream = resource.getInputStream()) {
             String filename = resource.getFilename();
@@ -92,9 +88,6 @@ public class RuleManager {
         }
     }
 
-    /**
-     * Extract rule name from filename
-     */
     private String extractRuleName(String filename) {
         if (filename == null) return "unknown";
 
@@ -105,9 +98,6 @@ public class RuleManager {
         return name.replaceAll("[^a-z0-9]+", "-");
     }
 
-    /**
-     * Extract metadata from SHACL model (description, severity, etc.)
-     */
     private Map<String, String> extractRuleMetadata(Model model) {
         Map<String, String> metadata = new HashMap<>();
 
@@ -116,9 +106,6 @@ public class RuleManager {
         return metadata;
     }
 
-    /**
-     * Get all enabled rule models
-     */
     public List<Model> getEnabledRules() {
         return ruleModels.entrySet().stream()
                 .filter(entry -> config.isRuleEnabled(entry.getKey()))
@@ -126,9 +113,6 @@ public class RuleManager {
                 .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
     }
 
-    /**
-     * Get enabled rule models combined into a single model
-     */
     public Model getCombinedEnabledRules() {
         Model combinedModel = ModelFactory.createDefaultModel();
 
@@ -140,49 +124,24 @@ public class RuleManager {
         return combinedModel;
     }
 
-    /**
-     * Get names of all enabled rules
-     */
     public Set<String> getEnabledRuleNames() {
         return ruleModels.keySet().stream()
                 .filter(config::isRuleEnabled)
                 .collect(LinkedHashSet::new, Set::add, Set::addAll);
     }
 
-    /**
-     * Get names of all available rules
-     */
     public Set<String> getAllRuleNames() {
         return new LinkedHashSet<>(allRules.keySet());
     }
 
-    /**
-     * Get rule definition by name
-     */
     public Optional<RuleDefinition> getRuleDefinition(String ruleName) {
         return Optional.ofNullable(allRules.get(ruleName));
     }
 
-    /**
-     * Get rule model by name
-     */
     public Optional<Model> getRuleModel(String ruleName) {
         return Optional.ofNullable(ruleModels.get(ruleName));
     }
 
-    /**
-     * Reload all rules
-     */
-    public void reloadRules() {
-        log.info("Reloading validation rules");
-        allRules.clear();
-        ruleModels.clear();
-        loadRules();
-    }
-
-    /**
-     * Log current rule status
-     */
     private void logRuleStatus() {
         log.info("Validation rules status:");
         getAllRuleNames().forEach(ruleName -> {
@@ -191,7 +150,7 @@ public class RuleManager {
             log.info("  {} - {} ({})",
                     ruleName,
                     enabled ? "ENABLED" : "DISABLED",
-                    def != null ? def.getFilename() : "unknown");
+                    def != null ? def.filename() : "unknown");
         });
     }
 }

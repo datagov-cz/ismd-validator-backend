@@ -395,7 +395,7 @@ public class TurtleExporter {
     private void ensureDomainRangeProperties(OntModel transformedModel) {
         Property defOProperty = transformedModel.createProperty(effectiveNamespace + DEFINICNI_OBOR);
         if (transformedModel.listStatements(null, defOProperty, (RDFNode) null).hasNext()) {
-            log.warn("Found custom definiční-obor properties - these should have been rdfs:domain from the start");
+            log.warn("Found custom definiční-obor properties");
             StmtIterator domainStmts = transformedModel.listStatements(null, defOProperty, (RDFNode) null);
             List<Statement> toAdd = new ArrayList<>();
             List<Statement> toRemove = new ArrayList<>();
@@ -418,7 +418,7 @@ public class TurtleExporter {
 
         Property rangeProperty = transformedModel.createProperty(effectiveNamespace + OBOR_HODNOT);
         if (transformedModel.listStatements(null, rangeProperty, (RDFNode) null).hasNext()) {
-            log.warn("Found custom obor-hodnot properties - these should have been rdfs:range from the start");
+            log.warn("Found custom obor-hodnot properties");
             StmtIterator rangeStmts = transformedModel.listStatements(null, rangeProperty, (RDFNode) null);
             List<Statement> toAdd = new ArrayList<>();
             List<Statement> toRemove = new ArrayList<>();

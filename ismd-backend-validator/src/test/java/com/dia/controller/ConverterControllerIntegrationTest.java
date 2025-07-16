@@ -1,8 +1,8 @@
 package com.dia.controller;
 
 import com.dia.controller.dto.ConversionResponseDto;
-import com.dia.converter.data.ConversionResult;
-import com.dia.converter.data.TransformationResult;
+import com.dia.conversion.data.ConversionResult;
+import com.dia.conversion.data.TransformationResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
 import com.dia.service.ConverterService;

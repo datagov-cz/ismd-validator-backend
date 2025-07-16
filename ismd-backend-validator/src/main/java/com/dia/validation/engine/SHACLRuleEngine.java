@@ -5,7 +5,7 @@ import com.dia.validation.config.RuleManager;
 import com.dia.validation.config.ValidationConfiguration;
 import com.dia.validation.data.ISMDValidationReport;
 import com.dia.validation.data.ValidationResult;
-import com.dia.validation.data.ValidationSeverity;
+import com.dia.enums.ValidationSeverity;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
@@ -39,12 +39,9 @@ public class SHACLRuleEngine {
         this.executorService = Executors.newFixedThreadPool(2);
     }
 
-    /**
-     * Validate data model against enabled SHACL rules
-     */
     public ISMDValidationReport validate(Model dataModel) {
-        log.info("Starting SHACL validation with {} enabled rules",
-                ruleManager.getEnabledRuleNames().size());
+        log.info("Starting SHACL validation with {} enabled rules: {}",
+                ruleManager.getEnabledRuleNames().size(), ruleManager.getEnabledRuleNames().toString());
 
         Instant startTime = Instant.now();
 
@@ -75,9 +72,6 @@ public class SHACLRuleEngine {
         }
     }
 
-    /**
-     * Execute validation with timeout
-     */
     private ISMDValidationReport executeValidationWithTimeout(Model dataModel, Model shapesModel)
             throws ValidationException {
 
@@ -85,7 +79,7 @@ public class SHACLRuleEngine {
             try {
                 return executeValidation(dataModel, shapesModel);
             } catch (Exception e) {
-                throw new RuntimeException("Validation execution failed", e);
+                throw new ValidationException("Validation execution failed", e);
             }
         });
 
@@ -99,16 +93,13 @@ public class SHACLRuleEngine {
             throw new ValidationException("Validation was interrupted");
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            if (cause instanceof RuntimeException) {
-                throw (RuntimeException) cause;
+            if (cause instanceof ValidationException) {
+                throw (ValidationException) cause;
             }
             throw new ValidationException("Validation execution failed", cause);
         }
     }
 
-    /**
-     * Core SHACL validation execution using Shapes.parse approach
-     */
     private ISMDValidationReport executeValidation(Model dataModel, Model shapesModel) {
         try {
             log.debug("Executing SHACL validation. Data model: {} triples, Shapes model: {} triples",
@@ -129,9 +120,6 @@ public class SHACLRuleEngine {
         }
     }
 
-    /**
-     * Convert Jena ValidationReport to custom format
-     */
     private ISMDValidationReport convertValidationReport(ValidationReport jenaReport) {
         List<ValidationResult> results = new ArrayList<>();
 
@@ -158,9 +146,6 @@ public class SHACLRuleEngine {
         return new ISMDValidationReport(results, isValid, Instant.now());
     }
 
-    /**
-     * Alternative method to handle ValidationReport if primary approach fails
-     */
     private ISMDValidationReport handleValidationReportAlternative(ValidationReport jenaReport) {
         try {
             boolean isValid = jenaReport.conforms();
@@ -190,51 +175,14 @@ public class SHACLRuleEngine {
         }
     }
 
-    /**
-     * Convert a single validation entry
-     */
     private ValidationResult convertValidationEntry(ReportEntry entry) {
         try {
-            ValidationSeverity severity = ValidationSeverity.INFO;
-            if (entry.severity() != null) {
-                severity = convertSeverity(entry.severity());
-            }
-
-            String message = entry.message();
-            if (message == null || message.trim().isEmpty()) {
-                message = "Validation constraint violation";
-            }
-
-            String focusNodeUri = null;
-            try {
-                Node focusNode = entry.focusNode();
-                focusNodeUri = nodeToUri(focusNode);
-            } catch (Exception e) {
-                log.debug("Could not extract focus node: {}", e.getMessage());
-            }
-
-            String resultPathUri = null;
-            try {
-                Path resultPath = entry.resultPath();
-                resultPathUri = pathToUri(resultPath);
-            } catch (Exception e) {
-                log.debug("Could not extract result path: {}", e.getMessage());
-            }
-
-            String ruleName = "unknown-rule";
-            try {
-                ruleName = extractRuleNameFromEntry(entry);
-            } catch (Exception e) {
-                log.debug("Could not extract source shape: {}", e.getMessage());
-            }
-
-            String valueString = null;
-            try {
-                Node valueNode = entry.value();
-                valueString = nodeToString(valueNode);
-            } catch (Exception e) {
-                log.debug("Could not extract value: {}", e.getMessage());
-            }
+            ValidationSeverity severity = extractSeverity(entry);
+            String message = extractMessage(entry);
+            String focusNodeUri = extractFocusNodeUri(entry);
+            String resultPathUri = extractResultPathUri(entry);
+            String ruleName = extractRuleName(entry);
+            String valueString = extractValueString(entry);
 
             return new ValidationResult(
                     severity,
@@ -247,20 +195,79 @@ public class SHACLRuleEngine {
 
         } catch (Exception e) {
             log.error("Failed to convert validation entry", e);
-            return new ValidationResult(
-                    ValidationSeverity.ERROR,
-                    "Failed to process validation result: " + e.getMessage(),
-                    "conversion-error",
-                    null,
-                    null,
-                    null
-            );
+            return createErrorResult("Failed to process validation result: " + e.getMessage());
         }
     }
 
-    /**
-     * Convert Node to URI string
-     */
+    private ValidationSeverity extractSeverity(ReportEntry entry) {
+        try {
+            return entry.severity() != null ? convertSeverity(entry.severity()) : ValidationSeverity.INFO;
+        } catch (Exception e) {
+            log.debug("Could not extract severity: {}", e.getMessage());
+            return ValidationSeverity.INFO;
+        }
+    }
+
+    private String extractMessage(ReportEntry entry) {
+        try {
+            String message = entry.message();
+            return (message != null && !message.trim().isEmpty()) ? message : "Validation constraint violation";
+        } catch (Exception e) {
+            log.debug("Could not extract message: {}", e.getMessage());
+            return "Validation constraint violation";
+        }
+    }
+
+    private String extractFocusNodeUri(ReportEntry entry) {
+        try {
+            Node focusNode = entry.focusNode();
+            return nodeToUri(focusNode);
+        } catch (Exception e) {
+            log.debug("Could not extract focus node: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private String extractResultPathUri(ReportEntry entry) {
+        try {
+            Path resultPath = entry.resultPath();
+            return pathToUri(resultPath);
+        } catch (Exception e) {
+            log.debug("Could not extract result path: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private String extractRuleName(ReportEntry entry) {
+        try {
+            return extractRuleNameFromEntry(entry);
+        } catch (Exception e) {
+            log.debug("Could not extract rule name: {}", e.getMessage());
+            return "unknown-rule";
+        }
+    }
+
+    private String extractValueString(ReportEntry entry) {
+        try {
+            Node valueNode = entry.value();
+            return nodeToString(valueNode);
+        } catch (Exception e) {
+            log.debug("Could not extract value: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private ValidationResult createErrorResult(String errorMessage) {
+        return new ValidationResult(
+                ValidationSeverity.ERROR,
+                errorMessage,
+                "conversion-error",
+                null,
+                null,
+                null
+        );
+    }
+
     private String nodeToUri(Node node) {
         if (node == null) {
             return null;
@@ -271,9 +278,6 @@ public class SHACLRuleEngine {
         return node.toString();
     }
 
-    /**
-     * Convert Path to URI string
-     */
     private String pathToUri(Path path) {
         if (path == null) {
             return null;
@@ -281,9 +285,6 @@ public class SHACLRuleEngine {
         return path.toString();
     }
 
-    /**
-     * Convert Node to string representation
-     */
     private String nodeToString(Node node) {
         if (node == null) {
             return null;
@@ -298,9 +299,6 @@ public class SHACLRuleEngine {
         }
     }
 
-    /**
-     * Extract rule name from ReportEntry - fallback approach
-     */
     private String extractRuleNameFromEntry(ReportEntry entry) {
         try {
             String entryString = entry.toString();
@@ -322,9 +320,6 @@ public class SHACLRuleEngine {
         }
     }
 
-    /**
-     * Clean up extracted rule name
-     */
     private String cleanRuleName(String rawName) {
         if (rawName == null) {
             return "unknown-rule";
@@ -338,39 +333,6 @@ public class SHACLRuleEngine {
         return cleaned.isEmpty() ? "unknown-rule" : cleaned;
     }
 
-    /**
-     * Extract rule name from Node
-     */
-    private String extractRuleNameFromNode(Node node) {
-        if (node == null) {
-            return "unknown-rule";
-        }
-
-        try {
-            if (node.isURI()) {
-                String uri = node.getURI();
-
-                int lastHash = uri.lastIndexOf('#');
-                int lastSlash = uri.lastIndexOf('/');
-                int splitIndex = Math.max(lastHash, lastSlash);
-
-                if (splitIndex >= 0 && splitIndex < uri.length() - 1) {
-                    return uri.substring(splitIndex + 1);
-                }
-
-                return uri;
-            } else {
-                return node.toString();
-            }
-        } catch (Exception e) {
-            log.debug("Error extracting rule name from node: {}", e.getMessage());
-            return "extraction-error";
-        }
-    }
-
-    /**
-     * Convert Jena severity to enum
-     */
     private ValidationSeverity convertSeverity(Severity severity) {
         if (severity == null) {
             return ValidationSeverity.INFO;
@@ -393,9 +355,6 @@ public class SHACLRuleEngine {
         }
     }
 
-    /**
-     * Validate specific rules only
-     */
     public ISMDValidationReport validateWithRules(Model dataModel, List<String> ruleNames) {
         log.info("Starting targeted SHACL validation with {} specific rules", ruleNames.size());
 
@@ -415,9 +374,6 @@ public class SHACLRuleEngine {
         }
     }
 
-    /**
-     * Combine specific rules into a single model
-     */
     private Model combineSpecificRules(List<String> ruleNames) {
         Model combinedModel = ModelFactory.createDefaultModel();
 
