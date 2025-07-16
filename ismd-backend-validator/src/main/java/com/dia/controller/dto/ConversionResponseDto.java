@@ -4,7 +4,6 @@ import lombok.*;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
 public class ConversionResponseDto {
     private String output;
