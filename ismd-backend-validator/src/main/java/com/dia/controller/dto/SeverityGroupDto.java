@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SeverityGroupDto {
 
-    private final ValidationSeverity severity;
+    private final String severity;
 
     private final int count;
 

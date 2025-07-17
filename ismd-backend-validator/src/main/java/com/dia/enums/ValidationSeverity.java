@@ -4,9 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum ValidationSeverity {
-    ERROR("Error"),
-    WARNING("Warning"),
-    INFO("Info");
+    ERROR("Chyba"),
+    WARNING("Varování"),
+    INFO("Informace");
 
     private final String displayName;
 

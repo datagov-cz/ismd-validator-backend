@@ -4,21 +4,22 @@
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix ex: <http://example.org/shapes#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
 
 # Warning rule: Concept should have source
 ex:ConceptSourceRule
     a sh:NodeShape ;
-    sh:targetClass skos:Concept ;
+    sh:targetClass slovníky:pojem ;
     sh:name "Concept Source Rule" ;
     sh:description "Ensures that each concept has a source" ;
-    sh:message "Varování: Neexistuje zdroj" ;
+    sh:message "Pojem nemá vyplněný zdroj"@cs ;
     sh:severity sh:Warning ;
 
     # Should have at least one source property
     sh:or (
-        # Has dc:source
-        [ sh:path dc:source ; sh:minCount 1 ]
-
-        # Has dct:source
+        # Has dct:source (what the transformer actually creates)
         [ sh:path dct:source ; sh:minCount 1 ]
+
+        # Has dc:source (backup option)
+        [ sh:path dc:source ; sh:minCount 1 ]
     ) .

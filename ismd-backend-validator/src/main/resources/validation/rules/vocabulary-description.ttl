@@ -11,17 +11,17 @@ ex:VocabularyDescriptionRule
     sh:targetClass skos:ConceptScheme ;
     sh:name "Vocabulary Description Rule" ;
     sh:description "Ensures that each vocabulary/concept scheme has a description" ;
-    sh:message "Varování: Neexistuje popis" ;
+    sh:message "Slovník nemá vyplněný popis"@cs ;
     sh:severity sh:Warning ;
 
     # Should have at least one description property
     sh:or (
-        # Has rdfs:comment (description)
-        [ sh:path rdfs:comment ; sh:minCount 1 ]
-
-        # Has dc:description
-        [ sh:path dc:description ; sh:minCount 1 ]
-
         # Has dct:description
         [ sh:path dct:description ; sh:minCount 1 ]
+
+        # Has rdfs:comment (backup option)
+        [ sh:path rdfs:comment ; sh:minCount 1 ]
+
+        # Has dc:description (backup option)
+        [ sh:path dc:description ; sh:minCount 1 ]
     ) .
