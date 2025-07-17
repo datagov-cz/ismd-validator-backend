@@ -19,7 +19,7 @@ ex:RPPCharacteristicsCompleteRule
 
             SELECT $this
             WHERE {
-                # 1. Must be shared in PPDF (flexible property matching)
+                # 1. Must be shared in PPDF
                 $this ?ppdfProp true .
                 FILTER(CONTAINS(STR(?ppdfProp), "je-sdílen-v-ppdf"))
 
@@ -48,7 +48,7 @@ ex:RPPCharacteristicsMissingPPDFRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "RPP Characteristics Missing PPDF Rule" ;
-    sh:description "Reports when concept could be shared in PPDF but isn't" ;
+    sh:description "Reports when concept doesn't have PPDF sharing" ;
     sh:message "Pojem nemá sdílení v propojeném datovém fondu"@cs ;
     sh:severity sh:Info ;
 
@@ -95,10 +95,10 @@ ex:RPPCharacteristicsMissingUstanoveniRule
 
             SELECT $this
             WHERE {
-                # Is non-public information
+                # Is neveřejný údaj
                 $this a slovníky:neveřejný-údaj .
 
-                # But does NOT have legal provision for non-public information
+                # But does NOT have ustanovení dokládající neveřejnost
                 FILTER (
                     NOT EXISTS {
                         $this ?ustanoveniProp ?ustanoveni .
@@ -109,13 +109,13 @@ ex:RPPCharacteristicsMissingUstanoveniRule
         """ ;
     ] .
 
-# Info rule: RPP characteristics - Has agenda relationship
+# Info rule: RPP characteristics - Does not have agenda relationship
 ex:RPPCharacteristicsAgendaRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "RPP Characteristics Agenda Rule" ;
-    sh:description "Reports when concept has agenda or AIS relationships" ;
-    sh:message "Pojem má vztah k agendě nebo AIS"@cs ;
+    sh:description "Reports when concept does not have agenda or AIS relationships" ;
+    sh:message "Pojem nemá vztah k agendě nebo AIS"@cs ;
     sh:severity sh:Info ;
 
     sh:sparql [
@@ -123,13 +123,13 @@ ex:RPPCharacteristicsAgendaRule
             SELECT $this
             WHERE {
                 {
-                    # Has agenda relationship
+                    # Has no agenda relationship
                     $this ?agendaProp ?agenda .
-                    FILTER(CONTAINS(STR(?agendaProp), "agenda"))
+                    FILTER(NOT EXISTS(STR(?agendaProp), "agenda"))
                 } UNION {
-                    # Has AIS relationship
+                    # Has no AIS relationship
                     $this ?aisProp ?ais .
-                    FILTER(CONTAINS(STR(?aisProp), "agendový-informační-systém"))
+                    FILTER(NOT EXISTS(STR(?aisProp), "agendový-informační-systém"))
                 }
             }
         """ ;

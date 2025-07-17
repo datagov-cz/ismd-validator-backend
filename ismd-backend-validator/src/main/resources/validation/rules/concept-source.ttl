@@ -6,7 +6,7 @@
 @prefix ex: <http://example.org/shapes#> .
 @prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
 
-# Warning rule: Concept should have source
+# Warning rule: Concept should have a source
 ex:ConceptSourceRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
@@ -17,7 +17,7 @@ ex:ConceptSourceRule
 
     # Should have at least one source property
     sh:or (
-        # Has dct:source (what the transformer actually creates)
+        # Has dct:source
         [ sh:path dct:source ; sh:minCount 1 ]
 
         # Has dc:source (backup option)
