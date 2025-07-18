@@ -563,15 +563,15 @@ public class ArchiReader {
     }
 
     private void mapStandardizedLabel(String propId, String propName) {
-        if ("související zdroj".equals(propName)) {
+        if (propName.contains("související zdroj")) {
             propertyMapping.put(propId, SOUVISEJICI_ZDROJ);
             return;
         }
-        if ("zdroj".equals(propName)) {
+        if (propName.contains("zdroj")) {
             propertyMapping.put(propId, ZDROJ);
             return;
         }
-        if ("ekvivalentní pojem".equals(propName)) {
+        if (propName.contains("ekvivalentní pojem")) {
             propertyMapping.put(propId, EKVIVALENTNI_POJEM);
             return;
         }
