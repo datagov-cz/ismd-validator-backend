@@ -49,7 +49,7 @@ public class EnterpriseArchitectReader {
                 factory.setNamespaceAware(true);
                 DocumentBuilder builder = factory.newDocumentBuilder();
 
-                return builder.parse(new ByteArrayInputStream(xmlContent.getBytes(StandardCharsets.UTF_8)));
+                return builder.parse(new ByteArrayInputStream(xmlContent.getBytes()));
 
             } catch (Exception e) {
                 log.warn("Failed to parse with encoding {}: {}", charset.name(), e.getMessage());
