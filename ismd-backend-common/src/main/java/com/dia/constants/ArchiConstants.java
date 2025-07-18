@@ -43,9 +43,9 @@ public class ArchiConstants {
     public static final String OBOR_HODNOT = "obor-hodnot";
     public static final String NADRAZENA_TRIDA = "nadřazená-třída";
     public static final String SUPP = "související-ustanovení-právního-předpisu";
-    public static final String ZPUSOB_SDILENI = "má-způsob-sdílení-údaje";
-    public static final String ZPUSOB_ZISKANI = "má-kategorii-údaje";
-    public static final String TYP_OBSAHU = "má-typ-obsahu-údaje";
+    public static final String ZPUSOB_SDILENI = "způsob-sdílení-údaje";
+    public static final String ZPUSOB_ZISKANI = "způsob-získání-údaje";
+    public static final String TYP_OBSAHU = "typ-obsahu-údaje";
 
     // =============== LONG FORM PROPERTIES ===============
     public static final String JE_PPDF_LONG = "je-sdílen-v-propojeném-datovém-fondu";

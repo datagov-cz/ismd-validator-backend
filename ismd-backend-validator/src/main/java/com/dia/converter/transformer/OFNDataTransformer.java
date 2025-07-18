@@ -51,6 +51,8 @@ public class OFNDataTransformer {
         try {
             log.info("Starting ontology data transformation...");
 
+            uriGenerator.reset();
+
             if (ontologyData == null || ontologyData.getVocabularyMetadata() == null) {
                 throw new ConversionException("Invalid ontology data");
             }

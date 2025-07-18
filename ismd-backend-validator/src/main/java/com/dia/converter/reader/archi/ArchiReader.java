@@ -238,13 +238,15 @@ public class ArchiReader {
             String name = getElementName(element);
 
             if ("Subjekt".equals(name) || "Objekt".equals(name) || "Vlastnost".equals(name)) {
+                log.debug("Skipping template element: {}", name);
                 continue;
             }
 
             String id = element.getAttribute(IDENT);
             Map<String, String> elementProperties = getElementProperties(element);
-
             String elementType = elementProperties.getOrDefault(TYP, "").trim();
+
+            log.debug("Element: {}, Type: {}, isPropertyType: {}", name, elementType, isPropertyType(elementType));
 
             if (isPropertyType(elementType)) {
                 PropertyData propertyData = createPropertyData(name, id, elementProperties);
@@ -573,6 +575,18 @@ public class ArchiReader {
             propertyMapping.put(propId, EKVIVALENTNI_POJEM);
             return;
         }
+        if (propName.contains("způsob sdílení údaje")) {
+            propertyMapping.put(propId, ZPUSOB_SDILENI);
+            return;
+        }
+        if (propName.contains("způsob získání údaje")) {
+            propertyMapping.put(propId, ZPUSOB_ZISKANI);
+            return;
+        }
+        if (propName.contains("typ obsahu údaje")) {
+            propertyMapping.put(propId, TYP_OBSAHU);
+            return;
+        }
 
         Map<String, String> labelPatterns = Map.of(
                 "popis", POPIS,
@@ -596,7 +610,6 @@ public class ArchiReader {
 
         if (propName.contains("typ")) {
             propertyMapping.put(propId, TYP);
-            log.debug("Mapped propId '{}' with name '{}' to TYP constant", propId, propName);
         } else if (propName.contains("adresa lokálního katalogu dat")) {
             propertyMapping.put(propId, LOKALNI_KATALOG);
         }

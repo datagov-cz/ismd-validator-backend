@@ -168,9 +168,20 @@ public class TurtleExporter {
         }
 
         if (uri.startsWith("https://slovník.gov.cz/")) {
-            return !uri.contains("/legislativní/") &&
-                    !uri.contains("/agendový/") &&
-                    !uri.contains("/veřejný-sektor/");
+            if (uri.contains("/legislativní/") ||
+                    uri.contains("/agendový/") ||
+                    uri.contains("/veřejný-sektor/")) {
+                return false;
+            }
+
+            return uri.equals("https://slovník.gov.cz/základní/pojem/pojem") ||
+                    uri.equals("https://slovník.gov.cz/základní/pojem/vlastnost") ||
+                    uri.equals("https://slovník.gov.cz/základní/pojem/vztah") ||
+                    uri.equals("https://slovník.gov.cz/základní/pojem/třída") ||
+                    uri.equals("https://slovník.gov.cz/základní/pojem/typ-subjektu-práva") ||
+                    uri.equals("https://slovník.gov.cz/základní/pojem/typ-objektu-práva") ||
+                    uri.equals("https://slovník.gov.cz/základní/pojem/veřejný-údaj") ||
+                    uri.equals("https://slovník.gov.cz/základní/pojem/neveřejný-údaj");
         }
 
         return false;
