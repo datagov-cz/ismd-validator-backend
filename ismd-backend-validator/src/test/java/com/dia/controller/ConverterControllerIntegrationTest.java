@@ -150,7 +150,7 @@ class ConverterControllerIntegrationTest {
         ValidationResultsDto mockValidationResults = mock(ValidationResultsDto.class);
 
         // Configure validation service mocks
-        when(validationService.validate(any(TransformationResult.class))).thenReturn(mockValidationReport);
+        when(validationService.validateLocally(any(TransformationResult.class))).thenReturn(mockValidationReport);
         when(validationReportService.convertToDto(any(ISMDValidationReport.class))).thenReturn(mockValidationResults);
 
         reset(converterService);
@@ -198,7 +198,7 @@ class ConverterControllerIntegrationTest {
 
         // Verify service interactions
         verify(converterService).processArchiFile(anyString(), any());
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
 
         if ("json".equals(outputFormat)) {
@@ -243,7 +243,7 @@ class ConverterControllerIntegrationTest {
 
         // Verify service interactions
         verify(converterService).processExcelFile(any(MultipartFile.class), any());
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
 
         if ("json".equals(outputFormat)) {
@@ -289,7 +289,7 @@ class ConverterControllerIntegrationTest {
 
         // Verify service interactions
         verify(converterService).processEAFile(any(MultipartFile.class), any());
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
 
         if ("json".equals(outputFormat)) {
@@ -355,7 +355,7 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getErrorMessage());
         assertNotNull(responseDto.getValidationResults());
 
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
 
         if ("json".equals(expectedServiceMethod)) {
@@ -402,7 +402,7 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getErrorMessage());
         assertNotNull(responseDto.getValidationResults());
 
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
 
         if (isJson) {
@@ -439,7 +439,7 @@ class ConverterControllerIntegrationTest {
         assertNotNull(responseDto.getValidationResults());
 
         verify(converterService).processArchiFile(anyString(), any());
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
     }
 
@@ -493,11 +493,11 @@ class ConverterControllerIntegrationTest {
 
         if (shouldCallService && filename.endsWith(".xlsx")) {
             verify(converterService).processExcelFile(any(MultipartFile.class), any());
-            verify(validationService).validate(any(TransformationResult.class));
+            verify(validationService).validateLocally(any(TransformationResult.class));
             verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
         } else if (shouldCallService && !filename.endsWith(".ttl")) {
             verify(converterService).processArchiFile(anyString(), any());
-            verify(validationService).validate(any(TransformationResult.class));
+            verify(validationService).validateLocally(any(TransformationResult.class));
             verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
         } else {
             verifyNoInteractions(converterService);
@@ -534,7 +534,7 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getErrorMessage());
         assertNotNull(responseDto.getValidationResults());
 
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
     }
 
@@ -599,7 +599,7 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getValidationResults());
 
         // Validation services should still be called before export
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
     }
 
@@ -628,7 +628,7 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getValidationResults());
 
         // Validation services should still be called before export attempt
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
     }
 
@@ -686,7 +686,7 @@ class ConverterControllerIntegrationTest {
         assertNotNull(responseDto.getValidationResults());
 
         verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
     }
 
@@ -716,7 +716,7 @@ class ConverterControllerIntegrationTest {
         assertNotNull(responseDto.getValidationResults());
 
         verify(converterService).processArchiFile(anyString(), eq(true));
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
     }
 
@@ -747,7 +747,7 @@ class ConverterControllerIntegrationTest {
         assertNotNull(responseDto.getValidationResults());
 
         verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
     }
 
@@ -777,7 +777,7 @@ class ConverterControllerIntegrationTest {
         assertNotNull(responseDto.getValidationResults());
 
         verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
     }
 
@@ -813,7 +813,7 @@ class ConverterControllerIntegrationTest {
         assertNotNull(responseDto.getValidationResults());
 
         verify(converterService).processExcelFile(any(MultipartFile.class), eq(true));
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
     }
 
@@ -824,7 +824,7 @@ class ConverterControllerIntegrationTest {
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
         when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
-        when(validationService.validate(any(TransformationResult.class)))
+        when(validationService.validateLocally(any(TransformationResult.class)))
                 .thenThrow(new RuntimeException("Validation service error"));
 
         MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
@@ -842,7 +842,7 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getValidationResults());
 
         verify(converterService).processArchiFile(anyString(), any());
-        verify(validationService).validate(any(TransformationResult.class));
+        verify(validationService).validateLocally(any(TransformationResult.class));
         verifyNoInteractions(validationReportService);
     }
 }
