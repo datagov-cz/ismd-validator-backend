@@ -139,14 +139,14 @@ public class ValidationServiceImpl implements ValidationService {
     }
 
     @Override
-    public ISMDValidationReport validateComplete(TransformationResult result, boolean includeGlobal) {
-        ISMDValidationReport localReport = validate(result);
+    public ISMDValidationReport validateComplete(TransformationResult transformationResult, boolean includeGlobal) {
+        ISMDValidationReport localReport = validate(transformationResult);
 
         if (!includeGlobal) {
             return localReport;
         }
 
-        ISMDValidationReport globalReport = validateGlobally(result);
+        ISMDValidationReport globalReport = validateGlobally(transformationResult);
 
         List<ValidationResult> combinedResults = new ArrayList<>(localReport.results());
 
@@ -282,74 +282,6 @@ public class ValidationServiceImpl implements ValidationService {
                 allEnabledRules,
                 config.getDefaultTiming()
         );
-    }
-
-    @Override
-    public void setRuleEnabled(String ruleName, boolean enabled) {
-        log.info("Setting rule '{}' enabled: {}", ruleName, enabled);
-
-        if (ruleManager.getAllRuleNames().contains(ruleName)) {
-            config.setRuleEnabled(ruleName, enabled);
-            log.info("Local rule '{}' is now {}", ruleName, enabled ? "enabled" : "disabled");
-            return;
-        }
-
-        boolean isGlobalRule = globalValidationRules.stream()
-                .anyMatch(rule -> rule.getRuleName().equals(ruleName));
-
-        if (isGlobalRule) {
-            config.setRuleEnabled(ruleName, enabled);
-            log.info("Global rule '{}' is now {}", ruleName, enabled ? "enabled" : "disabled");
-            return;
-        }
-
-        throw new IllegalArgumentException("Unknown validation rule: " + ruleName);
-    }
-
-    @Override
-    public Optional<RuleInfo> getRuleInfo(String ruleName) {
-        Optional<RuleInfo> localRuleInfo = ruleManager.getRuleDefinition(ruleName)
-                .map(def -> new RuleInfo(
-                        def.name(),
-                        def.filename(),
-                        config.isRuleEnabled(ruleName),
-                        def.metadata()
-                ));
-
-        if (localRuleInfo.isPresent()) {
-            return localRuleInfo;
-        }
-
-        return globalValidationRules.stream()
-                .filter(rule -> rule.getRuleName().equals(ruleName))
-                .findFirst()
-                .map(rule -> new RuleInfo(
-                        rule.getRuleName(),
-                        "global-rule",
-                        config.isRuleEnabled(ruleName),
-                        java.util.Map.of(
-                                "type", "global",
-                                "description", rule.getDescription(),
-                                "defaultSeverity", rule.getDefaultSeverity().toString(),
-                                "requiresNetworkAccess", String.valueOf(rule.requiresNetworkAccess())
-                        )
-                ));
-    }
-
-    @Override
-    public List<String> getAllRuleNames() {
-        List<String> allRules = new ArrayList<>();
-        allRules.addAll(ruleManager.getAllRuleNames());
-        allRules.addAll(globalValidationRules.stream().map(GlobalValidationRule::getRuleName).toList());
-        return allRules;
-    }
-
-    @Override
-    public List<String> getEnabledRuleNames() {
-        List<String> enabledRules = new ArrayList<>();
-        enabledRules.addAll(ruleManager.getEnabledRuleNames());
-        enabledRules.addAll(getEnabledGlobalRuleNames());
-        return enabledRules;
     }
 
     @Override

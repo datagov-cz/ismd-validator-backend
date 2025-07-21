@@ -2,13 +2,9 @@ package com.dia.service.impl;
 
 import com.dia.exceptions.ValidationException;
 import com.dia.service.SPARQLQueryService;
-import com.dia.validation.config.ValidationConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jena.query.Query;
-import org.apache.jena.query.QueryExecution;
-import org.apache.jena.query.QueryFactory;
-import org.apache.jena.query.ResultSet;
+import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Model;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,18 +16,13 @@ import java.util.concurrent.Callable;
 @Slf4j
 public class SPARQLQueryServiceImpl implements SPARQLQueryService {
 
-    private final ValidationConfiguration config;
-
-    @Value("${validation.global.sparql-endpoint:https://oha02.dia.gov.cz/vsparql}")
+    @Value("${validation.global.sparql-endpoint}")
     private String sparqlEndpoint;
 
-    @Value("${validation.global.timeout-ms:10000}")
-    private long timeoutMs;
-
-    @Value("${validation.global.retry.max-attempts:3}")
+    @Value("${validation.global.retry.max-attempts}")
     private int maxRetryAttempts;
 
-    @Value("${validation.global.retry.delay-ms:1000}")
+    @Value("${validation.global.retry.delay-ms}")
     private long retryDelayMs;
 
     @Override
@@ -52,11 +43,11 @@ public class SPARQLQueryServiceImpl implements SPARQLQueryService {
         return executeWithRetry(() -> {
             Query query = QueryFactory.create(sparqlQuery);
 
-            try (QueryExecution qexec = QueryExecutionFactory.sparqlService(sparqlEndpoint, query)) {
-                qexec.setTimeout(timeoutMs);
+            try (QueryExecution qexec = QueryExecution.service(sparqlEndpoint, query)) {
                 ResultSet results = qexec.execSelect();
+                ResultSet materializedResults = ResultSetFactory.copyResults(results);
                 log.debug("SELECT query executed successfully");
-                return results;
+                return materializedResults;
             }
         });
     }
@@ -66,9 +57,8 @@ public class SPARQLQueryServiceImpl implements SPARQLQueryService {
         return executeWithRetry(() -> {
             Query query = QueryFactory.create(sparqlQuery);
 
-            try (QueryExecution qexec = QueryExecutionFactory.sparqlService(sparqlEndpoint, query)) {
-                qexec.setTimeout(timeoutMs);
-                org.apache.jena.rdf.model.Model result = qexec.execConstruct();
+            try (QueryExecution qexec = QueryExecution.service(sparqlEndpoint, query)) {
+                Model result = qexec.execConstruct();
                 log.debug("CONSTRUCT query executed successfully. Model size: {}", result.size());
                 return result;
             }

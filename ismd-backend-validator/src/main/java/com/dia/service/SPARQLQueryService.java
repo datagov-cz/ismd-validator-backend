@@ -13,4 +13,6 @@ public interface SPARQLQueryService {
     Model executeConstruct(String sparqlQuery) throws ValidationException;
 
     boolean testConnectivity();
+
+    String getEndpointUrl();
 }
