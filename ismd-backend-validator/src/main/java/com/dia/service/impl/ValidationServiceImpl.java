@@ -2,15 +2,11 @@ package com.dia.service.impl;
 
 import com.dia.conversion.data.TransformationResult;
 import com.dia.exceptions.ValidationException;
-import com.dia.service.SPARQLQueryService;
 import com.dia.service.ValidationService;
-import com.dia.service.record.RuleInfo;
 import com.dia.service.record.ValidationConfigurationSummary;
 import com.dia.validation.config.RuleManager;
 import com.dia.validation.config.ValidationConfiguration;
 import com.dia.validation.data.ISMDValidationReport;
-import com.dia.validation.data.ValidationResult;
-import com.dia.validation.rules.GlobalValidationRule;
 import com.dia.enums.ValidationTiming;
 import com.dia.validation.engine.SHACLRuleEngine;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +27,6 @@ public class ValidationServiceImpl implements ValidationService {
     private final SHACLRuleEngine shaclEngine;
     private final RuleManager ruleManager;
     private final ValidationConfiguration config;
-    private final List<GlobalValidationRule> globalValidationRules;
-    private final SPARQLQueryService sparqlQueryService;
 
     @Override
     public ISMDValidationReport validate(TransformationResult result) {
@@ -46,15 +35,15 @@ public class ValidationServiceImpl implements ValidationService {
 
     @Override
     public ISMDValidationReport validate(TransformationResult result, ValidationTiming timing) {
-        log.info("Starting local validation with timing: {}", timing);
+        log.info("Starting validation with timing: {}", timing);
 
         try {
             Model dataModel = extractDataModel(result, timing);
             return shaclEngine.validate(dataModel);
 
         } catch (Exception e) {
-            log.error("Local validation failed for timing: {}", timing, e);
-            return ISMDValidationReport.error("Local validation failed: " + e.getMessage());
+            log.error("Validation failed for timing: {}", timing, e);
+            return ISMDValidationReport.error("Validation failed: " + e.getMessage());
         }
     }
 
@@ -94,85 +83,12 @@ public class ValidationServiceImpl implements ValidationService {
         }
     }
 
-    @Override
-    public ISMDValidationReport validateGlobally(TransformationResult result) {
-        log.info("Starting global validation with {} available rules", globalValidationRules.size());
-
-        if (!isGlobalValidationAvailable()) {
-            log.warn("Global validation is not available (no connectivity to external services)");
-            return ISMDValidationReport.empty();
-        }
-
-        List<ValidationResult> allResults = new ArrayList<>();
-        List<String> enabledGlobalRules = getEnabledGlobalRuleNames();
-
-        if (enabledGlobalRules.isEmpty()) {
-            log.info("No global validation rules are enabled");
-            return ISMDValidationReport.empty();
-        }
-
-        log.info("Executing {} enabled global validation rules: {}", enabledGlobalRules.size(), enabledGlobalRules);
-
-        for (String ruleName : enabledGlobalRules) {
-            try {
-                GlobalValidationRule rule = findGlobalRule(ruleName);
-                if (rule != null) {
-                    List<ValidationResult> ruleResults = executeGlobalRuleWithTimeout(rule, result);
-                    allResults.addAll(ruleResults);
-                    log.debug("Global rule '{}' completed with {} results", ruleName, ruleResults.size());
-                } else {
-                    log.warn("Global rule '{}' is enabled but not found", ruleName);
-                }
-            } catch (Exception e) {
-                log.error("Global validation rule '{}' failed", ruleName, e);
-
-                if (!config.isContinueOnRuleError()) {
-                    allResults.add(createGlobalRuleFailureResult(ruleName, e));
-                }
-            }
-        }
-
-        boolean isValid = allResults.stream().noneMatch(ValidationResult::isError);
-
-        log.info("Global validation completed. {} total results, valid: {}", allResults.size(), isValid);
-        return new ISMDValidationReport(allResults, isValid, Instant.now());
-    }
-
-    @Override
-    public ISMDValidationReport validateComplete(TransformationResult transformationResult, boolean includeGlobal) {
-        ISMDValidationReport localReport = validate(transformationResult);
-
-        if (!includeGlobal) {
-            return localReport;
-        }
-
-        ISMDValidationReport globalReport = validateGlobally(transformationResult);
-
-        List<ValidationResult> combinedResults = new ArrayList<>(localReport.results());
-
-        List<ValidationResult> globalResults = globalReport.results().stream()
-                .map(result -> new ValidationResult(
-                        result.severity(),
-                        "[GLOBAL] " + result.message(),
-                        result.ruleName(),
-                        result.focusNodeUri(),
-                        result.resultPathUri(),
-                        result.value()
-                ))
-                .toList();
-
-        combinedResults.addAll(globalResults);
-
-        boolean isValid = localReport.isValid() && globalReport.isValid();
-
-        return new ISMDValidationReport(combinedResults, isValid, Instant.now());
-    }
-
     private Model extractDataModel(TransformationResult result, ValidationTiming timing) {
         return switch (timing) {
             case BEFORE_EXPORT -> result.getOntModel();
             case JSON_EXPORT -> convertFromJsonLd(result);
             case TTL_EXPORT -> convertFromTtl(result);
+            default -> throw new IllegalArgumentException("Unknown validation timing: " + timing);
         };
     }
 
@@ -212,79 +128,15 @@ public class ValidationServiceImpl implements ValidationService {
         }
     }
 
-    private List<ValidationResult> executeGlobalRuleWithTimeout(GlobalValidationRule rule, TransformationResult result) {
-        try {
-            CompletableFuture<List<ValidationResult>> future = CompletableFuture.supplyAsync(() -> {
-                try {
-                    return rule.validate(result);
-                } catch (Exception e) {
-                    log.error("Global rule '{}' execution failed", rule.getRuleName(), e);
-                    throw new ValidationException("Global rule execution failed", e);
-                }
-            });
-
-            return future.get(config.getTimeoutMs(), TimeUnit.MILLISECONDS);
-
-        } catch (Exception e) {
-            log.error("Global rule '{}' timed out or failed", rule.getRuleName(), e);
-            throw new ValidationException("Global rule execution failed: " + e.getMessage(), e);
-        }
-    }
-
-    private ValidationResult createGlobalRuleFailureResult(String ruleName, Exception e) {
-        return new ValidationResult(
-                com.dia.enums.ValidationSeverity.WARNING,
-                "Globální validační pravidlo selhalo: " + e.getMessage(),
-                ruleName + "-execution-failed",
-                null,
-                null,
-                null
-        );
-    }
-
-    private GlobalValidationRule findGlobalRule(String ruleName) {
-        return globalValidationRules.stream()
-                .filter(rule -> rule.getRuleName().equals(ruleName))
-                .findFirst()
-                .orElse(null);
-    }
-
-    private List<String> getEnabledGlobalRuleNames() {
-        return globalValidationRules.stream()
-                .map(GlobalValidationRule::getRuleName)
-                .filter(config::isRuleEnabled)
-                .toList();
-    }
-
-    private boolean isGlobalValidationAvailable() {
-        try {
-            return sparqlQueryService.testConnectivity();
-        } catch (Exception e) {
-            log.debug("Global validation connectivity test failed", e);
-            return false;
-        }
-    }
-
-    @Override
     public ValidationConfigurationSummary getConfigurationSummary() {
-        int totalLocalRules = ruleManager.getAllRuleNames().size();
-        int enabledLocalRules = ruleManager.getEnabledRuleNames().size();
-        int totalGlobalRules = globalValidationRules.size();
-        int enabledGlobalRules = getEnabledGlobalRuleNames().size();
-
-        List<String> allEnabledRules = new ArrayList<>();
-        allEnabledRules.addAll(ruleManager.getEnabledRuleNames());
-        allEnabledRules.addAll(getEnabledGlobalRuleNames());
-
         return new ValidationConfigurationSummary(
-                totalLocalRules + totalGlobalRules,
-                enabledLocalRules + enabledGlobalRules,
-                allEnabledRules,
+                ruleManager.getAllRuleNames().size(),
+                ruleManager.getEnabledRuleNames().size(),
+                ruleManager.getEnabledRuleNames().stream().toList(),
                 config.getDefaultTiming()
         );
     }
 
-    @Override
     public ISMDValidationReport testValidation() {
         log.info("Running validation test with empty model");
 
@@ -293,10 +145,5 @@ public class ValidationServiceImpl implements ValidationService {
 
         log.info("Test validation completed: {}", report.getSummary());
         return report;
-    }
-
-    @Override
-    public boolean testGlobalValidationConnectivity() {
-        return isGlobalValidationAvailable();
     }
 }

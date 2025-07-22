@@ -20,13 +20,7 @@ public interface ValidationService {
 
     ISMDValidationReport validateRdf(String rdfContent, String format);
 
-    ISMDValidationReport validateGlobally(TransformationResult result);
-
-    ISMDValidationReport validateComplete(TransformationResult result, boolean includeGlobal);
-
     ValidationConfigurationSummary getConfigurationSummary();
 
     ISMDValidationReport testValidation();
-
-    boolean testGlobalValidationConnectivity();
 }

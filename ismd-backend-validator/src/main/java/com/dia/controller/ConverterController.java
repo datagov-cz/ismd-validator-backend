@@ -50,7 +50,6 @@ public class ConverterController {
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestHeader(value = "Accept", required = false) String acceptHeader,
-            @RequestParam(value = "globalValidation", required = false, defaultValue = "false") Boolean globalValidation,
             HttpServletRequest request
     ) {
         String requestId = UUID.randomUUID().toString();
@@ -58,8 +57,8 @@ public class ConverterController {
 
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
-        log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}, global validation={}",
-                file.getOriginalFilename(), file.getSize(), output, removeInvalidSources, globalValidation);
+        log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}",
+                file.getOriginalFilename(), file.getSize(), output, removeInvalidSources);
 
         try {
             if (!validateSingleFileUpload(request, requestId)) {
@@ -95,7 +94,7 @@ public class ConverterController {
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
                     ConversionResult conversionResult = converterService.processArchiFile(xmlContent, removeInvalidSources);
 
-                    ValidationResultsDto results = performValidation(conversionResult, globalValidation, requestId);
+                    ValidationResultsDto results = performValidation(conversionResult, requestId);
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}",
@@ -106,7 +105,7 @@ public class ConverterController {
                     log.debug("Processing XMI file: requestId={}", requestId);
                     ConversionResult conversionResult = converterService.processEAFile(file, removeInvalidSources);
 
-                    ValidationResultsDto results = performValidation(conversionResult, globalValidation, requestId);
+                    ValidationResultsDto results = performValidation(conversionResult, requestId);
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}",
@@ -117,7 +116,7 @@ public class ConverterController {
                     log.debug("Processing XLSX file: requestId={}", requestId);
                     ConversionResult conversionResult = converterService.processExcelFile(file, removeInvalidSources);
 
-                    ValidationResultsDto results = performValidation(conversionResult, globalValidation, requestId);
+                    ValidationResultsDto results = performValidation(conversionResult, requestId);
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}",
@@ -278,12 +277,9 @@ public class ConverterController {
         return "json";
     }
 
-    private ValidationResultsDto performValidation(ConversionResult conversionResult, Boolean globalValidation, String requestId) {
+    private ValidationResultsDto performValidation(ConversionResult conversionResult, String requestId) {
         try {
-            ISMDValidationReport combinedReport = validationService.validateComplete(
-                    conversionResult.getTransformationResult(),
-                    Boolean.TRUE.equals(globalValidation)
-            );
+            ISMDValidationReport combinedReport = validationService.validate(conversionResult.getTransformationResult());
 
             log.debug("Combined validation completed: requestId={}, results={}", requestId, combinedReport.getSummary());
             return validationReportService.convertToDto(combinedReport);
