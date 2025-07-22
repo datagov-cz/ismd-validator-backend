@@ -120,17 +120,23 @@ ex:RPPCharacteristicsAgendaRule
 
     sh:sparql [
         sh:select """
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
             SELECT $this
             WHERE {
-                {
-                    # Has no agenda relationship
-                    $this ?agendaProp ?agenda .
-                    FILTER(NOT EXISTS(STR(?agendaProp), "agenda"))
-                } UNION {
-                    # Has no AIS relationship
-                    $this ?aisProp ?ais .
-                    FILTER(NOT EXISTS(STR(?aisProp), "agendový-informační-systém"))
-                }
+                $this a slovníky:pojem .
+
+                # Check if concept lacks both agenda and AIS relationships
+                FILTER (
+                    NOT EXISTS {
+                        $this ?agendaProp ?agenda .
+                        FILTER(CONTAINS(STR(?agendaProp), "agenda"))
+                    } ||
+                    NOT EXISTS {
+                        $this ?aisProp ?ais .
+                        FILTER(CONTAINS(STR(?aisProp), "agendový-informační-systém"))
+                    }
+                )
             }
         """ ;
     ] .
