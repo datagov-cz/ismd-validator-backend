@@ -3,7 +3,6 @@ package com.dia.service.impl;
 import com.dia.conversion.data.TransformationResult;
 import com.dia.exceptions.ValidationException;
 import com.dia.service.ValidationService;
-import com.dia.service.record.RuleInfo;
 import com.dia.service.record.ValidationConfigurationSummary;
 import com.dia.validation.config.RuleManager;
 import com.dia.validation.config.ValidationConfiguration;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -85,21 +83,15 @@ public class ValidationServiceImpl implements ValidationService {
         }
     }
 
-    /**
-     * Extract appropriate data model based on validation timing
-     */
+
     private Model extractDataModel(TransformationResult result, ValidationTiming timing) {
         return switch (timing) {
             case BEFORE_EXPORT -> result.getOntModel();
             case JSON_EXPORT -> convertFromJsonLd(result);
             case TTL_EXPORT -> convertFromTtl(result);
-            default -> throw new IllegalArgumentException("Unknown validation timing: " + timing);
         };
     }
 
-    /**
-     * Convert transformation result to model via JSON-LD export
-     */
     private Model convertFromJsonLd(TransformationResult result) {
         try {
             StringWriter writer = new StringWriter();
@@ -118,9 +110,6 @@ public class ValidationServiceImpl implements ValidationService {
         }
     }
 
-    /**
-     * Convert transformation result to model via TTL export
-     */
     private Model convertFromTtl(TransformationResult result) {
         try {
             StringWriter writer = new StringWriter();
@@ -139,9 +128,6 @@ public class ValidationServiceImpl implements ValidationService {
         }
     }
 
-    /**
-     * Get validation configuration summary
-     */
     public ValidationConfigurationSummary getConfigurationSummary() {
         return new ValidationConfigurationSummary(
                 ruleManager.getAllRuleNames().size(),
@@ -151,13 +137,9 @@ public class ValidationServiceImpl implements ValidationService {
         );
     }
 
-    /**
-     * Enable or disable a specific validation rule
-     */
     public void setRuleEnabled(String ruleName, boolean enabled) {
         log.info("Setting rule '{}' enabled: {}", ruleName, enabled);
 
-        // Verify rule exists
         if (!ruleManager.getAllRuleNames().contains(ruleName)) {
             throw new IllegalArgumentException("Unknown validation rule: " + ruleName);
         }
@@ -166,22 +148,6 @@ public class ValidationServiceImpl implements ValidationService {
         log.info("Rule '{}' is now {}", ruleName, enabled ? "enabled" : "disabled");
     }
 
-    /**
-     * Get information about a specific rule
-     */
-    public Optional<RuleInfo> getRuleInfo(String ruleName) {
-        return ruleManager.getRuleDefinition(ruleName)
-                .map(def -> new RuleInfo(
-                        def.name(),
-                        def.filename(),
-                        config.isRuleEnabled(ruleName),
-                        def.metadata()
-                ));
-    }
-
-    /**
-     * Test validation with sample data (useful for development/debugging)
-     */
     public ISMDValidationReport testValidation() {
         log.info("Running validation test with empty model");
 
