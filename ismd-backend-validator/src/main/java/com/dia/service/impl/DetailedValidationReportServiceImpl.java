@@ -2,21 +2,19 @@ package com.dia.service.impl;
 
 import com.dia.enums.ValidationSeverity;
 import com.dia.service.DetailedValidationReportService;
-import com.dia.validation.config.RuleManager;
 import com.dia.validation.data.*;
-import com.dia.validation.report.SHACLRuleMetadataExtractor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.rdf.model.Model;
-import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.DCTerms;
+import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.SKOS;
 import org.springframework.stereotype.Service;
 
 import java.io.StringWriter;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,28 +22,16 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DetailedValidationReportServiceImpl implements DetailedValidationReportService {
 
-    private final RuleManager ruleManager;
-    private final SHACLRuleMetadataExtractor metadataExtractor;
-
-    private static final String SHACL_NAME = "http://www.w3.org/ns/shacl#name";
-    private static final String SHACL_DESCRIPTION = "http://www.w3.org/ns/shacl#description";
-    private static final String SHACL_SEVERITY = "http://www.w3.org/ns/shacl#severity";
-
     private static final String SEVERITY_ERROR = "http://www.w3.org/ns/shacl#Violation";
     private static final String SEVERITY_WARNING = "http://www.w3.org/ns/shacl#Warning";
     private static final String SEVERITY_INFO = "http://www.w3.org/ns/shacl#Info";
 
     @Override
     public DetailedValidationReportDto generateDetailedReport(ISMDValidationReport report, Model ontologyModel) {
-        return generateDetailedReport(report, ontologyModel, null);
-    }
-
-    @Override
-    public DetailedValidationReportDto generateDetailedReport(ISMDValidationReport report, Model ontologyModel, Model shaclRulesModel) {
         log.info("Generating detailed validation report with {} results", report.getTotalResultCount());
 
         OntologyInfoDto ontologyInfo = extractOntologyInfo(ontologyModel);
-        Map<String, ConceptValidationDto> validationResults = groupValidationResultsByConcept(report, shaclRulesModel);
+        Map<String, ConceptValidationDto> validationResults = groupValidationResultsByConcept(report);
 
         return new DetailedValidationReportDto(ontologyInfo, validationResults);
     }
@@ -55,7 +41,6 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
         log.info("Converting detailed report to CSV format");
 
         StringWriter writer = new StringWriter();
-
         writer.append("Concept_IRI,Concept_Name,Rule_IRI,Rule_Name,Rule_Description,Severity,Level,Violation_Message,Violating_Value\n");
 
         report.validation().forEach((conceptIri, conceptValidation) -> {
@@ -65,17 +50,18 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
                 writer.append(String.format("%s,%s,,,,,No violations found,%n",
                         escapeCSV(conceptIri), escapeCSV(conceptName)));
             } else {
-                conceptValidation.violations().forEach((ruleIri, violation) -> writer.append(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s%n",
-                        escapeCSV(conceptIri),
-                        escapeCSV(conceptName),
-                        escapeCSV(ruleIri),
-                        escapeCSV(violation.name()),
-                        escapeCSV(violation.description()),
-                        escapeCSV(violation.severity()),
-                        escapeCSV(violation.level()),
-                        escapeCSV(violation.message()),
-                        escapeCSV(violation.value())
-                )));
+                conceptValidation.violations().forEach((ruleKey, violation) ->
+                        writer.append(String.format("%s,%s,%s,%s,%s,%s,%s,%s%n",
+                                escapeCSV(conceptIri),
+                                escapeCSV(conceptName),
+                                escapeCSV(ruleKey),
+                                escapeCSV(violation.name()),
+                                escapeCSV(violation.description()),
+                                escapeCSV(violation.severity()),
+                                escapeCSV(violation.level()),
+                                escapeCSV(violation.value())
+                        ))
+                );
             }
         });
 
@@ -123,61 +109,46 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
                 Instant.now()
         );
 
-        return generateDetailedReport(combinedReport, ontologyModel, shaclRulesModel);
+        return generateDetailedReport(combinedReport, ontologyModel);
     }
 
     private OntologyInfoDto extractOntologyInfo(Model ontologyModel) {
-        // TODO upravit
         Map<String, String> name = new HashMap<>();
         Map<String, String> description = new HashMap<>();
 
-        ontologyModel.listResourcesWithProperty(RDFS.label).forEachRemaining(resource -> {
-            resource.listProperties(RDFS.label).forEachRemaining(stmt -> {
-                String lang = stmt.getLanguage();
-                String value = stmt.getString();
-                if (lang != null && !lang.isEmpty()) {
-                    name.put(lang, value);
-                } else {
-                    name.put("cs", value);
-                }
-            });
-        });
+        Resource owlOntology = ontologyModel.createResource("http://www.w3.org/2002/07/owl#Ontology");
+        Resource skosConceptScheme = SKOS.ConceptScheme;
 
-        ontologyModel.listResourcesWithProperty(RDFS.comment).forEachRemaining(resource -> {
-            resource.listProperties(RDFS.comment).forEachRemaining(stmt -> {
+        Set<Resource> ontologyResources = new HashSet<>();
+        ontologyModel.listResourcesWithProperty(RDF.type, owlOntology).forEachRemaining(ontologyResources::add);
+        ontologyModel.listResourcesWithProperty(RDF.type, skosConceptScheme).forEachRemaining(ontologyResources::add);
+
+        for (Resource ontologyResource : ontologyResources) {
+            ontologyResource.listProperties(SKOS.prefLabel).forEachRemaining(stmt -> {
                 String lang = stmt.getLanguage();
                 String value = stmt.getString();
-                if (lang != null && !lang.isEmpty()) {
-                    description.put(lang, value);
-                } else {
-                    description.put("cs", value);
-                }
+                name.put(lang != null && !lang.isEmpty() ? lang : "cs", value);
             });
-        });
+
+            ontologyResource.listProperties(DCTerms.description).forEachRemaining(stmt -> {
+                String lang = stmt.getLanguage();
+                String value = stmt.getString();
+                description.put(lang != null && !lang.isEmpty() ? lang : "cs", value);
+            });
+        }
 
         if (name.isEmpty()) {
             name.put("cs", "Neznámý slovník");
-            name.put("en", "Unknown ontology");
-        }
-        if (description.isEmpty()) {
-            description.put("cs", "Popis není k dispozici");
         }
 
         return new OntologyInfoDto(name, description);
     }
 
-    private Map<String, ConceptValidationDto> groupValidationResultsByConcept(ISMDValidationReport report, Model shaclRulesModel) {
+    private Map<String, ConceptValidationDto> groupValidationResultsByConcept(ISMDValidationReport report) {
         Map<String, ConceptValidationDto> conceptValidations = new HashMap<>();
 
-        Map<String, SHACLRuleMetadataExtractor.RuleMetadata> ruleMetadataMap;
-        if (shaclRulesModel != null) {
-            ruleMetadataMap = metadataExtractor.extractAllRuleMetadata(shaclRulesModel);
-        } else {
-            ruleMetadataMap = new HashMap<>();
-        }
-
         Map<String, List<ValidationResult>> resultsByConcept = report.results().stream()
-                .filter(result -> result.focusNodeUri() != null) // Only results with focus nodes
+                .filter(result -> result.focusNodeUri() != null)
                 .collect(Collectors.groupingBy(ValidationResult::focusNodeUri));
 
         resultsByConcept.forEach((conceptIri, results) -> {
@@ -189,21 +160,20 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
             resultsByRule.forEach((ruleName, ruleResults) -> {
                 ValidationResult firstResult = ruleResults.get(0);
 
-                SHACLRuleMetadataExtractor.RuleMetadata ruleMetadata = ruleMetadataMap.get(ruleName);
+                String violationKey = generateViolationKey(ruleName, ruleViolations.size() + 1);
 
-                String ruleNameDisplay = ruleMetadata != null ? ruleMetadata.name() : getRuleName(ruleName);
-                String ruleDescription = ruleMetadata != null ? ruleMetadata.description() : getRuleDescription(ruleName);
+                String displayName = ruleName != null && !ruleName.equals("unknown-rule") ?
+                        ruleName : "Neznámé pravidlo";
 
                 RuleViolationDto violation = new RuleViolationDto(
-                        ruleNameDisplay,
-                        ruleDescription,
+                        displayName,
+                        firstResult.message(),
                         mapSeverityToLevel(firstResult.severity()),
                         mapSeverityToIri(firstResult.severity()),
-                        firstResult.message(),
                         firstResult.value()
                 );
 
-                ruleViolations.put(ruleName, violation);
+                ruleViolations.put(violationKey, violation);
             });
 
             conceptValidations.put(conceptIri, new ConceptValidationDto(conceptIri, ruleViolations));
@@ -212,14 +182,11 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
         return conceptValidations;
     }
 
-    private String getRuleName(String ruleName) {
-        // TODO
-        return ruleName;
-    }
-
-    private String getRuleDescription(String ruleName) {
-        // TODO
-        return ruleName;
+    private String generateViolationKey(String ruleName, int index) {
+        if (ruleName != null && !ruleName.equals("unknown-rule")) {
+            return ruleName.toLowerCase();
+        }
+        return "violation-rule-" + index;
     }
 
     private String mapSeverityToLevel(ValidationSeverity severity) {

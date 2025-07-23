@@ -8,8 +8,6 @@ public interface DetailedValidationReportService {
 
     DetailedValidationReportDto generateDetailedReport(ISMDValidationReport report, Model ontologyModel);
 
-    DetailedValidationReportDto generateDetailedReport(ISMDValidationReport report, Model ontologyModel, Model shaclRulesModel);
-
     DetailedValidationReportDto generateCombinedDetailedReport(
             ISMDValidationReport localReport,
             ISMDValidationReport globalReport,
