@@ -1,4 +1,4 @@
-package com.dia.converter.reader.ea;
+package com.dia.conversion.reader.ea;
 
 import lombok.Data;
 import lombok.Getter;
