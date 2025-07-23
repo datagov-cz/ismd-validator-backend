@@ -9,7 +9,7 @@
 ex:ConceptDescriptionRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Concept Description Rule" ;
+    sh:name "Popis pojmu" ;
     sh:description "Ensures that each concept has either description or definition" ;
     sh:message "Pojem nemá vyplněný jeden nebo více z těchto údajů: popis, definice"@cs ;
     sh:severity sh:Warning ;

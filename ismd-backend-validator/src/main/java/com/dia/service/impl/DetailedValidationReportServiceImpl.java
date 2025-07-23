@@ -127,6 +127,7 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
     }
 
     private OntologyInfoDto extractOntologyInfo(Model ontologyModel) {
+        // TODO upravit
         Map<String, String> name = new HashMap<>();
         Map<String, String> description = new HashMap<>();
 
