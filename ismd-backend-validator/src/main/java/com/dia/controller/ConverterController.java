@@ -153,7 +153,8 @@ public class ConverterController {
                             requestId, fileFormat, output, results, includeDetailedReport);
                     yield response;
                 }
-                case TURTLE -> ResponseEntity.ok(ConversionResponseDto.success("File processed successfully", null, null, null));
+                case TURTLE ->
+                        ResponseEntity.ok(ConversionResponseDto.success("File processed successfully", null, null, null));
                 default -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(ConversionResponseDto.error("Nepodporovaný formát souboru."));
             };
@@ -459,20 +460,20 @@ public class ConverterController {
 
     private CatalogReportDto generateCatalogReport(ConversionResult conversionResult, ValidationResultsDto validationResults, String requestId) {
         try {
-            log.debug("Attempting to generate catalog report: requestId={}", requestId);
+            log.debug("Attempting to generate catalog record: requestId={}", requestId);
 
             Optional<CatalogReportDto> catalogReport = catalogReportService.generateCatalogReport(conversionResult, validationResults);
 
             if (catalogReport.isPresent()) {
-                log.info("Catalog report generated successfully: requestId={}", requestId);
+                log.info("Catalog record generated successfully: requestId={}", requestId);
                 return catalogReport.get();
             } else {
-                log.info("Catalog report not generated due to validation errors or processing issues: requestId={}", requestId);
+                log.info("Catalog record not generated due to validation errors or processing issues: requestId={}", requestId);
                 return null;
             }
 
         } catch (Exception e) {
-            log.error("Failed to generate catalog report: requestId={}", requestId, e);
+            log.error("Failed to generate catalog record: requestId={}", requestId, e);
             return null;
         }
     }
