@@ -1,0 +1,33 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+@prefix ex: <http://example.org/shapes#> .
+
+# Error rule: Concept must have at least one of: description, definition, or source
+ex:ConceptRequiredContentRule
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Povinné údaje pojmu" ;
+    sh:description "Ensures that each concept has at least description, definition, or source" ;
+    sh:message "Pojem nemá vyplněný jeden nebo více z těchto povinných údajů: popis, definice, zdroj"@cs ;
+    sh:severity sh:Violation ;
+
+    # At least one of these properties must exist
+    sh:or (
+        # Has dct:description
+        [ sh:path dct:description ; sh:minCount 1 ]
+
+        # Has skos:definition
+        [ sh:path skos:definition ; sh:minCount 1 ]
+
+        # Has dct:source
+        [ sh:path dct:source ; sh:minCount 1 ]
+
+        # Backup options
+        [ sh:path rdfs:comment ; sh:minCount 1 ]
+        [ sh:path dc:source ; sh:minCount 1 ]
+        [ sh:path dc:description ; sh:minCount 1 ]
+    ) .

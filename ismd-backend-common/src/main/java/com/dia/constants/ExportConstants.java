@@ -22,7 +22,7 @@ public class ExportConstants {
 
         // =============== JSON-LD TYPE MAPPINGS ===============
         public static final String POJEM_JSON_LD = "Pojem";
-        public static final String TRIDA_JSON_LD = "Trida";
+        public static final String TRIDA_JSON_LD = "Třída";
         public static final String VZTAH_JSON_LD = "Vztah";
         public static final String VLASTNOST_JSON_LD = "Vlastnost";
         public static final String TSP_JSON_LD = "Typ subjektu práva";
