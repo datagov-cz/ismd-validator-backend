@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 
 import static com.dia.constants.ArchiConstants.DEFAULT_NS;
 import static com.dia.constants.EnterpriseArchitectConstants.*;
-import static com.dia.converter.reader.ea.AttributePatterns.ATTRIBUTE_PATTERNS;
+import static com.dia.conversion.reader.ea.AttributePatterns.ATTRIBUTE_PATTERNS;
 
 @Component
 @Slf4j

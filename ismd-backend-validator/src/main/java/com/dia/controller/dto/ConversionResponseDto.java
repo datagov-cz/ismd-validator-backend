@@ -12,12 +12,14 @@ public class ConversionResponseDto {
     private String errorMessage;
     private ValidationResultsDto validationResults;
     private DetailedValidationReportDto validationReport;
+    private CatalogReportDto catalogReport;
 
-    public static ConversionResponseDto success(String output, ValidationResultsDto results, DetailedValidationReportDto validationReport) {
+    public static ConversionResponseDto success(String output, ValidationResultsDto results, DetailedValidationReportDto validationReport, CatalogReportDto catalogReport) {
         return ConversionResponseDto.builder()
                 .output(output)
                 .validationResults(results)
                 .validationReport(validationReport)
+                .catalogReport(catalogReport)
                 .build();
     }
 

@@ -1,15 +1,13 @@
 package com.dia.controller;
 
+import com.dia.controller.dto.CatalogReportDto;
 import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.UnsupportedFormatException;
-import com.dia.service.ConverterService;
-import com.dia.service.DetailedValidationReportService;
-import com.dia.service.ValidationReportService;
-import com.dia.service.ValidationService;
+import com.dia.service.*;
 import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.dia.constants.ConverterControllerConstants.*;
@@ -49,6 +48,7 @@ public class ConverterController {
     private final ValidationService validationService;
     private final ValidationReportService validationReportService;
     private final DetailedValidationReportService detailedValidationReportService;
+    private final CatalogReportService catalogReportService;
 
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponseDto> convertFile(
@@ -56,6 +56,7 @@ public class ConverterController {
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
+            @RequestParam(value = "includeCatalogRecord", required = false, defaultValue = "true") Boolean includeCatalogRecord,
             @RequestHeader(value = "Accept", required = false) String acceptHeader,
             HttpServletRequest request
     ) {
@@ -105,7 +106,12 @@ public class ConverterController {
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                             generateDetailedValidationReport(conversionResult, requestId) : null;
 
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results, detailedReport);
+                    CatalogReportDto catalogReport = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            generateCatalogReport(conversionResult, results, requestId) : null;
+
+                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogReport
+                    );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
                     yield response;
@@ -118,7 +124,12 @@ public class ConverterController {
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                             generateDetailedValidationReport(conversionResult, requestId) : null;
 
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results, detailedReport);
+                    CatalogReportDto catalogReport = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            generateCatalogReport(conversionResult, results, requestId) : null;
+
+                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogReport
+                    );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
                     yield response;
@@ -131,12 +142,17 @@ public class ConverterController {
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                             generateDetailedValidationReport(conversionResult, requestId) : null;
 
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results, detailedReport);
+                    CatalogReportDto catalogReport = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            generateCatalogReport(conversionResult, results, requestId) : null;
+
+                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogReport
+                    );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
                     yield response;
                 }
-                case TURTLE -> ResponseEntity.ok(ConversionResponseDto.success("File processed successfully", null, null));
+                case TURTLE -> ResponseEntity.ok(ConversionResponseDto.success("File processed successfully", null, null, null));
                 default -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(ConversionResponseDto.error("Nepodporovaný formát souboru."));
             };
@@ -292,7 +308,8 @@ public class ConverterController {
 
     private ResponseEntity<ConversionResponseDto> getResponseEntity(
             String outputFormat, FileFormat fileFormat, ConversionResult conversionResult,
-            ValidationResultsDto results, DetailedValidationReportDto detailedReport) throws JsonExportException {
+            ValidationResultsDto results, DetailedValidationReportDto detailedReport,
+            CatalogReportDto catalogReport) throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.debug("Preparing response entity: requestId={}, outputFormat={}", requestId, outputFormat);
 
@@ -303,7 +320,7 @@ public class ConverterController {
                 log.debug("JSON export completed: requestId={}, outputSize={}", requestId, jsonOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.success(jsonOutput, results, detailedReport));
+                        .body(ConversionResponseDto.success(jsonOutput, results, detailedReport, catalogReport));
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
@@ -311,7 +328,7 @@ public class ConverterController {
                 log.debug("Turtle export completed: requestId={}, outputSize={}", requestId, ttlOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.success(ttlOutput, results, detailedReport));
+                        .body(ConversionResponseDto.success(ttlOutput, results, detailedReport, catalogReport));
             }
             default -> {
                 log.warn("Unsupported output format requested: requestId={}, format={}", requestId, outputFormat);
@@ -390,6 +407,26 @@ public class ConverterController {
                 log.error("Even fallback detailed report generation failed: requestId={}", requestId, fallbackE);
                 return null;
             }
+        }
+    }
+
+    private CatalogReportDto generateCatalogReport(ConversionResult conversionResult, ValidationResultsDto validationResults, String requestId) {
+        try {
+            log.debug("Attempting to generate catalog report: requestId={}", requestId);
+
+            Optional<CatalogReportDto> catalogReport = catalogReportService.generateCatalogReport(conversionResult, validationResults);
+
+            if (catalogReport.isPresent()) {
+                log.info("Catalog report generated successfully: requestId={}", requestId);
+                return catalogReport.get();
+            } else {
+                log.info("Catalog report not generated due to validation errors or processing issues: requestId={}", requestId);
+                return null;
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to generate catalog report: requestId={}", requestId, e);
+            return null;
         }
     }
 }
