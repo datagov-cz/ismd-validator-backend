@@ -10,6 +10,7 @@ import com.dia.exceptions.UnsupportedFormatException;
 import com.dia.service.*;
 import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -209,6 +210,52 @@ public class ConverterController {
             log.error("Error generating CSV from conversion response: requestId={}", requestId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to generate CSV report: " + e.getMessage());
+        } finally {
+            MDC.remove(LOG_REQUEST_ID);
+        }
+    }
+
+    @PostMapping("/convert/catalog-record/json")
+    public ResponseEntity<String> downloadCatalogRecordJSON(
+            @RequestBody ConversionResponseDto conversionResponse,
+            @RequestParam(value = "filename", required = false, defaultValue = "catalog-record") String filename
+    ) {
+        String requestId = UUID.randomUUID().toString();
+        MDC.put(LOG_REQUEST_ID, requestId);
+
+        log.info("Catalog record download requested from existing conversion response, filename={}", filename);
+
+        try {
+            CatalogReportDto catalogRecord = conversionResponse.getCatalogReport();
+
+            if (catalogRecord == null) {
+                log.warn("No catalog record found in conversion response: requestId={}", requestId);
+                return ResponseEntity.badRequest()
+                        .body("No catalog record available. Please ensure the conversion was performed with includeCatalogRecord=true and that validation results contain no ERROR severity findings.");
+            }
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonContent = objectMapper.writeValueAsString(catalogRecord);
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            String finalFilename = filename + "_" + timestamp + ".json";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("application/json; charset=utf-8"));
+            headers.setContentDispositionFormData("attachment", finalFilename);
+            headers.add("Content-Length", String.valueOf(jsonContent.getBytes(StandardCharsets.UTF_8).length));
+
+            log.info("Catalog record generated successfully from existing data: requestId={}, filename={}, recordIri={}",
+                    requestId, finalFilename, catalogRecord.getIri());
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(jsonContent);
+
+        } catch (Exception e) {
+            log.error("Error generating catalog record from conversion response: requestId={}", requestId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to generate catalog record: " + e.getMessage());
         } finally {
             MDC.remove(LOG_REQUEST_ID);
         }
