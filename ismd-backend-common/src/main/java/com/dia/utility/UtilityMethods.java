@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.dia.constants.SSPConstants.SGOV_NAMESPACE;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @UtilityClass
@@ -417,5 +418,39 @@ public class UtilityMethods {
         }
 
         return cleaned;
+    }
+
+    public String extractNamespace(String ontologyIRI) {
+        Pattern pattern = Pattern.compile("(https://slovník\\.gov\\.cz/[^/]+/[^/]+)");
+        Matcher matcher = pattern.matcher(ontologyIRI);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        if (ontologyIRI.endsWith("/")) {
+            ontologyIRI = ontologyIRI.substring(0, ontologyIRI.length() - 1);
+        }
+
+        int lastSlash = ontologyIRI.lastIndexOf('/');
+        if (lastSlash > SGOV_NAMESPACE.length()) {
+            return ontologyIRI.substring(0, lastSlash);
+        }
+
+        return ontologyIRI;
+    }
+
+    public String extractNameFromIRI(String iri) {
+        if (iri == null) return null;
+
+        int lastSlash = iri.lastIndexOf('/');
+        int lastHash = iri.lastIndexOf('#');
+        int lastSeparator = Math.max(lastSlash, lastHash);
+
+        if (lastSeparator >= 0 && lastSeparator < iri.length() - 1) {
+            return iri.substring(lastSeparator + 1);
+        }
+
+        return iri;
     }
 }

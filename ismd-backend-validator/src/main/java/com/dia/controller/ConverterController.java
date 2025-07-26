@@ -3,6 +3,7 @@ package com.dia.controller;
 import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.converter.data.ConversionResult;
 import com.dia.enums.FileFormat;
+import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.UnsupportedFormatException;
 import com.dia.service.ConverterService;
@@ -25,8 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.dia.constants.ConverterControllerConstants.*;
-import static com.dia.enums.FileFormat.ARCHI_XML;
-import static com.dia.enums.FileFormat.XMI;
+import static com.dia.enums.FileFormat.*;
 
 @RestController
 @RequestMapping("/api/convertor")
@@ -118,6 +118,43 @@ public class ConverterController {
                     .body(ConversionResponseDto.error(e.getMessage()));
         } catch (Exception e) {
             log.error("Error processing file conversion: requestId={}", requestId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ConversionResponseDto.error(e.getMessage()));
+        } finally {
+            MDC.remove(LOG_REQUEST_ID);
+        }
+    }
+
+    @PostMapping("/ssp/convert")
+    public ResponseEntity<ConversionResponseDto> convertSSPFromIRI(
+            @RequestParam(value = "iri") String iri,
+            @RequestParam(value = "output", required = false) String output,
+            @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
+            @RequestHeader(value = "Accept", required = false) String acceptHeader
+    ) {
+        String requestId = UUID.randomUUID().toString();
+        MDC.put(LOG_REQUEST_ID, requestId);
+
+        String outputFormat = determineOutputFormat(output, acceptHeader);
+
+        try {
+            if (iri.isEmpty()) {
+                log.warn("Empty IRI conversion attempt");
+                return ResponseEntity.badRequest().body(
+                        ConversionResponseDto.error("Nebylo vloženo IRI slovníku určeného k převodu.")
+                );
+            }
+            ConversionResult conversionResult = converterService.processSSPOntology(iri, removeInvalidSources);
+            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult);
+            log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
+                    requestId, SSP, output);
+            return response;
+        } catch (UnsupportedFormatException e) {
+            log.error("Unsupported format exception: requestId={}, message={}", requestId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                    .body(ConversionResponseDto.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error processing SSP ontology conversion: requestId={}", requestId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ConversionResponseDto.error(e.getMessage()));
         } finally {

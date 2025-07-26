@@ -1,10 +1,12 @@
 package com.dia.converter.data;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class HierarchyData {
     private String subClass;
     private String superClass;
