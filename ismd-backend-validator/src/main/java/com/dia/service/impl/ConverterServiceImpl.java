@@ -1,8 +1,8 @@
 package com.dia.service.impl;
 
-import com.dia.converter.data.ConversionResult;
-import com.dia.converter.data.TransformationResult;
-import com.dia.engine.ConverterEngine;
+import com.dia.conversion.data.ConversionResult;
+import com.dia.conversion.data.TransformationResult;
+import com.dia.conversion.engine.ConverterEngine;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
 import com.dia.service.ConverterService;

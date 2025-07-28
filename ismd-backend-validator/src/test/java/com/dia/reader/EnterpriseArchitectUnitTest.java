@@ -1,7 +1,7 @@
 package com.dia.reader;
 
-import com.dia.converter.data.*;
-import com.dia.converter.reader.ea.EnterpriseArchitectReader;
+import com.dia.conversion.data.*;
+import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.exceptions.FileParsingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

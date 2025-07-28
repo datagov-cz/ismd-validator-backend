@@ -1,7 +1,7 @@
 package com.dia.service;
 
-import com.dia.converter.data.ConversionResult;
-import com.dia.converter.data.TransformationResult;
+import com.dia.conversion.data.ConversionResult;
+import com.dia.conversion.data.TransformationResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
 import org.springframework.web.multipart.MultipartFile;
