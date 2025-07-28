@@ -1,0 +1,142 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+@prefix ex: <http://example.org/shapes#> .
+
+# Info rule: RPP characteristics - Complete RPP information available
+ex:RPPCharacteristicsCompleteRule
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "RPP Characteristics Complete Rule" ;
+    sh:description "Reports when concept has complete RPP characteristics" ;
+    sh:message "Pojem má kompletní charakteristiky pro RPP"@cs ;
+    sh:severity sh:Info ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this
+            WHERE {
+                # 1. Must be shared in PPDF
+                $this ?ppdfProp true .
+                FILTER(CONTAINS(STR(?ppdfProp), "je-sdílen-v-ppdf"))
+
+                # 2. Must be typ-subjektu-práva OR typ-objektu-práva
+                {
+                    $this a slovníky:typ-subjektu-práva .
+                } UNION {
+                    $this a slovníky:typ-objektu-práva .
+                }
+
+                # 3. If it's neveřejný-údaj, it must have ustanovení
+                FILTER (
+                    NOT EXISTS { $this a slovníky:neveřejný-údaj . } ||
+                    EXISTS {
+                        $this a slovníky:neveřejný-údaj .
+                        $this ?ustanoveniProp ?ustanoveni .
+                        FILTER(CONTAINS(STR(?ustanoveniProp), "ustanovení-dokládající-neveřejnost"))
+                    }
+                )
+            }
+        """ ;
+    ] .
+
+# Info rule: RPP characteristics - Missing PPDF sharing
+ex:RPPCharacteristicsMissingPPDFRule
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "RPP Characteristics Missing PPDF Rule" ;
+    sh:description "Reports when concept doesn't have PPDF sharing" ;
+    sh:message "Pojem nemá sdílení v propojeném datovém fondu"@cs ;
+    sh:severity sh:Info ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this
+            WHERE {
+                # Has typ-subjektu-práva OR typ-objektu-práva OR is veřejný/neveřejný údaj
+                {
+                    $this a slovníky:typ-subjektu-práva .
+                } UNION {
+                    $this a slovníky:typ-objektu-práva .
+                } UNION {
+                    $this a slovníky:veřejný-údaj .
+                } UNION {
+                    $this a slovníky:neveřejný-údaj .
+                }
+
+                # But is NOT shared in PPDF
+                FILTER (
+                    NOT EXISTS {
+                        $this ?ppdfProp true .
+                        FILTER(CONTAINS(STR(?ppdfProp), "je-sdílen-v-ppdf"))
+                    }
+                )
+            }
+        """ ;
+    ] .
+
+# Info rule: RPP characteristics - Missing legal provision for non-public information
+ex:RPPCharacteristicsMissingUstanoveniRule
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "RPP Characteristics Missing Ustanoveni Rule" ;
+    sh:description "Reports when neveřejný údaj is missing ustanovení dokládající neveřejnost" ;
+    sh:message "Pojem neveřejný údaj nemá ustanovení dokládající neveřejnost"@cs ;
+    sh:severity sh:Info ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this
+            WHERE {
+                # Is neveřejný údaj
+                $this a slovníky:neveřejný-údaj .
+
+                # But does NOT have ustanovení dokládající neveřejnost
+                FILTER (
+                    NOT EXISTS {
+                        $this ?ustanoveniProp ?ustanoveni .
+                        FILTER(CONTAINS(STR(?ustanoveniProp), "ustanovení-dokládající-neveřejnost"))
+                    }
+                )
+            }
+        """ ;
+    ] .
+
+# Info rule: RPP characteristics - Does not have agenda relationship
+ex:RPPCharacteristicsAgendaRule
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "RPP Characteristics Agenda Rule" ;
+    sh:description "Reports when concept does not have agenda or AIS relationships" ;
+    sh:message "Pojem nemá vztah k agendě nebo AIS"@cs ;
+    sh:severity sh:Info ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this
+            WHERE {
+                $this a slovníky:pojem .
+
+                # Check if concept lacks both agenda and AIS relationships
+                FILTER (
+                    NOT EXISTS {
+                        $this ?agendaProp ?agenda .
+                        FILTER(CONTAINS(STR(?agendaProp), "agenda"))
+                    } ||
+                    NOT EXISTS {
+                        $this ?aisProp ?ais .
+                        FILTER(CONTAINS(STR(?aisProp), "agendový-informační-systém"))
+                    }
+                )
+            }
+        """ ;
+    ] .

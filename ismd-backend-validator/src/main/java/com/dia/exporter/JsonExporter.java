@@ -336,8 +336,6 @@ public class JsonExporter {
     }
 
     private void addGovernanceProperties(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
-        log.debug("Processing governance properties for concept: {}", concept.getLocalName());
-
         addGovernancePropertyWithFallback(concept, pojemObj, namespace,
                 "Způsob sdílení údaje", ZPUSOB_SDILENI, "způsob-sdílení-údaje");
 
@@ -378,10 +376,7 @@ public class JsonExporter {
         Property hyphenatedProperty = ontModel.getProperty(namespace + jsonFieldName);
         if (concept.hasProperty(hyphenatedProperty)) {
             addGovernancePropertyArray(concept, hyphenatedProperty, jsonFieldName, pojemObj);
-            return;
         }
-
-        log.debug("No governance property {} found for concept: {}", jsonFieldName, concept.getLocalName());
     }
 
     private void addGovernancePropertyArray(Resource concept, Property property, String jsonFieldName,
@@ -391,8 +386,6 @@ public class JsonExporter {
         if (!allValues.isEmpty()) {
             JSONArray propArray = createJsonArray(allValues);
             pojemObj.put(jsonFieldName, propArray);
-            log.debug("Added governance property array '{}' with {} values to concept: {}",
-                    jsonFieldName, propArray.length(), concept.getLocalName());
         }
     }
 

@@ -1,0 +1,25 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix ex: <http://example.org/shapes#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+
+# Warning rule: Concept should have a source
+ex:ConceptSourceRule
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Concept Source Rule" ;
+    sh:description "Ensures that each concept has a source" ;
+    sh:message "Pojem nemá vyplněný zdroj"@cs ;
+    sh:severity sh:Warning ;
+
+    # Should have at least one source property
+    sh:or (
+        # Has dct:source
+        [ sh:path dct:source ; sh:minCount 1 ]
+
+        # Has dc:source (backup option)
+        [ sh:path dc:source ; sh:minCount 1 ]
+    ) .
