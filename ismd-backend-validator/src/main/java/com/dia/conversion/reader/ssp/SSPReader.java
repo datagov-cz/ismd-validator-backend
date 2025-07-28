@@ -1,10 +1,13 @@
-package com.dia.converter.reader.ssp;
+package com.dia.conversion.reader.ssp;
 
-import com.dia.converter.data.*;
-import com.dia.converter.reader.ssp.data.ConceptData;
-import com.dia.converter.reader.ssp.data.DomainRangeInfo;
+import com.dia.conversion.data.*;
+import com.dia.conversion.reader.ssp.config.SPARQLConfiguration;
+import com.dia.conversion.reader.ssp.data.ConceptData;
+import com.dia.conversion.reader.ssp.data.DomainRangeInfo;
 import com.dia.exceptions.ConversionException;
 import com.dia.utility.UtilityMethods;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolution;
@@ -19,16 +22,21 @@ import java.util.List;
 import java.util.Map;
 
 import static com.dia.constants.SSPConstants.*;
-import static com.dia.converter.reader.ssp.queries.SPARQLQueries.*;
+import static com.dia.conversion.reader.ssp.queries.SPARQLQueries.*;
 
 @Component
+@Data
+@RequiredArgsConstructor
 @Slf4j
 public class SSPReader {
+
+    private final SPARQLConfiguration config;
+
     /**
      * Reads an ontology from a SPARQL endpoint by IRI and converts it to OFN format
      * Uses RDFConnection
      */
-    public OntologyData readOntology(String ontologyIRI, String sparqlEndpoint) throws ConversionException {
+    public OntologyData readOntology(String ontologyIRI) throws ConversionException {
         log.info("Reading ontology from IRI: {} using RDFConnection", ontologyIRI);
 
         try {
@@ -39,13 +47,13 @@ public class SSPReader {
             String namespace = UtilityMethods.extractNamespace(ontologyIRI);
             log.debug("Extracted namespace: {}", namespace);
 
-            VocabularyMetadata metadata = readVocabularyMetadata(ontologyIRI, sparqlEndpoint);
+            VocabularyMetadata metadata = readVocabularyMetadata(ontologyIRI);
 
-            Map<String, ConceptData> concepts = readGlossaryConcepts(namespace, sparqlEndpoint);
+            Map<String, ConceptData> concepts = readGlossaryConcepts(namespace);
 
-            Map<String, String> conceptTypes = readConceptTypes(namespace, sparqlEndpoint);
+            Map<String, String> conceptTypes = readConceptTypes(namespace);
 
-            Map<String, DomainRangeInfo> domainRangeMap = readDomainRangeInfo(namespace, sparqlEndpoint);
+            Map<String, DomainRangeInfo> domainRangeMap = readDomainRangeInfo(namespace);
 
             OntologyData.Builder builder = OntologyData.builder()
                     .vocabularyMetadata(metadata);
@@ -73,14 +81,12 @@ public class SSPReader {
                             RelationshipData relationshipData = convertToRelationshipData(concept, conceptIRI, domainRangeMap);
                             relationships.add(relationshipData);
                         }
-                        default -> {
-                            log.debug("Skipping concept with unsupported type: {} - {}", conceptIRI, type);
-                        }
+                        default -> log.debug("Skipping concept with unsupported type: {} - {}", conceptIRI, type);
                     }
                 }
             }
 
-            List<HierarchyData> hierarchies = readHierarchies(namespace, sparqlEndpoint, concepts);
+            List<HierarchyData> hierarchies = readHierarchies(namespace, concepts);
 
             return builder
                     .classes(classes)
@@ -95,12 +101,12 @@ public class SSPReader {
         }
     }
 
-    private VocabularyMetadata readVocabularyMetadata(String ontologyIRI, String sparqlEndpoint) {
+    private VocabularyMetadata readVocabularyMetadata(String ontologyIRI) {
         log.debug("Reading vocabulary metadata for: {}", ontologyIRI);
 
         String queryString = String.format(VOCABULARY_METADATA_QUERY, ontologyIRI);
 
-        try (RDFConnection connection = RDFConnection.connect(sparqlEndpoint)) {
+        try (RDFConnection connection = RDFConnection.connect(config.getSparqlEndpoint())) {
             try (QueryExecution qexec = connection.query(queryString)) {
                 ResultSet results = qexec.execSelect();
 
@@ -127,13 +133,13 @@ public class SSPReader {
                 .build();
     }
 
-    private Map<String, ConceptData> readGlossaryConcepts(String namespace, String sparqlEndpoint) {
+    private Map<String, ConceptData> readGlossaryConcepts(String namespace) {
         log.debug("Reading glossary concepts for namespace: {}", namespace);
 
         String queryString = String.format(GLOSSARY_CONCEPTS_QUERY, namespace);
         Map<String, ConceptData> concepts = new HashMap<>();
 
-        try (RDFConnection connection = RDFConnection.connect(sparqlEndpoint)) {
+        try (RDFConnection connection = RDFConnection.connect(config.getSparqlEndpoint())) {
             try (QueryExecution qexec = connection.query(queryString)) {
                 ResultSet results = qexec.execSelect();
 
@@ -170,13 +176,13 @@ public class SSPReader {
         return concepts;
     }
 
-    private Map<String, String> readConceptTypes(String namespace, String sparqlEndpoint) {
+    private Map<String, String> readConceptTypes(String namespace) {
         log.debug("Reading concept types for namespace: {}", namespace);
 
         String queryString = String.format(MODEL_TYPES_QUERY, namespace);
         Map<String, String> conceptTypes = new HashMap<>();
 
-        try (RDFConnection connection = RDFConnection.connect(sparqlEndpoint)) {
+        try (RDFConnection connection = RDFConnection.connect(config.getSparqlEndpoint())) {
             try (QueryExecution qexec = connection.query(queryString)) {
                 ResultSet results = qexec.execSelect();
 
@@ -197,13 +203,13 @@ public class SSPReader {
         return conceptTypes;
     }
 
-    private Map<String, DomainRangeInfo> readDomainRangeInfo(String namespace, String sparqlEndpoint) {
+    private Map<String, DomainRangeInfo> readDomainRangeInfo(String namespace) {
         log.debug("Reading domain/range information for namespace: {}", namespace);
 
         String queryString = String.format(DOMAIN_RANGE_QUERY, namespace);
         Map<String, DomainRangeInfo> domainRangeMap = new HashMap<>();
 
-        try (RDFConnection connection = RDFConnection.connect(sparqlEndpoint)) {
+        try (RDFConnection connection = RDFConnection.connect(config.getSparqlEndpoint())) {
             try (QueryExecution qexec = connection.query(queryString)) {
                 ResultSet results = qexec.execSelect();
 
@@ -231,13 +237,13 @@ public class SSPReader {
         return domainRangeMap;
     }
 
-    private List<HierarchyData> readHierarchies(String namespace, String sparqlEndpoint, Map<String, ConceptData> concepts) {
+    private List<HierarchyData> readHierarchies(String namespace, Map<String, ConceptData> concepts) {
         log.debug("Reading hierarchies for namespace: {}", namespace);
 
         String queryString = String.format(HIERARCHY_QUERY, namespace, namespace);
         List<HierarchyData> hierarchies = new ArrayList<>();
 
-        try (RDFConnection connection = RDFConnection.connect(sparqlEndpoint)) {
+        try (RDFConnection connection = RDFConnection.connect(config.getSparqlEndpoint())) {
             try (QueryExecution qexec = connection.query(queryString)) {
                 ResultSet results = qexec.execSelect();
 

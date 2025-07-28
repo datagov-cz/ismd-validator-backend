@@ -35,7 +35,7 @@ public class ConverterServiceImpl implements ConverterService {
 
     @Override
     public ConversionResult processSSPOntology(String iri, Boolean removeInvalidSources) throws ConversionException {
-        return
+        return converterEngine.processSSPOntology(iri, removeInvalidSources);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.dia.converter.reader.ssp.data;
+package com.dia.conversion.reader.ssp.data;
 
 import lombok.Getter;
 import lombok.Setter;

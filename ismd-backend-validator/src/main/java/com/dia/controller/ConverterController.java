@@ -4,7 +4,6 @@ import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
 import com.dia.enums.FileFormat;
-import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.UnsupportedFormatException;
 import com.dia.service.ConverterService;
@@ -157,7 +156,9 @@ public class ConverterController {
                 );
             }
             ConversionResult conversionResult = converterService.processSSPOntology(iri, removeInvalidSources);
-            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult);
+            //ISMDValidationReport ismdReport = validationService.validate(conversionResult.getTransformationResult());
+            //ValidationResultsDto results = validationReportService.convertToDto(ismdReport);
+            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, null);
             log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, SSP, output);
             return response;

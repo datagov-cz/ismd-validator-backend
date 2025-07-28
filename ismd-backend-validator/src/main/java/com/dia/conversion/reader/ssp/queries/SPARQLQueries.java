@@ -1,4 +1,4 @@
-package com.dia.converter.reader.ssp.queries;
+package com.dia.conversion.reader.ssp.queries;
 
 public class SPARQLQueries {
 
