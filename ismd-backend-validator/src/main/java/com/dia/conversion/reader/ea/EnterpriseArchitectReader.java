@@ -14,14 +14,12 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static com.dia.constants.ArchiConstants.DEFAULT_NS;
 import static com.dia.constants.EnterpriseArchitectConstants.*;
+import static com.dia.conversion.reader.ea.AttributePatterns.ATTRIBUTE_PATTERNS;
 
-/**
- * EnterpriseArchitectReader - reads and parses ontology data from EA XMI files
- * TODO: verify possibility of TypeMappings usage
- */
 @Component
 @Slf4j
 public class EnterpriseArchitectReader {
@@ -134,15 +132,14 @@ public class EnterpriseArchitectReader {
 
         Element extensionElement = findExtensionElement(document, vocabularyPackageId);
         if (extensionElement != null) {
-            metadata.setDescription(getTagValue(extensionElement, TAG_POPIS));
+            metadata.setDescription(getTagValueByPattern(extensionElement, "POPIS_SLOVNIKU"));
         }
 
         String namespace = getTagValue(extensionElement, "namespace");
         if (namespace == null || namespace.trim().isEmpty()) {
             String name = metadata.getName();
             if (name != null && !name.trim().isEmpty()) {
-                namespace = DEFAULT_NS +
-                        name.toLowerCase();
+                namespace = DEFAULT_NS + name.toLowerCase();
             }
         }
         metadata.setNamespace(namespace);
@@ -259,16 +256,15 @@ public class EnterpriseArchitectReader {
 
         classData.setName(umlElement.getAttribute("name"));
         classData.setType(STEREOTYPE_TYP_SUBJEKTU.equals(stereotype) ? "Subjekt práva" : "Objekt práva");
-        classData.setDescription(getTagValue(extensionElement, TAG_POPIS));
-        classData.setDefinition(getTagValue(extensionElement, TAG_DEFINICE));
-        classData.setSource(getTagValue(extensionElement, TAG_ZDROJ));
-        classData.setRelatedSource(getTagValue(extensionElement, TAG_SOUVISEJICI_ZDROJ));
-        classData.setAlternativeName(getTagValue(extensionElement, TAG_ALTERNATIVNI_NAZEV));
-        classData.setEquivalentConcept(getTagValue(extensionElement, TAG_EKVIVALENTNI_POJEM));
-        // TODO verify whether Id or Identifier is required
-        classData.setId(getTagValue(extensionElement, TAG_IDENTIFIKATOR));
-        classData.setAgendaCode(getTagValue(extensionElement, TAG_AGENDA));
-        classData.setAgendaSystemCode(getTagValue(extensionElement, TAG_AGENDOVY_INFORMACNI_SYSTEM));
+        classData.setDescription(getTagValueByPattern(extensionElement, "POPIS"));
+        classData.setDefinition(getTagValueByPattern(extensionElement, "DEFINICE"));
+        classData.setSource(getTagValueByPattern(extensionElement, "ZDROJ"));
+        classData.setRelatedSource(getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ"));
+        classData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
+        classData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
+        classData.setId(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
+        classData.setAgendaCode(getTagValueByPattern(extensionElement, "AGENDA"));
+        classData.setAgendaSystemCode(getTagValueByPattern(extensionElement, "AGENDOVY_INFORMACNI_SYSTEM"));
 
         return classData;
     }
@@ -277,23 +273,23 @@ public class EnterpriseArchitectReader {
         PropertyData propertyData = new PropertyData();
 
         propertyData.setName(umlElement.getAttribute("name"));
-        propertyData.setDescription(getTagValue(extensionElement, TAG_POPIS));
-        propertyData.setDefinition(getTagValue(extensionElement, TAG_DEFINICE));
-        propertyData.setSource(getTagValue(extensionElement, TAG_ZDROJ));
-        propertyData.setRelatedSource(getTagValue(extensionElement, TAG_SOUVISEJICI_ZDROJ));
-        propertyData.setAlternativeName(getTagValue(extensionElement, TAG_ALTERNATIVNI_NAZEV));
-        propertyData.setEquivalentConcept(getTagValue(extensionElement, TAG_EKVIVALENTNI_POJEM));
-        // TODO verify whether Id or Identifier is required
-        propertyData.setIdentifier(getTagValue(extensionElement, TAG_IDENTIFIKATOR));
-        propertyData.setDataType(getTagValue(extensionElement, TAG_DATOVY_TYP));
+        propertyData.setDescription(getTagValueByPattern(extensionElement, "POPIS"));
+        propertyData.setDefinition(getTagValueByPattern(extensionElement, "DEFINICE"));
+        propertyData.setSource(getTagValueByPattern(extensionElement, "ZDROJ"));
+        propertyData.setRelatedSource(getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ"));
+        propertyData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
+        propertyData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
+        propertyData.setIdentifier(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
+        propertyData.setDataType(getTagValueByPattern(extensionElement, "DATOVY_TYP"));
 
-        propertyData.setSharedInPPDF(getBooleanTagValue(extensionElement, TAG_JE_POJEM_SDILEN_V_PPDF));
-        propertyData.setIsPublic(getBooleanTagValue(extensionElement, TAG_JE_POJEM_VEREJNY));
+        propertyData.setSharedInPPDF(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_SDILEN_V_PPDF"));
+        propertyData.setIsPublic(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_VEREJNY"));
 
-        propertyData.setPrivacyProvision(getTagValue(extensionElement, TAG_USTANOVENI_DOKLADAJICI_NEVEREJNOST));
-        propertyData.setSharingMethod(getTagValue(extensionElement, TAG_ZPUSOB_SDILENI_UDAJE));
-        propertyData.setAcquisitionMethod(getTagValue(extensionElement, TAG_ZPUSOB_ZISKANI_UDAJE));
-        propertyData.setContentType(getTagValue(extensionElement, TAG_TYP_OBSAHU_UDAJE));
+        propertyData.setPrivacyProvision(getTagValueByPattern(extensionElement, "USTANOVENI_DOKLADAJICI_NEVEREJNOST"));
+
+        propertyData.setSharingMethod(getTagValueByPattern(extensionElement, "ZPUSOB_SDILENI_UDAJE"));
+        propertyData.setAcquisitionMethod(getTagValueByPattern(extensionElement, "ZPUSOB_ZISKANI_UDAJE"));
+        propertyData.setContentType(getTagValueByPattern(extensionElement, "TYP_OBSAHU_UDAJE"));
 
         propertyData.setDomain("Subjekt nebo objekt práva");
 
@@ -317,11 +313,6 @@ public class EnterpriseArchitectReader {
 
             String connectorType = getConnectorType(connector);
             log.debug("Processing connector: {} of type: {}", connector.getAttribute("name"), connectorType);
-            if (connector.getAttribute("name").contains("sídlí")) {
-                log.debug("DEBUG DEBUG DEBUG Found sídlí connector - type: {}, stereotype: {}, inVocab: {}",
-                        connectorType, getStereotype(connector),
-                        isConnectorInVocabulary(document, connector, vocabularyPackageIds));
-            }
 
             switch (connectorType) {
                 case "Association":
@@ -446,6 +437,10 @@ public class EnterpriseArchitectReader {
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);
 
+        if (sources.getLength() == 0 || targets.getLength() == 0) {
+            return false;
+        }
+
         Element source = (Element) sources.item(0);
         Element target = (Element) targets.item(0);
 
@@ -477,21 +472,22 @@ public class EnterpriseArchitectReader {
         RelationshipData relationshipData = new RelationshipData();
 
         relationshipData.setName(connector.getAttribute("name"));
-        relationshipData.setDescription(getTagValue(connector, TAG_POPIS));
-        relationshipData.setDefinition(getTagValue(connector, TAG_DEFINICE));
-        relationshipData.setSource(getTagValue(connector, TAG_ZDROJ));
-        relationshipData.setRelatedSource(getTagValue(connector, TAG_SOUVISEJICI_ZDROJ));
-        relationshipData.setAlternativeName(getTagValue(connector, TAG_ALTERNATIVNI_NAZEV));
-        relationshipData.setEquivalentConcept(getTagValue(connector, TAG_EKVIVALENTNI_POJEM));
-        relationshipData.setIdentifier(getTagValue(connector, TAG_IDENTIFIKATOR));
+        relationshipData.setDescription(getTagValueByPattern(connector, "POPIS"));
+        relationshipData.setDefinition(getTagValueByPattern(connector, "DEFINICE"));
+        relationshipData.setSource(getTagValueByPattern(connector, "ZDROJ"));
+        relationshipData.setRelatedSource(getTagValueByPattern(connector, "SOUVISEJICI_ZDROJ"));
+        relationshipData.setAlternativeName(getTagValueByPattern(connector, "ALTERNATIVNI_NAZEV"));
+        relationshipData.setEquivalentConcept(getTagValueByPattern(connector, "EKVIVALENTNI_POJEM"));
+        relationshipData.setIdentifier(getTagValueByPattern(connector, "IDENTIFIKATOR"));
 
-        relationshipData.setSharedInPPDF(getBooleanTagValue(connector, TAG_JE_POJEM_SDILEN_V_PPDF));
-        relationshipData.setIsPublic(getBooleanTagValue(connector, TAG_JE_POJEM_VEREJNY));
+        relationshipData.setSharedInPPDF(getBooleanTagValueByPattern(connector, "JE_POJEM_SDILEN_V_PPDF"));
+        relationshipData.setIsPublic(getBooleanTagValueByPattern(connector, "JE_POJEM_VEREJNY"));
 
-        relationshipData.setPrivacyProvision(getTagValue(connector, TAG_USTANOVENI_DOKLADAJICI_NEVEREJNOST));
-        relationshipData.setSharingMethod(getTagValue(connector, TAG_ZPUSOB_SDILENI_UDAJE));
-        relationshipData.setAcquisitionMethod(getTagValue(connector, TAG_ZPUSOB_ZISKANI_UDAJE));
-        relationshipData.setContentType(getTagValue(connector, TAG_TYP_OBSAHU_UDAJE));
+        relationshipData.setPrivacyProvision(getTagValueByPattern(connector, "USTANOVENI_DOKLADAJICI_NEVEREJNOST"));
+
+        relationshipData.setSharingMethod(getTagValueByPattern(connector, "ZPUSOB_SDILENI_UDAJE"));
+        relationshipData.setAcquisitionMethod(getTagValueByPattern(connector, "ZPUSOB_ZISKANI_UDAJE"));
+        relationshipData.setContentType(getTagValueByPattern(connector, "TYP_OBSAHU_UDAJE"));
 
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);
@@ -533,6 +529,72 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
+    private String getTagValueByPattern(Element element, String logicalAttributeName) {
+        if (element == null) {
+            return null;
+        }
+
+        Pattern[] patterns = ATTRIBUTE_PATTERNS.get(logicalAttributeName);
+        if (patterns == null) {
+            log.warn("No patterns defined for logical attribute: {}", logicalAttributeName);
+            return null;
+        }
+
+        List<String> availableTags = getAllTagNames(element);
+        log.debug("Looking for '{}' among available tags: {}", logicalAttributeName, availableTags);
+
+        for (int patternIndex = 0; patternIndex < patterns.length; patternIndex++) {
+            Pattern pattern = patterns[patternIndex];
+
+            for (String tagName : availableTags) {
+                if (pattern.matcher(tagName).matches()) {
+                    String value = getTagValue(element, tagName);
+                    if (value != null && !value.trim().isEmpty()) {
+                        log.debug("Found value for '{}' using pattern #{} '{}' -> tag '{}': {}",
+                                logicalAttributeName, patternIndex, pattern.pattern(), tagName,
+                                value.length() > 100 ? value.substring(0, 100) + "..." : value);
+                        return value;
+                    }
+                }
+            }
+        }
+
+        log.debug("No matching tag found for logical attribute '{}' with patterns: {}",
+                logicalAttributeName, Arrays.toString(patterns));
+        return null;
+    }
+
+    private String getBooleanTagValueByPattern(Element element, String logicalAttributeName) {
+        String value = getTagValueByPattern(element, logicalAttributeName);
+        if (value == null) {
+            return null;
+        }
+
+        if ("Yes".equals(value) || "No".equals(value) || "Ano".equals(value) || "Ne".equals(value)) {
+            return value;
+        }
+
+        log.debug("Boolean field '{}': raw='{}' -> converted='{}'", logicalAttributeName, value, value);
+        return value;
+    }
+
+    private List<String> getAllTagNames(Element element) {
+        List<String> tagNames = new ArrayList<>();
+        if (element == null) {
+            return tagNames;
+        }
+
+        NodeList tags = element.getElementsByTagName("tag");
+        for (int i = 0; i < tags.getLength(); i++) {
+            Element tag = (Element) tags.item(i);
+            String tagName = tag.getAttribute("name");
+            if (!tagName.trim().isEmpty()) {
+                tagNames.add(tagName);
+            }
+        }
+        return tagNames;
+    }
+
     private String getTagValue(Element element, String tagName) {
         if (element == null) {
             return null;
@@ -570,20 +632,6 @@ public class EnterpriseArchitectReader {
 
         value = value.replace("&#xA;", "").trim();
 
-        return value;
-    }
-
-    private String getBooleanTagValue(Element element, String tagName) {
-        String value = getTagValue(element, tagName);
-        if (value == null) {
-            return null;
-        }
-
-        if ("Yes".equals(value) || "No".equals(value)) {
-            return value;
-        }
-
-        log.debug("Boolean field '{}': raw='{}' -> converted='{}'", tagName, value, value);
         return value;
     }
 }
