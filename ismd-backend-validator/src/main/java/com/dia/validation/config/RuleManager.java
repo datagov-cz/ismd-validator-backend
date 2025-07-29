@@ -27,6 +27,7 @@ public class RuleManager {
     private final ResourceLoader resourceLoader;
     private final Map<String, RuleDefinition> allRules = new ConcurrentHashMap<>();
     private final Map<String, Model> ruleModels = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> ruleLocalityMap = new ConcurrentHashMap<>();
 
     @Autowired
     public RuleManager(ValidationConfiguration config, ResourceLoader resourceLoader) {
@@ -78,6 +79,8 @@ public class RuleManager {
             allRules.put(ruleName, ruleDefinition);
             ruleModels.put(ruleName, model);
 
+            registerRuleLocality(ruleName, Objects.requireNonNull(filename));
+
             log.debug("Loaded rule: {} with {} statements", ruleName, model.size());
 
         } catch (Exception e) {
@@ -86,6 +89,16 @@ public class RuleManager {
                 throw new ValidationConfigurationException("Failed to load rule: " + resource.getFilename(), e);
             }
         }
+    }
+
+    private void registerRuleLocality(String ruleName, String fileName) {
+        boolean isLocal = fileName.toLowerCase().startsWith("local-");
+        ruleLocalityMap.put(ruleName, isLocal);
+        log.debug("Registered rule {} as {}", ruleName, isLocal ? "local" : "global");
+    }
+
+    public boolean isLocalRule(String ruleName) {
+        return ruleLocalityMap.getOrDefault(ruleName, false);
     }
 
     private String extractRuleName(String filename) {
@@ -153,4 +166,6 @@ public class RuleManager {
                     def != null ? def.filename() : "unknown");
         });
     }
+
+
 }
