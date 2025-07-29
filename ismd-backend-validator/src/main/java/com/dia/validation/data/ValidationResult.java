@@ -33,22 +33,6 @@ public record ValidationResult(ValidationSeverity severity, String message, Stri
         return focusNodeUri;
     }
 
-    public String getResultPathName() {
-        if (resultPathUri == null) {
-            return null;
-        }
-
-        int lastSlash = resultPathUri.lastIndexOf('/');
-        int lastHash = resultPathUri.lastIndexOf('#');
-        int splitIndex = Math.max(lastSlash, lastHash);
-
-        if (splitIndex >= 0 && splitIndex < resultPathUri.length() - 1) {
-            return resultPathUri.substring(splitIndex + 1);
-        }
-
-        return resultPathUri;
-    }
-
     @Override
     public String toString() {
         return String.format(

@@ -1,6 +1,5 @@
 package com.dia.validation.config;
 
-import com.dia.enums.ValidationTiming;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -10,20 +9,18 @@ import java.util.Map;
 
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "validation.rules")
-public class ValidationConfiguration {
+@ConfigurationProperties(prefix = "validation.global")
+public class GlobalValidationConfiguration {
 
     private Map<String, Boolean> enabled = new HashMap<>();
 
-    private String rulesDirectory = "classpath:validation/rules/";
-
-    private ValidationTiming defaultTiming = ValidationTiming.BEFORE_EXPORT;
+    private String sparqlEndpoint;
 
     private long timeoutMs = 10000; // 10 seconds
 
-    private boolean cacheResults = true;
+    private int maxAttempts = 3;
 
-    private boolean continueOnRuleError = true;
+    private long retryDelayMs = 1000; // 1 second
 
     public boolean isRuleEnabled(String ruleName) {
         return enabled.getOrDefault(ruleName, true);

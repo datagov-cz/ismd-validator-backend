@@ -1,0 +1,30 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix ex: <http://example.org/shapes#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+
+# Information rule: Concept with same IRI
+ex:ConceptSameIriRule
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Concept Same IRI Rule" ;
+    sh:description "Information about concepts with same IRI" ;
+    sh:message "Mezi publikovanými slovníky existuje pojem se stejným IRI"@cs ;
+    sh:severity sh:Info ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this ?otherConcept WHERE {
+                $this a slovníky:pojem .
+                ?otherConcept a slovníky:pojem .
+                FILTER($this = ?otherConcept)
+            }
+        """ ;
+    ] .

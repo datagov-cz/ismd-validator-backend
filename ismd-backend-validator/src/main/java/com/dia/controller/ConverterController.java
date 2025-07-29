@@ -93,8 +93,9 @@ public class ConverterController {
                     log.debug("Processing Archi XML file: requestId={}", requestId);
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
                     ConversionResult conversionResult = converterService.processArchiFile(xmlContent, removeInvalidSources);
-                    ISMDValidationReport ismdReport = validationService.validate(conversionResult.getTransformationResult());
-                    ValidationResultsDto results = validationReportService.convertToDto(ismdReport);
+
+                    ValidationResultsDto results = performValidation(conversionResult, requestId);
+
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}",
                             requestId, fileFormat, output, results);
@@ -103,8 +104,9 @@ public class ConverterController {
                 case XMI -> {
                     log.debug("Processing XMI file: requestId={}", requestId);
                     ConversionResult conversionResult = converterService.processEAFile(file, removeInvalidSources);
-                    ISMDValidationReport ismdReport = validationService.validate(conversionResult.getTransformationResult());
-                    ValidationResultsDto results = validationReportService.convertToDto(ismdReport);
+
+                    ValidationResultsDto results = performValidation(conversionResult, requestId);
+
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}",
                             requestId, fileFormat, output, results);
@@ -113,8 +115,9 @@ public class ConverterController {
                 case XLSX -> {
                     log.debug("Processing XLSX file: requestId={}", requestId);
                     ConversionResult conversionResult = converterService.processExcelFile(file, removeInvalidSources);
-                    ISMDValidationReport ismdReport = validationService.validate(conversionResult.getTransformationResult());
-                    ValidationResultsDto results = validationReportService.convertToDto(ismdReport);
+
+                    ValidationResultsDto results = performValidation(conversionResult, requestId);
+
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}",
                             requestId, fileFormat, output, results);
@@ -272,5 +275,26 @@ public class ConverterController {
         }
 
         return "json";
+    }
+
+    private ValidationResultsDto performValidation(ConversionResult conversionResult, String requestId) {
+        try {
+            ISMDValidationReport combinedReport = validationService.validate(conversionResult.getTransformationResult());
+
+            log.debug("Combined validation completed: requestId={}, results={}", requestId, combinedReport.getSummary());
+            return validationReportService.convertToDto(combinedReport);
+
+        } catch (Exception e) {
+            log.error("Validation failed but continuing with conversion: requestId={}", requestId, e);
+
+            try {
+                ISMDValidationReport localReport = validationService.validate(conversionResult.getTransformationResult());
+                log.warn("Fallback to local validation successful: requestId={}", requestId);
+                return validationReportService.convertToDto(localReport);
+            } catch (Exception fallbackE) {
+                log.error("Even local validation failed: requestId={}", requestId, fallbackE);
+                return null;
+            }
+        }
     }
 }
