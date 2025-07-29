@@ -329,6 +329,22 @@ public class SHACLRuleEngine {
                 }
             }
 
+            if (entryString.contains("ex:")) {
+                String[] parts = entryString.split("ex:");
+                if (parts.length > 1) {
+                    String rulePart = parts[1].split("\\s+")[0];
+                    return cleanRawRuleName(rulePart);
+                }
+            }
+
+            if (entryString.contains("#")) {
+                String[] parts = entryString.split("#");
+                if (parts.length > 1) {
+                    String rulePart = parts[1].split("\\s+")[0];
+                    return cleanRawRuleName(rulePart);
+                }
+            }
+
             return "validation-rule";
 
         } catch (Exception e) {
