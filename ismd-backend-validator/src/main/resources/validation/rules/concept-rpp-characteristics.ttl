@@ -8,7 +8,7 @@
 ex:RPPCharacteristicsCompleteRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Kompletní údaje RPP charakteristik" ;
+    sh:name "Kompletní údaje RPP charakteristik"@cs ;
     sh:description "Reports when concept has complete RPP characteristics" ;
     sh:message "Pojem má kompletní charakteristiky pro RPP"@cs ;
     sh:severity sh:Info ;
@@ -47,7 +47,7 @@ ex:RPPCharacteristicsCompleteRule
 ex:RPPCharacteristicsMissingPPDFRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Charakteristiky RPP nemají údaje PPDF" ;
+    sh:name "Charakteristiky RPP nemají údaje PPDF"@cs ;
     sh:description "Reports when concept doesn't have PPDF sharing" ;
     sh:message "Pojem nemá sdílení v propojeném datovém fondu"@cs ;
     sh:severity sh:Info ;
@@ -84,7 +84,7 @@ ex:RPPCharacteristicsMissingPPDFRule
 ex:RPPCharacteristicsMissingUstanoveniRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Charakteristiky RPP nemají ustanovení dokládající neveřejnost" ;
+    sh:name "Charakteristiky RPP nemají ustanovení dokládající neveřejnost"@cs ;
     sh:description "Reports when neveřejný údaj is missing ustanovení dokládající neveřejnost" ;
     sh:message "Pojem neveřejný údaj nemá ustanovení dokládající neveřejnost"@cs ;
     sh:severity sh:Info ;
@@ -113,7 +113,7 @@ ex:RPPCharacteristicsMissingUstanoveniRule
 ex:RPPCharacteristicsAgendaRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Charakteristiky RPP a Agend" ;
+    sh:name "Charakteristiky RPP a Agend"@cs ;
     sh:description "Reports when concept does not have agenda or AIS relationships" ;
     sh:message "Pojem nemá vztah k agendě nebo AIS"@cs ;
     sh:severity sh:Info ;
