@@ -3,10 +3,9 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix dct: <http://purl.org/dc/terms/> .
-@prefix ex: <http://example.org/shapes#> .
 
 # Warning rule: Concept with different IRI but same name
-ex:ConceptDifferentIriSameNameRule
+<https://slovník.gov.cz/shacl/globální/pojem-s-jiným-iri-stejným-názvem>
     a sh:NodeShape ;
     sh:targetClass skos:Concept ;
     sh:name "Pojem s jiným IRI ale stejným názvem" ;

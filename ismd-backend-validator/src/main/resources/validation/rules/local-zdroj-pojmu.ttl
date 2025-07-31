@@ -3,11 +3,10 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix dct: <http://purl.org/dc/terms/> .
-@prefix ex: <http://example.org/shapes#> .
 @prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
 
 # Warning rule: Concept should have a source
-ex:ConceptSourceRule
+<https://slovník.gov.cz/shacl/lokální/pojem-nemá-zdroj>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "Zdroj pojmu" ;

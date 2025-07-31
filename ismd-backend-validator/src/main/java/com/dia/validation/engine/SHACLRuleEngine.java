@@ -1,13 +1,12 @@
 package com.dia.validation.engine;
 
 import com.dia.exceptions.ValidationException;
-import com.dia.utility.URIGenerator;
+import com.dia.utility.UtilityMethods;
 import com.dia.validation.config.RuleManager;
 import com.dia.validation.config.ValidationConfiguration;
 import com.dia.validation.data.ISMDValidationReport;
 import com.dia.validation.data.ValidationResult;
 import com.dia.enums.ValidationSeverity;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
@@ -24,23 +23,25 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 
 @Component
 @Slf4j
 public class SHACLRuleEngine {
 
+    private static final String LOCAL_SHACL_BASE_URI = "https://slovník.gov.cz/shacl/lokální/";
+    private static final String GLOBAL_SHACL_BASE_URI = "https://slovník.gov.cz/shacl/globální/";
+
     private final ValidationConfiguration config;
     private final RuleManager ruleManager;
     private final ExecutorService executorService;
-    private final URIGenerator uriGenerator;
 
     @Autowired
     public SHACLRuleEngine(ValidationConfiguration config, RuleManager ruleManager) {
         this.config = config;
         this.ruleManager = ruleManager;
         this.executorService = Executors.newFixedThreadPool(2);
-        this.uriGenerator = new URIGenerator();
     }
 
     public ISMDValidationReport validate(Model dataModel) {
@@ -185,7 +186,7 @@ public class SHACLRuleEngine {
             String message = extractMessage(entry);
             String focusNodeUri = extractFocusNodeUri(entry);
             String resultPathUri = extractResultPathUri(entry);
-            String ruleName = extractRuleName(entry);
+            String ruleName = extractRuleNameFromEntry(entry);
             String valueString = extractValueString(entry);
 
             return new ValidationResult(
@@ -242,14 +243,23 @@ public class SHACLRuleEngine {
         }
     }
 
-    private String extractRuleName(ReportEntry entry) {
+    private String extractRuleNameFromEntry(ReportEntry entry) {
         try {
-            return extractRuleNameFromEntry(entry);
+            Node sourceShape = entry.source();
+            if (sourceShape != null && sourceShape.isURI()) {
+                String shapeUri = sourceShape.getURI();
+
+                if (shapeUri.startsWith("https://slovník.gov.cz/shacl/")) {
+                    return shapeUri;
+                }
+            }
         } catch (Exception e) {
-            log.debug("Could not extract rule name: {}", e.getMessage());
-            return "unknown-rule";
+            log.debug("Error extracting rule IRI: {}", e.getMessage());
         }
+
+        return GLOBAL_SHACL_BASE_URI + "unknown-rule";
     }
+
 
     private String extractValueString(ReportEntry entry) {
         try {
@@ -301,80 +311,6 @@ public class SHACLRuleEngine {
         } else {
             return node.toString();
         }
-    }
-
-    private String extractRuleNameFromEntry(ReportEntry entry) {
-        try {
-            String entryString = entry.toString();
-            String rawRuleName = extractRawRuleNameFromEntry(entryString);
-
-            boolean isLocalRule = isLocalRule(rawRuleName, entryString);
-
-            return uriGenerator.generateRuleIRI(rawRuleName, isLocalRule);
-
-        } catch (Exception e) {
-            log.debug("Error extracting rule name from entry: {}", e.getMessage());
-            return uriGenerator.generateDefaultRuleIRI();
-        }
-    }
-
-    private String extractRawRuleNameFromEntry(String entryString) {
-        try {
-            if (entryString.contains("Shape") || entryString.contains("Rule")) {
-                String[] parts = entryString.split("\\s+");
-                for (String part : parts) {
-                    if (part.contains("Shape") || part.contains("Rule")) {
-                        return cleanRawRuleName(part);
-                    }
-                }
-            }
-
-            if (entryString.contains("ex:")) {
-                String[] parts = entryString.split("ex:");
-                if (parts.length > 1) {
-                    String rulePart = parts[1].split("\\s+")[0];
-                    return cleanRawRuleName(rulePart);
-                }
-            }
-
-            if (entryString.contains("#")) {
-                String[] parts = entryString.split("#");
-                if (parts.length > 1) {
-                    String rulePart = parts[1].split("\\s+")[0];
-                    return cleanRawRuleName(rulePart);
-                }
-            }
-
-            return "validation-rule";
-
-        } catch (Exception e) {
-            log.debug("Error extracting raw rule name: {}", e.getMessage());
-            return "validation-rule";
-        }
-    }
-
-    private String cleanRawRuleName(String rawName) {
-        if (rawName == null) {
-            return "validation-rule";
-        }
-
-        return rawName.replaceAll("^.*[#/]", "")
-                .replaceAll("[\\[\\](){}]", "")
-                .replaceAll("\\s+", "")
-                .trim();
-    }
-
-    private boolean isLocalRule(String ruleName, String entryString) {
-        try {
-            return ruleManager.isLocalRule(ruleName);
-        } catch (Exception e) {
-            log.debug("Could not determine rule locality from RuleManager: {}", e.getMessage());
-        }
-
-        String lowerRuleName = ruleName.toLowerCase();
-        String lowerEntryString = entryString.toLowerCase();
-
-        return lowerRuleName.contains("local") || lowerEntryString.contains("local");
     }
 
     private ValidationSeverity convertSeverity(Severity severity) {
