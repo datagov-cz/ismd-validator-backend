@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdfconnection.RDFConnection;
 import org.apache.jena.sparql.exec.http.QueryExecutionHTTPBuilder;
 import org.apache.jena.sparql.exec.http.QuerySendMode;
 import org.springframework.stereotype.Component;
@@ -21,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dia.constants.SSPConstants.*;
 import static com.dia.conversion.reader.ssp.queries.SPARQLQueries.*;
 
 @Component
@@ -69,15 +67,15 @@ public class SSPReader {
 
                 if (type != null) {
                     switch (type) {
-                        case Z_SGOV_NAMESPACE + "typ-objektu" -> {
+                        case "https://slovník.gov.cz/základní/pojem/typ-objektu" -> {
                             ClassData classData = convertToClassData(concept, conceptIRI);
                             classes.add(classData);
                         }
-                        case Z_SGOV_NAMESPACE + "typ-vlastnosti" -> {
+                        case "https://slovník.gov.cz/základní/pojem/typ-vlastnosti" -> {
                             PropertyData propertyData = convertToPropertyData(concept, conceptIRI, domainRangeMap);
                             properties.add(propertyData);
                         }
-                        case Z_SGOV_NAMESPACE + "typ-vztahu" -> {
+                        case "https://slovník.gov.cz/základní/pojem/typ-vztahu" -> {
                             RelationshipData relationshipData = convertToRelationshipData(concept, conceptIRI, domainRangeMap);
                             relationships.add(relationshipData);
                         }
@@ -101,11 +99,26 @@ public class SSPReader {
         }
     }
 
-    private VocabularyMetadata readVocabularyMetadata(String ontologyIRI) {
-        log.debug("Reading vocabulary metadata for: {}", ontologyIRI);
-        VocabularyMetadata metadata = new VocabularyMetadata();
+    private void discoverAvailableOntologies() {
+        log.debug("Discovering available ontologies on endpoint...");
 
-        String queryString = String.format(VOCABULARY_METADATA_QUERY, ontologyIRI);
+        String queryString = """
+        PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        PREFIX a-popis-dat-pojem: <http://onto.fel.cvut.cz/ontologies/slovník/agendový/popis-dat/pojem/>
+        PREFIX dcterms: <http://purl.org/dc/terms/>
+        
+        SELECT DISTINCT ?ontology ?title ?type
+        WHERE {
+            ?ontology a owl:Ontology .
+            OPTIONAL { ?ontology a ?type }
+            OPTIONAL { ?ontology dcterms:title ?title }
+            FILTER(?type = a-popis-dat-pojem:slovník || ?type = owl:Ontology)
+        }
+        ORDER BY ?ontology
+        LIMIT 20
+        """;
+
+        log.debug("Discovery query: {}", queryString);
 
         try {
             Query query = QueryFactory.create(queryString);
@@ -115,26 +128,159 @@ public class SSPReader {
                     .query(query)
                     .sendMode(QuerySendMode.asPost)
                     .build()) {
+
+                ResultSet results = qexec.execSelect();
+                int count = 0;
+                while (results.hasNext()) {
+                    QuerySolution solution = results.nextSolution();
+                    count++;
+                    String ontology = solution.getResource("ontology").getURI();
+                    String title = getStringValue(solution, "title");
+                    String type = solution.contains("type") ? solution.getResource("type").getURI() : "unknown";
+
+                    log.debug("Available ontology #{}: IRI='{}', title='{}', type='{}'", count, ontology, title, type);
+                }
+                log.debug("Total available ontologies found: {}", count);
+            }
+        } catch (Exception e) {
+            log.error("Error discovering available ontologies", e);
+        }
+    }
+
+    private void discoverDiaGovGraphs() {
+        log.debug("Discovering graphs with 'data.dia.gov.cz' pattern...");
+
+        String queryString = """
+        SELECT DISTINCT ?graph
+        WHERE {
+            GRAPH ?graph { ?s ?p ?o }
+            FILTER(CONTAINS(STR(?graph), "data.dia.gov.cz"))
+        }
+        LIMIT 20
+        """;
+
+        log.debug("DIA gov graphs query: {}", queryString);
+
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
+
+                ResultSet results = qexec.execSelect();
+                int count = 0;
+                while (results.hasNext()) {
+                    QuerySolution solution = results.nextSolution();
+                    count++;
+                    String graph = solution.getResource("graph").getURI();
+
+                    log.debug("DIA graph #{}: {}", count, graph);
+                }
+                log.debug("Total DIA graphs found: {}", count);
+            }
+        } catch (Exception e) {
+            log.error("Error discovering DIA graphs", e);
+        }
+    }
+
+    private void discoverEducationGraphs() {
+        log.debug("Discovering education-related graphs...");
+
+        String queryString = """
+        SELECT DISTINCT ?graph
+        WHERE {
+            GRAPH ?graph { ?s ?p ?o }
+            FILTER(
+                CONTAINS(LCASE(STR(?graph)), "škol") ||
+                CONTAINS(LCASE(STR(?graph)), "universit") ||
+                CONTAINS(LCASE(STR(?graph)), "student") ||
+                CONTAINS(LCASE(STR(?graph)), "vzdělá")
+            )
+        }
+        LIMIT 20
+        """;
+
+        log.debug("Education graphs query: {}", queryString);
+
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
+
+                ResultSet results = qexec.execSelect();
+                int count = 0;
+                while (results.hasNext()) {
+                    QuerySolution solution = results.nextSolution();
+                    count++;
+                    String graph = solution.getResource("graph").getURI();
+
+                    log.debug("Education graph #{}: {}", count, graph);
+                }
+                log.debug("Total education graphs found: {}", count);
+            }
+        } catch (Exception e) {
+            log.error("Error discovering education graphs", e);
+        }
+    }
+
+    private VocabularyMetadata readVocabularyMetadata(String ontologyIRI) {
+        log.debug("Reading vocabulary metadata for: {}", ontologyIRI);
+
+        // Run discovery queries
+        discoverAvailableOntologies();
+        discoverDiaGovGraphs();
+        discoverEducationGraphs();
+
+        VocabularyMetadata metadata = new VocabularyMetadata();
+        String queryString = String.format(VOCABULARY_METADATA_QUERY, ontologyIRI);
+        log.debug("Executing vocabulary metadata query: {}", queryString);
+
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
+
+                log.debug("Executing SPARQL query for vocabulary metadata...");
                 ResultSet results = qexec.execSelect();
 
                 if (results.hasNext()) {
                     QuerySolution solution = results.nextSolution();
+                    log.debug("Found vocabulary metadata result. Solution variables: {}", solution.varNames());
 
                     String title = getStringValue(solution, "title");
                     String description = getStringValue(solution, "description");
+
+                    log.debug("Retrieved metadata - Title: '{}', Description: '{}'", title, description);
 
                     metadata.setName(title != null ? title : UtilityMethods.extractNameFromIRI(ontologyIRI));
                     metadata.setDescription(description);
                     metadata.setNamespace(ontologyIRI);
 
+                    log.debug("Created vocabulary metadata: Name='{}', Namespace='{}', Description='{}'",
+                            metadata.getName(), metadata.getNamespace(), metadata.getDescription());
                     return metadata;
+                } else {
+                    log.debug("No vocabulary metadata found for IRI: {}", ontologyIRI);
                 }
             }
         } catch (Exception e) {
             log.error("Error reading vocabulary metadata", e);
         }
+
         metadata.setName(UtilityMethods.extractNameFromIRI(ontologyIRI));
         metadata.setNamespace(ontologyIRI);
+        log.debug("Using fallback metadata: Name='{}', Namespace='{}'", metadata.getName(), metadata.getNamespace());
 
         return metadata;
     }
@@ -143,6 +289,7 @@ public class SSPReader {
         log.debug("Reading vocabulary concepts for namespace: {}", namespace);
 
         String queryString = String.format(VOCABULARY_CONCEPTS_QUERY, namespace);
+        log.debug("Executing vocabulary concepts query: {}", queryString);
         Map<String, ConceptData> concepts = new HashMap<>();
 
         try {
@@ -153,10 +300,14 @@ public class SSPReader {
                     .query(query)
                     .sendMode(QuerySendMode.asPost)
                     .build()) {
+
+                log.debug("Executing SPARQL query for vocabulary concepts...");
                 ResultSet results = qexec.execSelect();
 
+                int resultCount = 0;
                 while (results.hasNext()) {
                     QuerySolution solution = results.nextSolution();
+                    resultCount++;
 
                     String conceptIRI = solution.getResource("concept").getURI();
                     String prefLabel = getStringValue(solution, "prefLabel");
@@ -179,12 +330,14 @@ public class SSPReader {
                         concept.addAlternativeName(altLabel);
                     }
                 }
+
+                log.debug("Processed {} vocabulary concept results", resultCount);
             }
         } catch (Exception e) {
             log.error("Error reading vocabulary concepts", e);
         }
+        log.debug("Found {} unique concepts", concepts.size());
 
-        log.debug("Found {} concepts", concepts.size());
         return concepts;
     }
 
@@ -192,6 +345,7 @@ public class SSPReader {
         log.debug("Reading concept types for namespace: {}", namespace);
 
         String queryString = String.format(MODEL_TYPES_QUERY, namespace);
+        log.debug("Executing concept types query: {}", queryString);
         Map<String, String> conceptTypes = new HashMap<>();
 
         try {
@@ -202,22 +356,29 @@ public class SSPReader {
                     .query(query)
                     .sendMode(QuerySendMode.asPost)
                     .build()) {
+
+                log.debug("Executing SPARQL query for concept types...");
                 ResultSet results = qexec.execSelect();
 
+                int resultCount = 0;
                 while (results.hasNext()) {
                     QuerySolution solution = results.nextSolution();
+                    resultCount++;
 
                     String conceptIRI = solution.getResource("concept").getURI();
                     String type = solution.getResource("type").getURI();
 
                     conceptTypes.put(conceptIRI, type);
                 }
+
+                log.debug("Processed {} concept type results", resultCount);
             }
         } catch (Exception e) {
             log.error("Error reading concept types", e);
         }
 
         log.debug("Found types for {} concepts", conceptTypes.size());
+
         return conceptTypes;
     }
 
@@ -225,6 +386,7 @@ public class SSPReader {
         log.debug("Reading domain/range information for namespace: {}", namespace);
 
         String queryString = String.format(DOMAIN_RANGE_QUERY, namespace);
+        log.debug("Executing domain/range query: {}", queryString);
         Map<String, DomainRangeInfo> domainRangeMap = new HashMap<>();
 
         try {
@@ -235,10 +397,14 @@ public class SSPReader {
                     .query(query)
                     .sendMode(QuerySendMode.asPost)
                     .build()) {
+
+                log.debug("Executing SPARQL query for domain/range information...");
                 ResultSet results = qexec.execSelect();
 
+                int resultCount = 0;
                 while (results.hasNext()) {
                     QuerySolution solution = results.nextSolution();
+                    resultCount++;
 
                     String conceptIRI = solution.getResource("concept").getURI();
                     String domain = solution.contains("domain") ? solution.getResource("domain").getURI() : null;
@@ -252,12 +418,14 @@ public class SSPReader {
                         info.setRange(range);
                     }
                 }
+
+                log.debug("Processed {} domain/range results", resultCount);
             }
         } catch (Exception e) {
             log.error("Error reading domain/range information", e);
         }
-
         log.debug("Found domain/range info for {} concepts", domainRangeMap.size());
+
         return domainRangeMap;
     }
 
@@ -265,6 +433,7 @@ public class SSPReader {
         log.debug("Reading hierarchies for namespace: {}", namespace);
 
         String queryString = String.format(HIERARCHY_QUERY, namespace, namespace);
+        log.debug("Executing hierarchies query: {}", queryString);
         List<HierarchyData> hierarchies = new ArrayList<>();
 
         try {
@@ -275,10 +444,15 @@ public class SSPReader {
                     .query(query)
                     .sendMode(QuerySendMode.asPost)
                     .build()) {
+
+                log.debug("Executing SPARQL query for hierarchies...");
                 ResultSet results = qexec.execSelect();
 
+                int resultCount = 0;
+                int addedCount = 0;
                 while (results.hasNext()) {
                     QuerySolution solution = results.nextSolution();
+                    resultCount++;
 
                     String subClassIRI = solution.getResource("subClass").getURI();
                     String superClassIRI = solution.getResource("superClass").getURI();
@@ -291,12 +465,14 @@ public class SSPReader {
                         hierarchies.add(hierarchy);
                     }
                 }
+
+                log.debug("Processed {} hierarchy results, added {} valid hierarchies", resultCount, addedCount);
             }
         } catch (Exception e) {
             log.error("Error reading hierarchies", e);
         }
-
         log.debug("Found {} hierarchical relationships", hierarchies.size());
+
         return hierarchies;
     }
 
