@@ -8,7 +8,7 @@
 <https://slovník.gov.cz/shacl/lokální/popis-slovníku>
     a sh:NodeShape ;
     sh:targetClass skos:ConceptScheme ;
-    sh:name "Popis slovníku" ;
+    sh:name "Popis slovníku"@cs ;
     sh:description "Ensures that each vocabulary/concept scheme has a description" ;
     sh:message "Slovník nemá vyplněný popis"@cs ;
     sh:severity sh:Warning ;

@@ -8,7 +8,7 @@
 <https://slovník.gov.cz/shacl/lokální/název-slovníku>
     a sh:NodeShape ;
     sh:targetClass skos:ConceptScheme ;
-    sh:name "Jméno slovníku" ;
+    sh:name "Jméno slovníku"@cs ;
     sh:description "Ensures that each vocabulary/concept scheme has a name" ;
     sh:message "Slovník nemá vyplněný název"@cs ;
     sh:severity sh:Violation ;

@@ -9,7 +9,7 @@
 <https://slovník.gov.cz/shacl/globální/pojem-se-stejným-iri-jiným-názvem>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Pojem se stejným IRI ale jiným názvem" ;
+    sh:name "Pojem se stejným IRI ale jiným názvem"@cs ;
     sh:description "Ensures no published concept exists with same IRI but different name" ;
     sh:message "Mezi publikovanými slovníky existuje pojem se stejným IRI a jiným názvem"@cs ;
     sh:severity sh:Warning ;

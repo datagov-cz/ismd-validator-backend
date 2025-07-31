@@ -8,7 +8,7 @@
 <https://slovník.gov.cz/shacl/globální/slovník-se-stejným-iri-jiným-názvem>
     a sh:NodeShape ;
     sh:targetClass skos:ConceptScheme ;
-    sh:name "Slovník se stejným IRI ale jiným názvem" ;
+    sh:name "Slovník se stejným IRI ale jiným názvem"@cs ;
     sh:description "Ensures no published vocabulary exists with same IRI but different name" ;
     sh:message "Mezi publikovanými slovníky existuje slovník se stejným IRI a jiným názvem"@cs ;
     sh:severity sh:Warning ;

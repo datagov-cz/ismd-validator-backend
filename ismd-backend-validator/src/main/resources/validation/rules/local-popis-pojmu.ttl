@@ -6,10 +6,10 @@
 @prefix ex: <http://example.org/shapes#> .
 
 # Warning rule: Concept should have description or definition
-<https://slovník.gov.cz/shacl/lokální/pojem-nemá-popis-nebo-definici>
+ex:ConceptDescriptionRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Popis a definice pojmu" ;
+    sh:name "Popis pojmu"@cs ;
     sh:description "Ensures that each concept has either description or definition" ;
     sh:message "Pojem nemá vyplněný jeden nebo více z těchto údajů: popis, definice"@cs ;
     sh:severity sh:Warning ;

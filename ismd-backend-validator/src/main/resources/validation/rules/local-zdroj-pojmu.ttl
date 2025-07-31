@@ -9,7 +9,7 @@
 <https://slovník.gov.cz/shacl/lokální/pojem-nemá-zdroj>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Zdroj pojmu" ;
+    sh:name "Zdroj pojmu"@cs ;
     sh:description "Ensures that each concept has a source" ;
     sh:message "Pojem nemá vyplněný zdroj"@cs ;
     sh:severity sh:Warning ;
