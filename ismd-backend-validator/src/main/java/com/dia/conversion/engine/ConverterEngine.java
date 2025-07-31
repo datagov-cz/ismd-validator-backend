@@ -83,6 +83,23 @@ public class ConverterEngine {
                     }
                     return ofnDataTransformer.exportToTurtle(transformationResult);
                 }
+            },
+            FileFormat.SSP, new ConverterAdapter() {
+                @Override
+                public String exportToJson(TransformationResult transformationResult) throws JsonExportException {
+                    if (transformationResult == null) {
+                        throw new JsonExportException("SSP transformation result is not available.");
+                    }
+                    return ofnDataTransformer.exportToJson(transformationResult);
+                }
+
+                @Override
+                public String exportToTurtle(TransformationResult transformationResult) throws TurtleExportException {
+                    if (transformationResult == null) {
+                        throw new TurtleExportException("SSP transformation result is not available.");
+                    }
+                    return ofnDataTransformer.exportToTurtle(transformationResult);
+                }
             }
     );
 

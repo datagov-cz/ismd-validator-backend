@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "conversion.ssp")
 public class SPARQLConfiguration {
 
-    private String sparqlEndpoint = "https://slovník.gov.cz/sparql";
+    private String sparqlEndpoint = "https://xn--slovnk-7va.gov.cz/sparql";
     private int timeoutMs = 30000;
     private int maxRetries = 3;
     private boolean useCompression = true;

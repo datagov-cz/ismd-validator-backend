@@ -19,7 +19,7 @@ public class SPARQLQueries {
         }
         """;
 
-    public static final String GLOSSARY_CONCEPTS_QUERY = """
+    public static final String VOCABULARY_CONCEPTS_QUERY = """
         PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
         PREFIX dcterms: <http://purl.org/dc/terms/>
         PREFIX z-sgov: <https://slovník.gov.cz/základní/>

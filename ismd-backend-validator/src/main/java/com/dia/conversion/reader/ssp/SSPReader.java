@@ -9,11 +9,11 @@ import com.dia.utility.UtilityMethods;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jena.query.QueryExecution;
-import org.apache.jena.query.QuerySolution;
-import org.apache.jena.query.ResultSet;
+import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdfconnection.RDFConnection;
+import org.apache.jena.sparql.exec.http.QueryExecutionHTTPBuilder;
+import org.apache.jena.sparql.exec.http.QuerySendMode;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ public class SSPReader {
 
             VocabularyMetadata metadata = readVocabularyMetadata(ontologyIRI);
 
-            Map<String, ConceptData> concepts = readGlossaryConcepts(namespace);
+            Map<String, ConceptData> concepts = readVocabularyConcepts(namespace);
 
             Map<String, String> conceptTypes = readConceptTypes(namespace);
 
@@ -103,11 +103,18 @@ public class SSPReader {
 
     private VocabularyMetadata readVocabularyMetadata(String ontologyIRI) {
         log.debug("Reading vocabulary metadata for: {}", ontologyIRI);
+        VocabularyMetadata metadata = new VocabularyMetadata();
 
         String queryString = String.format(VOCABULARY_METADATA_QUERY, ontologyIRI);
 
-        try (RDFConnection connection = RDFConnection.connect(config.getSparqlEndpoint())) {
-            try (QueryExecution qexec = connection.query(queryString)) {
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
                 ResultSet results = qexec.execSelect();
 
                 if (results.hasNext()) {
@@ -116,31 +123,36 @@ public class SSPReader {
                     String title = getStringValue(solution, "title");
                     String description = getStringValue(solution, "description");
 
-                    return VocabularyMetadata.builder()
-                            .name(title != null ? title : UtilityMethods.extractNameFromIRI(ontologyIRI))
-                            .description(description)
-                            .namespace(ontologyIRI)
-                            .build();
+                    metadata.setName(title != null ? title : UtilityMethods.extractNameFromIRI(ontologyIRI));
+                    metadata.setDescription(description);
+                    metadata.setNamespace(ontologyIRI);
+
+                    return metadata;
                 }
             }
         } catch (Exception e) {
             log.error("Error reading vocabulary metadata", e);
         }
+        metadata.setName(UtilityMethods.extractNameFromIRI(ontologyIRI));
+        metadata.setNamespace(ontologyIRI);
 
-        return VocabularyMetadata.builder()
-                .name(UtilityMethods.extractNameFromIRI(ontologyIRI))
-                .namespace(ontologyIRI)
-                .build();
+        return metadata;
     }
 
-    private Map<String, ConceptData> readGlossaryConcepts(String namespace) {
-        log.debug("Reading glossary concepts for namespace: {}", namespace);
+    private Map<String, ConceptData> readVocabularyConcepts(String namespace) {
+        log.debug("Reading vocabulary concepts for namespace: {}", namespace);
 
-        String queryString = String.format(GLOSSARY_CONCEPTS_QUERY, namespace);
+        String queryString = String.format(VOCABULARY_CONCEPTS_QUERY, namespace);
         Map<String, ConceptData> concepts = new HashMap<>();
 
-        try (RDFConnection connection = RDFConnection.connect(config.getSparqlEndpoint())) {
-            try (QueryExecution qexec = connection.query(queryString)) {
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
                 ResultSet results = qexec.execSelect();
 
                 while (results.hasNext()) {
@@ -169,7 +181,7 @@ public class SSPReader {
                 }
             }
         } catch (Exception e) {
-            log.error("Error reading glossary concepts", e);
+            log.error("Error reading vocabulary concepts", e);
         }
 
         log.debug("Found {} concepts", concepts.size());
@@ -182,8 +194,14 @@ public class SSPReader {
         String queryString = String.format(MODEL_TYPES_QUERY, namespace);
         Map<String, String> conceptTypes = new HashMap<>();
 
-        try (RDFConnection connection = RDFConnection.connect(config.getSparqlEndpoint())) {
-            try (QueryExecution qexec = connection.query(queryString)) {
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
                 ResultSet results = qexec.execSelect();
 
                 while (results.hasNext()) {
@@ -209,8 +227,14 @@ public class SSPReader {
         String queryString = String.format(DOMAIN_RANGE_QUERY, namespace);
         Map<String, DomainRangeInfo> domainRangeMap = new HashMap<>();
 
-        try (RDFConnection connection = RDFConnection.connect(config.getSparqlEndpoint())) {
-            try (QueryExecution qexec = connection.query(queryString)) {
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
                 ResultSet results = qexec.execSelect();
 
                 while (results.hasNext()) {
@@ -243,8 +267,14 @@ public class SSPReader {
         String queryString = String.format(HIERARCHY_QUERY, namespace, namespace);
         List<HierarchyData> hierarchies = new ArrayList<>();
 
-        try (RDFConnection connection = RDFConnection.connect(config.getSparqlEndpoint())) {
-            try (QueryExecution qexec = connection.query(queryString)) {
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
                 ResultSet results = qexec.execSelect();
 
                 while (results.hasNext()) {
