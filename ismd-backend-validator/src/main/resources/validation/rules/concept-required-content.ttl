@@ -10,7 +10,7 @@
 ex:ConceptRequiredContentRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Concept Required Content Rule" ;
+    sh:name "Povinné údaje pojmu"@cs ;
     sh:description "Ensures that each concept has at least description, definition, or source" ;
     sh:message "Pojem nemá vyplněný jeden nebo více z těchto povinných údajů: popis, definice, zdroj"@cs ;
     sh:severity sh:Violation ;

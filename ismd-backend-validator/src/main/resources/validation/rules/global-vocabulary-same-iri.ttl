@@ -9,7 +9,7 @@
 ex:VocabularyDifferentIriSameNameRule
     a sh:NodeShape ;
     sh:targetClass skos:ConceptScheme ;
-    sh:name "Vocabulary Different IRI Same Name Rule" ;
+    sh:name "Slovník s jiným IRI ale stejným názvem"@cs ;
     sh:description "Ensures no published vocabulary exists with different IRI but same name" ;
     sh:message "Mezi publikovanými slovníky existuje slovník s jiným IRI a stejným názvem"@cs ;
     sh:severity sh:Violation ;
