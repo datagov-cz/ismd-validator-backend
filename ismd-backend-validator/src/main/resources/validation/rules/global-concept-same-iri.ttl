@@ -10,7 +10,7 @@
 ex:ConceptSameIriRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Pojem se stejným IRI" ;
+    sh:name "Pojem se stejným IRI"@cs ;
     sh:description "Information about concepts with same IRI" ;
     sh:message "Mezi publikovanými slovníky existuje pojem se stejným IRI"@cs ;
     sh:severity sh:Info ;
