@@ -7,7 +7,9 @@ import com.dia.conversion.reader.ssp.data.DomainRangeInfo;
 import com.dia.exceptions.ConversionException;
 import com.dia.utility.UtilityMethods;
 import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.RDFNode;
@@ -46,19 +48,19 @@ public class SSPReader {
             log.debug("Extracted namespace: {}", namespace);
 
             VocabularyMetadata metadata = readVocabularyMetadata(ontologyIRI);
-
             Map<String, ConceptData> concepts = readVocabularyConcepts(namespace);
-
             Map<String, String> conceptTypes = readConceptTypes(namespace);
-
             Map<String, DomainRangeInfo> domainRangeMap = readDomainRangeInfo(namespace);
+            Map<String, RelationshipInfo> relationshipInfos = readRelationshipElements(namespace);
 
-            OntologyData.Builder builder = OntologyData.builder()
-                    .vocabularyMetadata(metadata);
-
+            OntologyData.Builder builder = OntologyData.builder().vocabularyMetadata(metadata);
             List<ClassData> classes = new ArrayList<>();
             List<PropertyData> properties = new ArrayList<>();
             List<RelationshipData> relationships = new ArrayList<>();
+
+            int classesCreated = 0;
+            int propertiesCreated = 0;
+            int relationshipsCreated = 0;
 
             for (Map.Entry<String, ConceptData> entry : concepts.entrySet()) {
                 String conceptIRI = entry.getKey();
@@ -70,20 +72,27 @@ public class SSPReader {
                         case "https://slovník.gov.cz/základní/pojem/typ-objektu" -> {
                             ClassData classData = convertToClassData(concept, conceptIRI);
                             classes.add(classData);
+                            classesCreated++;
+                            log.debug("Created class #{}: name='{}', identifier='{}'", classesCreated, classData.getName(), classData.getIdentifier());
                         }
                         case "https://slovník.gov.cz/základní/pojem/typ-vlastnosti" -> {
                             PropertyData propertyData = convertToPropertyData(concept, conceptIRI, domainRangeMap);
                             properties.add(propertyData);
+                            propertiesCreated++;
+                            log.debug("Created property #{}: name='{}', identifier='{}'", propertiesCreated, propertyData.getName(), propertyData.getIdentifier());
                         }
                         case "https://slovník.gov.cz/základní/pojem/typ-vztahu" -> {
-                            RelationshipData relationshipData = convertToRelationshipData(concept, conceptIRI, domainRangeMap);
+                            RelationshipData relationshipData = convertToRelationshipData(concept, conceptIRI, relationshipInfos);
                             relationships.add(relationshipData);
+                            relationshipsCreated++;
+                            log.debug("Created relationship #{}: name='{}', domain='{}', range='{}', identifier='{}'",
+                                    relationshipsCreated, relationshipData.getName(), relationshipData.getDomain(),
+                                    relationshipData.getRange(), relationshipData.getIdentifier());
                         }
                         default -> log.debug("Skipping concept with unsupported type: {} - {}", conceptIRI, type);
                     }
                 }
             }
-
             List<HierarchyData> hierarchies = readHierarchies(namespace, concepts);
 
             return builder
@@ -99,144 +108,8 @@ public class SSPReader {
         }
     }
 
-    private void discoverAvailableOntologies() {
-        log.debug("Discovering available ontologies on endpoint...");
-
-        String queryString = """
-        PREFIX owl: <http://www.w3.org/2002/07/owl#>
-        PREFIX a-popis-dat-pojem: <http://onto.fel.cvut.cz/ontologies/slovník/agendový/popis-dat/pojem/>
-        PREFIX dcterms: <http://purl.org/dc/terms/>
-        
-        SELECT DISTINCT ?ontology ?title ?type
-        WHERE {
-            ?ontology a owl:Ontology .
-            OPTIONAL { ?ontology a ?type }
-            OPTIONAL { ?ontology dcterms:title ?title }
-            FILTER(?type = a-popis-dat-pojem:slovník || ?type = owl:Ontology)
-        }
-        ORDER BY ?ontology
-        LIMIT 20
-        """;
-
-        log.debug("Discovery query: {}", queryString);
-
-        try {
-            Query query = QueryFactory.create(queryString);
-
-            try (QueryExecution qexec = QueryExecutionHTTPBuilder
-                    .service(config.getSparqlEndpoint())
-                    .query(query)
-                    .sendMode(QuerySendMode.asPost)
-                    .build()) {
-
-                ResultSet results = qexec.execSelect();
-                int count = 0;
-                while (results.hasNext()) {
-                    QuerySolution solution = results.nextSolution();
-                    count++;
-                    String ontology = solution.getResource("ontology").getURI();
-                    String title = getStringValue(solution, "title");
-                    String type = solution.contains("type") ? solution.getResource("type").getURI() : "unknown";
-
-                    log.debug("Available ontology #{}: IRI='{}', title='{}', type='{}'", count, ontology, title, type);
-                }
-                log.debug("Total available ontologies found: {}", count);
-            }
-        } catch (Exception e) {
-            log.error("Error discovering available ontologies", e);
-        }
-    }
-
-    private void discoverDiaGovGraphs() {
-        log.debug("Discovering graphs with 'data.dia.gov.cz' pattern...");
-
-        String queryString = """
-        SELECT DISTINCT ?graph
-        WHERE {
-            GRAPH ?graph { ?s ?p ?o }
-            FILTER(CONTAINS(STR(?graph), "data.dia.gov.cz"))
-        }
-        LIMIT 20
-        """;
-
-        log.debug("DIA gov graphs query: {}", queryString);
-
-        try {
-            Query query = QueryFactory.create(queryString);
-
-            try (QueryExecution qexec = QueryExecutionHTTPBuilder
-                    .service(config.getSparqlEndpoint())
-                    .query(query)
-                    .sendMode(QuerySendMode.asPost)
-                    .build()) {
-
-                ResultSet results = qexec.execSelect();
-                int count = 0;
-                while (results.hasNext()) {
-                    QuerySolution solution = results.nextSolution();
-                    count++;
-                    String graph = solution.getResource("graph").getURI();
-
-                    log.debug("DIA graph #{}: {}", count, graph);
-                }
-                log.debug("Total DIA graphs found: {}", count);
-            }
-        } catch (Exception e) {
-            log.error("Error discovering DIA graphs", e);
-        }
-    }
-
-    private void discoverEducationGraphs() {
-        log.debug("Discovering education-related graphs...");
-
-        String queryString = """
-        SELECT DISTINCT ?graph
-        WHERE {
-            GRAPH ?graph { ?s ?p ?o }
-            FILTER(
-                CONTAINS(LCASE(STR(?graph)), "škol") ||
-                CONTAINS(LCASE(STR(?graph)), "universit") ||
-                CONTAINS(LCASE(STR(?graph)), "student") ||
-                CONTAINS(LCASE(STR(?graph)), "vzdělá")
-            )
-        }
-        LIMIT 20
-        """;
-
-        log.debug("Education graphs query: {}", queryString);
-
-        try {
-            Query query = QueryFactory.create(queryString);
-
-            try (QueryExecution qexec = QueryExecutionHTTPBuilder
-                    .service(config.getSparqlEndpoint())
-                    .query(query)
-                    .sendMode(QuerySendMode.asPost)
-                    .build()) {
-
-                ResultSet results = qexec.execSelect();
-                int count = 0;
-                while (results.hasNext()) {
-                    QuerySolution solution = results.nextSolution();
-                    count++;
-                    String graph = solution.getResource("graph").getURI();
-
-                    log.debug("Education graph #{}: {}", count, graph);
-                }
-                log.debug("Total education graphs found: {}", count);
-            }
-        } catch (Exception e) {
-            log.error("Error discovering education graphs", e);
-        }
-    }
-
     private VocabularyMetadata readVocabularyMetadata(String ontologyIRI) {
         log.debug("Reading vocabulary metadata for: {}", ontologyIRI);
-
-        // Run discovery queries
-        discoverAvailableOntologies();
-        discoverDiaGovGraphs();
-        discoverEducationGraphs();
 
         VocabularyMetadata metadata = new VocabularyMetadata();
         String queryString = String.format(VOCABULARY_METADATA_QUERY, ontologyIRI);
@@ -336,6 +209,7 @@ public class SSPReader {
         } catch (Exception e) {
             log.error("Error reading vocabulary concepts", e);
         }
+
         log.debug("Found {} unique concepts", concepts.size());
 
         return concepts;
@@ -378,8 +252,63 @@ public class SSPReader {
         }
 
         log.debug("Found types for {} concepts", conceptTypes.size());
-
         return conceptTypes;
+    }
+
+    private Map<String, RelationshipInfo> readRelationshipElements(String namespace) {
+        log.debug("Reading relationship elements for namespace: {}", namespace);
+
+        String queryString = String.format(RELATIONSHIP_ELEMENTS_SIMPLE_QUERY, namespace);
+        log.debug("Executing corrected relationship elements query: {}", queryString);
+        Map<String, RelationshipInfo> relationshipInfos = new HashMap<>();
+
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
+
+                log.debug("Executing SPARQL query for relationship elements...");
+                ResultSet results = qexec.execSelect();
+
+                int resultCount = 0;
+                while (results.hasNext()) {
+                    QuerySolution solution = results.nextSolution();
+                    resultCount++;
+
+                    String relationshipIRI = solution.getResource("relationship").getURI();
+                    String property = solution.getResource("property").getURI();
+                    String targetClass = solution.getResource("targetClass").getURI();
+
+                    RelationshipInfo info = relationshipInfos.computeIfAbsent(relationshipIRI, k -> new RelationshipInfo());
+                    info.setRelationshipIRI(relationshipIRI);
+
+                    if (property.contains("má-vztažený-prvek-1")) {
+                        info.setElement1(targetClass);
+                        log.debug("Set element1 for {}: {}", relationshipIRI, targetClass);
+                    } else if (property.contains("má-vztažený-prvek-2")) {
+                        info.setElement2(targetClass);
+                        log.debug("Set element2 for {}: {}", relationshipIRI, targetClass);
+                    }
+
+                    if (resultCount <= 10) {
+                        log.debug("Relationship element #{}: rel='{}', prop='{}', target='{}'",
+                                resultCount, relationshipIRI, property, targetClass);
+                    }
+                }
+
+                log.debug("Processed {} relationship element results", resultCount);
+            }
+        } catch (Exception e) {
+            log.error("Error reading relationship elements", e);
+        }
+
+        log.debug("Found relationship elements for {} relationships", relationshipInfos.size());
+
+        return relationshipInfos;
     }
 
     private Map<String, DomainRangeInfo> readDomainRangeInfo(String namespace) {
@@ -521,7 +450,8 @@ public class SSPReader {
         return propertyData;
     }
 
-    private RelationshipData convertToRelationshipData(ConceptData concept, String conceptIRI, Map<String, DomainRangeInfo> domainRangeMap) {
+    private RelationshipData convertToRelationshipData(ConceptData concept, String conceptIRI,
+                                                       Map<String, RelationshipInfo> relationshipInfos) {
         RelationshipData relationshipData = new RelationshipData();
         relationshipData.setName(concept.getName());
         relationshipData.setDefinition(concept.getDefinition());
@@ -532,14 +462,27 @@ public class SSPReader {
             relationshipData.setAlternativeName(String.join(";", concept.getAlternativeNames()));
         }
 
-        DomainRangeInfo domainRange = domainRangeMap.get(conceptIRI);
-        if (domainRange != null) {
-            if (domainRange.getDomain() != null) {
-                relationshipData.setDomain(UtilityMethods.extractNameFromIRI(domainRange.getDomain()));
+        RelationshipInfo relInfo = relationshipInfos.get(conceptIRI);
+        if (relInfo != null) {
+            if (relInfo.getElement1() != null) {
+                String domainName = UtilityMethods.extractNameFromIRI(relInfo.getElement1());
+                relationshipData.setDomain(domainName);
+                log.debug("Set relationship domain: {} -> {}", conceptIRI, domainName);
             }
-            if (domainRange.getRange() != null) {
-                relationshipData.setRange(UtilityMethods.extractNameFromIRI(domainRange.getRange()));
+
+            if (relInfo.getElement2() != null) {
+                String rangeName = UtilityMethods.extractNameFromIRI(relInfo.getElement2());
+                relationshipData.setRange(rangeName);
+                log.debug("Set relationship range: {} -> {}", conceptIRI, rangeName);
             }
+
+            if (relInfo.getElement1() != null && relInfo.getElement2() == null) {
+                String name = UtilityMethods.extractNameFromIRI(relInfo.getElement1());
+                relationshipData.setRange(name);
+                log.debug("Set reflexive relationship: {} -> domain and range: {}", conceptIRI, name);
+            }
+        } else {
+            log.debug("No relationship info found for: {}", conceptIRI);
         }
 
         return relationshipData;
@@ -555,5 +498,14 @@ public class SSPReader {
             }
         }
         return null;
+    }
+
+    @Getter
+    @Setter
+    public static class RelationshipInfo {
+        private String relationshipIRI;
+        private String element1;
+        private String element2;
+        private Map<String, String> restrictions = new HashMap<>();
     }
 }
