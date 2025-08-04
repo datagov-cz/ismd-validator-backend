@@ -168,9 +168,7 @@ public class TurtleExporter {
         }
 
         if (uri.startsWith("https://slovník.gov.cz/")) {
-            return !uri.contains("/legislativní/") &&
-                    !uri.contains("/agendový/") &&
-                    !uri.contains("/veřejný-sektor/");
+            return uri.contains("/datový-slovník-ofn-slovníků/pojem/");
         }
 
         return false;

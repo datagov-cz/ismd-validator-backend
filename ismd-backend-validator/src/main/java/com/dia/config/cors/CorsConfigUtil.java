@@ -1,11 +1,9 @@
 package com.dia.config.cors;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 
-@Slf4j
 public class CorsConfigUtil {
 
     private static final List<String> DEV_PATTERNS = List.of(
@@ -27,7 +25,7 @@ public class CorsConfigUtil {
             // Docker container/service names (aligned in docker-compose.yml)
             "http://ismd-validator-frontend:[*]",
             "http://ismd-validator-backend:[*]",
-
+            
             // Docker host.docker.internal (for standalone Docker containers)
             "http://host.docker.internal:[*]",
             "https://host.docker.internal:[*]"
@@ -66,15 +64,15 @@ public class CorsConfigUtil {
 
     public CorsConfiguration createLocalCorsConfiguration() {
         var config = new CorsConfiguration();
-
+        
         // Get allowed origins from environment variable
         String corsAllowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
         if (corsAllowedOrigins != null && !corsAllowedOrigins.isEmpty()) {
             // Add the specific allowed origin from environment variable
-            log.info("CORS allowed origins set from environment: {}", corsAllowedOrigins);
+            System.out.println("CORS allowed origins set from environment: " + corsAllowedOrigins);
             config.setAllowedOrigins(List.of(corsAllowedOrigins));
         }
-
+        
         // Always include development patterns for local environment
         config.setAllowedOriginPatterns(DEV_PATTERNS);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));

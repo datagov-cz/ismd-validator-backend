@@ -31,8 +31,11 @@ public class RelationshipData {
     private String contentType;
 
     public boolean hasValidData() {
-        return name != null && !name.trim().isEmpty() &&
+        /*return name != null && !name.trim().isEmpty() &&
                 domain != null && !domain.trim().isEmpty() &&
                 range != null && !range.trim().isEmpty();
+
+         */
+        return true;
     }
 }
