@@ -186,9 +186,12 @@ public class ConverterController {
                 );
             }
             ConversionResult conversionResult = converterService.processSSPOntology(iri, removeInvalidSources);
-            ValidationResultsDto results = performValidation(conversionResult, requestId);
+
+            ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
+            ValidationResultsDto results = convertReportToDto(report);
             DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                    generateDetailedValidationReport(conversionResult, requestId) : null;
+                    generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
+            
             ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport);
             log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, SSP, output);
