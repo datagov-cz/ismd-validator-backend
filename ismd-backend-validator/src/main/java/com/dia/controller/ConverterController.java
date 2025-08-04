@@ -44,7 +44,7 @@ public class ConverterController {
     private final ValidationReportService validationReportService;
 
     @PostMapping("/convert")
-    public ResponseEntity<?> convertFile(
+    public ResponseEntity<ConversionResponseDto> convertFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
@@ -94,7 +94,7 @@ public class ConverterController {
                     ConversionResult conversionResult = converterService.processArchiFile(xmlContent, removeInvalidSources);
                     ISMDValidationReport ismdReport = validationService.validate(conversionResult.getTransformationResult());
                     ValidationResultsDto results = validationReportService.convertToDto(ismdReport);
-                    ResponseEntity<?> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
+                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}",
                             requestId, fileFormat, output, results);
                     yield response;
@@ -104,7 +104,7 @@ public class ConverterController {
                     ConversionResult conversionResult = converterService.processEAFile(file, removeInvalidSources);
                     ISMDValidationReport ismdReport = validationService.validate(conversionResult.getTransformationResult());
                     ValidationResultsDto results = validationReportService.convertToDto(ismdReport);
-                    ResponseEntity<?> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
+                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}",
                             requestId, fileFormat, output, results);
                     yield response;
@@ -114,7 +114,7 @@ public class ConverterController {
                     ConversionResult conversionResult = converterService.processExcelFile(file, removeInvalidSources);
                     ISMDValidationReport ismdReport = validationService.validate(conversionResult.getTransformationResult());
                     ValidationResultsDto results = validationReportService.convertToDto(ismdReport);
-                    ResponseEntity<?> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
+                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}",
                             requestId, fileFormat, output, results);
                     yield response;
@@ -137,7 +137,7 @@ public class ConverterController {
     }
 
     @PostMapping("/ssp/convert")
-    public ResponseEntity<?> convertSSPFromIRI(
+    public ResponseEntity<ConversionResponseDto> convertSSPFromIRI(
             @RequestParam(value = "iri") String iri,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
@@ -156,9 +156,9 @@ public class ConverterController {
                 );
             }
             ConversionResult conversionResult = converterService.processSSPOntology(iri, removeInvalidSources);
-            //ISMDValidationReport ismdReport = validationService.validate(conversionResult.getTransformationResult());
-            //ValidationResultsDto results = validationReportService.convertToDto(ismdReport);
-            ResponseEntity<?> response = getResponseEntity(outputFormat, SSP, conversionResult, null);
+            ISMDValidationReport ismdReport = validationService.validate(conversionResult.getTransformationResult());
+            ValidationResultsDto results = validationReportService.convertToDto(ismdReport);
+            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results);
             log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, SSP, output);
             return response;
@@ -267,7 +267,7 @@ public class ConverterController {
         return FileFormat.UNSUPPORTED;
     }
 
-    private ResponseEntity<?> getResponseEntity(
+    private ResponseEntity<ConversionResponseDto> getResponseEntity(
             String outputFormat, FileFormat fileFormat, ConversionResult conversionResult, ValidationResultsDto results) throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.debug("Preparing response entity: requestId={}, outputFormat={}", requestId, outputFormat);
@@ -279,7 +279,7 @@ public class ConverterController {
                 log.debug("JSON export completed: requestId={}, outputSize={}", requestId, jsonOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.success(jsonOutput, results).getOutput());
+                        .body(ConversionResponseDto.success(jsonOutput, results));
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
@@ -287,7 +287,7 @@ public class ConverterController {
                 log.debug("Turtle export completed: requestId={}, outputSize={}", requestId, ttlOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.success(ttlOutput, results).getOutput());
+                        .body(ConversionResponseDto.success(ttlOutput, results));
             }
             default -> {
                 log.warn("Unsupported output format requested: requestId={}, format={}", requestId, outputFormat);

@@ -278,7 +278,9 @@ class TurtleExporterUnitTest {
         // Assert
         assertAll("Base schema filtering",
                 () -> assertFalse(hasBaseSchemaStatements(parsedModel),
-                        "Should filter out base schema statements"),
+                        "Should filter out XSD schema statements"),
+                () -> assertFalse(hasBaseSchemaConceptsWithSKOSType(parsedModel),
+                        "Should not convert base schema classes to SKOS concepts"),
                 () -> assertFalse(hasXSDSchemaStatements(parsedModel),
                         "Should filter out XSD schema statements")
         );
@@ -294,8 +296,8 @@ class TurtleExporterUnitTest {
         assertTrue((Boolean) method.invoke(exporter, "http://www.w3.org/2001/XMLSchema#string"),
                 "Should filter XSD schema URIs");
 
-        // Test government vocabulary URIs that should be filtered
-        assertTrue((Boolean) method.invoke(exporter, "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem"),
+        // Test government vocabulary URIs that should be filtered (note the trailing slash)
+        assertTrue((Boolean) method.invoke(exporter, "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/"),
                 "Should filter generic OFN schema URIs");
 
         // Test government vocabulary URIs that should NOT be filtered
@@ -585,33 +587,45 @@ class TurtleExporterUnitTest {
         return model.contains(null, customRangeProp, (RDFNode) null);
     }
 
-    private boolean hasBaseSchemaStatements(Model model) {
-        String[] baseSchemaURIs = {
-                DEFAULT_NS + POJEM,
-                DEFAULT_NS + VLASTNOST,
-                DEFAULT_NS + VZTAH,
-                DEFAULT_NS + TRIDA,
-                DEFAULT_NS + TSP,
-                DEFAULT_NS + TOP,
-                DEFAULT_NS + VEREJNY_UDAJ,
-                DEFAULT_NS + NEVEREJNY_UDAJ
-        };
-
-        for (String uri : baseSchemaURIs) {
-            Resource resource = model.createResource(uri);
-            if (model.containsResource(resource)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private boolean hasXSDSchemaStatements(Model model) {
         StmtIterator iter = model.listStatements();
         while (iter.hasNext()) {
             Statement stmt = iter.next();
             Resource subject = stmt.getSubject();
             if (subject.getURI() != null && subject.getURI().startsWith("http://www.w3.org/2001/XMLSchema#")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasBaseSchemaStatements(Model model) {
+        StmtIterator iter = model.listStatements();
+        while (iter.hasNext()) {
+            Statement stmt = iter.next();
+            Resource subject = stmt.getSubject();
+            if (subject.getURI() != null && subject.getURI().startsWith("http://www.w3.org/2001/XMLSchema#")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasBaseSchemaConceptsWithSKOSType(Model model) {
+        String[] baseSchemaURIs = {
+                OFN_NAMESPACE + POJEM,
+                OFN_NAMESPACE + VLASTNOST,
+                OFN_NAMESPACE + VZTAH,
+                OFN_NAMESPACE + TRIDA,
+                OFN_NAMESPACE + TSP,
+                OFN_NAMESPACE + TOP,
+                OFN_NAMESPACE + VEREJNY_UDAJ,
+                OFN_NAMESPACE + NEVEREJNY_UDAJ
+        };
+
+        for (String uri : baseSchemaURIs) {
+            Resource resource = model.createResource(uri);
+            if (model.contains(resource, RDF.type, SKOS.Concept)) {
                 return true;
             }
         }
@@ -761,14 +775,19 @@ class TurtleExporterUnitTest {
     private void setupModelWithBaseSchemaResources() {
         setupMinimalOntologyModel();
 
-        // Add base schema classes that should be filtered
-        Resource pojemResource = ontModel.createResource(DEFAULT_NS + POJEM);
+        // Create OFN concept type
+        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
+
+        // Add base schema classes - these should not be converted to SKOS concepts
+        Resource pojemResource = ontModel.createResource(OFN_NAMESPACE + POJEM);
+        pojemResource.addProperty(RDF.type, ofnPojemType);
         pojemResource.addProperty(RDFS.label, "Pojem", "cs");
 
-        Resource vlastnostResource = ontModel.createResource(DEFAULT_NS + VLASTNOST);
+        Resource vlastnostResource = ontModel.createResource(OFN_NAMESPACE + VLASTNOST);
+        vlastnostResource.addProperty(RDF.type, ofnPojemType);
         vlastnostResource.addProperty(RDFS.label, "Vlastnost", "cs");
 
-        // Add XSD schema resource that should be filtered
+        // Add XSD schema resource that should be completely filtered out
         Resource xsdStringResource = ontModel.createResource("http://www.w3.org/2001/XMLSchema#string");
         xsdStringResource.addProperty(RDFS.label, "string");
     }

@@ -93,7 +93,11 @@ public class SSPReader {
                     }
                 }
             }
+
             List<HierarchyData> hierarchies = readHierarchies(namespace, concepts);
+
+            log.info("Ontology conversion completed: {} classes, {} properties, {} relationships, {} hierarchies",
+                    classesCreated, propertiesCreated, relationshipsCreated, hierarchies.size());
 
             return builder
                     .classes(classes)
@@ -211,16 +215,16 @@ public class SSPReader {
         }
 
         log.debug("Found {} unique concepts", concepts.size());
-
         return concepts;
     }
 
     private Map<String, String> readConceptTypes(String namespace) {
         log.debug("Reading concept types for namespace: {}", namespace);
 
+        Map<String, String> conceptTypes = new HashMap<>();
+
         String queryString = String.format(MODEL_TYPES_QUERY, namespace);
         log.debug("Executing concept types query: {}", queryString);
-        Map<String, String> conceptTypes = new HashMap<>();
 
         try {
             Query query = QueryFactory.create(queryString);
@@ -231,10 +235,9 @@ public class SSPReader {
                     .sendMode(QuerySendMode.asPost)
                     .build()) {
 
-                log.debug("Executing SPARQL query for concept types...");
                 ResultSet results = qexec.execSelect();
-
                 int resultCount = 0;
+
                 while (results.hasNext()) {
                     QuerySolution solution = results.nextSolution();
                     resultCount++;
@@ -243,23 +246,64 @@ public class SSPReader {
                     String type = solution.getResource("type").getURI();
 
                     conceptTypes.put(conceptIRI, type);
+                    log.debug("Found explicit type: {} -> {}", conceptIRI, type);
                 }
 
-                log.debug("Processed {} concept type results", resultCount);
+                log.debug("Found {} explicitly typed concepts", resultCount);
             }
         } catch (Exception e) {
-            log.error("Error reading concept types", e);
+            log.error("Error reading explicit concept types", e);
         }
 
-        log.debug("Found types for {} concepts", conceptTypes.size());
+        Map<String, ConceptData> allConcepts = readVocabularyConcepts(namespace);
+
+        for (Map.Entry<String, ConceptData> entry : allConcepts.entrySet()) {
+            String conceptIRI = entry.getKey();
+
+            if (conceptTypes.containsKey(conceptIRI)) {
+                continue;
+            }
+
+            ConceptData concept = entry.getValue();
+            String name = concept.getName().toLowerCase();
+            String defaultType;
+
+            // Use naming patterns to infer type for untyped concepts
+            if (isRelationshipName(name)) {
+                defaultType = "https://slovník.gov.cz/základní/pojem/typ-vztahu";
+                log.debug("Assigned relationship type to untyped concept: {} ({})", concept.getName(), conceptIRI);
+            } else if (isPropertyName(name)) {
+                defaultType = "https://slovník.gov.cz/základní/pojem/typ-vlastnosti";
+                log.debug("Assigned property type to untyped concept: {} ({})", concept.getName(), conceptIRI);
+            } else {
+                defaultType = "https://slovník.gov.cz/základní/pojem/typ-objektu";
+                log.debug("Assigned object type to untyped concept: {} ({})", concept.getName(), conceptIRI);
+            }
+
+            conceptTypes.put(conceptIRI, defaultType);
+        }
+
+        log.debug("Total concept types found/assigned: {}", conceptTypes.size());
         return conceptTypes;
+    }
+
+    private boolean isRelationshipName(String name) {
+        return name.contains("vykonává") || name.contains("má") || name.contains("je") ||
+                name.contains("obsahuje") || name.contains("patří") || name.contains("souvisí") ||
+                name.matches(".*uje$") || name.matches(".*ává$") || name.matches(".*í$");
+    }
+
+
+    private boolean isPropertyName(String name) {
+        return name.startsWith("má-") || name.contains("hodnota") || name.contains("vlastnost") ||
+                name.matches(".*\\b(číslo|kód|název|datum|hodnota)\\b.*");
     }
 
     private Map<String, RelationshipInfo> readRelationshipElements(String namespace) {
         log.debug("Reading relationship elements for namespace: {}", namespace);
 
         String queryString = String.format(RELATIONSHIP_ELEMENTS_SIMPLE_QUERY, namespace);
-        log.debug("Executing corrected relationship elements query: {}", queryString);
+        log.debug("Executing relationship elements query: {}", queryString);
         Map<String, RelationshipInfo> relationshipInfos = new HashMap<>();
 
         try {
@@ -293,11 +337,6 @@ public class SSPReader {
                         info.setElement2(targetClass);
                         log.debug("Set element2 for {}: {}", relationshipIRI, targetClass);
                     }
-
-                    if (resultCount <= 10) {
-                        log.debug("Relationship element #{}: rel='{}', prop='{}', target='{}'",
-                                resultCount, relationshipIRI, property, targetClass);
-                    }
                 }
 
                 log.debug("Processed {} relationship element results", resultCount);
@@ -307,7 +346,6 @@ public class SSPReader {
         }
 
         log.debug("Found relationship elements for {} relationships", relationshipInfos.size());
-
         return relationshipInfos;
     }
 
@@ -353,15 +391,15 @@ public class SSPReader {
         } catch (Exception e) {
             log.error("Error reading domain/range information", e);
         }
-        log.debug("Found domain/range info for {} concepts", domainRangeMap.size());
 
+        log.debug("Found domain/range info for {} concepts", domainRangeMap.size());
         return domainRangeMap;
     }
 
     private List<HierarchyData> readHierarchies(String namespace, Map<String, ConceptData> concepts) {
         log.debug("Reading hierarchies for namespace: {}", namespace);
 
-        String queryString = String.format(HIERARCHY_QUERY, namespace, namespace);
+        String queryString = String.format(HIERARCHY_QUERY, namespace);
         log.debug("Executing hierarchies query: {}", queryString);
         List<HierarchyData> hierarchies = new ArrayList<>();
 
@@ -392,6 +430,7 @@ public class SSPReader {
                         hierarchy.setSuperClass(UtilityMethods.extractNameFromIRI(superClassIRI));
                         hierarchy.setRelationshipName("is-a");
                         hierarchies.add(hierarchy);
+                        addedCount++;
                     }
                 }
 
@@ -400,8 +439,8 @@ public class SSPReader {
         } catch (Exception e) {
             log.error("Error reading hierarchies", e);
         }
-        log.debug("Found {} hierarchical relationships", hierarchies.size());
 
+        log.debug("Found {} hierarchical relationships", hierarchies.size());
         return hierarchies;
     }
 
