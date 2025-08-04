@@ -3,10 +3,9 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
-@prefix ex: <http://example.org/shapes#> .
 
 # Warning rule: Concept should have description or definition
-ex:ConceptDescriptionRule
+<https://slovník.gov.cz/shacl/lokální/popis-a-definice-pojmu>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "Popis pojmu"@cs ;
