@@ -11,17 +11,22 @@ import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shacl.ShaclValidator;
 import org.apache.jena.shacl.ValidationReport;
 import org.apache.jena.shacl.validation.ReportEntry;
 import org.apache.jena.shacl.validation.Severity;
 import org.apache.jena.sparql.path.Path;
+import org.apache.jena.vocabulary.RDF;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 @Component
@@ -31,6 +36,9 @@ public class SHACLRuleEngine {
     private final ValidationConfiguration config;
     private final RuleManager ruleManager;
     private final ExecutorService executorService;
+
+    private static final String SHACL_NS = "http://www.w3.org/ns/shacl#";
+    private static final String SHACL_NAME = SHACL_NS + "name";
 
     @Autowired
     public SHACLRuleEngine(ValidationConfiguration config, RuleManager ruleManager) {
@@ -112,7 +120,7 @@ public class SHACLRuleEngine {
 
             ValidationReport jenaReport = ShaclValidator.get().validate(shapes, dataGraph);
 
-            return convertValidationReport(jenaReport);
+            return convertValidationReport(jenaReport, shapesModel);
 
         } catch (Exception e) {
             log.error("Error during SHACL validation execution", e);
@@ -120,13 +128,17 @@ public class SHACLRuleEngine {
         }
     }
 
-    private ISMDValidationReport convertValidationReport(ValidationReport jenaReport) {
+    private ISMDValidationReport convertValidationReport(ValidationReport jenaReport, Model shapesModel) {
         List<ValidationResult> results = new ArrayList<>();
+
+        Map<String, String> shapeNameMap = buildShapeNameMap(shapesModel);
+
+        log.debug("Built shape name map with {} entries: {}", shapeNameMap.size(), shapeNameMap);
 
         try {
             jenaReport.getEntries().forEach(entry -> {
                 try {
-                    ValidationResult result = convertValidationEntry(entry);
+                    ValidationResult result = convertValidationEntry(entry, shapeNameMap);
                     results.add(result);
                 } catch (Exception e) {
                     log.warn("Failed to convert validation entry: {}", e.getMessage());
@@ -144,6 +156,45 @@ public class SHACLRuleEngine {
                 results.size(), isValid ? "VALID" : "INVALID");
 
         return new ISMDValidationReport(results, isValid, Instant.now());
+    }
+
+    private Map<String, String> buildShapeNameMap(Model shapesModel) {
+        Map<String, String> shapeNameMap = new HashMap<>();
+
+        try {
+            shapesModel.listResourcesWithProperty(RDF.type,
+                    shapesModel.createResource(SHACL_NS + "NodeShape")).forEachRemaining(resource -> {
+                extractShapeName(resource, shapeNameMap);
+            });
+
+            shapesModel.listResourcesWithProperty(RDF.type,
+                    shapesModel.createResource(SHACL_NS + "PropertyShape")).forEachRemaining(resource -> {
+                extractShapeName(resource, shapeNameMap);
+            });
+
+        } catch (Exception e) {
+            log.warn("Error building shape name map: {}", e.getMessage());
+        }
+
+        return shapeNameMap;
+    }
+
+    private void extractShapeName(Resource shapeResource, Map<String, String> shapeNameMap) {
+        try {
+            String shapeUri = shapeResource.getURI();
+            if (shapeUri != null) {
+                Statement nameStmt = shapeResource.getProperty(
+                        shapeResource.getModel().createProperty(SHACL_NAME));
+
+                if (nameStmt != null && nameStmt.getObject().isLiteral()) {
+                    String shapeName = nameStmt.getString();
+                    shapeNameMap.put(shapeUri, shapeName);
+                    log.debug("Mapped shape {} -> name '{}'", shapeUri, shapeName);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Error extracting name for shape {}: {}", shapeResource, e.getMessage());
+        }
     }
 
     private ISMDValidationReport handleValidationReportAlternative(ValidationReport jenaReport) {
@@ -175,14 +226,15 @@ public class SHACLRuleEngine {
         }
     }
 
-    private ValidationResult convertValidationEntry(ReportEntry entry) {
+    private ValidationResult convertValidationEntry(ReportEntry entry, Map<String, String> shapeNameMap) {
         try {
             ValidationSeverity severity = extractSeverity(entry);
             String message = extractMessage(entry);
             String focusNodeUri = extractFocusNodeUri(entry);
             String resultPathUri = extractResultPathUri(entry);
-            String ruleName = extractRuleName(entry);
             String valueString = extractValueString(entry);
+
+            String ruleName = extractRuleName(entry, shapeNameMap);
 
             return new ValidationResult(
                     severity,
@@ -238,13 +290,22 @@ public class SHACLRuleEngine {
         }
     }
 
-    private String extractRuleName(ReportEntry entry) {
+    private String extractRuleName(ReportEntry entry, Map<String, String> shapeNameMap) {
         try {
-            return extractRuleNameFromEntry(entry);
+            Node sourceShape = entry.source();
+            if (sourceShape != null && sourceShape.isURI()) {
+                String shapeUri = sourceShape.getURI();
+                if (shapeNameMap.containsKey(shapeUri)) {
+                    String ruleName = shapeNameMap.get(shapeUri);
+                    log.debug("Found rule name '{}' for shape URI: {}", ruleName, shapeUri);
+                    return ruleName;
+                }
+            }
         } catch (Exception e) {
             log.debug("Could not extract rule name: {}", e.getMessage());
-            return "unknown-rule";
         }
+
+        return "unknown-rule";
     }
 
     private String extractValueString(ReportEntry entry) {
@@ -297,40 +358,6 @@ public class SHACLRuleEngine {
         } else {
             return node.toString();
         }
-    }
-
-    private String extractRuleNameFromEntry(ReportEntry entry) {
-        try {
-            String entryString = entry.toString();
-
-            if (entryString.contains("Shape")) {
-                String[] parts = entryString.split("\\s+");
-                for (String part : parts) {
-                    if (part.contains("Shape") || part.contains("Rule")) {
-                        return cleanRuleName(part);
-                    }
-                }
-            }
-
-            return "validation-rule";
-
-        } catch (Exception e) {
-            log.debug("Error extracting rule name from entry: {}", e.getMessage());
-            return "unknown-rule";
-        }
-    }
-
-    private String cleanRuleName(String rawName) {
-        if (rawName == null) {
-            return "unknown-rule";
-        }
-
-        String cleaned = rawName.replaceAll("^.*[#/]", "")
-                .replaceAll("[\\[\\]()]", "")
-                .replaceAll("\\s+", "-")
-                .toLowerCase();
-
-        return cleaned.isEmpty() ? "unknown-rule" : cleaned;
     }
 
     private ValidationSeverity convertSeverity(Severity severity) {

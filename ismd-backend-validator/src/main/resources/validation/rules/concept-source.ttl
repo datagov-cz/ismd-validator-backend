@@ -10,7 +10,7 @@
 ex:ConceptSourceRule
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
-    sh:name "Concept Source Rule" ;
+    sh:name "Zdroj pojmu"@cs ;
     sh:description "Ensures that each concept has a source" ;
     sh:message "Pojem nemá vyplněný zdroj"@cs ;
     sh:severity sh:Warning ;

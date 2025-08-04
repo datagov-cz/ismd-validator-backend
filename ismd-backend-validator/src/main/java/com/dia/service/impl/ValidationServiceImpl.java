@@ -83,12 +83,12 @@ public class ValidationServiceImpl implements ValidationService {
         }
     }
 
-
     private Model extractDataModel(TransformationResult result, ValidationTiming timing) {
         return switch (timing) {
             case BEFORE_EXPORT -> result.getOntModel();
             case JSON_EXPORT -> convertFromJsonLd(result);
             case TTL_EXPORT -> convertFromTtl(result);
+            default -> throw new IllegalArgumentException("Unknown validation timing: " + timing);
         };
     }
 
@@ -132,20 +132,9 @@ public class ValidationServiceImpl implements ValidationService {
         return new ValidationConfigurationSummary(
                 ruleManager.getAllRuleNames().size(),
                 ruleManager.getEnabledRuleNames().size(),
-                ruleManager.getEnabledRuleNames(),
+                ruleManager.getEnabledRuleNames().stream().toList(),
                 config.getDefaultTiming()
         );
-    }
-
-    public void setRuleEnabled(String ruleName, boolean enabled) {
-        log.info("Setting rule '{}' enabled: {}", ruleName, enabled);
-
-        if (!ruleManager.getAllRuleNames().contains(ruleName)) {
-            throw new IllegalArgumentException("Unknown validation rule: " + ruleName);
-        }
-
-        config.setRuleEnabled(ruleName, enabled);
-        log.info("Rule '{}' is now {}", ruleName, enabled ? "enabled" : "disabled");
     }
 
     public ISMDValidationReport testValidation() {
@@ -158,4 +147,3 @@ public class ValidationServiceImpl implements ValidationService {
         return report;
     }
 }
-

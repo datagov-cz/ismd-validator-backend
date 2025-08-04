@@ -1,0 +1,31 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix ex: <http://example.org/shapes#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+
+# Warning rule: Concept with same IRI but different name
+ex:ConceptSameIriDifferentNameRule
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Pojem se stejným IRI ale jiným názvem"@cs ;
+    sh:description "Ensures no published concept exists with same IRI but different name" ;
+    sh:message "Mezi publikovanými slovníky existuje pojem se stejným IRI a jiným názvem"@cs ;
+    sh:severity sh:Warning ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this ?otherName WHERE {
+                $this a slovníky:pojem .
+                $this rdfs:label|skos:prefLabel ?thisName .
+                $this rdfs:label|skos:prefLabel ?otherName .
+                FILTER(?thisName != ?otherName)
+            }
+        """ ;
+    ] .
