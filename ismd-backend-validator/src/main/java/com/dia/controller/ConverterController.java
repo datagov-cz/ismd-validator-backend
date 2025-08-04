@@ -13,6 +13,7 @@ import com.dia.service.ValidationService;
 import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
 import jakarta.servlet.http.HttpServletRequest;
+import jdk.jfr.ContentType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -155,7 +156,7 @@ public class ConverterController {
 
     @PostMapping("/convert/detailed-report/csv")
     public ResponseEntity<String> downloadDetailedValidationReportCSV(
-            @RequestBody DetailedValidationReportDto detailedReport,
+            @RequestPart DetailedValidationReportDto detailedReport,
             @RequestParam(value = "filename", required = false, defaultValue = "validation-report") String filename
     ) {
         String requestId = UUID.randomUUID().toString();
