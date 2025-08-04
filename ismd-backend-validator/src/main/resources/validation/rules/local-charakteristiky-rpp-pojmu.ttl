@@ -2,10 +2,9 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
-@prefix ex: <http://example.org/shapes#> .
 
 # Info rule: RPP characteristics - Complete RPP information available
-ex:RPPCharacteristicsCompleteRule
+<https://slovník.gov.cz/shacl/lokální/pojem-má-kompletní-údaje-charakteristiky-rpp>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "Kompletní údaje RPP charakteristik"@cs ;
@@ -44,7 +43,7 @@ ex:RPPCharacteristicsCompleteRule
     ] .
 
 # Info rule: RPP characteristics - Missing PPDF sharing
-ex:RPPCharacteristicsMissingPPDFRule
+<https://slovník.gov.cz/shacl/lokální/pojem-nemá-sdílení-v-rpp>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "Charakteristiky RPP nemají údaje PPDF"@cs ;
@@ -81,7 +80,7 @@ ex:RPPCharacteristicsMissingPPDFRule
     ] .
 
 # Info rule: RPP characteristics - Missing legal provision for non-public information
-ex:RPPCharacteristicsMissingUstanoveniRule
+<https://slovník.gov.cz/shacl/lokální/pojem-neveřejný-údaj-nemá-ustanovení-dokládající-neveřejnost>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "Charakteristiky RPP nemají ustanovení dokládající neveřejnost"@cs ;
@@ -110,7 +109,7 @@ ex:RPPCharacteristicsMissingUstanoveniRule
     ] .
 
 # Info rule: RPP characteristics - Does not have agenda relationship
-ex:RPPCharacteristicsAgendaRule
+<https://slovník.gov.cz/shacl/lokální/pojem-nemá-vztah-k-agendě-nebo-ais>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "Charakteristiky RPP a Agend"@cs ;
