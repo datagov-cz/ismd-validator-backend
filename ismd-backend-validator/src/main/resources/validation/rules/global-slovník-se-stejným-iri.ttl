@@ -1,0 +1,26 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+# REQ84: Information rule: Vocabulary with same IRI
+<https://slovník.gov.cz/shacl/globální/slovník-se-stejným-iri>
+    a sh:NodeShape ;
+    sh:targetClass skos:ConceptScheme ;
+    sh:name "Slovník se stejným IRI"@cs ;
+    sh:description "Information about vocabularies with same IRI" ;
+    sh:message "Mezi publikovanými slovníky existuje slovník se stejným IRI"@cs ;
+    sh:severity sh:Info ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+            SELECT $this ?otherVocabulary WHERE {
+                $this a skos:ConceptScheme .
+                ?otherVocabulary a skos:ConceptScheme .
+                FILTER($this = ?otherVocabulary)
+            }
+        """ ;
+    ] .

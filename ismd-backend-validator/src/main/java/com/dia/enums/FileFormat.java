@@ -5,5 +5,6 @@ public enum FileFormat {
     XMI,
     XLSX,
     TURTLE,
+    SSP,
     UNSUPPORTED
 }

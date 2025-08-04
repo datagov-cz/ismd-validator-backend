@@ -5,6 +5,7 @@ import com.dia.conversion.data.OntologyData;
 import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
+import com.dia.conversion.reader.ssp.SSPReader;
 import com.dia.conversion.transformer.OFNDataTransformer;
 import com.dia.conversion.data.TransformationResult;
 import com.dia.enums.FileFormat;
@@ -29,6 +30,7 @@ public class ConverterEngine {
     private final ArchiReader archiReader;
     private final EnterpriseArchitectReader eaReader;
     private final ExcelReader excelReader;
+    private final SSPReader sspReader;
 
     private final Map<FileFormat, ConverterAdapter> converterRegistry = Map.of(
             FileFormat.ARCHI_XML, new ConverterAdapter() {
@@ -78,6 +80,23 @@ public class ConverterEngine {
                 public String exportToTurtle(TransformationResult transformationResult) throws TurtleExportException {
                     if (transformationResult == null) {
                         throw new TurtleExportException("EA transformation result is not available.");
+                    }
+                    return ofnDataTransformer.exportToTurtle(transformationResult);
+                }
+            },
+            FileFormat.SSP, new ConverterAdapter() {
+                @Override
+                public String exportToJson(TransformationResult transformationResult) throws JsonExportException {
+                    if (transformationResult == null) {
+                        throw new JsonExportException("SSP transformation result is not available.");
+                    }
+                    return ofnDataTransformer.exportToJson(transformationResult);
+                }
+
+                @Override
+                public String exportToTurtle(TransformationResult transformationResult) throws TurtleExportException {
+                    if (transformationResult == null) {
+                        throw new TurtleExportException("SSP transformation result is not available.");
                     }
                     return ofnDataTransformer.exportToTurtle(transformationResult);
                 }
@@ -207,7 +226,7 @@ public class ConverterEngine {
     private TransformationResult convertEA(OntologyData ontologyData, Boolean removeInvalidSources) throws ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting EA model conversion: requestId={}", requestId);
-        log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
+        log.info("Sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
 
         try {
             long startTime = System.currentTimeMillis();
@@ -221,6 +240,52 @@ public class ConverterEngine {
         } catch (Exception e) {
             log.error("Unexpected error during EA model conversion: requestId={}", requestId, e);
             throw new ConversionException("Během konverze EnterpriseArchitect souboru došlo k nečekané chybě.");
+        }
+    }
+
+    public ConversionResult processSSPOntology(String iri, Boolean removeInvalidSources) throws ConversionException {
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        log.info("Starting SSP ontology processing: requestId={}", requestId);
+
+        OntologyData ontologyData = parseSSPOntology(iri);
+        TransformationResult transformationResult = convertSSP(ontologyData, removeInvalidSources);
+
+        return new ConversionResult(ontologyData, transformationResult);
+    }
+
+    private OntologyData parseSSPOntology(String iri) throws ConversionException {
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        log.info("Starting SSP ontology parsing: requestId={}", requestId);
+
+        try {
+            long startTime = System.currentTimeMillis();
+            OntologyData ontologyData = sspReader.readOntology(iri);
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("SSP ontology parsing completed: requestId={}, durationMs={}", requestId, duration);
+            return ontologyData;
+        } catch (Exception e) {
+            log.error("Failed to parse SSP ontology: requestId={}", requestId, e);
+            throw new ConversionException("Během čtení slovníku došlo k chybě.", e);
+        }
+    }
+
+    private TransformationResult convertSSP(OntologyData ontologyData, Boolean removeInvalidSources) throws ConversionException {
+        String requestId = MDC.get(LOG_REQUEST_ID);
+        log.info("Starting SSP model conversion: requestId={}", requestId);
+        log.info("Sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
+
+        try {
+            long startTime = System.currentTimeMillis();
+            TransformationResult result = ofnDataTransformer.transform(ontologyData, removeInvalidSources);
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("SSP model conversion completed: requestId={}, durationMs={}", requestId, duration);
+            return result;
+        } catch (ConversionException e) {
+            log.error("Failed to convert SSP model: requestId={}, error={}", requestId, e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error during SSP model conversion: requestId={}", requestId, e);
+            throw new ConversionException("Během konverze SSP slovníku došlo k nečekané chybě.");
         }
     }
 
