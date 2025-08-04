@@ -155,7 +155,7 @@ public class ConverterController {
 
     @PostMapping("/convert/detailed-report/csv")
     public ResponseEntity<String> downloadDetailedValidationReportCSV(
-            @RequestBody ConversionResponseDto conversionResponse,
+            @RequestBody DetailedValidationReportDto detailedReport,
             @RequestParam(value = "filename", required = false, defaultValue = "validation-report") String filename
     ) {
         String requestId = UUID.randomUUID().toString();
@@ -164,8 +164,6 @@ public class ConverterController {
         log.info("CSV download requested from existing conversion response, filename={}", filename);
 
         try {
-            DetailedValidationReportDto detailedReport = conversionResponse.getValidationReport();
-
             if (detailedReport == null) {
                 log.warn("No detailed validation report found in conversion response: requestId={}", requestId);
                 return ResponseEntity.badRequest()
