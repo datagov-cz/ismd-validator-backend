@@ -156,7 +156,7 @@ public class ConverterController {
 
     @PostMapping("/convert/detailed-report/csv")
     public ResponseEntity<String> downloadDetailedValidationReportCSV(
-            @RequestPart DetailedValidationReportDto detailedReport,
+            @RequestPart (value = "detailedReport") DetailedValidationReportDto detailedReport,
             @RequestParam(value = "filename", required = false, defaultValue = "validation-report") String filename
     ) {
         String requestId = UUID.randomUUID().toString();
