@@ -12,12 +12,6 @@ public interface DetailedValidationReportService {
     DetailedValidationReportDto generateCombinedDetailedReport(
             ISMDValidationReport localReport,
             ISMDValidationReport globalReport,
-            Model ontologyModel
-    );
-
-    DetailedValidationReportDto generateCombinedDetailedReport(
-            ISMDValidationReport localReport,
-            ISMDValidationReport globalReport,
             Model ontologyModel,
             Model shaclRulesModel
     );

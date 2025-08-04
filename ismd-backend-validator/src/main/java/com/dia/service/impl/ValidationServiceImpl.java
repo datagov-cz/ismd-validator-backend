@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -56,30 +55,11 @@ public class ValidationServiceImpl implements ValidationService {
     }
 
     @Override
-    public ISMDValidationReport validateWithRules(TransformationResult result, List<String> ruleNames, ValidationTiming timing) {
-        log.info("Starting targeted validation with {} rules and timing: {}", ruleNames.size(), timing);
-
-        try {
-            Model dataModel = extractDataModel(result, timing);
-            return shaclEngine.validateWithRules(dataModel, ruleNames);
-
-        } catch (Exception e) {
-            log.error("Targeted validation failed", e);
-            return ISMDValidationReport.error("Targeted validation failed: " + e.getMessage());
-        }
-    }
-
-    @Override
     public ISMDValidationReport validateModel(Model model) {
         log.info("Starting direct model validation");
         return shaclEngine.validate(model);
     }
 
-    @Override
-    public ISMDValidationReport validateModelWithRules(Model model, List<String> ruleNames) {
-        log.info("Starting direct model validation with {} specific rules", ruleNames.size());
-        return shaclEngine.validateWithRules(model, ruleNames);
-    }
 
     @Override
     public ISMDValidationReport validateRdf(String rdfContent, String format) {
@@ -91,20 +71,6 @@ public class ValidationServiceImpl implements ValidationService {
 
         } catch (Exception e) {
             log.error("Failed to parse RDF content for validation", e);
-            return ISMDValidationReport.error("Failed to parse RDF content: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public ISMDValidationReport validateRdfWithRules(String rdfContent, String format, List<String> ruleNames) {
-        log.info("Starting RDF string validation with format: {} and {} specific rules", format, ruleNames.size());
-
-        try {
-            Model model = parseRdfString(rdfContent, format);
-            return shaclEngine.validateWithRules(model, ruleNames);
-
-        } catch (Exception e) {
-            log.error("Failed to parse RDF content for targeted validation", e);
             return ISMDValidationReport.error("Failed to parse RDF content: " + e.getMessage());
         }
     }
@@ -124,20 +90,6 @@ public class ValidationServiceImpl implements ValidationService {
     }
 
     @Override
-    public ISMDValidationReport validateTtlWithRules(String ttlContent, List<String> ruleNames) {
-        log.info("Starting TTL validation with {} specific rules", ruleNames.size());
-
-        try {
-            Model model = parseTtlString(ttlContent);
-            return shaclEngine.validateWithRules(model, ruleNames);
-
-        } catch (Exception e) {
-            log.error("Failed to parse TTL content for targeted validation", e);
-            return ISMDValidationReport.error("Failed to parse TTL content: " + e.getMessage());
-        }
-    }
-
-    @Override
     public ISMDValidationReport validateTtlFile(MultipartFile file) {
         log.info("Starting TTL file validation: filename={}, size={}", file.getOriginalFilename(), file.getSize());
 
@@ -152,25 +104,6 @@ public class ValidationServiceImpl implements ValidationService {
         } catch (Exception e) {
             log.error("TTL file validation failed: {}", file.getOriginalFilename(), e);
             return ISMDValidationReport.error("TTL file validation failed: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public ISMDValidationReport validateTtlFileWithRules(MultipartFile file, List<String> ruleNames) {
-        log.info("Starting TTL file validation with {} specific rules: filename={}, size={}",
-                ruleNames.size(), file.getOriginalFilename(), file.getSize());
-
-        try {
-            validateTtl(file);
-            String ttlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
-            return validateTtlWithRules(ttlContent, ruleNames);
-
-        } catch (IOException e) {
-            log.error("Failed to read TTL file: {}", file.getOriginalFilename(), e);
-            return ISMDValidationReport.error("Failed to read TTL file: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("TTL file targeted validation failed: {}", file.getOriginalFilename(), e);
-            return ISMDValidationReport.error("TTL file targeted validation failed: " + e.getMessage());
         }
     }
 
