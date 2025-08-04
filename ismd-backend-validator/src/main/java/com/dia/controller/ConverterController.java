@@ -37,7 +37,7 @@ import static com.dia.constants.ConverterControllerConstants.*;
 import static com.dia.enums.FileFormat.*;
 
 @RestController
-@RequestMapping("/api/convertor")
+@RequestMapping("/api/converter")
 @RequiredArgsConstructor
 @Slf4j
 public class ConverterController {
