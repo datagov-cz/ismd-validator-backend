@@ -11,6 +11,7 @@ import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.StringWriter;
 import java.time.Instant;
@@ -110,6 +111,11 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
         );
 
         return generateDetailedReport(combinedReport, ontologyModel);
+    }
+
+    @Override
+    public DetailedValidationReportDto generateDetailedReportFromTtlFile(ISMDValidationReport report, MultipartFile ttlFile) {
+        return null;
     }
 
     private OntologyInfoDto extractOntologyInfo(Model ontologyModel) {

@@ -15,6 +15,7 @@ import com.dia.validation.data.ISMDValidationReport;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.jena.ontology.OntModel;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -51,7 +52,7 @@ public class ConverterController {
     private final DetailedValidationReportService detailedValidationReportService;
 
     @PostMapping("/convert")
-    public ResponseEntity<ConversionResponseDto> convertFile(
+    public ResponseEntity<?> convertFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
@@ -101,11 +102,12 @@ public class ConverterController {
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
                     ConversionResult conversionResult = converterService.processArchiFile(xmlContent, removeInvalidSources);
 
-                    ValidationResultsDto results = performValidation(conversionResult, requestId);
+                    ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
+                    ValidationResultsDto results = convertReportToDto(report, requestId);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                            generateDetailedValidationReport(conversionResult, requestId) : null;
+                            generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results, detailedReport);
+                    ResponseEntity<?> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results, detailedReport);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
                     yield response;
@@ -114,11 +116,12 @@ public class ConverterController {
                     log.debug("Processing XMI file: requestId={}", requestId);
                     ConversionResult conversionResult = converterService.processEAFile(file, removeInvalidSources);
 
-                    ValidationResultsDto results = performValidation(conversionResult, requestId);
+                    ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
+                    ValidationResultsDto results = convertReportToDto(report, requestId);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                            generateDetailedValidationReport(conversionResult, requestId) : null;
+                            generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results, detailedReport);
+                    ResponseEntity<?> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results, detailedReport);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
                     yield response;
@@ -127,16 +130,25 @@ public class ConverterController {
                     log.debug("Processing XLSX file: requestId={}", requestId);
                     ConversionResult conversionResult = converterService.processExcelFile(file, removeInvalidSources);
 
-                    ValidationResultsDto results = performValidation(conversionResult, requestId);
+                    ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
+                    ValidationResultsDto results = convertReportToDto(report, requestId);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                            generateDetailedValidationReport(conversionResult, requestId) : null;
+                            generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results, detailedReport);
+                    ResponseEntity<?> response = getResponseEntity(outputFormat, fileFormat, conversionResult, results, detailedReport);
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
                     yield response;
                 }
-                case TURTLE -> ResponseEntity.ok(ConversionResponseDto.success("File processed successfully", null, null));
+                case TURTLE -> {
+                    log.debug("Processing TTL file: requestId={}", requestId);
+                    ISMDValidationReport report = validationService.validateTtlFile(file);
+                    ValidationResultsDto results = convertReportToDto(report, requestId);
+                    // TODO
+                    DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
+                            generateDetailedValidationReportFromTtl(report, , requestId) : null;
+                    ResponseEntity.ok(ConversionResponseDto.success("File processed successfully", null, null));
+                }
                 default -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(ConversionResponseDto.error("Nepodporovaný formát souboru."));
             };
@@ -290,7 +302,7 @@ public class ConverterController {
         return FileFormat.UNSUPPORTED;
     }
 
-    private ResponseEntity<ConversionResponseDto> getResponseEntity(
+    private ResponseEntity<?> getResponseEntity(
             String outputFormat, FileFormat fileFormat, ConversionResult conversionResult,
             ValidationResultsDto results, DetailedValidationReportDto detailedReport) throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
@@ -303,7 +315,7 @@ public class ConverterController {
                 log.debug("JSON export completed: requestId={}, outputSize={}", requestId, jsonOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.success(jsonOutput, results, detailedReport));
+                        .body(ConversionResponseDto.success(jsonOutput, results, detailedReport).getOutput());
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
@@ -311,7 +323,7 @@ public class ConverterController {
                 log.debug("Turtle export completed: requestId={}, outputSize={}", requestId, ttlOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.success(ttlOutput, results, detailedReport));
+                        .body(ConversionResponseDto.success(ttlOutput, results, detailedReport).getOutput());
             }
             default -> {
                 log.warn("Unsupported output format requested: requestId={}, format={}", requestId, outputFormat);
@@ -336,36 +348,21 @@ public class ConverterController {
         return "json";
     }
 
-    private ValidationResultsDto performValidation(ConversionResult conversionResult, String requestId) {
+    private ValidationResultsDto convertReportToDto(ISMDValidationReport report, String requestId) {
         try {
-            ISMDValidationReport combinedReport = validationService.validate(conversionResult.getTransformationResult());
-
-            log.debug("Combined validation completed: requestId={}, results={}", requestId, combinedReport.getSummary());
-            return validationReportService.convertToDto(combinedReport);
-
+            return validationReportService.convertToDto(report);
         } catch (Exception e) {
-            log.error("Validation failed but continuing with conversion: requestId={}", requestId, e);
-
-            try {
-                ISMDValidationReport localReport = validationService.validate(conversionResult.getTransformationResult());
-                log.warn("Fallback to local validation successful: requestId={}", requestId);
-                return validationReportService.convertToDto(localReport);
-            } catch (Exception fallbackE) {
-                log.error("Even local validation failed: requestId={}", requestId, fallbackE);
-                return null;
-            }
+            return null;
         }
     }
 
-    private DetailedValidationReportDto generateDetailedValidationReport(ConversionResult conversionResult, String requestId) {
+    private DetailedValidationReportDto generateDetailedValidationReport(ISMDValidationReport report, OntModel model, String requestId) {
         try {
             log.debug("Generating detailed validation report: requestId={}", requestId);
 
-            ISMDValidationReport combinedReport = validationService.validate(conversionResult.getTransformationResult());
-
             DetailedValidationReportDto detailedReport = detailedValidationReportService.generateDetailedReport(
-                    combinedReport,
-                    conversionResult.getTransformationResult().getOntModel()
+                    report,
+                    model
             );
 
             log.debug("Detailed validation report generated successfully: requestId={}, concepts={}",
@@ -375,21 +372,16 @@ public class ConverterController {
 
         } catch (Exception e) {
             log.error("Failed to generate detailed validation report: requestId={}", requestId, e);
+            return null;
+        }
+    }
 
-            try {
-                ISMDValidationReport localReport = validationService.validate(conversionResult.getTransformationResult());
-                DetailedValidationReportDto detailedReport = detailedValidationReportService.generateDetailedReport(
-                        localReport,
-                        conversionResult.getTransformationResult().getOntModel()
-                );
+    private DetailedValidationReportDto generateDetailedValidationReportFromTtl() {
+        // TODO
+        try {
 
-                log.warn("Fallback detailed report generation successful: requestId={}", requestId);
-                return detailedReport;
+        } catch (Exception e) {
 
-            } catch (Exception fallbackE) {
-                log.error("Even fallback detailed report generation failed: requestId={}", requestId, fallbackE);
-                return null;
-            }
         }
     }
 }
