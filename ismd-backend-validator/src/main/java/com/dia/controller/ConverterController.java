@@ -268,7 +268,7 @@ public class ConverterController {
 
     @PostMapping("/convert/catalog-record/json")
     public ResponseEntity<String> downloadCatalogRecordJSON(
-            @RequestBody ConversionResponseDto conversionResponse,
+            @RequestPart (value = "catalogRecord") CatalogRecordDto catalogRecord,
             @RequestParam(value = "filename", required = false, defaultValue = "catalog-record") String filename
     ) {
         String requestId = UUID.randomUUID().toString();
@@ -277,8 +277,6 @@ public class ConverterController {
         log.info("Catalog record download requested from existing conversion response, filename={}", filename);
 
         try {
-            CatalogRecordDto catalogRecord = conversionResponse.getCatalogReport();
-
             if (catalogRecord == null) {
                 log.warn("No catalog record found in conversion response: requestId={}", requestId);
                 return ResponseEntity.badRequest()
