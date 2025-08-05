@@ -219,7 +219,7 @@ public class ConverterController {
     }
 
     @PostMapping("/convert/detailed-report/csv")
-    public ResponseEntity<String> downloadDetailedValidationReportCSV(
+    public ResponseEntity<byte[]> downloadDetailedValidationReportCSV(
             @RequestPart (value = "detailedReport") DetailedValidationReportDto detailedReport,
             @RequestParam(value = "filename", required = false, defaultValue = "validation-report") String filename
     ) {
@@ -232,10 +232,16 @@ public class ConverterController {
             if (detailedReport == null) {
                 log.warn("No detailed validation report found in conversion response: requestId={}", requestId);
                 return ResponseEntity.badRequest()
-                        .body("No detailed validation report available. Please ensure the conversion was performed with includeDetailedReport=true.");
+                        .body("No detailed validation report available. Please ensure the conversion was performed with includeDetailedReport=true.".getBytes(StandardCharsets.UTF_8));
             }
 
             String csvContent = detailedValidationReportService.generateCSV(detailedReport);
+
+            byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
+            byte[] csvBytes = csvContent.getBytes(StandardCharsets.UTF_8);
+            byte[] finalContent = new byte[bom.length + csvBytes.length];
+            System.arraycopy(bom, 0, finalContent, 0, bom.length);
+            System.arraycopy(csvBytes, 0, finalContent, bom.length, csvBytes.length);
 
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
             String finalFilename = filename + "_" + timestamp + ".csv";
@@ -243,19 +249,18 @@ public class ConverterController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType("text/csv; charset=utf-8"));
             headers.setContentDispositionFormData("attachment", finalFilename);
-            headers.add("Content-Length", String.valueOf(csvContent.getBytes(StandardCharsets.UTF_8).length));
+            headers.setContentLength(finalContent.length);
 
             log.info("CSV report generated successfully from existing data: requestId={}, filename={}, concepts={}",
                     requestId, finalFilename, detailedReport.validation().size());
 
             return ResponseEntity.ok()
                     .headers(headers)
-                    .body(csvContent);
-
+                    .body(finalContent);
         } catch (Exception e) {
             log.error("Error generating CSV from conversion response: requestId={}", requestId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to generate CSV report: " + e.getMessage());
+                    .body(("Failed to generate CSV report: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
         } finally {
             MDC.remove(LOG_REQUEST_ID);
         }

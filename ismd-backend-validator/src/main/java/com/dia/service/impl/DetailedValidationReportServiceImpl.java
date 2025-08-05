@@ -40,18 +40,21 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
     public String generateCSV(DetailedValidationReportDto report) {
         log.info("Converting detailed report to CSV format");
 
-        StringWriter writer = new StringWriter();
-        writer.append("Concept_IRI,Concept_Name,Rule_IRI,Rule_Name,Rule_Description,Severity,Level,Violation_Message,Violating_Value\n");
+        StringBuilder csvBuilder = new StringBuilder();
+
+        csvBuilder.append("Concept_IRI,Concept_Name,Rule_IRI,Rule_Name,Rule_Description,Severity,Level,Violation_Message,Violating_Value\n");
 
         report.validation().forEach((conceptIri, conceptValidation) -> {
             String conceptName = extractConceptName(conceptIri);
 
             if (conceptValidation.violations().isEmpty()) {
-                writer.append(String.format("%s,%s,,,,,No violations found,%n",
-                        escapeCSV(conceptIri), escapeCSV(conceptName)));
+                csvBuilder.append(String.format("%s,%s,,,,,,%s,%n",
+                        escapeCSV(conceptIri),
+                        escapeCSV(conceptName),
+                        escapeCSV("No violations found")));
             } else {
                 conceptValidation.violations().forEach((ruleKey, violation) ->
-                        writer.append(String.format("%s,%s,%s,%s,%s,%s,%s,%s%n",
+                        csvBuilder.append(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s%n",
                                 escapeCSV(conceptIri),
                                 escapeCSV(conceptName),
                                 escapeCSV(ruleKey),
@@ -59,13 +62,14 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
                                 escapeCSV(violation.description()),
                                 escapeCSV(violation.severity()),
                                 escapeCSV(violation.level()),
-                                escapeCSV(violation.value())
+                                escapeCSV(violation.value()),
+                                escapeCSV("")
                         ))
                 );
             }
         });
 
-        return writer.toString();
+        return csvBuilder.toString();
     }
 
     @Override
@@ -221,6 +225,8 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
 
     private String escapeCSV(String value) {
         if (value == null) return "";
+
+        value = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFC);
 
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";
