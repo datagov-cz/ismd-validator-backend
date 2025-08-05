@@ -1,18 +1,28 @@
 package com.dia.service.impl;
 
 import com.dia.enums.ValidationSeverity;
+import com.dia.exceptions.ValidationException;
 import com.dia.service.DetailedValidationReportService;
 import com.dia.validation.data.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RiotException;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -72,14 +82,6 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
     public DetailedValidationReportDto generateCombinedDetailedReport(
             ISMDValidationReport localReport,
             ISMDValidationReport globalReport,
-            Model ontologyModel) {
-        return generateCombinedDetailedReport(localReport, globalReport, ontologyModel, null);
-    }
-
-    @Override
-    public DetailedValidationReportDto generateCombinedDetailedReport(
-            ISMDValidationReport localReport,
-            ISMDValidationReport globalReport,
             Model ontologyModel,
             Model shaclRulesModel) {
 
@@ -110,6 +112,36 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
         );
 
         return generateDetailedReport(combinedReport, ontologyModel);
+    }
+
+    @Override
+    public DetailedValidationReportDto generateDetailedReportFromTtlFile(ISMDValidationReport report, MultipartFile ttlFile) {
+        log.info("Generating detailed validation report from TTL file: {} with {} results", ttlFile.getOriginalFilename(), report.getTotalResultCount());
+
+        try {
+            String ttlContent = new String(ttlFile.getBytes(), StandardCharsets.UTF_8);
+            return generateDetailedReportFromTtl(report, ttlContent);
+
+        } catch (IOException e) {
+            log.error("Failed to read TTL file for detailed report generation: {}", ttlFile.getOriginalFilename(), e);
+            throw new ValidationException("Failed to read TTL file: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Failed to generate detailed report from TTL file: {}", ttlFile.getOriginalFilename(), e);
+            throw new ValidationException("Failed to generate detailed report from TTL file: " + e.getMessage(), e);
+        }
+    }
+
+    private DetailedValidationReportDto generateDetailedReportFromTtl(ISMDValidationReport report, String ttlContent) {
+        log.info("Generating detailed validation report from TTL content with {} results", report.getTotalResultCount());
+
+        try {
+            Model ontologyModel = parseTtlToModel(ttlContent);
+            return generateDetailedReport(report, ontologyModel);
+
+        } catch (Exception e) {
+            log.error("Failed to generate detailed report from TTL content", e);
+            throw new ValidationException("Failed to generate detailed report from TTL content: " + e.getMessage(), e);
+        }
     }
 
     private OntologyInfoDto extractOntologyInfo(Model ontologyModel) {
@@ -227,5 +259,24 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
         }
 
         return value;
+    }
+
+    private Model parseTtlToModel(String ttlContent) {
+        try {
+            Model model = ModelFactory.createDefaultModel();
+            InputStream inputStream = new ByteArrayInputStream(ttlContent.getBytes(StandardCharsets.UTF_8));
+
+            RDFDataMgr.read(model, inputStream, Lang.TTL);
+
+            log.debug("Parsed TTL content into model with {} statements", model.size());
+            return model;
+
+        } catch (RiotException e) {
+            log.error("Failed to parse TTL content - invalid syntax", e);
+            throw new ValidationException("Invalid TTL syntax: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Failed to parse TTL content", e);
+            throw new ValidationException("Failed to parse TTL content: " + e.getMessage(), e);
+        }
     }
 }
