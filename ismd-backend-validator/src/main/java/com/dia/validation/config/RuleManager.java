@@ -1,13 +1,13 @@
 package com.dia.validation.config;
 
 import com.dia.exceptions.ValidationConfigurationException;
+import com.dia.utility.UtilityMethods;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
 
 @Component
 @Slf4j
@@ -41,11 +40,11 @@ public class RuleManager {
         try {
             PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
             String pattern = config.getRulesDirectory().replace("classpath:", "classpath*:") + "**/*.ttl";
-            Resource[] resources = resolver.getResources(pattern);
+            org.springframework.core.io.Resource[] resources = resolver.getResources(pattern);
 
             log.info("Found {} rule files", resources.length);
 
-            for (Resource resource : resources) {
+            for (org.springframework.core.io.Resource resource : resources) {
                 loadRuleFile(resource);
             }
 
@@ -58,7 +57,7 @@ public class RuleManager {
         }
     }
 
-    private void loadRuleFile(Resource resource) {
+    private void loadRuleFile(org.springframework.core.io.Resource resource) {
         try (InputStream inputStream = resource.getInputStream()) {
             String filename = resource.getFilename();
             String ruleName = extractRuleName(filename);
@@ -95,14 +94,13 @@ public class RuleManager {
         if (name.endsWith(".ttl")) {
             name = name.substring(0, name.length() - 4);
         }
-        return name.replaceAll("[^a-z0-9]+", "-");
+
+        return UtilityMethods.sanitizeForIRI(name);
     }
 
     private Map<String, String> extractRuleMetadata(Model model) {
         Map<String, String> metadata = new HashMap<>();
-
         metadata.put("statements", String.valueOf(model.size()));
-
         return metadata;
     }
 
@@ -147,10 +145,12 @@ public class RuleManager {
         getAllRuleNames().forEach(ruleName -> {
             boolean enabled = config.isRuleEnabled(ruleName);
             RuleDefinition def = allRules.get(ruleName);
-            log.info("  {} - {} ({})",
+            String locality = ruleName.startsWith("local-") ? "LOCAL" : "GLOBAL";
+            log.info("  {} - {} ({}) [{}]",
                     ruleName,
                     enabled ? "ENABLED" : "DISABLED",
-                    def != null ? def.filename() : "unknown");
+                    def != null ? def.filename() : "unknown",
+                    locality);
         });
     }
 }

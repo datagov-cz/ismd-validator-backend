@@ -16,6 +16,8 @@ public interface ConverterService {
 
     ConversionResult processExcelFile(MultipartFile file, Boolean removeInvalidSources) throws ExcelReadingException, IOException, ConversionException;
 
+    ConversionResult processSSPOntology(String iri, Boolean removeInvalidSources) throws ConversionException;
+
     String exportToJson(FileFormat fileFormat, TransformationResult transformationResult) throws JsonExportException;
 
     String exportToTurtle(FileFormat fileFormat, TransformationResult transformationResult) throws TurtleExportException;
