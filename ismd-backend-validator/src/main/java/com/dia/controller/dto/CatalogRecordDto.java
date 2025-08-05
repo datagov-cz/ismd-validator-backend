@@ -13,7 +13,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CatalogReportDto {
+public class CatalogRecordDto {
 
     @JsonProperty("@context")
     private String context;

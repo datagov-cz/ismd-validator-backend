@@ -1,6 +1,6 @@
 package com.dia.service.impl;
 
-import com.dia.controller.dto.CatalogReportDto;
+import com.dia.controller.dto.CatalogRecordDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
 import com.dia.service.CatalogReportService;
@@ -28,10 +28,10 @@ public class CatalogReportServiceImpl implements CatalogReportService {
     private static final String PERIODICITY_IRREGULAR = "http://publications.europa.eu/resource/authority/frequency/IRREG";
     private static final String EUROVOC_CONCEPT = "http://eurovoc.europa.eu/438";
     private static final String SPECIFICATION = "https://ofn.gov.cz/slovníky/draft/";
-    private static final String RUIAN_CZECH_REPUBLIC = "https://linked.cuzk.cz/resource/ruian/stat/1";
+    private static final String RUIAN = "https://linked.cuzk.cz/resource/ruian/stat/1";
 
     @Override
-    public Optional<CatalogReportDto> generateCatalogReport(ConversionResult conversionResult, ValidationResultsDto validationResults) {
+    public Optional<CatalogRecordDto> generateCatalogReport(ConversionResult conversionResult, ValidationResultsDto validationResults) {
         if (!shouldGenerateCatalogReport(validationResults)) {
             log.info("Catalog report generation skipped - validation contains ERROR severity findings");
             return Optional.empty();
@@ -43,7 +43,7 @@ public class CatalogReportServiceImpl implements CatalogReportService {
             OntModel ontModel = conversionResult.getTransformationResult().getOntModel();
             VocabularyMetadata metadata = extractVocabularyMetadata(ontModel);
 
-            CatalogReportDto catalogReport = buildCatalogReport(metadata);
+            CatalogRecordDto catalogReport = buildCatalogReport(metadata);
 
             log.info("Catalog report generated successfully for vocabulary: {}", metadata.getIri());
             return Optional.of(catalogReport);
@@ -152,14 +152,14 @@ public class CatalogReportServiceImpl implements CatalogReportService {
         return index >= 0 ? uri.substring(index + 1) : uri;
     }
 
-    private CatalogReportDto buildCatalogReport(VocabularyMetadata metadata) {
-        return CatalogReportDto.builder()
+    private CatalogRecordDto buildCatalogReport(VocabularyMetadata metadata) {
+        return CatalogRecordDto.builder()
                 .context(CONTEXT_URL)
                 .iri(metadata.getIri())
                 .typ(DEFAULT_TYPE)
                 .nazev(metadata.getNazev())
                 .popis(metadata.getPopis())
-                .prvekRuian(List.of(RUIAN_CZECH_REPUBLIC))
+                .prvekRuian(List.of(RUIAN))
                 .geografickeUzemi(new ArrayList<>())
                 .prostorovePokryti(new ArrayList<>())
                 .klicoveSlovo(createDefaultKeywords())
@@ -179,8 +179,8 @@ public class CatalogReportServiceImpl implements CatalogReportService {
         return keywords;
     }
 
-    private CatalogReportDto.DistribuceDto createDefaultDistribution() {
-        return CatalogReportDto.DistribuceDto.builder()
+    private CatalogRecordDto.DistribuceDto createDefaultDistribution() {
+        return CatalogRecordDto.DistribuceDto.builder()
                 .typ("Distribuce")
                 .podminkyUziti(createDefaultUsageConditions())
                 .souborKeStazeni("")
@@ -191,8 +191,8 @@ public class CatalogReportServiceImpl implements CatalogReportService {
                 .build();
     }
 
-    private CatalogReportDto.PodminkyUzitiDto createDefaultUsageConditions() {
-        return CatalogReportDto.PodminkyUzitiDto.builder()
+    private CatalogRecordDto.PodminkyUzitiDto createDefaultUsageConditions() {
+        return CatalogRecordDto.PodminkyUzitiDto.builder()
                 .typ("Specifikace podmínek užití")
                 .autorskeDilo("https://data.gov.cz/podmínky-užití/neobsahuje-autorská-díla/")
                 .databizeJakoAutorskeDilo("https://data.gov.cz/podmínky-užití/není-autorskoprávně-chráněnou-databází/")
