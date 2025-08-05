@@ -3,6 +3,8 @@ package com.dia.utility;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -452,5 +454,13 @@ public class UtilityMethods {
         }
 
         return iri;
+    }
+
+    public String getCurrentDate() {
+        return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+    }
+
+    public String getCurrentDateTime() {
+        return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "+02:00";
     }
 }
