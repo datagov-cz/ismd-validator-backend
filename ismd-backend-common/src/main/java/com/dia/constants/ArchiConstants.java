@@ -28,8 +28,6 @@ public class ArchiConstants {
     public static final String TYP = "typ";
     public static final String POPIS = "popis";
     public static final String DEFINICE = "definice";
-    public static final String ZDROJ = "zdroj";
-    public static final String SOUVISEJICI_ZDROJ = "související-zdroj";
     public static final String ALTERNATIVNI_NAZEV = "alternativní-název";
     public static final String EKVIVALENTNI_POJEM = "ekvivalentní-pojem";
     public static final String IDENTIFIKATOR = "identifikátor";
@@ -38,6 +36,10 @@ public class ArchiConstants {
     public static final String OKAMZIK_VYTVORENI = "okamžik-vytvoření";
     public static final String DATUM = "datum";
     public static final String DATUM_A_CAS = "datum-a-čas";
+    public static final String DEFINUJICI_USTANOVENI = "definující-ustanovení";
+    public static final String SOUVISEJICI_USTANOVENI = "související-ustanovení";
+    public static final String DEFINUJICI_NELEGISLATIVNI_ZDROJ = "definující-nelegislativní-zdroj";
+    public static final String SOUVISEJICI_NELEGISLATIVNI_ZDROJ = "související-nelegislativní-zdroj";
 
     // =============== DATA GOVERNANCE PROPERTIES ===============
     public static final String AIS = "agendový-informační-systém";
@@ -77,7 +79,7 @@ public class ArchiConstants {
     public static final class PropertySets {
 
         public static final String[] CORE_METADATA = {
-                TYP, POPIS, DEFINICE, ZDROJ, SOUVISEJICI_ZDROJ,
+                TYP, POPIS, DEFINICE, DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI,
                 ALTERNATIVNI_NAZEV, EKVIVALENTNI_POJEM, IDENTIFIKATOR, NAZEV
         };
 

@@ -53,7 +53,6 @@ public class ConverterController {
     public ResponseEntity<ConversionResponseDto> convertFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "output", required = false) String output,
-            @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
             @RequestHeader(value = "Accept", required = false) String acceptHeader,
             HttpServletRequest request
@@ -63,8 +62,8 @@ public class ConverterController {
 
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
-        log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}, include detailed report={}",
-                file.getOriginalFilename(), file.getSize(), output, removeInvalidSources, includeDetailedReport);
+        log.info("File conversion requested: filename={}, size={}, outputFormat={}, include detailed report={}",
+                file.getOriginalFilename(), file.getSize(), output, includeDetailedReport);
 
         try {
             if (!validateSingleFileUpload(request, requestId)) {
@@ -98,7 +97,7 @@ public class ConverterController {
                 case ARCHI_XML -> {
                     log.debug("Processing Archi XML file: requestId={}", requestId);
                     String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
-                    ConversionResult conversionResult = converterService.processArchiFile(xmlContent, removeInvalidSources);
+                    ConversionResult conversionResult = converterService.processArchiFile(xmlContent);
 
                     ValidationResultsDto results = performValidation(conversionResult, requestId);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
@@ -111,7 +110,7 @@ public class ConverterController {
                 }
                 case XMI -> {
                     log.debug("Processing XMI file: requestId={}", requestId);
-                    ConversionResult conversionResult = converterService.processEAFile(file, removeInvalidSources);
+                    ConversionResult conversionResult = converterService.processEAFile(file);
 
                     ValidationResultsDto results = performValidation(conversionResult, requestId);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
@@ -124,7 +123,7 @@ public class ConverterController {
                 }
                 case XLSX -> {
                     log.debug("Processing XLSX file: requestId={}", requestId);
-                    ConversionResult conversionResult = converterService.processExcelFile(file, removeInvalidSources);
+                    ConversionResult conversionResult = converterService.processExcelFile(file);
 
                     ValidationResultsDto results = performValidation(conversionResult, requestId);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
@@ -156,7 +155,6 @@ public class ConverterController {
     public ResponseEntity<ConversionResponseDto> convertSSPFromIRI(
             @RequestParam(value = "iri") String iri,
             @RequestParam(value = "output", required = false) String output,
-            @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
             @RequestHeader(value = "Accept", required = false) String acceptHeader
     ) {
@@ -172,7 +170,7 @@ public class ConverterController {
                         ConversionResponseDto.error("Nebylo vloženo IRI slovníku určeného k převodu.")
                 );
             }
-            ConversionResult conversionResult = converterService.processSSPOntology(iri, removeInvalidSources);
+            ConversionResult conversionResult = converterService.processSSPOntology(iri);
             ValidationResultsDto results = performValidation(conversionResult, requestId);
             DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                     generateDetailedValidationReport(conversionResult, requestId) : null;

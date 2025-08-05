@@ -116,6 +116,12 @@ public class OFNBaseModelV2 {
             slovnikClass.addLabel(SLOVNIK, "cs");
         }
 
+        OntClass digitalDocumentClass = null;
+        if (requiresDigitalDocumentSupport(requiredProperties)) {
+            digitalDocumentClass = ontModel.createClass("http://schema.org/DigitalDocument");
+            digitalDocumentClass.addLabel("digitální-dokument", "cs");
+        }
+
         createRequiredProperties(requiredProperties, pojemClass,
                 requiredBaseClasses.contains(NEVEREJNY_UDAJ) ?
                         ontModel.createClass(DEFAULT_NS + NEVEREJNY_UDAJ) : null,
@@ -170,12 +176,55 @@ public class OFNBaseModelV2 {
                     }
                     break;
 
-                case ZDROJ:
-                    if (pojemClass != null && xsdAnyURI != null) {
-                        OntProperty zdrojProp = ontModel.createOntProperty(DEFAULT_NS + ZDROJ);
-                        zdrojProp.addLabel(ZDROJ, "cs");
-                        zdrojProp.addDomain(pojemClass);
-                        zdrojProp.addRange(xsdAnyURI);
+                // NEW SOURCE PROPERTIES - Legislative sources (provisions)
+                case DEFINUJICI_USTANOVENI:
+                    if (pojemClass != null) {
+                        OntProperty definujiciUstanoveniProp = ontModel.createOntProperty(DEFAULT_NS + DEFINUJICI_USTANOVENI);
+                        definujiciUstanoveniProp.addLabel(DEFINUJICI_USTANOVENI, "cs");
+                        definujiciUstanoveniProp.addDomain(pojemClass);
+                        definujiciUstanoveniProp.addRange(RDFS.Resource);
+                        log.debug("Created property for defining provisions: {}", DEFINUJICI_USTANOVENI);
+                    }
+                    break;
+
+                case SOUVISEJICI_USTANOVENI:
+                    if (pojemClass != null) {
+                        OntProperty souvisejiciUstanoveniProp = ontModel.createOntProperty(DEFAULT_NS + SOUVISEJICI_USTANOVENI);
+                        souvisejiciUstanoveniProp.addLabel(SOUVISEJICI_USTANOVENI, "cs");
+                        souvisejiciUstanoveniProp.addDomain(pojemClass);
+                        souvisejiciUstanoveniProp.addRange(RDFS.Resource);
+                        log.debug("Created property for related provisions: {}", SOUVISEJICI_USTANOVENI);
+                    }
+                    break;
+
+                // NEW SOURCE PROPERTIES - Non-legislative sources (digital documents)
+                case DEFINUJICI_NELEGISLATIVNI_ZDROJ:
+                    if (pojemClass != null) {
+                        OntProperty definujiciNelegislativniZdrojProp = ontModel.createOntProperty(DEFAULT_NS + DEFINUJICI_NELEGISLATIVNI_ZDROJ);
+                        definujiciNelegislativniZdrojProp.addLabel(DEFINUJICI_NELEGISLATIVNI_ZDROJ, "cs");
+                        definujiciNelegislativniZdrojProp.addDomain(pojemClass);
+                        definujiciNelegislativniZdrojProp.addRange(RDFS.Resource); // Points to digital document resources
+                        log.debug("Created property for defining non-legislative sources: {}", DEFINUJICI_NELEGISLATIVNI_ZDROJ);
+                    }
+                    break;
+
+                case SOUVISEJICI_NELEGISLATIVNI_ZDROJ:
+                    if (pojemClass != null) {
+                        OntProperty souvisejiciNelegislativniZdrojProp = ontModel.createOntProperty(DEFAULT_NS + SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
+                        souvisejiciNelegislativniZdrojProp.addLabel(SOUVISEJICI_NELEGISLATIVNI_ZDROJ, "cs");
+                        souvisejiciNelegislativniZdrojProp.addDomain(pojemClass);
+                        souvisejiciNelegislativniZdrojProp.addRange(RDFS.Resource); // Points to digital document resources
+                        log.debug("Created property for related non-legislative sources: {}", SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
+                    }
+                    break;
+
+                case "schema:url":
+                    if (digitalDocumentClass != null && xsdAnyURI != null) {
+                        OntProperty schemaUrlProp = ontModel.createOntProperty("http://schema.org/url");
+                        schemaUrlProp.addLabel("url", "en");
+                        schemaUrlProp.addDomain(digitalDocumentClass);
+                        schemaUrlProp.addRange(xsdAnyURI);
+                        log.debug("Created schema:url property for digital documents");
                     }
                     break;
 
@@ -304,10 +353,11 @@ public class OFNBaseModelV2 {
         return requiredProperties.contains(NAZEV) ||
                 requiredProperties.contains(POPIS) ||
                 requiredProperties.contains(DEFINICE) ||
-                requiredProperties.contains(ZDROJ) ||
                 requiredProperties.contains(JE_PPDF) ||
                 requiredProperties.contains(DATUM) ||
-                requiredProperties.contains(DATUM_A_CAS);
+                requiredProperties.contains(DATUM_A_CAS) ||
+                requiredProperties.contains("schema:url");
+
     }
 
     private boolean requiresLangString(Set<String> requiredProperties) {
@@ -324,5 +374,11 @@ public class OFNBaseModelV2 {
     private boolean requiresVocabularySupport(Set<String> requiredProperties) {
         return requiredProperties.contains(OKAMZIK_POSLEDNI_ZMENY) ||
                 requiredProperties.contains(OKAMZIK_VYTVORENI);
+    }
+
+    private boolean requiresDigitalDocumentSupport(Set<String> requiredProperties) {
+        return requiredProperties.contains(DEFINUJICI_NELEGISLATIVNI_ZDROJ) ||
+                requiredProperties.contains(SOUVISEJICI_NELEGISLATIVNI_ZDROJ) ||
+                requiredProperties.contains("schema:url");
     }
 }
