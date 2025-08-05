@@ -176,6 +176,7 @@ public class ConverterController {
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
+            @RequestParam(value = "includeCatalogRecord", required = false, defaultValue = "true") Boolean includeCatalogRecord,
             @RequestHeader(value = "Accept", required = false) String acceptHeader
     ) {
         String requestId = UUID.randomUUID().toString();
@@ -191,10 +192,15 @@ public class ConverterController {
                 );
             }
             ConversionResult conversionResult = converterService.processSSPOntology(iri, removeInvalidSources);
+
             ValidationResultsDto results = performValidation(conversionResult, requestId);
             DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                     generateDetailedValidationReport(conversionResult, requestId) : null;
-            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport);
+
+            CatalogReportDto catalogReport = Boolean.TRUE.equals(includeCatalogRecord) ?
+                    generateCatalogReport(conversionResult, results, requestId) : null;
+            
+            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport, catalogReport);
             log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, SSP, output);
             return response;
