@@ -4,10 +4,9 @@
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
-@prefix ex: <http://example.org/shapes#> .
 
 # Error rule: Concept must have at least one of: description, definition, or source
-ex:ConceptRequiredContentRule
+<https://slovník.gov.cz/shacl/lokální/pojem-nemá-povinné-údaje>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "Povinné údaje pojmu"@cs ;

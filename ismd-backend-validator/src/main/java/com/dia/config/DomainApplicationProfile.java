@@ -2,7 +2,6 @@ package com.dia.config;
 
 import com.dia.exceptions.DomainException;
 import org.springframework.core.env.Environment;
-
 import java.util.Arrays;
 
 public final class DomainApplicationProfile {
