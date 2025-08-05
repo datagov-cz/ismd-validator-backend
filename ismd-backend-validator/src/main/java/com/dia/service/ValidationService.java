@@ -1,12 +1,10 @@
 package com.dia.service;
 
 import com.dia.conversion.data.TransformationResult;
-import com.dia.service.record.ValidationConfigurationSummary;
 import com.dia.validation.data.ISMDValidationReport;
 import com.dia.enums.ValidationTiming;
 import org.apache.jena.rdf.model.Model;
-
-import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface ValidationService {
 
@@ -14,13 +12,11 @@ public interface ValidationService {
 
     ISMDValidationReport validate(TransformationResult result, ValidationTiming timing);
 
-    ISMDValidationReport validateWithRules(TransformationResult result, List<String> ruleNames, ValidationTiming timing);
-
     ISMDValidationReport validateModel(Model model);
 
     ISMDValidationReport validateRdf(String rdfContent, String format);
 
-    ValidationConfigurationSummary getConfigurationSummary();
+    ISMDValidationReport validateTtl(String ttlContent);
 
-    ISMDValidationReport testValidation();
+    ISMDValidationReport validateTtlFile(MultipartFile file);
 }
