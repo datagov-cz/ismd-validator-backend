@@ -2,11 +2,7 @@ package com.dia.utility;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.Resource;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -166,28 +162,6 @@ public class UtilityMethods {
         return true;
     }
 
-    public String transformEliUrl(String url, Boolean removeInvalidSources) {
-        if (url == null || url.trim().isEmpty()) {
-            return url;
-        }
-
-        String trimmed = url.trim();
-
-        Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
-        Matcher matcher = eliPattern.matcher(trimmed);
-
-        if (matcher.matches()) {
-            String eliPart = matcher.group(1);
-            return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
-        } else {
-            if (Boolean.TRUE.equals(removeInvalidSources)) {
-                return "";
-            } else {
-                return trimmed;
-            }
-        }
-    }
-
     public boolean isValidAgendaValue(String value) {
         if (value == null || value.trim().isEmpty()) {
             return false;
@@ -246,30 +220,6 @@ public class UtilityMethods {
         }
 
         return value;
-    }
-
-    public String transformEliPrivacyProvision(String provision, Boolean removeELI) {
-        if (provision == null || provision.trim().isEmpty()) {
-            return null;
-        }
-
-        provision = provision.trim();
-
-        if (containsEliPattern(provision)) {
-            String eliPart = extractEliPart(provision);
-            if (eliPart != null) {
-                String transformed = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
-                log.debug("Transformed ELI provision: {} -> {}", provision, transformed);
-                return transformed;
-            }
-        }
-
-        if (Boolean.TRUE.equals(removeELI)) {
-            log.debug("Filtering out non-ELI provision (removeELI=true): {}", provision);
-            return null;
-        }
-
-        return provision;
     }
 
     public boolean containsEliPattern(String provision) {
@@ -454,14 +404,6 @@ public class UtilityMethods {
         }
 
         return iri;
-    }
-
-    public String getCurrentDate() {
-        return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-    }
-
-    public String getCurrentDateTime() {
-        return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "+02:00";
     }
 
     public boolean isOFNBaseSchemaElement(String uri) {
