@@ -65,6 +65,24 @@ public class OFNBaseModelV2 {
             tridaClass.addSuperClass(pojemClass);
         }
 
+        OntClass casovyOkamzikClass = null;
+        if (requiresTemporalSupport(requiredProperties)) {
+            casovyOkamzikClass = ontModel.createClass(CAS_NS + CASOVY_OKAMZIK);
+            casovyOkamzikClass.addLabel(CASOVY_OKAMZIK, "cs");
+        }
+
+        OntClass slovnikClass = null;
+        if (requiresVocabularySupport(requiredProperties)) {
+            slovnikClass = ontModel.createClass(SLOVNIKY_NS + SLOVNIK);
+            slovnikClass.addLabel(SLOVNIK, "cs");
+        }
+
+        OntClass digitalDocumentClass = null;
+        if (requiresDigitalDocumentSupport(requiredProperties)) {
+            digitalDocumentClass = ontModel.createClass("http://schema.org/DigitalDocument");
+            digitalDocumentClass.addLabel("digitální-dokument", "cs");
+        }
+
         if (requiredBaseClasses.contains(TSP) && tridaClass != null) {
             OntClass typSubjektuClass = ontModel.createClass(DEFAULT_NS + TSP);
             typSubjektuClass.addLabel(TSP, "cs");
@@ -104,33 +122,15 @@ public class OFNBaseModelV2 {
             neverejnyUdajClass.addLabel(NEVEREJNY_UDAJ, "cs");
         }
 
-        OntClass casovyOkamzikClass = null;
-        if (requiresTemporalSupport(requiredProperties)) {
-            casovyOkamzikClass = ontModel.createClass(CAS_NS + CASOVY_OKAMZIK);
-            casovyOkamzikClass.addLabel(CASOVY_OKAMZIK, "cs");
-        }
-
-        OntClass slovnikClass = null;
-        if (requiresVocabularySupport(requiredProperties)) {
-            slovnikClass = ontModel.createClass(SLOVNIKY_NS + SLOVNIK);
-            slovnikClass.addLabel(SLOVNIK, "cs");
-        }
-
-        OntClass digitalDocumentClass = null;
-        if (requiresDigitalDocumentSupport(requiredProperties)) {
-            digitalDocumentClass = ontModel.createClass("http://schema.org/DigitalDocument");
-            digitalDocumentClass.addLabel("digitální-dokument", "cs");
-        }
-
         createRequiredProperties(requiredProperties, pojemClass,
                 requiredBaseClasses.contains(NEVEREJNY_UDAJ) ?
                         ontModel.createClass(DEFAULT_NS + NEVEREJNY_UDAJ) : null,
-                casovyOkamzikClass, slovnikClass);
+                casovyOkamzikClass, slovnikClass, digitalDocumentClass);
     }
 
     private void createRequiredProperties(Set<String> requiredProperties, OntClass pojemClass,
                                           OntClass neverejnyUdajClass, OntClass casovyOkamzikClass,
-                                          OntClass slovnikClass) {
+                                          OntClass slovnikClass, OntClass digitalDocumentClass) {
         OntClass xsdString = requiresXSDTypes(requiredProperties) ? ontModel.createClass(XSD + "string") : null;
         OntClass xsdBoolean = requiresXSDTypes(requiredProperties) ? ontModel.createClass(XSD + "boolean") : null;
         OntClass xsdAnyURI = requiresXSDTypes(requiredProperties) ? ontModel.createClass(XSD + "anyURI") : null;
@@ -176,7 +176,6 @@ public class OFNBaseModelV2 {
                     }
                     break;
 
-                // NEW SOURCE PROPERTIES - Legislative sources (provisions)
                 case DEFINUJICI_USTANOVENI:
                     if (pojemClass != null) {
                         OntProperty definujiciUstanoveniProp = ontModel.createOntProperty(DEFAULT_NS + DEFINUJICI_USTANOVENI);
@@ -197,13 +196,12 @@ public class OFNBaseModelV2 {
                     }
                     break;
 
-                // NEW SOURCE PROPERTIES - Non-legislative sources (digital documents)
                 case DEFINUJICI_NELEGISLATIVNI_ZDROJ:
                     if (pojemClass != null) {
                         OntProperty definujiciNelegislativniZdrojProp = ontModel.createOntProperty(DEFAULT_NS + DEFINUJICI_NELEGISLATIVNI_ZDROJ);
                         definujiciNelegislativniZdrojProp.addLabel(DEFINUJICI_NELEGISLATIVNI_ZDROJ, "cs");
                         definujiciNelegislativniZdrojProp.addDomain(pojemClass);
-                        definujiciNelegislativniZdrojProp.addRange(RDFS.Resource); // Points to digital document resources
+                        definujiciNelegislativniZdrojProp.addRange(RDFS.Resource);
                         log.debug("Created property for defining non-legislative sources: {}", DEFINUJICI_NELEGISLATIVNI_ZDROJ);
                     }
                     break;
@@ -213,7 +211,7 @@ public class OFNBaseModelV2 {
                         OntProperty souvisejiciNelegislativniZdrojProp = ontModel.createOntProperty(DEFAULT_NS + SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
                         souvisejiciNelegislativniZdrojProp.addLabel(SOUVISEJICI_NELEGISLATIVNI_ZDROJ, "cs");
                         souvisejiciNelegislativniZdrojProp.addDomain(pojemClass);
-                        souvisejiciNelegislativniZdrojProp.addRange(RDFS.Resource); // Points to digital document resources
+                        souvisejiciNelegislativniZdrojProp.addRange(RDFS.Resource);
                         log.debug("Created property for related non-legislative sources: {}", SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
                     }
                     break;

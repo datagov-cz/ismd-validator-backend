@@ -269,41 +269,52 @@ public class OFNDataTransformerV2 {
     }
 
     private void addTemporalMetadata(Resource vocabularyResource, VocabularyMetadata metadata) {
-        Resource creationInstant = createTemporalInstant("vytvoření", UtilityMethods.getCurrentDate());
-        if (creationInstant != null) {
-            Property creationProperty = ontModel.createProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
-            vocabularyResource.addProperty(creationProperty, creationInstant);
-            log.debug("Added creation temporal instant to vocabulary");
+        if (metadata.getDateOfCreation() != null && !metadata.getDateOfCreation().trim().isEmpty()) {
+            Resource creationInstant = createTemporalInstant("vytvoření", metadata.getDateOfCreation());
+            if (creationInstant != null) {
+                Property creationProperty = ontModel.createProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
+                vocabularyResource.addProperty(creationProperty, creationInstant);
+                log.debug("Added creation temporal instant to vocabulary with date: {}", metadata.getDateOfCreation());
+            }
         }
 
-        Resource modificationInstant = createTemporalInstant("poslední-změna", UtilityMethods.getCurrentDateTime());
-        if (modificationInstant != null) {
-            Property modificationProperty = ontModel.createProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
-            vocabularyResource.addProperty(modificationProperty, modificationInstant);
-            log.debug("Added modification temporal instant to vocabulary");
+        if (metadata.getDateOfModification() != null && !metadata.getDateOfModification().trim().isEmpty()) {
+            Resource modificationInstant = createTemporalInstant("poslední-změna", metadata.getDateOfModification());
+            if (modificationInstant != null) {
+                Property modificationProperty = ontModel.createProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
+                vocabularyResource.addProperty(modificationProperty, modificationInstant);
+                log.debug("Added modification temporal instant to vocabulary with date: {}", metadata.getDateOfModification());
+            }
         }
     }
 
     private Resource createTemporalInstant(String purpose, String dateTimeValue) {
         try {
+            if (dateTimeValue == null || dateTimeValue.trim().isEmpty()) {
+                log.warn("Cannot create temporal instant for purpose '{}': empty date/time value", purpose);
+                return null;
+            }
+
+            String trimmedValue = dateTimeValue.trim();
             String instantURI = uriGenerator.getEffectiveNamespace() + "časový-okamžik-" + purpose + "-" + System.currentTimeMillis();
             Resource instantResource = ontModel.createResource(instantURI);
 
             instantResource.addProperty(RDF.type, ontModel.getResource(CAS_NS + CASOVY_OKAMZIK));
 
-            if (dateTimeValue.contains("T")) {
+            if (trimmedValue.contains("T")) {
                 Property dateTimeProperty = ontModel.createProperty(CAS_NS + DATUM_A_CAS);
-                DataTypeConverterV2.addTypedProperty(instantResource, dateTimeProperty, dateTimeValue, null, ontModel);
-                log.debug("Added dateTime property to temporal instant: {}", dateTimeValue);
+                DataTypeConverterV2.addTypedProperty(instantResource, dateTimeProperty, trimmedValue, null, ontModel);
+                log.debug("Added dateTime property to temporal instant for purpose '{}': {}", purpose, trimmedValue);
             } else {
                 Property dateProperty = ontModel.createProperty(CAS_NS + DATUM);
-                DataTypeConverterV2.addTypedProperty(instantResource, dateProperty, dateTimeValue, null, ontModel);
-                log.debug("Added date property to temporal instant: {}", dateTimeValue);
+                DataTypeConverterV2.addTypedProperty(instantResource, dateProperty, trimmedValue, null, ontModel);
+                log.debug("Added date property to temporal instant for purpose '{}': {}", purpose, trimmedValue);
             }
 
             return instantResource;
         } catch (Exception e) {
-            log.error("Failed to create temporal instant for purpose: {}", purpose, e);
+            log.error("Failed to create temporal instant for purpose '{}' with value '{}': {}",
+                    purpose, dateTimeValue, e.getMessage(), e);
             return null;
         }
     }

@@ -135,7 +135,7 @@ public class OFNBaseModel {
                     }
                     break;
 
-                case ZDROJ:
+               /* case ZDROJ:
                     if (pojemClass != null && xsdAnyURI != null) {
                         OntProperty zdrojProp = ontModel.createOntProperty(DEFAULT_NS + ZDROJ);
                         zdrojProp.addLabel(ZDROJ, "cs");
@@ -143,6 +143,8 @@ public class OFNBaseModel {
                         zdrojProp.addRange(xsdAnyURI);
                     }
                     break;
+
+                */
 
                 case JE_PPDF:
                     if (pojemClass != null && xsdBoolean != null) {
@@ -233,7 +235,7 @@ public class OFNBaseModel {
         return requiredProperties.contains(NAZEV) ||
                 requiredProperties.contains(POPIS) ||
                 requiredProperties.contains(DEFINICE) ||
-                requiredProperties.contains(ZDROJ) ||
+                //requiredProperties.contains(ZDROJ) ||
                 requiredProperties.contains(JE_PPDF);
     }
 }

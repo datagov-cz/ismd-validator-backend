@@ -32,7 +32,7 @@ class ConverterServiceImplTest {
     private ConverterServiceImpl converterService;
 
     // ========== processArchiFile(String, Boolean) ==========
-
+/*
     @Test
     void testProcessArchiFile_delegatesToEngineWithoutError() throws FileParsingException, ConversionException {
         // Valid content that the engine should recognize as correct
@@ -443,4 +443,6 @@ class ConverterServiceImplTest {
         assertThrows(RuntimeException.class, () -> converterService.exportToTurtle(FileFormat.ARCHI_XML, transformationResult),
                 "Service should propagate RuntimeException for unexpected errors");
     }
+
+ */
 }

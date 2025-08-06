@@ -35,7 +35,10 @@ public class RequiredPropertiesAnalyzerV2 {
         if (hasNames()) requiredProperties.add(NAZEV);
         if (hasDescriptions()) requiredProperties.add(POPIS);
         if (hasDefinitions()) requiredProperties.add(DEFINICE);
-        if (hasSources()) requiredProperties.add(ZDROJ);
+        if (hasSources()) requiredProperties.add(DEFINUJICI_USTANOVENI);
+        if (hasSources()) requiredProperties.add(DEFINUJICI_NELEGISLATIVNI_ZDROJ);
+        if (hasSources()) requiredProperties.add(SOUVISEJICI_USTANOVENI);
+        if (hasSources()) requiredProperties.add(SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
         if (hasAlternativeNames()) requiredProperties.add(ALTERNATIVNI_NAZEV);
         if (hasEquivalentConcepts()) requiredProperties.add(EKVIVALENTNI_POJEM);
     }
@@ -76,33 +79,13 @@ public class RequiredPropertiesAnalyzerV2 {
                 requiredProperties.add(DATUM_A_CAS);
                 log.debug("Added temporal properties due to vocabulary metadata");
             }
-
-        if (hasAnyTemporalData()) {
-            requiredProperties.add(DATUM);
-            requiredProperties.add(DATUM_A_CAS);
-            log.debug("Added temporal properties due to temporal data in entities");
-        }
     }
 
-    // TODO
     private boolean hasTemporalMetadata(VocabularyMetadata metadata) {
-        // return hasNonEmptyValue(metadata.getCreationDate()) ||
-        //        hasNonEmptyValue(metadata.getLastModified());
-        return hasNonEmptyValue(metadata.getName()) || hasNonEmptyValue(metadata.getDescription());
-    }
-
-    // TODO
-    private boolean hasAnyTemporalData() {
-        return hasAnyFieldAcrossAllEntities(ontologyData,
-                this::extractTemporalInfo,
-                this::extractTemporalInfo,
-                this::extractTemporalInfo);
-    }
-
-    // TODO
-    private String extractTemporalInfo(Object entityData) {
-  
-        return null;
+        if (hasNonEmptyValue(metadata.getDateOfModification())) {
+            return true;
+        }
+        return hasNonEmptyValue(metadata.getDateOfCreation());
     }
 
     private boolean hasNames() {
