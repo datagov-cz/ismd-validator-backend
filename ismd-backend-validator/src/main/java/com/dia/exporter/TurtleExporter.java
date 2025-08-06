@@ -183,7 +183,7 @@ public class TurtleExporter {
         return newModel;
     }
 
-    public boolean shouldFilterAsBaseSchema(String uri) {
+    private boolean shouldFilterAsBaseSchema(String uri) {
         if (UtilityMethods.isOFNBaseSchemaElement(uri)) {
             return true;
         }
@@ -275,7 +275,7 @@ public class TurtleExporter {
 
         mapCustomPropertiesToStandard(transformedModel);
 
-        transformNewSourceProperties(transformedModel);
+        transformSourceProperties(transformedModel);
 
         addInSchemeRelationships(transformedModel);
 
@@ -670,7 +670,7 @@ public class TurtleExporter {
         transformedModel.remove(toRemove);
     }
 
-    private void transformNewSourceProperties(OntModel transformedModel) {
+    private void transformSourceProperties(OntModel transformedModel) {
         transformLegislativeSourceProperties(transformedModel);
 
         transformNonLegislativeSourceProperties(transformedModel);
@@ -682,16 +682,18 @@ public class TurtleExporter {
         Property definingProvisionProp = transformedModel.createProperty(effectiveNamespace + DEFINUJICI_USTANOVENI);
         Property definingProvisionDefaultProp = transformedModel.createProperty(DEFAULT_NS + DEFINUJICI_USTANOVENI);
 
-        mapProperty(transformedModel, definingProvisionProp, DCTerms.source);
-        mapProperty(transformedModel, definingProvisionDefaultProp, DCTerms.source);
+        Property slovnikyDefiningProvision = transformedModel.createProperty(SLOVNIKY_NS + DEFINUJICI_USTANOVENI);
+        mapProperty(transformedModel, definingProvisionProp, slovnikyDefiningProvision);
+        mapProperty(transformedModel, definingProvisionDefaultProp, slovnikyDefiningProvision);
 
         Property relatedProvisionProp = transformedModel.createProperty(effectiveNamespace + SOUVISEJICI_USTANOVENI);
         Property relatedProvisionDefaultProp = transformedModel.createProperty(DEFAULT_NS + SOUVISEJICI_USTANOVENI);
 
-        mapProperty(transformedModel, relatedProvisionProp, DCTerms.references);
-        mapProperty(transformedModel, relatedProvisionDefaultProp, DCTerms.references);
+        Property slovnikyRelatedProvision = transformedModel.createProperty(SLOVNIKY_NS + SOUVISEJICI_USTANOVENI);
+        mapProperty(transformedModel, relatedProvisionProp, slovnikyRelatedProvision);
+        mapProperty(transformedModel, relatedProvisionDefaultProp, slovnikyRelatedProvision);
 
-        log.debug("Transformed legislative source properties to Dublin Core terms");
+        log.debug("Transformed legislative source properties to OFN slovníky namespace");
     }
 
     private void transformNonLegislativeSourceProperties(OntModel transformedModel) {
