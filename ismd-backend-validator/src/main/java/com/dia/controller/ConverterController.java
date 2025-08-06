@@ -218,8 +218,8 @@ public class ConverterController {
     }
 
     @PostMapping("/convert/detailed-report/csv")
-    public ResponseEntity<String> downloadDetailedValidationReportCSV(
-            @RequestBody ConversionResponseDto conversionResponse,
+    public ResponseEntity<byte[]> downloadDetailedValidationReportCSV(
+            @RequestPart (value = "detailedReport") DetailedValidationReportDto detailedReport,
             @RequestParam(value = "filename", required = false, defaultValue = "validation-report") String filename
     ) {
         String requestId = UUID.randomUUID().toString();
@@ -228,35 +228,41 @@ public class ConverterController {
         log.info("CSV download requested from existing conversion response, filename={}", filename);
 
         try {
-            DetailedValidationReportDto detailedReport = conversionResponse.getValidationReport();
-
             if (detailedReport == null) {
                 log.warn("No detailed validation report found in conversion response: requestId={}", requestId);
                 return ResponseEntity.badRequest()
-                        .body("No detailed validation report available. Please ensure the conversion was performed with includeDetailedReport=true.");
+                        .body("No detailed validation report available. Please ensure the conversion was performed with includeDetailedReport=true.".getBytes(StandardCharsets.UTF_8));
             }
-
             String csvContent = detailedValidationReportService.generateCSV(detailedReport);
+
+            byte[] csvBytes = csvContent.getBytes(StandardCharsets.UTF_8);
 
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
             String finalFilename = filename + "_" + timestamp + ".csv";
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType("text/csv; charset=utf-8"));
-            headers.setContentDispositionFormData("attachment", finalFilename);
-            headers.add("Content-Length", String.valueOf(csvContent.getBytes(StandardCharsets.UTF_8).length));
 
-            log.info("CSV report generated successfully from existing data: requestId={}, filename={}, concepts={}",
-                    requestId, finalFilename, detailedReport.validation().size());
+            headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
+            headers.setContentDispositionFormData("attachment", finalFilename);
+            headers.setContentLength(csvBytes.length);
+
+            headers.add("Content-Transfer-Encoding", "binary");
+            headers.add("Accept-Ranges", "bytes");
+
+            headers.setCacheControl("no-cache, no-store, must-revalidate");
+            headers.setPragma("no-cache");
+            headers.setExpires(0);
+
+            log.info("CSV report generated successfully: requestId={}, filename={}, size={} bytes",
+                    requestId, finalFilename, csvBytes.length);
 
             return ResponseEntity.ok()
                     .headers(headers)
-                    .body(csvContent);
-
+                    .body(csvBytes);
         } catch (Exception e) {
             log.error("Error generating CSV from conversion response: requestId={}", requestId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to generate CSV report: " + e.getMessage());
+                    .body(("Failed to generate CSV report: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
         } finally {
             MDC.remove(LOG_REQUEST_ID);
         }
@@ -264,7 +270,7 @@ public class ConverterController {
 
     @PostMapping("/convert/catalog-record/json")
     public ResponseEntity<String> downloadCatalogRecordJSON(
-            @RequestBody ConversionResponseDto conversionResponse,
+            @RequestPart (value = "catalogRecord") CatalogRecordDto catalogRecord,
             @RequestParam(value = "filename", required = false, defaultValue = "catalog-record") String filename
     ) {
         String requestId = UUID.randomUUID().toString();
@@ -273,8 +279,6 @@ public class ConverterController {
         log.info("Catalog record download requested from existing conversion response, filename={}", filename);
 
         try {
-            CatalogRecordDto catalogRecord = conversionResponse.getCatalogReport();
-
             if (catalogRecord == null) {
                 log.warn("No catalog record found in conversion response: requestId={}", requestId);
                 return ResponseEntity.badRequest()
