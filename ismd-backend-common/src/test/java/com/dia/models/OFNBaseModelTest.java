@@ -21,7 +21,7 @@ class OFNBaseModelTest {
 
     @Nested
     class ConstructorTests {
-/*
+
         @Test
         void testDefaultConstructor_initializeModelAndPrefixes() {
             // Test default constructor that creates minimal model with just POJEM
@@ -38,6 +38,8 @@ class OFNBaseModelTest {
             assertEquals(RDFS.getURI(), ontModel.getNsPrefixURI("rdfs"), "Prefix 'rdfs' should be registered");
             assertEquals(OWL2.getURI(), ontModel.getNsPrefixURI("owl"), "Prefix 'owl' should be registered");
             assertEquals(XSD, ontModel.getNsPrefixURI("xsd"), "Prefix 'xsd' should correspond to XSD");
+            assertEquals(CAS_NS, ontModel.getNsPrefixURI("čas"), "Prefix 'čas' should correspond to CAS_NS");
+            assertEquals(SLOVNIKY_NS, ontModel.getNsPrefixURI("slovníky"), "Prefix 'slovníky' should correspond to SLOVNIKY_NS");
 
             // Verify non-existent prefix returns null
             assertNull(ontModel.getNsPrefixURI("nonexistent"), "Non-existent prefix should return null");
@@ -100,10 +102,13 @@ class OFNBaseModelTest {
         void testFullModel_allClassesAndProperties() {
             Set<String> requiredClasses = Set.of(POJEM, TRIDA, TSP, TOP, VLASTNOST, VZTAH,
                     DATOVY_TYP, VEREJNY_UDAJ, NEVEREJNY_UDAJ);
-            Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ZDROJ, JE_PPDF,
+            Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ALTERNATIVNI_NAZEV,
+                    DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI, DEFINUJICI_NELEGISLATIVNI_ZDROJ,
+                    SOUVISEJICI_NELEGISLATIVNI_ZDROJ, "schema:url", JE_PPDF,
                     AGENDA, AIS, USTANOVENI_NEVEREJNOST,
                     DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENA_TRIDA,
-                    ZPUSOB_SDILENI, ZPUSOB_ZISKANI, TYP_OBSAHU);
+                    ZPUSOB_SDILENI, ZPUSOB_ZISKANI, TYP_OBSAHU,
+                    OKAMZIK_POSLEDNI_ZMENY, OKAMZIK_VYTVORENI, DATUM, DATUM_A_CAS);
 
             OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, requiredProperties);
             OntModel ontModel = baseModel.getOntModel();
@@ -123,6 +128,12 @@ class OFNBaseModelTest {
             assertNotNull(ontModel.getOntProperty(DEFAULT_NS + NAZEV), "NAZEV property should exist");
             assertNotNull(ontModel.getOntProperty(DEFAULT_NS + POPIS), "POPIS property should exist");
             assertNotNull(ontModel.getOntProperty(DEFAULT_NS + DEFINICE), "DEFINICE property should exist");
+            assertNotNull(ontModel.getOntProperty(DEFAULT_NS + ALTERNATIVNI_NAZEV), "ALTERNATIVNI_NAZEV property should exist");
+
+            // Verify temporal classes were created
+            assertNotNull(ontModel.getOntClass(CAS_NS + CASOVY_OKAMZIK), "CASOVY_OKAMZIK should exist");
+            assertNotNull(ontModel.getOntClass(SLOVNIKY_NS + SLOVNIK), "SLOVNIK should exist");
+            assertNotNull(ontModel.getOntClass("http://schema.org/DigitalDocument"), "DigitalDocument should exist");
         }
 
         @Test
@@ -189,8 +200,9 @@ class OFNBaseModelTest {
         @Test
         void testPropertyCreation_withCorrectDomainRange() {
             Set<String> requiredClasses = Set.of(POJEM, NEVEREJNY_UDAJ);
-            Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ZDROJ, JE_PPDF,
-                    AGENDA, AIS, USTANOVENI_NEVEREJNOST);
+            Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ALTERNATIVNI_NAZEV, JE_PPDF,
+                    AGENDA, AIS, USTANOVENI_NEVEREJNOST, DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI,
+                    DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ, "schema:url");
 
             OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, requiredProperties);
             OntModel ontModel = baseModel.getOntModel();
@@ -205,10 +217,11 @@ class OFNBaseModelTest {
             assertTrue(nazevProp.hasDomain(pojemClass), "NAZEV should have POJEM domain");
             assertTrue(nazevProp.hasRange(ontModel.getOntClass(XSD + "string")), "NAZEV should have string range");
 
-            // Test URI property
-            OntProperty zdrojProp = ontModel.getOntProperty(DEFAULT_NS + ZDROJ);
-            assertNotNull(zdrojProp, "ZDROJ property should exist");
-            assertTrue(zdrojProp.hasRange(ontModel.getOntClass(XSD + "anyURI")), "ZDROJ should have anyURI range");
+            // Test langString property
+            OntProperty alternativniNazevProp = ontModel.getOntProperty(DEFAULT_NS + ALTERNATIVNI_NAZEV);
+            assertNotNull(alternativniNazevProp, "ALTERNATIVNI_NAZEV property should exist");
+            assertTrue(alternativniNazevProp.hasRange(ontModel.getOntClass(RDF.getURI() + "langString")),
+                    "ALTERNATIVNI_NAZEV should have langString range");
 
             // Test boolean property
             OntProperty ppdfProp = ontModel.getOntProperty(DEFAULT_NS + JE_PPDF);
@@ -219,6 +232,16 @@ class OFNBaseModelTest {
             OntProperty agendaProp = ontModel.getOntProperty(DEFAULT_NS + AGENDA);
             assertNotNull(agendaProp, "AGENDA property should exist");
             assertTrue(agendaProp.hasRange(RDFS.Resource), "AGENDA should have Resource range");
+
+            // Test legislative properties
+            OntProperty definujiciUstanoveniProp = ontModel.getOntProperty(DEFAULT_NS + DEFINUJICI_USTANOVENI);
+            assertNotNull(definujiciUstanoveniProp, "DEFINUJICI_USTANOVENI property should exist");
+            assertTrue(definujiciUstanoveniProp.hasRange(RDFS.Resource), "DEFINUJICI_USTANOVENI should have Resource range");
+
+            // Test schema:url property
+            OntProperty schemaUrlProp = ontModel.getOntProperty("http://schema.org/url");
+            assertNotNull(schemaUrlProp, "schema:url property should exist");
+            assertTrue(schemaUrlProp.hasRange(ontModel.getOntClass(XSD + "anyURI")), "schema:url should have anyURI range");
 
             // Test property with specific domain
             OntProperty ustanoveniProp = ontModel.getOntProperty(DEFAULT_NS + USTANOVENI_NEVEREJNOST);
@@ -267,6 +290,32 @@ class OFNBaseModelTest {
         }
 
         @Test
+        void testTemporalProperties() {
+            Set<String> requiredProperties = Set.of(OKAMZIK_POSLEDNI_ZMENY, OKAMZIK_VYTVORENI, DATUM, DATUM_A_CAS);
+
+            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
+
+            // Verify temporal classes were created
+            OntClass casovyOkamzikClass = ontModel.getOntClass(CAS_NS + CASOVY_OKAMZIK);
+            assertNotNull(casovyOkamzikClass, "CASOVY_OKAMZIK class should be created");
+
+            OntClass slovnikClass = ontModel.getOntClass(SLOVNIKY_NS + SLOVNIK);
+            assertNotNull(slovnikClass, "SLOVNIK class should be created");
+
+            // Test temporal properties
+            OntProperty okamzikPosledniZmenyProp = ontModel.getOntProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
+            assertNotNull(okamzikPosledniZmenyProp, "OKAMZIK_POSLEDNI_ZMENY property should exist");
+            assertTrue(okamzikPosledniZmenyProp.hasDomain(slovnikClass), "Should have SLOVNIK domain");
+            assertTrue(okamzikPosledniZmenyProp.hasRange(casovyOkamzikClass), "Should have CASOVY_OKAMZIK range");
+
+            OntProperty datumProp = ontModel.getOntProperty(CAS_NS + DATUM);
+            assertNotNull(datumProp, "DATUM property should exist");
+            assertTrue(datumProp.hasDomain(casovyOkamzikClass), "Should have CASOVY_OKAMZIK domain");
+            assertTrue(datumProp.hasRange(ontModel.getOntClass(XSD + "date")), "Should have date range");
+        }
+
+        @Test
         void testPropertyCreation_missingPrerequisites() {
             // Try to create properties that require POJEM class but don't provide it
             Set<String> requiredProperties = Set.of(NAZEV, POPIS);
@@ -298,7 +347,7 @@ class OFNBaseModelTest {
 
         @Test
         void testXSDTypes_createdWhenRequired() {
-            Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ZDROJ, JE_PPDF);
+            Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, "schema:url", JE_PPDF, DATUM, DATUM_A_CAS);
 
             OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
             OntModel ontModel = baseModel.getOntModel();
@@ -307,6 +356,19 @@ class OFNBaseModelTest {
             assertNotNull(ontModel.getOntClass(XSD + "string"), "XSD:string should be created");
             assertNotNull(ontModel.getOntClass(XSD + "boolean"), "XSD:boolean should be created");
             assertNotNull(ontModel.getOntClass(XSD + "anyURI"), "XSD:anyURI should be created");
+            assertNotNull(ontModel.getOntClass(XSD + "date"), "XSD:date should be created");
+            assertNotNull(ontModel.getOntClass(XSD + "dateTimeStamp"), "XSD:dateTimeStamp should be created");
+        }
+
+        @Test
+        void testLangStringType_createdWhenRequired() {
+            Set<String> requiredProperties = Set.of(ALTERNATIVNI_NAZEV);
+
+            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
+            OntModel ontModel = baseModel.getOntModel();
+
+            // langString type should be created
+            assertNotNull(ontModel.getOntClass(RDF.getURI() + "langString"), "rdf:langString should be created");
         }
 
         @Test
@@ -337,16 +399,93 @@ class OFNBaseModelTest {
                     "POPIS should require XSD types");
             assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(DEFINICE)),
                     "DEFINICE should require XSD types");
-            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(ZDROJ)),
-                    "ZDROJ should require XSD types");
             assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(JE_PPDF)),
                     "JE_PPDF should require XSD types");
+            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(DATUM)),
+                    "DATUM should require XSD types");
+            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(DATUM_A_CAS)),
+                    "DATUM_A_CAS should require XSD types");
+            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of("schema:url")),
+                    "schema:url should require XSD types");
 
             // Test cases that should not require XSD types
             assertFalse((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(AGENDA)),
                     "AGENDA should not require XSD types");
             assertFalse((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of()),
                     "Empty set should not require XSD types");
+        }
+
+        @Test
+        void testRequiresLangString_logic() throws Exception {
+            // Test the requiresLangString method via reflection
+            OFNBaseModel baseModel = new OFNBaseModel();
+
+            Method requiresLangStringMethod = OFNBaseModel.class.getDeclaredMethod("requiresLangString", Set.class);
+            requiresLangStringMethod.setAccessible(true);
+
+            assertTrue((Boolean) requiresLangStringMethod.invoke(baseModel, Set.of(ALTERNATIVNI_NAZEV)),
+                    "ALTERNATIVNI_NAZEV should require langString");
+
+            assertFalse((Boolean) requiresLangStringMethod.invoke(baseModel, Set.of(NAZEV)),
+                    "NAZEV should not require langString");
+        }
+    }
+
+    @Nested
+    class SupportMethodTests {
+
+        @Test
+        void testRequiresTemporalSupport_logic() throws Exception {
+            OFNBaseModel baseModel = new OFNBaseModel();
+
+            Method requiresTemporalSupportMethod = OFNBaseModel.class.getDeclaredMethod("requiresTemporalSupport", Set.class);
+            requiresTemporalSupportMethod.setAccessible(true);
+
+            assertTrue((Boolean) requiresTemporalSupportMethod.invoke(baseModel, Set.of(OKAMZIK_POSLEDNI_ZMENY)),
+                    "OKAMZIK_POSLEDNI_ZMENY should require temporal support");
+            assertTrue((Boolean) requiresTemporalSupportMethod.invoke(baseModel, Set.of(OKAMZIK_VYTVORENI)),
+                    "OKAMZIK_VYTVORENI should require temporal support");
+            assertTrue((Boolean) requiresTemporalSupportMethod.invoke(baseModel, Set.of(DATUM)),
+                    "DATUM should require temporal support");
+            assertTrue((Boolean) requiresTemporalSupportMethod.invoke(baseModel, Set.of(DATUM_A_CAS)),
+                    "DATUM_A_CAS should require temporal support");
+
+            assertFalse((Boolean) requiresTemporalSupportMethod.invoke(baseModel, Set.of(NAZEV)),
+                    "NAZEV should not require temporal support");
+        }
+
+        @Test
+        void testRequiresVocabularySupport_logic() throws Exception {
+            OFNBaseModel baseModel = new OFNBaseModel();
+
+            Method requiresVocabularySupportMethod = OFNBaseModel.class.getDeclaredMethod("requiresVocabularySupport", Set.class);
+            requiresVocabularySupportMethod.setAccessible(true);
+
+            assertTrue((Boolean) requiresVocabularySupportMethod.invoke(baseModel, Set.of(OKAMZIK_POSLEDNI_ZMENY)),
+                    "OKAMZIK_POSLEDNI_ZMENY should require vocabulary support");
+            assertTrue((Boolean) requiresVocabularySupportMethod.invoke(baseModel, Set.of(OKAMZIK_VYTVORENI)),
+                    "OKAMZIK_VYTVORENI should require vocabulary support");
+
+            assertFalse((Boolean) requiresVocabularySupportMethod.invoke(baseModel, Set.of(NAZEV)),
+                    "NAZEV should not require vocabulary support");
+        }
+
+        @Test
+        void testRequiresDigitalDocumentSupport_logic() throws Exception {
+            OFNBaseModel baseModel = new OFNBaseModel();
+
+            Method requiresDigitalDocumentSupportMethod = OFNBaseModel.class.getDeclaredMethod("requiresDigitalDocumentSupport", Set.class);
+            requiresDigitalDocumentSupportMethod.setAccessible(true);
+
+            assertTrue((Boolean) requiresDigitalDocumentSupportMethod.invoke(baseModel, Set.of(DEFINUJICI_NELEGISLATIVNI_ZDROJ)),
+                    "DEFINUJICI_NELEGISLATIVNI_ZDROJ should require digital document support");
+            assertTrue((Boolean) requiresDigitalDocumentSupportMethod.invoke(baseModel, Set.of(SOUVISEJICI_NELEGISLATIVNI_ZDROJ)),
+                    "SOUVISEJICI_NELEGISLATIVNI_ZDROJ should require digital document support");
+            assertTrue((Boolean) requiresDigitalDocumentSupportMethod.invoke(baseModel, Set.of("schema:url")),
+                    "schema:url should require digital document support");
+
+            assertFalse((Boolean) requiresDigitalDocumentSupportMethod.invoke(baseModel, Set.of(NAZEV)),
+                    "NAZEV should not require digital document support");
         }
     }
 
@@ -385,13 +524,14 @@ class OFNBaseModelTest {
             OntClass pojemClass = ontModel.getOntClass(DEFAULT_NS + POJEM);
 
             Method createRequiredPropertiesMethod = OFNBaseModel.class.getDeclaredMethod(
-                    "createRequiredProperties", Set.class, OntClass.class, OntClass.class);
+                    "createRequiredProperties", Set.class, OntClass.class, OntClass.class,
+                    OntClass.class, OntClass.class, OntClass.class);
             createRequiredPropertiesMethod.setAccessible(true);
 
             Set<String> testProperties = Set.of(NAZEV, POPIS);
 
-            // Invoke the method
-            createRequiredPropertiesMethod.invoke(baseModel, testProperties, pojemClass, null);
+            // Invoke the method with all parameters (null for unused classes)
+            createRequiredPropertiesMethod.invoke(baseModel, testProperties, pojemClass, null, null, null, null);
 
             // Verify properties were created
             assertNotNull(ontModel.getOntProperty(DEFAULT_NS + NAZEV), "NAZEV should be created");
@@ -408,8 +548,5 @@ class OFNBaseModelTest {
         assertDoesNotThrow(() -> {
             new OFNBaseModel(Set.of(POJEM), requiredProperties);
         }, "Unknown properties should not cause exceptions");
-    }
-
- */
     }
 }
