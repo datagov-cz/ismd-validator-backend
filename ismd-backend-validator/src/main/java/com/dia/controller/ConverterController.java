@@ -197,7 +197,7 @@ public class ConverterController {
 
             CatalogRecordDto catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
                     generateCatalogReport(conversionResult, results, requestId) : null;
-            
+
             ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport, catalogRecord);
             log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, SSP, output);
