@@ -10,6 +10,7 @@ import com.dia.conversion.engine.ConverterEngine;
 import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
+import com.dia.conversion.reader.ssp.SSPReader;
 import com.dia.conversion.transformer.OFNDataTransformer;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
@@ -45,6 +46,9 @@ class ConverterEngineTest {
     private ExcelReader excelReader;
 
     @Mock
+    private SSPReader sspReader;
+
+    @Mock
     private OFNDataTransformer ofnDataTransformer;
 
     @InjectMocks
@@ -52,7 +56,7 @@ class ConverterEngineTest {
 
     private ListAppender<ILoggingEvent> listAppender;
     private Logger testLogger;
-/*
+
     @BeforeEach
     void setUp() {
         // Clear MDC and add ListAppender for log capture
@@ -79,15 +83,14 @@ class ConverterEngineTest {
             // Setup MDC and mock objects
             MDC.put(LOG_REQUEST_ID, "req-1");
             String content = "<xml>valid content</xml>";
-            Boolean removeInvalidSources = false;
             OntologyData mockOntologyData = mock(OntologyData.class);
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
             when(archiReader.readArchiFromString(content)).thenReturn(mockOntologyData);
-            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenReturn(mockTransformationResult);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenReturn(mockTransformationResult);
 
             // Call processArchiFile()
-            ConversionResult result = converterEngine.processArchiFile(content, removeInvalidSources);
+            ConversionResult result = converterEngine.processArchiFile(content);
 
             // Verify result
             assertNotNull(result);
@@ -107,31 +110,7 @@ class ConverterEngineTest {
 
             // Verify service calls
             verify(archiReader, times(1)).readArchiFromString(content);
-            verify(ofnDataTransformer, times(1)).transform(mockOntologyData, removeInvalidSources);
-        }
-
-        @Test
-        void testProcessArchiFile_withRemoveInvalidSourcesTrue() throws Exception {
-            // Setup with removeInvalidSources = true
-            MDC.put(LOG_REQUEST_ID, "req-2");
-            String content = "<xml>content</xml>";
-            Boolean removeInvalidSources = true;
-            OntologyData mockOntologyData = mock(OntologyData.class);
-            TransformationResult mockTransformationResult = mock(TransformationResult.class);
-
-            when(archiReader.readArchiFromString(content)).thenReturn(mockOntologyData);
-            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenReturn(mockTransformationResult);
-
-            // Call processArchiFile()
-            ConversionResult result = converterEngine.processArchiFile(content, removeInvalidSources);
-
-            // Verify result
-            assertNotNull(result);
-            assertEquals(mockOntologyData, result.getOntologyData());
-            assertEquals(mockTransformationResult, result.getTransformationResult());
-
-            // Verify service calls with correct parameter
-            verify(ofnDataTransformer, times(1)).transform(mockOntologyData, true);
+            verify(ofnDataTransformer, times(1)).transform(mockOntologyData);
         }
 
         @Test
@@ -139,14 +118,12 @@ class ConverterEngineTest {
             // Setup with parsing exception
             MDC.put(LOG_REQUEST_ID, "req-3");
             String content = "<xml>invalid</xml>";
-            Boolean removeInvalidSources = false;
-            FileParsingException fpe = new FileParsingException("Parsing error");
 
             when(archiReader.readArchiFromString(content)).thenThrow(new RuntimeException("Parsing failed"));
 
             // Call processArchiFile() and expect FileParsingException
             FileParsingException thrown = assertThrows(FileParsingException.class,
-                    () -> converterEngine.processArchiFile(content, removeInvalidSources));
+                    () -> converterEngine.processArchiFile(content));
 
             // Verify exception message
             assertEquals("Během čtení souboru došlo k chybě.", thrown.getMessage());
@@ -161,16 +138,15 @@ class ConverterEngineTest {
             // Setup with conversion exception
             MDC.put(LOG_REQUEST_ID, "req-4");
             String content = "<xml>content</xml>";
-            Boolean removeInvalidSources = false;
             OntologyData mockOntologyData = mock(OntologyData.class);
             ConversionException ce = new ConversionException("Conversion error");
 
             when(archiReader.readArchiFromString(content)).thenReturn(mockOntologyData);
-            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenThrow(ce);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(ce);
 
             // Call processArchiFile() and expect ConversionException
             ConversionException thrown = assertThrows(ConversionException.class,
-                    () -> converterEngine.processArchiFile(content, removeInvalidSources));
+                    () -> converterEngine.processArchiFile(content));
 
             // Verify exception message
             assertEquals("Během konverze Archi souboru došlo k nečekané chybě.", thrown.getMessage());
@@ -180,14 +156,13 @@ class ConverterEngineTest {
         void testProcessArchiFile_withNullContent() throws Exception {
             // Test with null content
             MDC.put(LOG_REQUEST_ID, "req-5");
-            Boolean removeInvalidSources = false;
             OntologyData mockOntologyData = mock(OntologyData.class);
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
             when(archiReader.readArchiFromString(null)).thenReturn(mockOntologyData);
-            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenReturn(mockTransformationResult);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenReturn(mockTransformationResult);
 
-            ConversionResult result = converterEngine.processArchiFile(null, removeInvalidSources);
+            ConversionResult result = converterEngine.processArchiFile(null);
 
             assertNotNull(result);
             verify(archiReader, times(1)).readArchiFromString(null);
@@ -204,16 +179,15 @@ class ConverterEngineTest {
             MDC.put(LOG_REQUEST_ID, "req-6");
             MultipartFile mockFile = mock(MultipartFile.class);
             InputStream mockInputStream = mock(InputStream.class);
-            Boolean removeInvalidSources = false;
             OntologyData mockOntologyData = mock(OntologyData.class);
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
             when(mockFile.getInputStream()).thenReturn(mockInputStream);
             when(excelReader.readOntologyFromExcel(mockInputStream)).thenReturn(mockOntologyData);
-            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenReturn(mockTransformationResult);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenReturn(mockTransformationResult);
 
             // Call processExcelFile()
-            ConversionResult result = converterEngine.processExcelFile(mockFile, removeInvalidSources);
+            ConversionResult result = converterEngine.processExcelFile(mockFile);
 
             // Verify result
             assertNotNull(result);
@@ -229,7 +203,7 @@ class ConverterEngineTest {
             // Verify service calls
             verify(mockFile).getInputStream();
             verify(excelReader).readOntologyFromExcel(mockInputStream);
-            verify(ofnDataTransformer).transform(mockOntologyData, removeInvalidSources);
+            verify(ofnDataTransformer).transform(mockOntologyData);
         }
 
         @Test
@@ -243,7 +217,7 @@ class ConverterEngineTest {
 
             // Call processExcelFile() and expect IOException
             IOException thrown = assertThrows(IOException.class,
-                    () -> converterEngine.processExcelFile(mockFile, false));
+                    () -> converterEngine.processExcelFile(mockFile));
 
             // Verify exception message
             assertEquals("IO error", thrown.getMessage());
@@ -266,7 +240,7 @@ class ConverterEngineTest {
 
             // Call processExcelFile() and expect ExcelReadingException
             ExcelReadingException thrown = assertThrows(ExcelReadingException.class,
-                    () -> converterEngine.processExcelFile(mockFile, false));
+                    () -> converterEngine.processExcelFile(mockFile));
 
             // Verify wrapped exception
             assertEquals("Během čtení souboru došlo k nečekané chybě.", thrown.getMessage());
@@ -288,11 +262,11 @@ class ConverterEngineTest {
 
             when(mockFile.getInputStream()).thenReturn(mockInputStream);
             when(excelReader.readOntologyFromExcel(mockInputStream)).thenReturn(mockOntologyData);
-            when(ofnDataTransformer.transform(mockOntologyData, false)).thenThrow(conversionException);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(conversionException);
 
             // Call processExcelFile() and expect ConversionException
             ConversionException thrown = assertThrows(ConversionException.class,
-                    () -> converterEngine.processExcelFile(mockFile, false));
+                    () -> converterEngine.processExcelFile(mockFile));
 
             // Verify exception message
             assertEquals("Excel conversion error", thrown.getMessage());
@@ -313,16 +287,15 @@ class ConverterEngineTest {
             MDC.put(LOG_REQUEST_ID, "req-10");
             MultipartFile mockFile = mock(MultipartFile.class);
             byte[] mockBytes = "xmi content".getBytes();
-            Boolean removeInvalidSources = true;
             OntologyData mockOntologyData = mock(OntologyData.class);
             TransformationResult mockTransformationResult = mock(TransformationResult.class);
 
             when(mockFile.getBytes()).thenReturn(mockBytes);
             when(eaReader.readXmiFromBytes(mockBytes)).thenReturn(mockOntologyData);
-            when(ofnDataTransformer.transform(mockOntologyData, removeInvalidSources)).thenReturn(mockTransformationResult);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenReturn(mockTransformationResult);
 
             // Call processEAFile()
-            ConversionResult result = converterEngine.processEAFile(mockFile, removeInvalidSources);
+            ConversionResult result = converterEngine.processEAFile(mockFile);
 
             // Verify result
             assertNotNull(result);
@@ -338,7 +311,7 @@ class ConverterEngineTest {
             // Verify service calls
             verify(mockFile).getBytes();
             verify(eaReader).readXmiFromBytes(mockBytes);
-            verify(ofnDataTransformer).transform(mockOntologyData, removeInvalidSources);
+            verify(ofnDataTransformer).transform(mockOntologyData);
         }
 
         @Test
@@ -352,7 +325,7 @@ class ConverterEngineTest {
 
             // Call processEAFile() and expect IOException
             IOException thrown = assertThrows(IOException.class,
-                    () -> converterEngine.processEAFile(mockFile, false));
+                    () -> converterEngine.processEAFile(mockFile));
 
             // Verify exception message
             assertEquals("EA IO error", thrown.getMessage());
@@ -375,7 +348,7 @@ class ConverterEngineTest {
 
             // Call processEAFile() and expect FileParsingException
             FileParsingException thrown = assertThrows(FileParsingException.class,
-                    () -> converterEngine.processEAFile(mockFile, false));
+                    () -> converterEngine.processEAFile(mockFile));
 
             // Verify wrapped exception
             assertEquals("Během čtení souboru došlo k chybě.", thrown.getMessage());
@@ -397,11 +370,11 @@ class ConverterEngineTest {
 
             when(mockFile.getBytes()).thenReturn(mockBytes);
             when(eaReader.readXmiFromBytes(mockBytes)).thenReturn(mockOntologyData);
-            when(ofnDataTransformer.transform(mockOntologyData, false)).thenThrow(conversionException);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(conversionException);
 
             // Call processEAFile() and expect ConversionException
             ConversionException thrown = assertThrows(ConversionException.class,
-                    () -> converterEngine.processEAFile(mockFile, false));
+                    () -> converterEngine.processEAFile(mockFile));
 
             // Verify exception message
             assertEquals("EA conversion error", thrown.getMessage());
@@ -409,6 +382,86 @@ class ConverterEngineTest {
             // Check error log
             assertTrue(listAppender.list.stream().anyMatch(event ->
                     event.getFormattedMessage().contains("Failed to convert EA model: requestId=req-13, error=EA conversion error")));
+        }
+    }
+
+    // ========== processSSPOntology ==========
+    @Nested
+    class ProcessSSPOntologyTests {
+
+        @Test
+        void testProcessSSPOntology_happyPath_logsAndVerify() throws Exception {
+            // Setup MDC and mock objects
+            MDC.put(LOG_REQUEST_ID, "req-30");
+            String iri = "http://example.org/ontology";
+            OntologyData mockOntologyData = mock(OntologyData.class);
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
+
+            when(sspReader.readOntology(iri)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenReturn(mockTransformationResult);
+
+            // Call processSSPOntology()
+            ConversionResult result = converterEngine.processSSPOntology(iri);
+
+            // Verify result
+            assertNotNull(result);
+            assertEquals(mockOntologyData, result.getOntologyData());
+            assertEquals(mockTransformationResult, result.getTransformationResult());
+
+            // Check logs
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting SSP ontology processing: requestId=req-30")));
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting SSP ontology parsing: requestId=req-30")));
+
+            // Verify service calls
+            verify(sspReader).readOntology(iri);
+            verify(ofnDataTransformer).transform(mockOntologyData);
+        }
+
+        @Test
+        void testProcessSSPOntology_conversionException_propagated() throws Exception {
+            // Setup with parsing exception
+            MDC.put(LOG_REQUEST_ID, "req-31");
+            String iri = "http://example.org/invalid";
+            RuntimeException runtimeException = new RuntimeException("SSP parsing error");
+
+            when(sspReader.readOntology(iri)).thenThrow(runtimeException);
+
+            // Call processSSPOntology() and expect ConversionException
+            ConversionException thrown = assertThrows(ConversionException.class,
+                    () -> converterEngine.processSSPOntology(iri));
+
+            // Verify wrapped exception
+            assertEquals("Během čtení slovníku došlo k chybě.", thrown.getMessage());
+            assertSame(runtimeException, thrown.getCause());
+
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Failed to parse SSP ontology: requestId=req-31")));
+        }
+
+        @Test
+        void testProcessSSPOntology_conversionTransformException_propagated() throws Exception {
+            // Setup with conversion exception
+            MDC.put(LOG_REQUEST_ID, "req-32");
+            String iri = "http://example.org/ontology";
+            OntologyData mockOntologyData = mock(OntologyData.class);
+            ConversionException conversionException = new ConversionException("SSP conversion error");
+
+            when(sspReader.readOntology(iri)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(conversionException);
+
+            // Call processSSPOntology() and expect ConversionException
+            ConversionException thrown = assertThrows(ConversionException.class,
+                    () -> converterEngine.processSSPOntology(iri));
+
+            // Verify exception message
+            assertEquals("SSP conversion error", thrown.getMessage());
+
+            // Check error log
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Failed to convert SSP model: requestId=req-32, error=SSP conversion error")));
         }
     }
 
@@ -484,6 +537,29 @@ class ConverterEngineTest {
             // Verify logs
             assertTrue(listAppender.list.stream().anyMatch(event ->
                     event.getFormattedMessage().contains("Starting JSON export using registry: requestId=req-16, fileFormat=XMI")));
+
+            // Verify service call
+            verify(ofnDataTransformer).exportToJson(mockTransformationResult);
+        }
+
+        @Test
+        void testExportToJson_sspFormat_happyPath_logsAndVerify() throws JsonExportException {
+            // Setup for SSP format
+            MDC.put(LOG_REQUEST_ID, "req-33");
+            String expectedResult = "{\"ssp\":\"data\"}";
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
+
+            when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenReturn(expectedResult);
+
+            // Call exportToJson() with SSP format
+            String result = converterEngine.exportToJson(FileFormat.SSP, mockTransformationResult);
+
+            // Verify result
+            assertEquals(expectedResult, result);
+
+            // Verify logs
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting JSON export using registry: requestId=req-33, fileFormat=SSP")));
 
             // Verify service call
             verify(ofnDataTransformer).exportToJson(mockTransformationResult);
@@ -615,6 +691,29 @@ class ConverterEngineTest {
         }
 
         @Test
+        void testExportToTurtle_sspFormat_happyPath_logsAndVerify() throws TurtleExportException {
+            // Setup for SSP format
+            MDC.put(LOG_REQUEST_ID, "req-34");
+            String expectedResult = "@prefix ssp: <http://example.org/ssp#>";
+            TransformationResult mockTransformationResult = mock(TransformationResult.class);
+
+            when(ofnDataTransformer.exportToTurtle(mockTransformationResult)).thenReturn(expectedResult);
+
+            // Call exportToTurtle() with SSP format
+            String result = converterEngine.exportToTurtle(FileFormat.SSP, mockTransformationResult);
+
+            // Verify result
+            assertEquals(expectedResult, result);
+
+            // Verify logs
+            assertTrue(listAppender.list.stream().anyMatch(event ->
+                    event.getFormattedMessage().contains("Starting Turtle export: requestId=req-34")));
+
+            // Verify service call
+            verify(ofnDataTransformer).exportToTurtle(mockTransformationResult);
+        }
+
+        @Test
         void testExportToTurtle_nullTransformationResult_throwsException() {
             // Setup with null transformation result
             MDC.put(LOG_REQUEST_ID, "req-23");
@@ -701,12 +800,12 @@ class ConverterEngineTest {
 
             // Setup mocks
             when(archiReader.readArchiFromString(content)).thenReturn(mockOntologyData);
-            when(ofnDataTransformer.transform(mockOntologyData, false)).thenReturn(mockTransformationResult);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenReturn(mockTransformationResult);
             when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenReturn(jsonResult);
             when(ofnDataTransformer.exportToTurtle(mockTransformationResult)).thenReturn(turtleResult);
 
             // Execute full workflow
-            ConversionResult conversionResult = converterEngine.processArchiFile(content, false);
+            ConversionResult conversionResult = converterEngine.processArchiFile(content);
             String json = converterEngine.exportToJson(FileFormat.ARCHI_XML, conversionResult.getTransformationResult());
             String turtle = converterEngine.exportToTurtle(FileFormat.ARCHI_XML, conversionResult.getTransformationResult());
 
@@ -717,7 +816,7 @@ class ConverterEngineTest {
 
             // Verify all service calls
             verify(archiReader).readArchiFromString(content);
-            verify(ofnDataTransformer).transform(mockOntologyData, false);
+            verify(ofnDataTransformer).transform(mockOntologyData);
             verify(ofnDataTransformer).exportToJson(mockTransformationResult);
             verify(ofnDataTransformer).exportToTurtle(mockTransformationResult);
         }
@@ -740,37 +839,44 @@ class ConverterEngineTest {
             when(mockFile.getBytes()).thenReturn(mockBytes);
             when(excelReader.readOntologyFromExcel(mockInputStream)).thenReturn(mockOntologyData);
             when(eaReader.readXmiFromBytes(mockBytes)).thenReturn(mockOntologyData);
-            when(ofnDataTransformer.transform(mockOntologyData, false)).thenReturn(mockTransformationResult);
+            when(sspReader.readOntology(anyString())).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenReturn(mockTransformationResult);
             when(ofnDataTransformer.exportToJson(mockTransformationResult)).thenReturn("{}");
             when(ofnDataTransformer.exportToTurtle(mockTransformationResult)).thenReturn("@prefix");
 
             // Test Archi
-            ConversionResult archiResult = converterEngine.processArchiFile("content", false);
+            ConversionResult archiResult = converterEngine.processArchiFile("content");
             String archiJson = converterEngine.exportToJson(FileFormat.ARCHI_XML, archiResult.getTransformationResult());
             String archiTurtle = converterEngine.exportToTurtle(FileFormat.ARCHI_XML, archiResult.getTransformationResult());
 
             // Test Excel
-            ConversionResult excelResult = converterEngine.processExcelFile(mockFile, false);
+            ConversionResult excelResult = converterEngine.processExcelFile(mockFile);
             String excelJson = converterEngine.exportToJson(FileFormat.XLSX, excelResult.getTransformationResult());
             String excelTurtle = converterEngine.exportToTurtle(FileFormat.XLSX, excelResult.getTransformationResult());
 
             // Test EA
-            ConversionResult eaResult = converterEngine.processEAFile(mockFile, false);
+            ConversionResult eaResult = converterEngine.processEAFile(mockFile);
             String eaJson = converterEngine.exportToJson(FileFormat.XMI, eaResult.getTransformationResult());
             String eaTurtle = converterEngine.exportToTurtle(FileFormat.XMI, eaResult.getTransformationResult());
+
+            // Test SSP
+            ConversionResult sspResult = converterEngine.processSSPOntology("http://example.org/ontology");
+            String sspJson = converterEngine.exportToJson(FileFormat.SSP, sspResult.getTransformationResult());
+            String sspTurtle = converterEngine.exportToTurtle(FileFormat.SSP, sspResult.getTransformationResult());
 
             // Verify all results
             assertNotNull(archiResult);
             assertNotNull(excelResult);
             assertNotNull(eaResult);
+            assertNotNull(sspResult);
             assertEquals("{}", archiJson);
             assertEquals("{}", excelJson);
             assertEquals("{}", eaJson);
+            assertEquals("{}", sspJson);
             assertEquals("@prefix", archiTurtle);
             assertEquals("@prefix", excelTurtle);
             assertEquals("@prefix", eaTurtle);
+            assertEquals("@prefix", sspTurtle);
         }
     }
-
- */
 }

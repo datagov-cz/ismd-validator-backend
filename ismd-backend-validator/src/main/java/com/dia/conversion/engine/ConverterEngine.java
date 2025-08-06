@@ -8,7 +8,6 @@ import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.reader.ssp.SSPReader;
 import com.dia.conversion.transformer.OFNDataTransformer;
 import com.dia.conversion.data.TransformationResult;
-import com.dia.conversion.transformer.OFNDataTransformerV2;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,7 @@ import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 @Slf4j
 public class ConverterEngine {
 
-    private final OFNDataTransformerV2 ofnDataTransformer;
+    private final OFNDataTransformer ofnDataTransformer;
     private final ArchiReader archiReader;
     private final EnterpriseArchitectReader eaReader;
     private final ExcelReader excelReader;

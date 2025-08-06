@@ -7,8 +7,8 @@ import com.dia.exceptions.JsonExportException;
 import com.dia.exceptions.TurtleExportException;
 import com.dia.exporter.JsonExporter;
 import com.dia.exporter.TurtleExporter;
-import com.dia.models.OFNBaseModelV2;
-import com.dia.utility.DataTypeConverterV2;
+import com.dia.models.OFNBaseModel;
+import com.dia.utility.DataTypeConverter;
 import com.dia.utility.URIGenerator;
 import com.dia.utility.UtilityMethods;
 import lombok.Getter;
@@ -38,12 +38,12 @@ import static com.dia.constants.ExportConstants.Json.POPIS;
 @Component
 @Slf4j
 @Getter
-public class OFNDataTransformerV2 {
+public class OFNDataTransformer {
 
     private OntModel ontModel;
     private final URIGenerator uriGenerator;
 
-    public OFNDataTransformerV2() {
+    public OFNDataTransformer() {
         this.uriGenerator = new URIGenerator();
     }
 
@@ -61,7 +61,7 @@ public class OFNDataTransformerV2 {
             log.debug("Required base classes: {}", requiredBaseClasses);
             log.debug("Required properties: {}", requiredProperties);
 
-            OFNBaseModelV2 dynamicBaseModel = new OFNBaseModelV2(requiredBaseClasses, requiredProperties);
+            OFNBaseModel dynamicBaseModel = new OFNBaseModel(requiredBaseClasses, requiredProperties);
             this.ontModel = dynamicBaseModel.getOntModel();
 
             String effectiveNamespace = determineEffectiveNamespace(ontologyData.getVocabularyMetadata());
@@ -220,7 +220,7 @@ public class OFNDataTransformerV2 {
     }
 
     private Set<String> analyzeRequiredProperties(OntologyData ontologyData) {
-        RequiredPropertiesAnalyzerV2 analyzer = new RequiredPropertiesAnalyzerV2(ontologyData);
+        RequiredPropertiesAnalyzer analyzer = new RequiredPropertiesAnalyzer(ontologyData);
         return analyzer.analyze();
     }
 
@@ -258,7 +258,7 @@ public class OFNDataTransformerV2 {
 
             if (metadata.getDescription() != null && !metadata.getDescription().trim().isEmpty()) {
                 Property descProperty = ontModel.createProperty("http://purl.org/dc/terms/description");
-                DataTypeConverterV2.addTypedProperty(ontologyResource, descProperty, metadata.getDescription(), DEFAULT_LANG, ontModel);
+                DataTypeConverter.addTypedProperty(ontologyResource, descProperty, metadata.getDescription(), DEFAULT_LANG, ontModel);
             }
 
             addTemporalMetadata(ontologyResource, metadata);
@@ -303,11 +303,11 @@ public class OFNDataTransformerV2 {
 
             if (trimmedValue.contains("T")) {
                 Property dateTimeProperty = ontModel.createProperty(CAS_NS + DATUM_A_CAS);
-                DataTypeConverterV2.addTypedProperty(instantResource, dateTimeProperty, trimmedValue, null, ontModel);
+                DataTypeConverter.addTypedProperty(instantResource, dateTimeProperty, trimmedValue, null, ontModel);
                 log.debug("Added dateTime property to temporal instant for purpose '{}': {}", purpose, trimmedValue);
             } else {
                 Property dateProperty = ontModel.createProperty(CAS_NS + DATUM);
-                DataTypeConverterV2.addTypedProperty(instantResource, dateProperty, trimmedValue, null, ontModel);
+                DataTypeConverter.addTypedProperty(instantResource, dateProperty, trimmedValue, null, ontModel);
                 log.debug("Added date property to temporal instant for purpose '{}': {}", purpose, trimmedValue);
             }
 
@@ -594,7 +594,7 @@ public class OFNDataTransformerV2 {
 
         if (hierarchyData.getDescription() != null && !hierarchyData.getDescription().trim().isEmpty()) {
             Property hierarchyDescProperty = ontModel.createProperty(namespace + "popis-hierarchie");
-            DataTypeConverterV2.addTypedProperty(subClassResource, hierarchyDescProperty,
+            DataTypeConverter.addTypedProperty(subClassResource, hierarchyDescProperty,
                     hierarchyData.getDescription(), DEFAULT_LANG, ontModel);
             log.debug("Added hierarchy description for {}: {}",
                     subClassResource.getLocalName(), hierarchyData.getDescription());
@@ -605,7 +605,7 @@ public class OFNDataTransformerV2 {
                 !hierarchyData.getRelationshipName().startsWith("HIER-")) {
 
             Property relationshipNameProperty = ontModel.createProperty(namespace + "název-vztahu");
-            DataTypeConverterV2.addTypedProperty(subClassResource, relationshipNameProperty,
+            DataTypeConverter.addTypedProperty(subClassResource, relationshipNameProperty,
                     hierarchyData.getRelationshipName(), DEFAULT_LANG, ontModel);
             log.debug("Added relationship name for {}: {}",
                     subClassResource.getLocalName(), hierarchyData.getRelationshipName());
@@ -661,26 +661,26 @@ public class OFNDataTransformerV2 {
 
     private void addResourceMetadata(Resource resource, ResourceMetadata metadata) {
         if (metadata.name() != null && !metadata.name().trim().isEmpty()) {
-            DataTypeConverterV2.addTypedProperty(resource, SKOS.prefLabel, metadata.name(), DEFAULT_LANG, ontModel);
+            DataTypeConverter.addTypedProperty(resource, SKOS.prefLabel, metadata.name(), DEFAULT_LANG, ontModel);
         }
 
         if (metadata.description() != null && !metadata.description().trim().isEmpty()) {
             Property descProperty = ontModel.createProperty("http://purl.org/dc/terms/description");
-            DataTypeConverterV2.addTypedProperty(resource, descProperty, metadata.description(), DEFAULT_LANG, ontModel);
+            DataTypeConverter.addTypedProperty(resource, descProperty, metadata.description(), DEFAULT_LANG, ontModel);
         }
 
         if (metadata.definition() != null && !metadata.definition().trim().isEmpty()) {
-            DataTypeConverterV2.addTypedProperty(resource, SKOS.definition, metadata.definition(), DEFAULT_LANG, ontModel);
+            DataTypeConverter.addTypedProperty(resource, SKOS.definition, metadata.definition(), DEFAULT_LANG, ontModel);
         }
 
         if (metadata.identifier() != null && !metadata.identifier().trim().isEmpty()) {
             Property identifierProperty = ontModel.createProperty("http://purl.org/dc/terms/identifier");
 
-            if (DataTypeConverterV2.isUri(metadata.identifier())) {
+            if (DataTypeConverter.isUri(metadata.identifier())) {
                 resource.addProperty(identifierProperty, ontModel.createResource(metadata.identifier()));
                 log.debug("Added identifier as URI: {}", metadata.identifier());
             } else {
-                DataTypeConverterV2.addTypedProperty(resource, identifierProperty, metadata.identifier(), null, ontModel);
+                DataTypeConverter.addTypedProperty(resource, identifierProperty, metadata.identifier(), null, ontModel);
                 log.debug("Added identifier as literal: {}", metadata.identifier());
             }
         }
@@ -729,11 +729,11 @@ public class OFNDataTransformerV2 {
 
             Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
 
-            if (DataTypeConverterV2.isUri(transformedUrl)) {
+            if (DataTypeConverter.isUri(transformedUrl)) {
                 resource.addProperty(provisionProperty, ontModel.createResource(transformedUrl));
                 log.debug("Added {} as URI: {} -> {}", propertyName, trimmedUrl, transformedUrl);
             } else {
-                DataTypeConverterV2.addTypedProperty(resource, provisionProperty, transformedUrl, null, ontModel);
+                DataTypeConverter.addTypedProperty(resource, provisionProperty, transformedUrl, null, ontModel);
                 log.debug("Added {} as literal: {} -> {}", propertyName, trimmedUrl, transformedUrl);
             }
         } else {
@@ -749,11 +749,11 @@ public class OFNDataTransformerV2 {
 
         Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
 
-        if (DataTypeConverterV2.isUri(trimmedUrl)) {
+        if (DataTypeConverter.isUri(trimmedUrl)) {
             digitalDocument.addProperty(schemaUrlProperty, ontModel.createResource(trimmedUrl));
             log.debug("Added schema:url as URI to digital document: {}", trimmedUrl);
         } else {
-            DataTypeConverterV2.addTypedProperty(digitalDocument, schemaUrlProperty, trimmedUrl, null, ontModel);
+            DataTypeConverter.addTypedProperty(digitalDocument, schemaUrlProperty, trimmedUrl, null, ontModel);
             log.debug("Added schema:url as literal to digital document: {}", trimmedUrl);
         }
 
@@ -804,11 +804,11 @@ public class OFNDataTransformerV2 {
                 String transformedAgenda = UtilityMethods.transformAgendaValue(agendaCode);
                 Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AGENDA);
 
-                if (DataTypeConverterV2.isUri(transformedAgenda)) {
+                if (DataTypeConverter.isUri(transformedAgenda)) {
                     classResource.addProperty(agendaProperty, ontModel.createResource(transformedAgenda));
                     log.debug("Added valid agenda as URI: {} -> {}", agendaCode, transformedAgenda);
                 } else {
-                    DataTypeConverterV2.addTypedProperty(classResource, agendaProperty, transformedAgenda, null, ontModel);
+                    DataTypeConverter.addTypedProperty(classResource, agendaProperty, transformedAgenda, null, ontModel);
                     log.debug("Added valid agenda as literal: {} -> {}", agendaCode, transformedAgenda);
                 }
             } else {
@@ -825,11 +825,11 @@ public class OFNDataTransformerV2 {
                 String transformedAIS = UtilityMethods.transformAISValue(aisCode);
                 Property aisProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AIS);
 
-                if (DataTypeConverterV2.isUri(transformedAIS)) {
+                if (DataTypeConverter.isUri(transformedAIS)) {
                     classResource.addProperty(aisProperty, ontModel.createResource(transformedAIS));
                     log.debug("Added valid AIS as URI: {} -> {}", aisCode, transformedAIS);
                 } else {
-                    DataTypeConverterV2.addTypedProperty(classResource, aisProperty, transformedAIS, null, ontModel);
+                    DataTypeConverter.addTypedProperty(classResource, aisProperty, transformedAIS, null, ontModel);
                     log.debug("Added valid AIS as literal: {} -> {}", aisCode, transformedAIS);
                 }
             } else {
@@ -896,14 +896,14 @@ public class OFNDataTransformerV2 {
 
             if (dataType.startsWith("xsd:")) {
                 String xsdType = XSD + dataType.substring(4);
-                if (DataTypeConverterV2.isValidXSDType(dataType.substring(4))) {
+                if (DataTypeConverter.isValidXSDType(dataType.substring(4))) {
                     propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
                     log.debug("Added valid XSD range type: {}", xsdType);
                 } else {
                     propertyResource.addProperty(rangeProperty, ontModel.createLiteral(dataType));
                     log.debug("Added invalid XSD type '{}' as plain string literal", dataType);
                 }
-            } else if (DataTypeConverterV2.isUri(dataType)) {
+            } else if (DataTypeConverter.isUri(dataType)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(dataType));
                 log.debug("Added URI range type: {}", dataType);
             } else {
@@ -928,12 +928,12 @@ public class OFNDataTransformerV2 {
 
             if (UtilityMethods.isBooleanValue(value)) {
                 Boolean boolValue = UtilityMethods.normalizeCzechBoolean(value);
-                DataTypeConverterV2.addTypedProperty(propertyResource, ppdfProperty,
+                DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty,
                         boolValue.toString(), null, ontModel);
                 log.debug("Added normalized PPDF boolean: {} -> {}", value, boolValue);
             } else {
                 log.warn("Unrecognized boolean value for PPDF property: '{}'", value);
-                DataTypeConverterV2.addTypedProperty(propertyResource, ppdfProperty, value, null, ontModel);
+                DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty, value, null, ontModel);
             }
         }
     }
@@ -999,12 +999,12 @@ public class OFNDataTransformerV2 {
                 String transformedProvision = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
                 Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
 
-                if (DataTypeConverterV2.isUri(transformedProvision)) {
+                if (DataTypeConverter.isUri(transformedProvision)) {
                     propertyResource.addProperty(provisionProperty, ontModel.createResource(transformedProvision));
                     log.debug("Added privacy provision as URI for concept '{}': {} -> {}",
                             propertyData.getName(), trimmedProvision, transformedProvision);
                 } else {
-                    DataTypeConverterV2.addTypedProperty(propertyResource, provisionProperty, transformedProvision, null, ontModel);
+                    DataTypeConverter.addTypedProperty(propertyResource, provisionProperty, transformedProvision, null, ontModel);
                     log.debug("Added privacy provision as literal for concept '{}': {} -> {}",
                             propertyData.getName(), trimmedProvision, transformedProvision);
                 }
@@ -1056,11 +1056,11 @@ public class OFNDataTransformerV2 {
         if (value != null && !value.trim().isEmpty()) {
             Property property = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
 
-            if (DataTypeConverterV2.isUri(value)) {
+            if (DataTypeConverter.isUri(value)) {
                 resource.addProperty(property, ontModel.createResource(value));
                 log.debug("Added governance property {} as URI: {}", propertyName, value);
             } else {
-                DataTypeConverterV2.addTypedProperty(resource, property, value, null, ontModel);
+                DataTypeConverter.addTypedProperty(resource, property, value, null, ontModel);
                 log.debug("Added governance property {} as typed literal: {}", propertyName, value);
             }
         }
@@ -1077,7 +1077,7 @@ public class OFNDataTransformerV2 {
     }
 
     private void addResourceReference(Resource subject, Property property, String referenceName) {
-        if (DataTypeConverterV2.isUri(referenceName)) {
+        if (DataTypeConverter.isUri(referenceName)) {
             subject.addProperty(property, ontModel.createResource(referenceName));
             log.debug("Added URI resource reference: {} -> {}", property.getLocalName(), referenceName);
         } else {
@@ -1086,7 +1086,7 @@ public class OFNDataTransformerV2 {
                 subject.addProperty(property, ontModel.createResource(conceptUri));
                 log.debug("Added generated URI reference for domain/range: {} -> {}", property.getLocalName(), conceptUri);
             } else {
-                DataTypeConverterV2.addTypedProperty(subject, property, referenceName, null, ontModel);
+                DataTypeConverter.addTypedProperty(subject, property, referenceName, null, ontModel);
                 log.debug("Added typed literal reference: {} -> {}", property.getLocalName(), referenceName);
             }
         }

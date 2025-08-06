@@ -217,6 +217,14 @@ public class TurtleExporter {
             return false;
         }
 
+        if (uri.startsWith("https://slovník.gov.cz/agendový")) {
+            return false;
+        }
+
+        if (uri.startsWith("https://slovník.gov.cz/veřejný-sektor")) {
+            return false;
+        }
+
         if (uri.startsWith("https://slovník.gov.cz/") && uri.contains("/datový-slovník-ofn-slovníků/pojem/")) {
             return true;
         }

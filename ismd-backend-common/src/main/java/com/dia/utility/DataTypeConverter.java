@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 
 import static com.dia.constants.ArchiConstants.*;
 @Slf4j
-public class DataTypeConverterV2 {
+public class DataTypeConverter {
 
     private static final Pattern INTEGER_PATTERN = Pattern.compile("^-?\\d+$");
     private static final Pattern DOUBLE_PATTERN = Pattern.compile("^-?\\d+(\\.\\d+)?$");
@@ -41,7 +41,7 @@ public class DataTypeConverterV2 {
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
     };
 
-    private DataTypeConverterV2() {
+    private DataTypeConverter() {
     }
 
     public static void addTypedProperty(Resource subject, Property property, String value, String lang, Model model) {

@@ -11,12 +11,12 @@ import java.util.function.Function;
 import static com.dia.constants.ArchiConstants.*;
 
 @Slf4j
-public class RequiredPropertiesAnalyzerV2 {
+public class RequiredPropertiesAnalyzer {
 
     private final OntologyData ontologyData;
     private final Set<String> requiredProperties = new HashSet<>();
 
-    public RequiredPropertiesAnalyzerV2(OntologyData ontologyData) {
+    public RequiredPropertiesAnalyzer(OntologyData ontologyData) {
         this.ontologyData = ontologyData;
     }
 

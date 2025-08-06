@@ -17,15 +17,15 @@ import static com.dia.constants.ArchiConstants.*;
 
 @Getter
 @Slf4j
-public class OFNBaseModelV2 {
+public class OFNBaseModel {
 
     private final OntModel ontModel;
 
-    public OFNBaseModelV2() {
+    public OFNBaseModel() {
         this(Set.of(POJEM), Set.of());
     }
 
-    public OFNBaseModelV2(Set<String> requiredBaseClasses, Set<String> requiredProperties) {
+    public OFNBaseModel(Set<String> requiredBaseClasses, Set<String> requiredProperties) {
         ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
 
         ontModel.setNsPrefix("cz", DEFAULT_NS);
