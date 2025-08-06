@@ -91,26 +91,33 @@ public class JsonExporter {
         if (vocabularyResource != null) {
             Property creationProperty = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
             if (vocabularyResource.hasProperty(creationProperty)) {
-                Statement creationStmt = vocabularyResource.getProperty(creationProperty);
-                if (creationStmt.getObject().isResource()) {
-                    Resource instantResource = creationStmt.getObject().asResource();
-                    String dateValue = extractTemporalValue(instantResource);
-                    if (dateValue != null) {
-                        root.put(OKAMZIK_VYTVORENI, dateValue);
-                    }
-                }
+                handleCreationDate(vocabularyResource, creationProperty, root);
             }
-
             Property modificationProperty = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
             if (vocabularyResource.hasProperty(modificationProperty)) {
-                Statement modificationStmt = vocabularyResource.getProperty(modificationProperty);
-                if (modificationStmt.getObject().isResource()) {
-                    Resource instantResource = modificationStmt.getObject().asResource();
-                    String dateValue = extractTemporalValue(instantResource);
-                    if (dateValue != null) {
-                        root.put(OKAMZIK_POSLEDNI_ZMENY, dateValue);
-                    }
-                }
+                handleModificationDate(vocabularyResource, modificationProperty, root);
+            }
+        }
+    }
+
+    private void handleCreationDate(Resource vocabularyResource, Property creationProperty, JSONObject root) {
+        Statement creationStmt = vocabularyResource.getProperty(creationProperty);
+        if (creationStmt.getObject().isResource()) {
+            Resource instantResource = creationStmt.getObject().asResource();
+            String dateValue = extractTemporalValue(instantResource);
+            if (dateValue != null) {
+                root.put(OKAMZIK_VYTVORENI, dateValue);
+            }
+        }
+    }
+
+    private void handleModificationDate(Resource vocabularyResource, Property modificationProperty, JSONObject root) {
+        Statement modificationStmt = vocabularyResource.getProperty(modificationProperty);
+        if (modificationStmt.getObject().isResource()) {
+            Resource instantResource = modificationStmt.getObject().asResource();
+            String dateValue = extractTemporalValue(instantResource);
+            if (dateValue != null) {
+                root.put(OKAMZIK_POSLEDNI_ZMENY, dateValue);
             }
         }
     }
@@ -428,35 +435,43 @@ public class JsonExporter {
         }
 
         if (sourceProperty != null) {
-            StmtIterator propIter = concept.listProperties(sourceProperty);
-            if (propIter.hasNext()) {
-                JSONArray sourceArray = new JSONArray();
+            handleSourceProperty(concept, pojemObj, sourceProperty, jsonFieldName);
+        }
+    }
 
-                while (propIter.hasNext()) {
-                    Statement propStmt = propIter.next();
-                    if (propStmt.getObject().isResource()) {
-                        Resource digitalDoc = propStmt.getObject().asResource();
+    private void handleSourceProperty(Resource concept, JSONObject pojemObj, Property sourceProperty, String jsonFieldName) throws JSONException {
+        StmtIterator propIter = concept.listProperties(sourceProperty);
+        if (propIter.hasNext()) {
+            JSONArray sourceArray = new JSONArray();
 
-                        Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
-                        Statement urlStmt = digitalDoc.getProperty(schemaUrlProperty);
+            addSourceProperty(propIter, sourceArray);
 
-                        if (urlStmt != null) {
-                            JSONObject docObj = new JSONObject();
-                            if (urlStmt.getObject().isResource()) {
-                                docObj.put("url", urlStmt.getObject().asResource().getURI());
-                            } else if (urlStmt.getObject().isLiteral()) {
-                                docObj.put("url", urlStmt.getString());
-                            }
+            if (sourceArray.length() > 0) {
+                pojemObj.put(jsonFieldName, sourceArray);
+            }
+        }
+    }
 
-                            if (docObj.has("url")) {
-                                sourceArray.put(docObj);
-                            }
-                        }
+    private void addSourceProperty(StmtIterator propIter, JSONArray sourceArray) {
+        while (propIter.hasNext()) {
+            Statement propStmt = propIter.next();
+            if (propStmt.getObject().isResource()) {
+                Resource digitalDoc = propStmt.getObject().asResource();
+
+                Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
+                Statement urlStmt = digitalDoc.getProperty(schemaUrlProperty);
+
+                if (urlStmt != null) {
+                    JSONObject docObj = new JSONObject();
+                    if (urlStmt.getObject().isResource()) {
+                        docObj.put("url", urlStmt.getObject().asResource().getURI());
+                    } else if (urlStmt.getObject().isLiteral()) {
+                        docObj.put("url", urlStmt.getString());
                     }
-                }
 
-                if (sourceArray.length() > 0) {
-                    pojemObj.put(jsonFieldName, sourceArray);
+                    if (docObj.has("url")) {
+                        sourceArray.put(docObj);
+                    }
                 }
             }
         }

@@ -715,44 +715,52 @@ public class OFNDataTransformerV2 {
         String trimmedUrl = url.trim();
 
         if (UtilityMethods.containsEliPattern(trimmedUrl)) {
-            String eliPart = UtilityMethods.extractEliPart(trimmedUrl);
-            if (eliPart != null) {
-                String transformedUrl = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
-                String propertyName = isDefining ? DEFINUJICI_USTANOVENI : SOUVISEJICI_USTANOVENI;
+            handleEliPart(trimmedUrl, resource, isDefining);
+        } else {
+            handleNonEliPart(trimmedUrl, resource, isDefining);
+        }
+    }
 
-                Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+    private void handleEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
+        String eliPart = UtilityMethods.extractEliPart(trimmedUrl);
+        if (eliPart != null) {
+            String transformedUrl = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+            String propertyName = isDefining ? DEFINUJICI_USTANOVENI : SOUVISEJICI_USTANOVENI;
 
-                if (DataTypeConverterV2.isUri(transformedUrl)) {
-                    resource.addProperty(provisionProperty, ontModel.createResource(transformedUrl));
-                    log.debug("Added {} as URI: {} -> {}", propertyName, trimmedUrl, transformedUrl);
-                } else {
-                    DataTypeConverterV2.addTypedProperty(resource, provisionProperty, transformedUrl, null, ontModel);
-                    log.debug("Added {} as literal: {} -> {}", propertyName, trimmedUrl, transformedUrl);
-                }
+            Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+
+            if (DataTypeConverterV2.isUri(transformedUrl)) {
+                resource.addProperty(provisionProperty, ontModel.createResource(transformedUrl));
+                log.debug("Added {} as URI: {} -> {}", propertyName, trimmedUrl, transformedUrl);
             } else {
-                log.warn("Failed to extract ELI part from URL: {}", trimmedUrl);
+                DataTypeConverterV2.addTypedProperty(resource, provisionProperty, transformedUrl, null, ontModel);
+                log.debug("Added {} as literal: {} -> {}", propertyName, trimmedUrl, transformedUrl);
             }
         } else {
-            String propertyName = isDefining ? DEFINUJICI_NELEGISLATIVNI_ZDROJ : SOUVISEJICI_NELEGISLATIVNI_ZDROJ;
-
-            String documentUri = uriGenerator.getEffectiveNamespace() + "digitální-dokument-" + System.currentTimeMillis();
-            Resource digitalDocument = ontModel.createResource(documentUri);
-
-            Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
-
-            if (DataTypeConverterV2.isUri(trimmedUrl)) {
-                digitalDocument.addProperty(schemaUrlProperty, ontModel.createResource(trimmedUrl));
-                log.debug("Added schema:url as URI to digital document: {}", trimmedUrl);
-            } else {
-                DataTypeConverterV2.addTypedProperty(digitalDocument, schemaUrlProperty, trimmedUrl, null, ontModel);
-                log.debug("Added schema:url as literal to digital document: {}", trimmedUrl);
-            }
-
-            Property nonLegislativeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
-            resource.addProperty(nonLegislativeProperty, digitalDocument);
-
-            log.debug("Added {} as digital document with schema:url: {}", propertyName, trimmedUrl);
+            log.warn("Failed to extract ELI part from URL: {}", trimmedUrl);
         }
+    }
+
+    private void handleNonEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
+        String propertyName = isDefining ? DEFINUJICI_NELEGISLATIVNI_ZDROJ : SOUVISEJICI_NELEGISLATIVNI_ZDROJ;
+
+        String documentUri = uriGenerator.getEffectiveNamespace() + "digitální-dokument-" + System.currentTimeMillis();
+        Resource digitalDocument = ontModel.createResource(documentUri);
+
+        Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
+
+        if (DataTypeConverterV2.isUri(trimmedUrl)) {
+            digitalDocument.addProperty(schemaUrlProperty, ontModel.createResource(trimmedUrl));
+            log.debug("Added schema:url as URI to digital document: {}", trimmedUrl);
+        } else {
+            DataTypeConverterV2.addTypedProperty(digitalDocument, schemaUrlProperty, trimmedUrl, null, ontModel);
+            log.debug("Added schema:url as literal to digital document: {}", trimmedUrl);
+        }
+
+        Property nonLegislativeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+        resource.addProperty(nonLegislativeProperty, digitalDocument);
+
+        log.debug("Added {} as digital document with schema:url: {}", propertyName, trimmedUrl);
     }
 
     private void addClassSpecificMetadata(Resource classResource, ClassData classData) {
@@ -940,30 +948,7 @@ public class OFNDataTransformerV2 {
         }
 
         if (isPublicValue != null && !isPublicValue.trim().isEmpty()) {
-            if (UtilityMethods.isBooleanValue(isPublicValue)) {
-                Boolean isPublic = UtilityMethods.normalizeCzechBoolean(isPublicValue);
-
-                if (Boolean.TRUE.equals(isPublic)) {
-                    if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
-                        log.warn("Concept '{}' marked as public but has privacy provision '{}' - treating as non-public",
-                                propertyData.getName(), privacyProvision);
-                        handleNonPublicData(propertyResource, propertyData, privacyProvision);
-                    } else {
-                        propertyResource.addProperty(RDF.type,
-                                ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
-                        log.debug("Added public data type for concept: {}", propertyData.getName());
-                    }
-                } else {
-                    if (privacyProvision == null || privacyProvision.trim().isEmpty()) {
-                        log.warn("Concept '{}' marked as non-public but has no privacy provision - adding non-public type anyway",
-                                propertyData.getName());
-                    }
-                    handleNonPublicData(propertyResource, propertyData, privacyProvision);
-                }
-            } else {
-                log.warn("Unrecognized boolean value for public property: '{}' for concept '{}'",
-                        isPublicValue, propertyData.getName());
-            }
+            handlePublicData(propertyResource, propertyData, isPublicValue, privacyProvision);
         }
     }
 
@@ -975,6 +960,33 @@ public class OFNDataTransformerV2 {
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
             validateAndAddPrivacyProvision(propertyResource, propertyData, privacyProvision);
+        }
+    }
+
+    private void handlePublicData(Resource propertyResource, PropertyData propertyData, String isPublicValue, String privacyProvision) {
+        if (UtilityMethods.isBooleanValue(isPublicValue)) {
+            Boolean isPublic = UtilityMethods.normalizeCzechBoolean(isPublicValue);
+
+            if (Boolean.TRUE.equals(isPublic)) {
+                if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+                    log.warn("Concept '{}' marked as public but has privacy provision '{}' - treating as non-public",
+                            propertyData.getName(), privacyProvision);
+                    handleNonPublicData(propertyResource, propertyData, privacyProvision);
+                } else {
+                    propertyResource.addProperty(RDF.type,
+                            ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    log.debug("Added public data type for concept: {}", propertyData.getName());
+                }
+            } else {
+                if (privacyProvision == null || privacyProvision.trim().isEmpty()) {
+                    log.warn("Concept '{}' marked as non-public but has no privacy provision - adding non-public type anyway",
+                            propertyData.getName());
+                }
+                handleNonPublicData(propertyResource, propertyData, privacyProvision);
+            }
+        } else {
+            log.warn("Unrecognized boolean value for public property: '{}' for concept '{}'",
+                    isPublicValue, propertyData.getName());
         }
     }
 

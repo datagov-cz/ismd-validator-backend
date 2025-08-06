@@ -375,34 +375,42 @@ public class TurtleExporter {
         if (originalOntologyResource != null) {
             Property creationProperty = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
             if (originalOntologyResource.hasProperty(creationProperty)) {
-                Statement creationStmt = originalOntologyResource.getProperty(creationProperty);
-                if (creationStmt.getObject().isResource()) {
-                    Resource temporalInstant = creationStmt.getObject().asResource();
-                    copyTemporalInstant(temporalInstant, transformedModel);
-
-                    Property newCreationProperty = transformedModel.createProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
-                    Resource newTemporalInstant = transformedModel.getResource(temporalInstant.getURI());
-                    if (newTemporalInstant != null) {
-                        ontologyResource.addProperty(newCreationProperty, newTemporalInstant);
-                        log.debug("Added creation temporal metadata to concept scheme");
-                    }
-                }
+                addCreationDate(originalOntologyResource, ontologyResource, transformedModel, creationProperty);
             }
 
             Property modificationProperty = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
             if (originalOntologyResource.hasProperty(modificationProperty)) {
-                Statement modificationStmt = originalOntologyResource.getProperty(modificationProperty);
-                if (modificationStmt.getObject().isResource()) {
-                    Resource temporalInstant = modificationStmt.getObject().asResource();
-                    copyTemporalInstant(temporalInstant, transformedModel);
+                addModificationDate(originalOntologyResource, ontologyResource, transformedModel, modificationProperty);
+            }
+        }
+    }
 
-                    Property newModificationProperty = transformedModel.createProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
-                    Resource newTemporalInstant = transformedModel.getResource(temporalInstant.getURI());
-                    if (newTemporalInstant != null) {
-                        ontologyResource.addProperty(newModificationProperty, newTemporalInstant);
-                        log.debug("Added modification temporal metadata to concept scheme");
-                    }
-                }
+    private void addCreationDate(Resource originalOntologyResource, Resource ontologyResource, OntModel transformedModel, Property creationProperty) {
+        Statement creationStmt = originalOntologyResource.getProperty(creationProperty);
+        if (creationStmt.getObject().isResource()) {
+            Resource temporalInstant = creationStmt.getObject().asResource();
+            copyTemporalInstant(temporalInstant, transformedModel);
+
+            Property newCreationProperty = transformedModel.createProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
+            Resource newTemporalInstant = transformedModel.getResource(temporalInstant.getURI());
+            if (newTemporalInstant != null) {
+                ontologyResource.addProperty(newCreationProperty, newTemporalInstant);
+                log.debug("Added creation temporal metadata to concept scheme");
+            }
+        }
+    }
+
+    private void addModificationDate(Resource originalOntologyResource, Resource ontologyResource, OntModel transformedModel, Property modificationProperty) {
+        Statement modificationStmt = originalOntologyResource.getProperty(modificationProperty);
+        if (modificationStmt.getObject().isResource()) {
+            Resource temporalInstant = modificationStmt.getObject().asResource();
+            copyTemporalInstant(temporalInstant, transformedModel);
+
+            Property newModificationProperty = transformedModel.createProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
+            Resource newTemporalInstant = transformedModel.getResource(temporalInstant.getURI());
+            if (newTemporalInstant != null) {
+                ontologyResource.addProperty(newModificationProperty, newTemporalInstant);
+                log.debug("Added modification temporal metadata to concept scheme");
             }
         }
     }
