@@ -13,11 +13,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RiotException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
@@ -48,38 +55,55 @@ public class ValidationServiceImpl implements ValidationService {
     }
 
     @Override
-    public ISMDValidationReport validateWithRules(TransformationResult result, List<String> ruleNames, ValidationTiming timing) {
-        log.info("Starting targeted validation with {} rules and timing: {}", ruleNames.size(), timing);
-
-        try {
-            Model dataModel = extractDataModel(result, timing);
-            return shaclEngine.validateWithRules(dataModel, ruleNames);
-
-        } catch (Exception e) {
-            log.error("Targeted validation failed", e);
-            return ISMDValidationReport.error("Targeted validation failed: " + e.getMessage());
-        }
-    }
-
-    @Override
     public ISMDValidationReport validateModel(Model model) {
         log.info("Starting direct model validation");
         return shaclEngine.validate(model);
     }
+
 
     @Override
     public ISMDValidationReport validateRdf(String rdfContent, String format) {
         log.info("Starting RDF string validation with format: {}", format);
 
         try {
-            Model model = ModelFactory.createDefaultModel();
-            model.read(new StringReader(rdfContent), null, format);
-
+            Model model = parseRdfString(rdfContent, format);
             return shaclEngine.validate(model);
 
         } catch (Exception e) {
             log.error("Failed to parse RDF content for validation", e);
             return ISMDValidationReport.error("Failed to parse RDF content: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public ISMDValidationReport validateTtl(String ttlContent) {
+        log.info("Starting TTL validation");
+
+        try {
+            Model model = parseTtlString(ttlContent);
+            return shaclEngine.validate(model);
+
+        } catch (Exception e) {
+            log.error("Failed to parse TTL content for validation", e);
+            return ISMDValidationReport.error("Failed to parse TTL content: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public ISMDValidationReport validateTtlFile(MultipartFile file) {
+        log.info("Starting TTL file validation: filename={}, size={}", file.getOriginalFilename(), file.getSize());
+
+        try {
+            validateTtl(file);
+            String ttlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+            return validateTtl(ttlContent);
+
+        } catch (IOException e) {
+            log.error("Failed to read TTL file: {}", file.getOriginalFilename(), e);
+            return ISMDValidationReport.error("Failed to read TTL file: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("TTL file validation failed: {}", file.getOriginalFilename(), e);
+            return ISMDValidationReport.error("TTL file validation failed: " + e.getMessage());
         }
     }
 
@@ -128,6 +152,54 @@ public class ValidationServiceImpl implements ValidationService {
         }
     }
 
+    private Model parseRdfString(String rdfContent, String format) {
+        try {
+            Model model = ModelFactory.createDefaultModel();
+
+            model.read(new StringReader(rdfContent), null, format);
+
+            log.debug("Parsed {} content into model with {} statements", format, model.size());
+            return model;
+
+        } catch (RiotException e) {
+            log.error("Failed to parse {} content - invalid syntax", format, e);
+            throw new ValidationException("Invalid " + format + " syntax: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Failed to parse {} content", format, e);
+            throw new ValidationException("Failed to parse " + format + " content: " + e.getMessage(), e);
+        }
+    }
+
+    private Model parseTtlString(String ttlContent) {
+        try {
+            Model model = ModelFactory.createDefaultModel();
+
+            InputStream inputStream = new ByteArrayInputStream(ttlContent.getBytes(StandardCharsets.UTF_8));
+            RDFDataMgr.read(model, inputStream, Lang.TTL);
+
+            log.debug("Parsed TTL content into model with {} statements", model.size());
+            return model;
+
+        } catch (RiotException e) {
+            log.error("Failed to parse TTL content - invalid syntax", e);
+            throw new ValidationException("Invalid TTL syntax: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Failed to parse TTL content", e);
+            throw new ValidationException("Failed to parse TTL content: " + e.getMessage(), e);
+        }
+    }
+
+    private void validateTtl(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new ValidationException("TTL file is empty");
+        }
+
+        String filename = file.getOriginalFilename();
+        if (filename == null || !filename.toLowerCase().endsWith(".ttl")) {
+            throw new ValidationException("File must have .ttl extension");
+        }
+    }
+
     public ValidationConfigurationSummary getConfigurationSummary() {
         return new ValidationConfigurationSummary(
                 ruleManager.getAllRuleNames().size(),
@@ -135,15 +207,5 @@ public class ValidationServiceImpl implements ValidationService {
                 ruleManager.getEnabledRuleNames().stream().toList(),
                 config.getDefaultTiming()
         );
-    }
-
-    public ISMDValidationReport testValidation() {
-        log.info("Running validation test with empty model");
-
-        Model emptyModel = ModelFactory.createDefaultModel();
-        ISMDValidationReport report = shaclEngine.validate(emptyModel);
-
-        log.info("Test validation completed: {}", report.getSummary());
-        return report;
     }
 }
