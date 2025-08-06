@@ -6,6 +6,9 @@ import com.dia.service.DetailedValidationReportService;
 import com.dia.validation.data.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.QuoteMode;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
@@ -50,36 +53,74 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
     public String generateCSV(DetailedValidationReportDto report) {
         log.info("Converting detailed report to CSV format");
 
-        StringBuilder csvBuilder = new StringBuilder();
+        try {
+            StringWriter stringWriter = new StringWriter();
 
-        csvBuilder.append("Concept_IRI,Concept_Name,Rule_IRI,Rule_Name,Rule_Description,Severity,Level,Violation_Message,Violating_Value\n");
+            CSVFormat csvFormat = CSVFormat.DEFAULT
+                    .withHeader("Concept_IRI", "Concept_Name", "Rule_IRI", "Rule_Name",
+                            "Rule_Description", "Severity", "Level", "Violation_Message", "Violating_Value")
+                    .withRecordSeparator("\n")
+                    .withQuoteMode(QuoteMode.MINIMAL);
 
-        report.validation().forEach((conceptIri, conceptValidation) -> {
-            String conceptName = extractConceptName(conceptIri);
+            try (CSVPrinter csvPrinter = new CSVPrinter(stringWriter, csvFormat)) {
 
-            if (conceptValidation.violations().isEmpty()) {
-                csvBuilder.append(String.format("%s,%s,,,,,,%s,%n",
-                        escapeCSV(conceptIri),
-                        escapeCSV(conceptName),
-                        escapeCSV("No violations found")));
-            } else {
-                conceptValidation.violations().forEach((ruleKey, violation) ->
-                        csvBuilder.append(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s%n",
-                                escapeCSV(conceptIri),
-                                escapeCSV(conceptName),
-                                escapeCSV(ruleKey),
-                                escapeCSV(violation.name()),
-                                escapeCSV(violation.description()),
-                                escapeCSV(violation.severity()),
-                                escapeCSV(violation.level()),
-                                escapeCSV(violation.value()),
-                                escapeCSV("")
-                        ))
-                );
+                report.validation().forEach((conceptIri, conceptValidation) -> {
+                    String conceptName = extractConceptName(conceptIri);
+
+                    if (conceptValidation.violations().isEmpty()) {
+                        try {
+                            csvPrinter.printRecord(
+                                    normalizeString(conceptIri),
+                                    normalizeString(conceptName),
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "No violations found",
+                                    ""
+                            );
+                        } catch (IOException e) {
+                            log.error("Error writing CSV record for concept: {}", conceptIri, e);
+                        }
+                    } else {
+                        conceptValidation.violations().forEach((ruleKey, violation) -> {
+                            try {
+                                csvPrinter.printRecord(
+                                        normalizeString(conceptIri),
+                                        normalizeString(conceptName),
+                                        normalizeString(ruleKey),
+                                        normalizeString(violation.name()),
+                                        normalizeString(violation.description()),
+                                        normalizeString(violation.severity()),
+                                        normalizeString(violation.level()),
+                                        normalizeString(violation.value()),
+                                        ""
+                                );
+                            } catch (IOException e) {
+                                log.error("Error writing CSV record for concept: {} rule: {}", conceptIri, ruleKey, e);
+                            }
+                        });
+                    }
+                });
             }
-        });
 
-        return csvBuilder.toString();
+            return stringWriter.toString();
+
+        } catch (IOException e) {
+            log.error("Error generating CSV content", e);
+            throw new ValidationException("Failed to generate CSV: " + e.getMessage(), e);
+        }
+    }
+
+    private String normalizeString(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFC);
+
+        return normalized.trim();
     }
 
     @Override

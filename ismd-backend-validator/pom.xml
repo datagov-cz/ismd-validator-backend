@@ -75,6 +75,11 @@
             <version>5.4.1</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.8</version>
+        </dependency>
+        <dependency>
             <groupId>com.dia</groupId>
             <artifactId>ismd-backend-common</artifactId>
             <version>0.0.1-SNAPSHOT</version>

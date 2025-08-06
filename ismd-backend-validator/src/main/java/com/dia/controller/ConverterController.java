@@ -12,7 +12,6 @@ import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
-import jdk.jfr.ContentType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -234,29 +233,32 @@ public class ConverterController {
                 return ResponseEntity.badRequest()
                         .body("No detailed validation report available. Please ensure the conversion was performed with includeDetailedReport=true.".getBytes(StandardCharsets.UTF_8));
             }
-
             String csvContent = detailedValidationReportService.generateCSV(detailedReport);
 
-            byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
             byte[] csvBytes = csvContent.getBytes(StandardCharsets.UTF_8);
-            byte[] finalContent = new byte[bom.length + csvBytes.length];
-            System.arraycopy(bom, 0, finalContent, 0, bom.length);
-            System.arraycopy(csvBytes, 0, finalContent, bom.length, csvBytes.length);
 
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
             String finalFilename = filename + "_" + timestamp + ".csv";
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType("text/csv; charset=utf-8"));
-            headers.setContentDispositionFormData("attachment", finalFilename);
-            headers.setContentLength(finalContent.length);
 
-            log.info("CSV report generated successfully from existing data: requestId={}, filename={}, concepts={}",
-                    requestId, finalFilename, detailedReport.validation().size());
+            headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
+            headers.setContentDispositionFormData("attachment", finalFilename);
+            headers.setContentLength(csvBytes.length);
+
+            headers.add("Content-Transfer-Encoding", "binary");
+            headers.add("Accept-Ranges", "bytes");
+
+            headers.setCacheControl("no-cache, no-store, must-revalidate");
+            headers.setPragma("no-cache");
+            headers.setExpires(0);
+
+            log.info("CSV report generated successfully: requestId={}, filename={}, size={} bytes",
+                    requestId, finalFilename, csvBytes.length);
 
             return ResponseEntity.ok()
                     .headers(headers)
-                    .body(finalContent);
+                    .body(csvBytes);
         } catch (Exception e) {
             log.error("Error generating CSV from conversion response: requestId={}", requestId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
