@@ -1,6 +1,7 @@
 package com.dia.exporter;
 
 import com.dia.exceptions.TurtleExportException;
+import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
@@ -44,7 +45,6 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put("a104", "https://slovník.gov.cz/agendový/104/pojem/");
         STANDARD_PREFIXES.put("slovníky", "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/");
         STANDARD_PREFIXES.put("čas", CAS_NS);
-        STANDARD_PREFIXES.put("schema", "http://schema.org/");
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
@@ -183,6 +183,21 @@ public class TurtleExporter {
         return newModel;
     }
 
+    public boolean shouldFilterAsBaseSchema(String uri) {
+        if (UtilityMethods.isOFNBaseSchemaElement(uri)) {
+            return true;
+        }
+
+        if (!effectiveNamespace.equals(DEFAULT_NS) && uri.startsWith(DEFAULT_NS) && !uri.startsWith(effectiveNamespace)) {
+            if (uri.contains("časový-okamžik-") && isTemporalInstantInUse(uri)) {
+                return false;
+            }
+            return !uri.contains("digitální-dokument-") || isDigitalDocumentInUse(uri);
+        }
+
+        return false;
+    }
+
     private boolean isBaseSchemaResource(String uri) {
         if (uri == null) return false;
 
@@ -190,15 +205,57 @@ public class TurtleExporter {
             return true;
         }
 
-        if (uri.startsWith("https://slovník.gov.cz/")) {
-            return uri.contains("/datový-slovník-ofn-slovníků/pojem/");
-        }
-
-        if (uri.contains("časový-okamžik-")) {
+        if (uri.startsWith("http://schema.org/")) {
             return true;
         }
 
-        return uri.contains("digitální-dokument-");
+        if (uri.startsWith("https://slovník.gov.cz/datový")) {
+            return false;
+        }
+
+        if (uri.startsWith("https://slovník.gov.cz/legislativní")) {
+            return false;
+        }
+
+        if (uri.startsWith("https://slovník.gov.cz/") && uri.contains("/datový-slovník-ofn-slovníků/pojem/")) {
+            return true;
+        }
+
+        if (shouldFilterAsBaseSchema(uri)) {
+            return true;
+        }
+
+        if (uri.contains("časový-okamžik-")) {
+            return !isTemporalInstantInUse(uri);
+        }
+
+        if (uri.contains("digitální-dokument-")) {
+            return isDigitalDocumentInUse(uri);
+        }
+
+        return false;
+    }
+
+    private boolean isTemporalInstantInUse(String uri) {
+        Resource instant = ontModel.getResource(uri);
+        if (instant == null) return false;
+
+        Property creationProp = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
+        Property modificationProp = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
+
+        return ontModel.contains(null, creationProp, instant) ||
+                ontModel.contains(null, modificationProp, instant);
+    }
+
+    private boolean isDigitalDocumentInUse(String uri) {
+        Resource document = ontModel.getResource(uri);
+        if (document == null) return true;
+
+        Property definingNonLegProp = ontModel.getProperty(DEFAULT_NS + DEFINUJICI_NELEGISLATIVNI_ZDROJ);
+        Property relatedNonLegProp = ontModel.getProperty(DEFAULT_NS + SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
+
+        return !ontModel.contains(null, definingNonLegProp, document) &&
+                !ontModel.contains(null, relatedNonLegProp, document);
     }
 
     private void applyTransformations(OntModel transformedModel) {
@@ -211,6 +268,8 @@ public class TurtleExporter {
         transformResourcesToSKOSConcepts(transformedModel);
 
         transformLabelsToSKOS(transformedModel);
+
+        transformAlternativeNamesToSKOS(transformedModel);
 
         ensureDomainRangeProperties(transformedModel);
 
@@ -486,6 +545,45 @@ public class TurtleExporter {
 
         transformedModel.remove(toRemove);
         transformedModel.add(toAdd);
+    }
+
+    private void transformAlternativeNamesToSKOS(OntModel transformedModel) {
+        Property altNameProperty = transformedModel.createProperty(effectiveNamespace + ALTERNATIVNI_NAZEV);
+        StmtIterator altNameStmts = transformedModel.listStatements(null, altNameProperty, (RDFNode) null);
+
+        List<Statement> toAdd = new ArrayList<>();
+        List<Statement> toRemove = new ArrayList<>();
+
+        while (altNameStmts.hasNext()) {
+            Statement stmt = altNameStmts.next();
+            if (stmt.getObject().isLiteral()) {
+                Literal lit = stmt.getObject().asLiteral();
+                String value = lit.getString();
+
+                if (value == null || value.isEmpty()) {
+                    toRemove.add(stmt);
+                    continue;
+                }
+
+                String lang = lit.getLanguage();
+                if (lang == null || lang.isEmpty()) {
+                    lang = DEFAULT_LANG;
+                }
+
+                Literal langStringLiteral = transformedModel.createLiteral(value, lang);
+                toAdd.add(transformedModel.createStatement(
+                        stmt.getSubject(),
+                        SKOS.altLabel,
+                        langStringLiteral
+                ));
+            }
+            toRemove.add(stmt);
+        }
+
+        transformedModel.remove(toRemove);
+        transformedModel.add(toAdd);
+
+        log.debug("Transformed {} alternative names to SKOS altLabel as rdf:langString", toAdd.size());
     }
 
     private void ensureDomainRangeProperties(OntModel transformedModel) {

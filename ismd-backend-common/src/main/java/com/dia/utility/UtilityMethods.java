@@ -2,16 +2,16 @@ package com.dia.utility;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.SSPConstants.SGOV_NAMESPACE;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
@@ -462,5 +462,54 @@ public class UtilityMethods {
 
     public String getCurrentDateTime() {
         return LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "+02:00";
+    }
+
+    public boolean isOFNBaseSchemaElement(String uri) {
+        if (!uri.startsWith(DEFAULT_NS)) {
+            return false;
+        }
+
+        String localName = uri.substring(DEFAULT_NS.length());
+
+        Set<String> baseSchemaClasses = Set.of(
+                POJEM,
+                TRIDA,
+                VLASTNOST,
+                VZTAH,
+                TSP,
+                TOP,
+                VEREJNY_UDAJ,
+                NEVEREJNY_UDAJ
+        );
+
+        Set<String> baseSchemaProperties = Set.of(
+                NAZEV,
+                ALTERNATIVNI_NAZEV,
+                POPIS,
+                DEFINICE,
+                DEFINUJICI_USTANOVENI,
+                SOUVISEJICI_USTANOVENI,
+                DEFINUJICI_NELEGISLATIVNI_ZDROJ,
+                SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+                JE_PPDF,
+                AGENDA,
+                AIS,
+                USTANOVENI_NEVEREJNOST,
+                DEFINICNI_OBOR,
+                OBOR_HODNOT,
+                NADRAZENA_TRIDA,
+                ZPUSOB_SDILENI,
+                ZPUSOB_ZISKANI,
+                TYP_OBSAHU,
+                EKVIVALENTNI_POJEM
+        );
+
+        boolean isBaseElement = baseSchemaClasses.contains(localName) || baseSchemaProperties.contains(localName);
+
+        if (isBaseElement) {
+            log.debug("Filtering out base schema element: {}", uri);
+        }
+
+        return isBaseElement;
     }
 }
