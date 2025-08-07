@@ -1,13 +1,16 @@
 package com.dia.controller;
 
+import com.dia.controller.data.UrlMultipartFile;
 import com.dia.controller.dto.CatalogRecordDto;
 import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
+import com.dia.exceptions.SecurityException;
 import com.dia.exceptions.UnsupportedFormatException;
 import com.dia.service.*;
+import com.dia.utility.UtilityMethods;
 import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,13 +28,18 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.regex.Pattern;
 
 import static com.dia.constants.ConverterControllerConstants.*;
 import static com.dia.enums.FileFormat.*;
@@ -43,6 +51,11 @@ import static com.dia.enums.FileFormat.*;
 public class ConverterController {
 
     private static final long MAX_FILE_SIZE = 5242880;
+    private static final Duration DOWNLOAD_TIMEOUT = Duration.ofSeconds(30);
+    private static final Set<String> ALLOWED_PROTOCOLS = Set.of("https");
+    private static final Pattern PRIVATE_IP_PATTERN = Pattern.compile(
+            "^(10\\.|172\\.(1[6-9]|2\\d|3[0-1])\\.|192\\.168\\.|127\\.|169\\.254\\.|::1|fc00:|fe80:)"
+    );
 
     private final ConverterService converterService;
     private final ValidationService validationService;
@@ -50,9 +63,12 @@ public class ConverterController {
     private final DetailedValidationReportService detailedValidationReportService;
     private final CatalogReportService catalogReportService;
 
+    private HttpClient httpClient;
+
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponseDto> convertFile(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "fileUrl", required = false) String fileUrl,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
@@ -69,25 +85,31 @@ public class ConverterController {
                 file.getOriginalFilename(), file.getSize(), output, removeInvalidSources, includeDetailedReport);
 
         try {
+            MultipartFile processedFile = file;
+
+            if (fileUrl != null) {
+                processedFile = downloadAsMultipartFile(fileUrl);
+            }
+
             if (!validateSingleFileUpload(request, requestId)) {
                 return ResponseEntity.badRequest()
                         .body(ConversionResponseDto.error("Můžete nahrát pouze jeden soubor."));
             }
 
-            if (file.isEmpty()) {
+            if (processedFile.isEmpty()) {
                 log.warn("Empty file upload attempt");
                 return ResponseEntity.badRequest()
                         .body(ConversionResponseDto.error("Nebyl vložen žádný soubor."));
             }
 
-            if (file.getSize() > MAX_FILE_SIZE) {
+            if (processedFile.getSize() > MAX_FILE_SIZE) {
                 log.warn("File too large: filename={}, size={}, maxAllowedSize={}",
-                        file.getOriginalFilename(), file.getSize(), MAX_FILE_SIZE);
+                        processedFile.getOriginalFilename(), processedFile.getSize(), MAX_FILE_SIZE);
                 return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                         .body(ConversionResponseDto.error("Soubor je příliš velký. Maximální povolená velikost je 5 MB."));
             }
 
-            FileFormat fileFormat = checkFileFormat(file);
+            FileFormat fileFormat = checkFileFormat(processedFile);
             if (fileFormat == FileFormat.UNSUPPORTED) {
                 log.warn("Unsupported file type upload attempt");
                 return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
@@ -99,7 +121,7 @@ public class ConverterController {
             return switch (fileFormat) {
                 case ARCHI_XML -> {
                     log.debug("Processing Archi XML file: requestId={}", requestId);
-                    String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+                    String xmlContent = new String(processedFile.getBytes(), StandardCharsets.UTF_8);
                     ConversionResult conversionResult = converterService.processArchiFile(xmlContent, removeInvalidSources);
 
                     ValidationResultsDto results = performValidation(conversionResult, requestId);
@@ -118,7 +140,7 @@ public class ConverterController {
                 }
                 case XMI -> {
                     log.debug("Processing XMI file: requestId={}", requestId);
-                    ConversionResult conversionResult = converterService.processEAFile(file, removeInvalidSources);
+                    ConversionResult conversionResult = converterService.processEAFile(processedFile, removeInvalidSources);
 
                     ValidationResultsDto results = performValidation(conversionResult, requestId);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
@@ -136,7 +158,7 @@ public class ConverterController {
                 }
                 case XLSX -> {
                     log.debug("Processing XLSX file: requestId={}", requestId);
-                    ConversionResult conversionResult = converterService.processExcelFile(file, removeInvalidSources);
+                    ConversionResult conversionResult = converterService.processExcelFile(processedFile, removeInvalidSources);
 
                     ValidationResultsDto results = performValidation(conversionResult, requestId);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
@@ -525,6 +547,71 @@ public class ConverterController {
         } catch (Exception e) {
             log.error("Failed to generate catalog record: requestId={}", requestId, e);
             return null;
+        }
+    }
+
+    private MultipartFile downloadAsMultipartFile(String fileUrl) throws Exception {
+        if (httpClient == null) {
+            httpClient = HttpClient.newBuilder()
+                    .connectTimeout(DOWNLOAD_TIMEOUT)
+                    .build();
+        }
+
+        URL url = UtilityMethods.validateUrl(fileUrl, ALLOWED_PROTOCOLS);
+
+        performSecurityChecks(url);
+
+        log.info("Downloading file from URL: {}", fileUrl);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(url.toURI())
+                .timeout(DOWNLOAD_TIMEOUT)
+                .GET()
+                .build();
+
+        HttpResponse<byte[]> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofByteArray());
+
+        if (response.statusCode() != 200) {
+            throw new SecurityException("Chyba při stahování souboru z URL. HTTP " + response.statusCode());
+        }
+
+        byte[] fileContent = response.body();
+
+        if (fileContent.length > MAX_FILE_SIZE) {
+            throw new SecurityException("Stažený soubor je příliš velký. Velikost: " + fileContent.length +
+                    " bytů, maximální povolená velikost: " + MAX_FILE_SIZE + " bytů.");
+        }
+
+        if (fileContent.length == 0) {
+            throw new SecurityException("Stažený soubor je prázdný.");
+        }
+
+        String filename = UtilityMethods.extractFilenameFromUrl(url);
+
+        log.info("Soubor úspěšně stažen: název={}, velikost={}", filename, fileContent.length);
+
+        return new UrlMultipartFile(fileContent, filename, UtilityMethods.extractContentType(response, filename));
+    }
+
+    private void performSecurityChecks(URL url) throws SecurityException, UnknownHostException {
+        InetAddress address = InetAddress.getByName(url.getHost());
+        String hostAddress = address.getHostAddress();
+
+        if (PRIVATE_IP_PATTERN.matcher(hostAddress).find()) {
+            throw new SecurityException("Přístup k privátním IP adresám není povolen.");
+        }
+
+        if ("localhost".equalsIgnoreCase(url.getHost()) ||
+                "127.0.0.1".equals(url.getHost()) ||
+                "0.0.0.0".equals(url.getHost())) {
+            throw new SecurityException("Přístup k localhost není povolen.");
+        }
+
+        // Optional
+        int port = url.getPort() == -1 ? url.getDefaultPort() : url.getPort();
+        if (port != 80 && port != 443) {
+            log.warn("Nestandardní port detekován: {}", port);
         }
     }
 }
