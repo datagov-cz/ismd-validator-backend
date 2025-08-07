@@ -296,18 +296,6 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
         return conceptIri;
     }
 
-    private String escapeCSV(String value) {
-        if (value == null) return "";
-
-        value = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFC);
-
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-
-        return value;
-    }
-
     private Model parseTtlToModel(String ttlContent) {
         try {
             Model model = ModelFactory.createDefaultModel();

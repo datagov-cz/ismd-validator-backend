@@ -68,7 +68,7 @@ public class ConverterController {
 
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponseDto> convertFile(
-            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "fileUrl", required = false) String fileUrl,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
@@ -82,10 +82,22 @@ public class ConverterController {
 
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
-        log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}, include detailed report={}",
-                file.getOriginalFilename(), file.getSize(), output, removeInvalidSources, includeDetailedReport);
+        if (file != null) {
+            log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}, include detailed report={}",
+                    file.getOriginalFilename(), file.getSize(), output, removeInvalidSources, includeDetailedReport);
+        }
+
+        if (fileUrl != null) {
+            log.info("File conversion requested: fileUrl={}, outputFormat={}, remove invalid sources={}, include detailed report={}",
+                    fileUrl, output, removeInvalidSources, includeDetailedReport);
+        }
 
         try {
+            if (file != null && fileUrl != null) {
+                return ResponseEntity.badRequest()
+                        .body(ConversionResponseDto.error("Můžete zvolit pouze jeden způsob nahrání slovníků."));
+            }
+
             MultipartFile processedFile = file;
 
             if (fileUrl != null) {
@@ -111,7 +123,7 @@ public class ConverterController {
             }
 
             FileFormat fileFormat = checkFileFormat(processedFile);
-            if (fileFormat == FileFormat.UNSUPPORTED) {
+            if (fileFormat == UNSUPPORTED) {
                 log.warn("Unsupported file type upload attempt");
                 return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                         .body(ConversionResponseDto.error("Nepodporovaný formát souboru."));
@@ -130,11 +142,11 @@ public class ConverterController {
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                             generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-                    CatalogRecordDto catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
-                            generateCatalogReport(conversionResult, results, requestId) : null;
+                    Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.get()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
@@ -149,11 +161,11 @@ public class ConverterController {
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                             generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-                    CatalogRecordDto catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
-                            generateCatalogReport(conversionResult, results, requestId) : null;
+                    Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.get()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
@@ -168,11 +180,11 @@ public class ConverterController {
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                             generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-                    CatalogRecordDto catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
-                            generateCatalogReport(conversionResult, results, requestId) : null;
+                    Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.get()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
@@ -186,9 +198,12 @@ public class ConverterController {
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                             generateDetailedValidationReportFromTtl(report, processedFile, requestId) : null;
 
+                    Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            catalogReportService.generateCatalogReportFromFile(processedFile, results, requestId) : Optional.empty();
+
                     yield ResponseEntity.ok()
                             .contentType(MediaType.APPLICATION_JSON)
-                            .body(ConversionResponseDto.success(null, results, detailedReport, null));
+                            .body(ConversionResponseDto.success(null, results, detailedReport, catalogRecord.get()));
                 }
                 default -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(ConversionResponseDto.error("Nepodporovaný formát souboru."));
@@ -234,10 +249,10 @@ public class ConverterController {
             DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                     generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-            CatalogRecordDto catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
-                    generateCatalogReport(conversionResult, results, requestId) : null;
+            Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
+                    catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
-            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport, catalogRecord);
+            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport, catalogRecord.get());
             log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, SSP, output);
             return response;
@@ -375,21 +390,21 @@ public class ConverterController {
 
         if (checkForXlsx(file)) {
             log.debug("XLSX format detected: filename={}", filename);
-            return FileFormat.XLSX;
+            return XLSX;
         } else if (checkForXmlOrXmi(file) == ARCHI_XML) {
             log.debug("Archi XML format detected: filename={}", filename);
             return ARCHI_XML;
         } else if (checkForXmlOrXmi(file) == XMI) {
             log.debug("XMI format detected: filename={}", filename);
             return XMI;
-        } else if (checkForTurtle(file) == FileFormat.TURTLE) {
+        } else if (checkForTurtle(file) == TURTLE) {
             log.debug("Turtle format detected: filename={}", filename);
-            return FileFormat.TURTLE;
+            return TURTLE;
         }
 
         log.debug("Unsupported format detected: filename={}, contentType={}",
                 filename, file.getContentType());
-        return FileFormat.UNSUPPORTED;
+        return UNSUPPORTED;
     }
 
     private boolean checkForXlsx(MultipartFile file) {
@@ -429,21 +444,21 @@ public class ConverterController {
                 }
             }
         }
-        return FileFormat.UNSUPPORTED;
+        return UNSUPPORTED;
     }
 
     private FileFormat checkForTurtle(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType != null && contentType.equals("text/turtle")) {
-            return FileFormat.TURTLE;
+            return TURTLE;
         }
         String fileName = file.getOriginalFilename();
 
         if (Objects.requireNonNull(fileName).endsWith(".ttl")) {
-            return FileFormat.TURTLE;
+            return TURTLE;
         }
 
-        return FileFormat.UNSUPPORTED;
+        return UNSUPPORTED;
     }
 
     private ResponseEntity<ConversionResponseDto> getResponseEntity(
@@ -517,25 +532,6 @@ public class ConverterController {
 
         } catch (Exception e) {
             log.error("Failed to generate detailed validation report: requestId={}", requestId, e);
-            return null;
-        }
-    }
-
-    private CatalogRecordDto generateCatalogReport(ConversionResult conversionResult, ValidationResultsDto validationResults, String requestId) {
-        try {
-            log.debug("Attempting to generate catalog record: requestId={}", requestId);
-
-            Optional<CatalogRecordDto> catalogReport = catalogReportService.generateCatalogReport(conversionResult, validationResults);
-
-            if (catalogReport.isPresent()) {
-                log.info("Catalog record generated successfully: requestId={}", requestId);
-                return catalogReport.get();
-            } else {
-                log.info("Catalog record not generated due to validation errors or processing issues: requestId={}", requestId);
-                return null;
-            }
-        } catch (Exception e) {
-            log.error("Failed to generate catalog record: requestId={}", requestId, e);
             return null;
         }
     }
