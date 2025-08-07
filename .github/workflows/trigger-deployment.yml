@@ -35,8 +35,8 @@ jobs:
   prepare-deployment:
     name: Prepare Deployment
     runs-on: ubuntu-latest
-    # Only run if the build workflow succeeded or this was manually triggered
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # Only run if this is a workflow_dispatch or workflow_run event with successful conclusion
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     
     steps:
       - name: Checkout code
@@ -102,7 +102,7 @@ jobs:
                 component: '${{ env.COMPONENT_NAME }}',
                 triggered_by: '${{ github.actor }}',
                 timestamp: new Date().toISOString(),
-                workflow_run_id: '${{ github.event.workflow_run.id || "" }}'
+                workflow_run_id: github.event.workflow_run ? github.event.workflow_run.id : ''
               },
               description: 'Deployment of ${{ env.COMPONENT_NAME }} image ${{ steps.determine_params.outputs.image_tag }} to ${{ steps.determine_params.outputs.environment }}'
             });
