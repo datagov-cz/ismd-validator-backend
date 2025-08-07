@@ -181,10 +181,10 @@ public class ConverterController {
                 case TURTLE -> {
                     log.debug("Processing TTL file: requestId={}", requestId);
 
-                    ISMDValidationReport report = validationService.validateTtlFile(file);
+                    ISMDValidationReport report = validationService.validateTtlFile(processedFile);
                     ValidationResultsDto results = convertReportToDto(report);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                            generateDetailedValidationReportFromTtl(report, file, requestId) : null;
+                            generateDetailedValidationReportFromTtl(report, processedFile, requestId) : null;
 
                     yield ResponseEntity.ok()
                             .contentType(MediaType.APPLICATION_JSON)
@@ -437,6 +437,11 @@ public class ConverterController {
         if (contentType != null && contentType.equals("text/turtle")) {
             return FileFormat.TURTLE;
         }
+        String fileName = file.getOriginalFilename();
+
+        if (Objects.requireNonNull(fileName).endsWith(".ttl")) {
+            return FileFormat.TURTLE;
+        }
 
         return FileFormat.UNSUPPORTED;
     }
@@ -612,7 +617,6 @@ public class ConverterController {
             throw new SecurityException("Přístup k localhost není povolen.");
         }
 
-        // Optional
         int port = url.getPort() == -1 ? url.getDefaultPort() : url.getPort();
         if (port != 80 && port != 443) {
             log.warn("Nestandardní port detekován: {}", port);
