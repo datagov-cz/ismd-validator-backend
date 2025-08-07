@@ -1,0 +1,150 @@
+name: Trigger Deployment
+
+on:
+  # Triggered when a new image is published
+  workflow_run:
+    workflows: ["Build Docker on Main", "Build Docker on Dev"]
+    types:
+      - completed
+    branches:
+      - main
+      - dev
+  
+  # Manual trigger with environment and version selection
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+        default: 'dev'
+      version:
+        description: 'Image version to deploy (leave empty for latest)'
+        required: false
+        type: string
+
+env:
+  INFRA_REPO: ${{ github.repository_owner }}/infrastructure
+  COMPONENT_NAME: backend
+
+jobs:
+  prepare-deployment:
+    name: Prepare Deployment
+    runs-on: ubuntu-latest
+    # Only run if the build workflow succeeded or this was manually triggered
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Determine environment and version
+        id: determine_params
+        run: |
+          # For manual triggers, use the specified environment
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            ENVIRONMENT="${{ github.event.inputs.environment }}"
+            
+            # If version is specified, use it
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              IMAGE_TAG="${{ github.event.inputs.version }}"
+            else
+              # Otherwise get the latest version from pom.xml
+              IMAGE_TAG=$(grep -m 1 "<version>" pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+            fi
+          else
+            # For automated triggers, determine environment from branch
+            if [ "${{ github.event.workflow_run.head_branch }}" == "main" ]; then
+              ENVIRONMENT="test"
+            else
+              ENVIRONMENT="dev"
+            fi
+            
+            # Get the version from pom.xml
+            IMAGE_TAG=$(grep -m 1 "<version>" pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+            
+            # For dev branch, append the short SHA
+            if [ "${{ github.event.workflow_run.head_branch }}" == "dev" ]; then
+              SHORT_SHA=$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)
+              IMAGE_TAG="${IMAGE_TAG}-${SHORT_SHA}"
+            fi
+          fi
+          
+          echo "ENVIRONMENT=${ENVIRONMENT}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+          echo "Environment: ${ENVIRONMENT}"
+          echo "Image tag: ${IMAGE_TAG}"
+          
+          # Set outputs for later steps
+          echo "environment=${ENVIRONMENT}" >> $GITHUB_OUTPUT
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Deployment
+        id: create_deployment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            // Create a deployment record
+            const result = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: '${{ steps.determine_params.outputs.environment }}',
+              auto_merge: false,
+              required_contexts: [],
+              payload: {
+                image_tag: '${{ steps.determine_params.outputs.image_tag }}',
+                component: '${{ env.COMPONENT_NAME }}',
+                triggered_by: '${{ github.actor }}',
+                timestamp: new Date().toISOString(),
+                workflow_run_id: '${{ github.event.workflow_run.id || "" }}'
+              },
+              description: 'Deployment of ${{ env.COMPONENT_NAME }} image ${{ steps.determine_params.outputs.image_tag }} to ${{ steps.determine_params.outputs.environment }}'
+            });
+            
+            // Set output for subsequent steps
+            core.setOutput('deployment_id', result.data.id);
+            
+            // Update deployment status to pending
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: result.data.id,
+              state: 'pending',
+              description: 'Preparing to deploy'
+            });
+      
+      - name: Trigger Infrastructure Deployment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.INFRA_REPO_TOKEN }}
+          script: |
+            // Trigger the deployment via repository_dispatch to the infrastructure repo
+            const result = await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: '${{ env.INFRA_REPO }}'.split('/')[1],
+              event_type: 'new-image-${{ steps.determine_params.outputs.environment }}',
+              client_payload: {
+                component: '${{ env.COMPONENT_NAME }}',
+                image_tag: '${{ steps.determine_params.outputs.image_tag }}',
+                source_repo: '${{ github.repository }}',
+                source_deployment_id: '${{ steps.create_deployment.outputs.deployment_id }}'
+              }
+            });
+            
+            console.log('Triggered deployment in infrastructure repository');
+            
+            // Update deployment status to in_progress
+            const deploymentId = parseInt('${{ steps.create_deployment.outputs.deployment_id }}');
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deploymentId,
+              state: 'in_progress',
+              description: 'Deployment triggered in infrastructure repository'
+            });
