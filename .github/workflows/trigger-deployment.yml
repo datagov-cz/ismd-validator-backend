@@ -90,7 +90,7 @@ jobs:
           github-token: ${{ github.token }}
           script: |
             // Create a deployment record
-            const result = await github.rest.repos.createDeployment({
+            const result = await github.action_repository.repos.createDeployment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: context.sha,
@@ -111,7 +111,7 @@ jobs:
             core.setOutput('deployment_id', result.data.id);
             
             // Update deployment status to pending
-            await github.rest.repos.createDeploymentStatus({
+            await github.action_repository.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               deployment_id: result.data.id,
@@ -125,7 +125,7 @@ jobs:
           github-token: ${{ secrets.INFRA_REPO_TOKEN }}
           script: |
             // Trigger the deployment via repository_dispatch to the infrastructure repo
-            const result = await github.rest.repos.createDispatchEvent({
+            const result = await github.action_repository.repos.createDispatchEvent({
               owner: context.repo.owner,
               repo: '${{ env.INFRA_REPO }}'.split('/')[1],
               event_type: 'new-image-${{ steps.determine_params.outputs.environment }}',
@@ -133,15 +133,15 @@ jobs:
                 component: '${{ env.COMPONENT_NAME }}',
                 image_tag: '${{ steps.determine_params.outputs.image_tag }}',
                 source_repo: '${{ github.repository }}',
-                source_deployment_id: '${{ steps.create_deployment.outputs.deployment_id }}'
+                source_deployment_id: '${{ steps.create_deployment.outputs.result }}'
               }
             });
             
             console.log('Triggered deployment in infrastructure repository');
             
             // Update deployment status to in_progress
-            const deploymentId = parseInt('${{ steps.create_deployment.outputs.deployment_id }}');
-            await github.rest.repos.createDeploymentStatus({
+            const deploymentId = parseInt('${{ steps.create_deployment.outputs.result }}');
+            await github.action_repository.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               deployment_id: deploymentId,
