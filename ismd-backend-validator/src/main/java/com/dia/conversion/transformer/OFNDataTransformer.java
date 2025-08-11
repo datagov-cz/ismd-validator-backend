@@ -144,6 +144,17 @@ public class OFNDataTransformer {
         }
     }
 
+    private boolean belongsToCurrentVocabulary(String conceptURI) {
+        if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
+            return false;
+        }
+
+        boolean belongs = conceptURI.startsWith(uriGenerator.getEffectiveNamespace());
+        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
+                conceptURI, belongs, uriGenerator.getEffectiveNamespace());
+        return belongs;
+    }
+
     private Set<String> analyzeRequiredBaseClasses(OntologyData ontologyData) {
         Set<String> requiredClasses = new HashSet<>();
 
@@ -375,10 +386,15 @@ public class OFNDataTransformer {
         classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
         addSpecificClassType(classResource, classData);
 
-        addResourceMetadata(classResource, ResourceMetadata.from(classData));
+        if (belongsToCurrentVocabulary(classURI)) {
+            addResourceMetadata(classResource, ResourceMetadata.from(classData));
+            addClassSpecificMetadata(classResource, classData);
+            addSchemeRelationship(classResource, localResourceMap);
+            log.debug("Added full metadata for local class: {}", classURI);
+        } else {
+            log.debug("Skipped full metadata for external class (different namespace): {}", classURI);
+        }
 
-        addClassSpecificMetadata(classResource, classData);
-        addSchemeRelationship(classResource, localResourceMap);
         return classResource;
     }
 
@@ -415,11 +431,16 @@ public class OFNDataTransformer {
         propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
         propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VLASTNOST));
 
-        addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
+        if (belongsToCurrentVocabulary(propertyURI)) {
+            addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
+            addPropertySpecificMetadata(propertyResource, propertyData);
+            addDataGovernanceMetadata(propertyResource, propertyData);
+            addSchemeRelationship(propertyResource, localResourceMap);
+            log.debug("Added full metadata for local property: {}", propertyURI);
+        } else {
+            log.debug("Skipped full metadata for external property (different namespace): {}", propertyURI);
+        }
 
-        addPropertySpecificMetadata(propertyResource, propertyData);
-        addDataGovernanceMetadata(propertyResource, propertyData);
-        addSchemeRelationship(propertyResource, localResourceMap);
         return propertyResource;
     }
 
@@ -471,11 +492,16 @@ public class OFNDataTransformer {
         relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VZTAH));
         relationshipResource.addProperty(RDF.type, ontModel.getProperty("http://www.w3.org/2002/07/owl#ObjectProperty"));
 
-        addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData));
+        if (belongsToCurrentVocabulary(relationshipURI)) {
+            addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData));
+            addRelationshipSpecificMetadata(relationshipResource, relationshipData);
+            addSchemeRelationship(relationshipResource, localResourceMap);
+            log.debug("Added full metadata for local relationship: {}", relationshipURI);
+        } else {
+            log.debug("Skipped full metadata for external relationship (different namespace): {}", relationshipURI);
+        }
 
-        addRelationshipSpecificMetadata(relationshipResource, relationshipData);
         addDomainRangeRelationships(relationshipResource, relationshipData);
-        addSchemeRelationship(relationshipResource, localResourceMap);
         return relationshipResource;
     }
 
@@ -671,18 +697,6 @@ public class OFNDataTransformer {
 
         if (metadata.definition() != null && !metadata.definition().trim().isEmpty()) {
             DataTypeConverter.addTypedProperty(resource, SKOS.definition, metadata.definition(), DEFAULT_LANG, ontModel);
-        }
-
-        if (metadata.identifier() != null && !metadata.identifier().trim().isEmpty()) {
-            Property identifierProperty = ontModel.createProperty("http://purl.org/dc/terms/identifier");
-
-            if (DataTypeConverter.isUri(metadata.identifier())) {
-                resource.addProperty(identifierProperty, ontModel.createResource(metadata.identifier()));
-                log.debug("Added identifier as URI: {}", metadata.identifier());
-            } else {
-                DataTypeConverter.addTypedProperty(resource, identifierProperty, metadata.identifier(), null, ontModel);
-                log.debug("Added identifier as literal: {}", metadata.identifier());
-            }
         }
 
         if (metadata.source() != null && !metadata.source().trim().isEmpty()) {

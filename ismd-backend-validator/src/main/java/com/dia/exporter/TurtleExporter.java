@@ -199,8 +199,6 @@ public class TurtleExporter {
     }
 
     private boolean isBaseSchemaResource(String uri) {
-        if (uri == null) return false;
-
         if (uri.startsWith("http://www.w3.org/2001/XMLSchema#")) {
             return true;
         }
@@ -209,24 +207,34 @@ public class TurtleExporter {
             return true;
         }
 
-        if (uri.startsWith("https://slovník.gov.cz/datový")) {
-            return false;
-        }
+        if (uri.startsWith("https://slovník.gov.cz/")) {
 
-        if (uri.startsWith("https://slovník.gov.cz/legislativní")) {
-            return false;
-        }
+            if (uri.startsWith("https://slovník.gov.cz/datový") ||
+                    uri.startsWith("https://slovník.gov.cz/legislativní") ||
+                    uri.startsWith("https://slovník.gov.cz/veřejný-sektor")) {
+                return false;
+            }
 
-        if (uri.startsWith("https://slovník.gov.cz/agendový")) {
-            return false;
-        }
+            if (uri.contains("/datový-slovník-ofn-slovníků/pojem/")) {
+                return true;
+            }
 
-        if (uri.startsWith("https://slovník.gov.cz/veřejný-sektor")) {
-            return false;
-        }
+            if (uri.startsWith("https://slovník.gov.cz/agendový") && !uri.contains("/pojem/")) {
+                log.debug("Filtering out base schema property: {}", uri);
+                return true;
+            }
 
-        if (uri.startsWith("https://slovník.gov.cz/") && uri.contains("/datový-slovník-ofn-slovníků/pojem/")) {
-            return true;
+            if (uri.startsWith("https://slovník.gov.cz/agendový") && uri.contains("/pojem/")) {
+                return false;
+            }
+
+            if ((uri.startsWith("https://slovník.gov.cz/generický") ||
+                    uri.startsWith("https://slovník.gov.cz/")) &&
+                    !uri.contains("/pojem/") &&
+                    !uri.contains("/slovník")) {
+                log.debug("Filtering out base schema property: {}", uri);
+                return true;
+            }
         }
 
         if (shouldFilterAsBaseSchema(uri)) {
