@@ -1,8 +1,12 @@
 package com.dia.utility;
 
+import com.dia.exceptions.ConversionException;
+import com.dia.exceptions.UnsupportedFormatException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.http.HttpResponse;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -453,5 +457,55 @@ public class UtilityMethods {
         }
 
         return isBaseElement;
+    }
+
+    public URL validateUrl(String urlString, Set<String> allowedProtocols) throws ConversionException {
+        if (urlString == null || urlString.trim().isEmpty()) {
+            throw new IllegalArgumentException("URL nemůže být prázdná.");
+        }
+
+        try {
+            URL url = new URL(urlString.trim());
+
+            if (!allowedProtocols.contains(url.getProtocol().toLowerCase())) {
+                throw new IllegalArgumentException("Protokol není povolen: " + url.getProtocol());
+            }
+
+            return url;
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Neplatný formát URL: " + e.getMessage());
+        }
+    }
+
+    public String extractFilenameFromUrl(URL url) {
+        String path = url.getPath();
+        if (path == null || path.isEmpty() || path.equals("/")) {
+            return "downloaded-file";
+        }
+
+        String filename = path.substring(path.lastIndexOf('/') + 1);
+        if (filename.isEmpty()) {
+            return "downloaded-file";
+        }
+
+        int queryIndex = filename.indexOf('?');
+        if (queryIndex > 0) {
+            filename = filename.substring(0, queryIndex);
+        }
+
+        return filename;
+    }
+
+    public String extractContentType(HttpResponse<byte[]> response, String filename) {
+        return response.headers()
+                .firstValue("content-type")
+                .orElse(guessContentTypeFromFilename(filename));
+    }
+
+    private String guessContentTypeFromFilename(String filename) {
+        if (!filename.endsWith(".ttl")) {
+            throw new UnsupportedFormatException("Nepodporovaný typ souboru: " + filename);
+        }
+        return "text/turtle";
     }
 }

@@ -3,19 +3,25 @@ package com.dia.service.impl;
 import com.dia.controller.dto.CatalogRecordDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
+import com.dia.exceptions.ValidationException;
 import com.dia.service.CatalogReportService;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.*;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RiotException;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDFS;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Service
@@ -31,13 +37,14 @@ public class CatalogReportServiceImpl implements CatalogReportService {
     private static final String RUIAN = "https://linked.cuzk.cz/resource/ruian/stat/1";
 
     @Override
-    public Optional<CatalogRecordDto> generateCatalogReport(ConversionResult conversionResult, ValidationResultsDto validationResults) {
-        if (!shouldGenerateCatalogReport(validationResults)) {
-            log.info("Catalog report generation skipped - validation contains ERROR severity findings");
+    public Optional<CatalogRecordDto> generateCatalogReport(ConversionResult conversionResult, ValidationResultsDto validationResults, String requestId) {
+        log.debug("Attempting to generate catalog record: requestId={}", requestId);
+        if (shouldGenerateCatalogReport(validationResults)) {
+            log.info("Catalog report generation skipped - validation contains ERROR severity findings, requestId={}", requestId);
             return Optional.empty();
         }
 
-        log.info("Generating catalog report - no ERROR severity findings detected");
+        log.info("Generating catalog report - no ERROR severity findings detected, requestId={}", requestId);
 
         try {
             OntModel ontModel = conversionResult.getTransformationResult().getOntModel();
@@ -45,22 +52,48 @@ public class CatalogReportServiceImpl implements CatalogReportService {
 
             CatalogRecordDto catalogReport = buildCatalogReport(metadata);
 
-            log.info("Catalog report generated successfully for vocabulary: {}", metadata.getIri());
+            log.info("Catalog report generated successfully for vocabulary: {}, requestId={}", metadata.getIri(), requestId);
             return Optional.of(catalogReport);
 
         } catch (Exception e) {
-            log.error("Failed to generate catalog report", e);
+            log.error("Failed to generate catalog report, error:{}, requestId={},", e, requestId);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<CatalogRecordDto> generateCatalogReportFromFile(MultipartFile file, ValidationResultsDto validationResults, String requestId) {
+        log.debug("Attempting to generate catalog record: requestId={}", requestId);
+        if (shouldGenerateCatalogReport(validationResults)) {
+            log.info("Catalog report generation skipped - validation contains ERROR severity findings, requestId={}", requestId);
+            return Optional.empty();
+        }
+
+        log.info("Generating catalog report - no ERROR severity findings detected, requestId={}", requestId);
+
+        try {
+            String ttlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+            OntModel ontModel = parseTtlToModel(ttlContent);
+            VocabularyMetadata metadata = extractVocabularyMetadata(ontModel);
+
+            CatalogRecordDto catalogReport = buildCatalogReport(metadata);
+
+            log.info("Catalog report generated successfully for vocabulary: {}, requestId={}", metadata.getIri(), requestId);
+            return Optional.of(catalogReport);
+
+        } catch (Exception e) {
+            log.error("Failed to generate catalog report, error:{}, requestId={},", e, requestId);
             return Optional.empty();
         }
     }
 
     private boolean shouldGenerateCatalogReport(ValidationResultsDto validationResults) {
         if (validationResults == null || validationResults.getSeverityGroups() == null) {
-            return true;
+            return false;
         }
 
         return validationResults.getSeverityGroups().stream()
-                .noneMatch(group -> "ERROR".equalsIgnoreCase(group.getSeverity()) && group.getCount() > 0);
+                .anyMatch(group -> "ERROR".equalsIgnoreCase(group.getSeverity()) && group.getCount() > 0);
     }
 
     private VocabularyMetadata extractVocabularyMetadata(OntModel ontModel) {
@@ -130,10 +163,9 @@ public class CatalogReportServiceImpl implements CatalogReportService {
     }
 
     private Map<String, String> createDefaultNazev(String iri) {
-        String defaultName = iri != null ? "Vocabulary " + extractLocalName(iri) : "Converted Vocabulary";
+        String defaultName = iri != null ? extractLocalName(iri) : "Converted Vocabulary";
         Map<String, String> nazev = new HashMap<>();
-        nazev.put("cs", "Název slovníku");
-        nazev.put("en", defaultName);
+        nazev.put("cs", defaultName);
         return nazev;
     }
 
@@ -199,6 +231,25 @@ public class CatalogReportServiceImpl implements CatalogReportService {
                 .databizeChranenaZvlastnimiPravy("https://data.gov.cz/podmínky-užití/není-chráněna-zvláštním-právem-pořizovatele-databáze/")
                 .osobniUdaje("https://data.gov.cz/podmínky-užití/neobsahuje-osobní-údaje/")
                 .build();
+    }
+
+    private OntModel parseTtlToModel(String ttlContent) {
+        try {
+            OntModel model = ModelFactory.createOntologyModel();
+            InputStream inputStream = new ByteArrayInputStream(ttlContent.getBytes(StandardCharsets.UTF_8));
+
+            RDFDataMgr.read(model, inputStream, Lang.TTL);
+
+            log.debug("Parsed TTL content into model with {} statements", model.size());
+            return model;
+
+        } catch (RiotException e) {
+            log.error("Failed to parse TTL content - invalid syntax", e);
+            throw new ValidationException("Invalid TTL syntax: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Failed to parse TTL content", e);
+            throw new ValidationException("Failed to parse TTL content: " + e.getMessage(), e);
+        }
     }
 
     @Data
