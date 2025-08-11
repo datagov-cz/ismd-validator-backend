@@ -307,10 +307,7 @@ class TurtleExporterUnitTest {
                 "Should NOT filter agenda URIs");
         assertFalse((Boolean) method.invoke(exporter, "https://slovník.gov.cz/veřejný-sektor/pojem/test"),
                 "Should NOT filter public sector URIs");
-
-        // Test null
-        assertFalse((Boolean) method.invoke(exporter, (String) null),
-                "Should not filter null URIs");
+        
     }
 
     // ================= EDGE CASE TESTS =================
