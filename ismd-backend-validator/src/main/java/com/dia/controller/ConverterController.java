@@ -1,13 +1,16 @@
 package com.dia.controller;
 
+import com.dia.controller.data.UrlMultipartFile;
 import com.dia.controller.dto.CatalogRecordDto;
 import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
+import com.dia.exceptions.SecurityException;
 import com.dia.exceptions.UnsupportedFormatException;
 import com.dia.service.*;
+import com.dia.utility.UtilityMethods;
 import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,13 +29,18 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.regex.Pattern;
 
 import static com.dia.constants.ConverterControllerConstants.*;
 import static com.dia.enums.FileFormat.*;
@@ -44,6 +52,11 @@ import static com.dia.enums.FileFormat.*;
 public class ConverterController {
 
     private static final long MAX_FILE_SIZE = 5242880;
+    private static final Duration DOWNLOAD_TIMEOUT = Duration.ofSeconds(30);
+    private static final Set<String> ALLOWED_PROTOCOLS = Set.of("https");
+    private static final Pattern PRIVATE_IP_PATTERN = Pattern.compile(
+            "^(10\\.|172\\.(1[6-9]|2\\d|3[0-1])\\.|192\\.168\\.|127\\.|169\\.254\\.|::1|fc00:|fe80:)"
+    );
 
     private final ConverterService converterService;
     private final ValidationService validationService;
@@ -51,9 +64,12 @@ public class ConverterController {
     private final DetailedValidationReportService detailedValidationReportService;
     private final CatalogReportService catalogReportService;
 
+    private HttpClient httpClient;
+
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponseDto> convertFile(
-            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "urlString", required = false) String urlString,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
@@ -66,30 +82,48 @@ public class ConverterController {
 
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
-        log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}, include detailed report={}",
-                file.getOriginalFilename(), file.getSize(), output, removeInvalidSources, includeDetailedReport);
+        if (file != null) {
+            log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}, include detailed report={}",
+                    file.getOriginalFilename(), file.getSize(), output, removeInvalidSources, includeDetailedReport);
+        }
+
+        if (urlString != null) {
+            log.info("File conversion requested: fileUrl={}, outputFormat={}, remove invalid sources={}, include detailed report={}",
+                    urlString, output, removeInvalidSources, includeDetailedReport);
+        }
 
         try {
+            if (file != null && urlString != null) {
+                return ResponseEntity.badRequest()
+                        .body(ConversionResponseDto.error("Můžete zvolit pouze jeden způsob nahrání slovníků."));
+            }
+
+            MultipartFile processedFile = file;
+
+            if (urlString != null) {
+                processedFile = downloadAsMultipartFile(urlString);
+            }
+
             if (!validateSingleFileUpload(request, requestId)) {
                 return ResponseEntity.badRequest()
                         .body(ConversionResponseDto.error("Můžete nahrát pouze jeden soubor."));
             }
 
-            if (file.isEmpty()) {
+            if (processedFile.isEmpty()) {
                 log.warn("Empty file upload attempt");
                 return ResponseEntity.badRequest()
                         .body(ConversionResponseDto.error("Nebyl vložen žádný soubor."));
             }
 
-            if (file.getSize() > MAX_FILE_SIZE) {
+            if (processedFile.getSize() > MAX_FILE_SIZE) {
                 log.warn("File too large: filename={}, size={}, maxAllowedSize={}",
-                        file.getOriginalFilename(), file.getSize(), MAX_FILE_SIZE);
+                        processedFile.getOriginalFilename(), processedFile.getSize(), MAX_FILE_SIZE);
                 return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                         .body(ConversionResponseDto.error("Soubor je příliš velký. Maximální povolená velikost je 5 MB."));
             }
 
-            FileFormat fileFormat = checkFileFormat(file);
-            if (fileFormat == FileFormat.UNSUPPORTED) {
+            FileFormat fileFormat = checkFileFormat(processedFile);
+            if (fileFormat == UNSUPPORTED) {
                 log.warn("Unsupported file type upload attempt");
                 return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                         .body(ConversionResponseDto.error("Nepodporovaný formát souboru."));
@@ -100,7 +134,7 @@ public class ConverterController {
             return switch (fileFormat) {
                 case ARCHI_XML -> {
                     log.debug("Processing Archi XML file: requestId={}", requestId);
-                    String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+                    String xmlContent = new String(processedFile.getBytes(), StandardCharsets.UTF_8);
                     ConversionResult conversionResult = converterService.processArchiFile(xmlContent, removeInvalidSources);
 
                     ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
@@ -108,11 +142,11 @@ public class ConverterController {
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                             generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-                    CatalogRecordDto catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
-                            generateCatalogReport(conversionResult, results, requestId) : null;
+                    Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.get()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
@@ -120,18 +154,18 @@ public class ConverterController {
                 }
                 case XMI -> {
                     log.debug("Processing XMI file: requestId={}", requestId);
-                    ConversionResult conversionResult = converterService.processEAFile(file, removeInvalidSources);
+                    ConversionResult conversionResult = converterService.processEAFile(processedFile, removeInvalidSources);
 
                     ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
                     ValidationResultsDto results = convertReportToDto(report);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                             generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-                    CatalogRecordDto catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
-                            generateCatalogReport(conversionResult, results, requestId) : null;
+                    Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.get()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
@@ -139,18 +173,18 @@ public class ConverterController {
                 }
                 case XLSX -> {
                     log.debug("Processing XLSX file: requestId={}", requestId);
-                    ConversionResult conversionResult = converterService.processExcelFile(file, removeInvalidSources);
+                    ConversionResult conversionResult = converterService.processExcelFile(processedFile, removeInvalidSources);
 
                     ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
                     ValidationResultsDto results = convertReportToDto(report);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                             generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-                    CatalogRecordDto catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
-                            generateCatalogReport(conversionResult, results, requestId) : null;
+                    Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.get()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
@@ -159,14 +193,17 @@ public class ConverterController {
                 case TURTLE -> {
                     log.debug("Processing TTL file: requestId={}", requestId);
 
-                    ISMDValidationReport report = validationService.validateTtlFile(file);
+                    ISMDValidationReport report = validationService.validateTtlFile(processedFile);
                     ValidationResultsDto results = convertReportToDto(report);
                     DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                            generateDetailedValidationReportFromTtl(report, file, requestId) : null;
+                            generateDetailedValidationReportFromTtl(report, processedFile, requestId) : null;
+
+                    Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
+                            catalogReportService.generateCatalogReportFromFile(processedFile, results, requestId) : Optional.empty();
 
                     yield ResponseEntity.ok()
                             .contentType(MediaType.APPLICATION_JSON)
-                            .body(ConversionResponseDto.success(null, results, detailedReport, null));
+                            .body(ConversionResponseDto.success(null, results, detailedReport, catalogRecord.get()));
                 }
                 default -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(ConversionResponseDto.error("Nepodporovaný formát souboru."));
@@ -212,10 +249,10 @@ public class ConverterController {
             DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
                     generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
 
-            CatalogRecordDto catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
-                    generateCatalogReport(conversionResult, results, requestId) : null;
+            Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
+                    catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
-            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport, catalogRecord);
+            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport, catalogRecord.get());
             log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, SSP, output);
             return response;
@@ -353,21 +390,21 @@ public class ConverterController {
 
         if (checkForXlsx(file)) {
             log.debug("XLSX format detected: filename={}", filename);
-            return FileFormat.XLSX;
+            return XLSX;
         } else if (checkForXmlOrXmi(file) == ARCHI_XML) {
             log.debug("Archi XML format detected: filename={}", filename);
             return ARCHI_XML;
         } else if (checkForXmlOrXmi(file) == XMI) {
             log.debug("XMI format detected: filename={}", filename);
             return XMI;
-        } else if (checkForTurtle(file) == FileFormat.TURTLE) {
+        } else if (checkForTurtle(file) == TURTLE) {
             log.debug("Turtle format detected: filename={}", filename);
-            return FileFormat.TURTLE;
+            return TURTLE;
         }
 
         log.debug("Unsupported format detected: filename={}, contentType={}",
                 filename, file.getContentType());
-        return FileFormat.UNSUPPORTED;
+        return UNSUPPORTED;
     }
 
     private boolean checkForXlsx(MultipartFile file) {
@@ -407,16 +444,21 @@ public class ConverterController {
                 }
             }
         }
-        return FileFormat.UNSUPPORTED;
+        return UNSUPPORTED;
     }
 
     private FileFormat checkForTurtle(MultipartFile file) {
         String contentType = file.getContentType();
         if (contentType != null && contentType.equals("text/turtle")) {
-            return FileFormat.TURTLE;
+            return TURTLE;
+        }
+        String fileName = file.getOriginalFilename();
+
+        if (Objects.requireNonNull(fileName).endsWith(".ttl")) {
+            return TURTLE;
         }
 
-        return FileFormat.UNSUPPORTED;
+        return UNSUPPORTED;
     }
 
     private ResponseEntity<ConversionResponseDto> getResponseEntity(
@@ -494,25 +536,6 @@ public class ConverterController {
         }
     }
 
-    private CatalogRecordDto generateCatalogReport(ConversionResult conversionResult, ValidationResultsDto validationResults, String requestId) {
-        try {
-            log.debug("Attempting to generate catalog record: requestId={}", requestId);
-
-            Optional<CatalogRecordDto> catalogReport = catalogReportService.generateCatalogReport(conversionResult, validationResults);
-
-            if (catalogReport.isPresent()) {
-                log.info("Catalog record generated successfully: requestId={}", requestId);
-                return catalogReport.get();
-            } else {
-                log.info("Catalog record not generated due to validation errors or processing issues: requestId={}", requestId);
-                return null;
-            }
-        } catch (Exception e) {
-            log.error("Failed to generate catalog record: requestId={}", requestId, e);
-            return null;
-        }
-    }
-
     private DetailedValidationReportDto generateDetailedValidationReportFromTtl(ISMDValidationReport report, MultipartFile file, String requestId) {
         try {
             log.debug("Generating detailed validation report: requestId={}", requestId);
@@ -529,6 +552,70 @@ public class ConverterController {
         } catch (Exception e) {
             log.error("Failed to generate detailed validation report: requestId={}", requestId, e);
             return null;
+        }
+    }
+
+    private MultipartFile downloadAsMultipartFile(String fileUrl) throws Exception {
+        if (httpClient == null) {
+            httpClient = HttpClient.newBuilder()
+                    .connectTimeout(DOWNLOAD_TIMEOUT)
+                    .build();
+        }
+
+        URL url = UtilityMethods.validateUrl(fileUrl, ALLOWED_PROTOCOLS);
+
+        performSecurityChecks(url);
+
+        log.info("Downloading file from URL: {}", fileUrl);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(url.toURI())
+                .timeout(DOWNLOAD_TIMEOUT)
+                .GET()
+                .build();
+
+        HttpResponse<byte[]> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofByteArray());
+
+        if (response.statusCode() != 200) {
+            throw new SecurityException("Chyba při stahování souboru z URL. HTTP " + response.statusCode());
+        }
+
+        byte[] fileContent = response.body();
+
+        if (fileContent.length > MAX_FILE_SIZE) {
+            throw new SecurityException("Stažený soubor je příliš velký. Velikost: " + fileContent.length +
+                    " bytů, maximální povolená velikost: " + MAX_FILE_SIZE + " bytů.");
+        }
+
+        if (fileContent.length == 0) {
+            throw new SecurityException("Stažený soubor je prázdný.");
+        }
+
+        String filename = UtilityMethods.extractFilenameFromUrl(url);
+
+        log.info("Soubor úspěšně stažen: název={}, velikost={}", filename, fileContent.length);
+
+        return new UrlMultipartFile(fileContent, filename, UtilityMethods.extractContentType(response, filename));
+    }
+
+    private void performSecurityChecks(URL url) throws SecurityException, UnknownHostException {
+        InetAddress address = InetAddress.getByName(url.getHost());
+        String hostAddress = address.getHostAddress();
+
+        if (PRIVATE_IP_PATTERN.matcher(hostAddress).find()) {
+            throw new SecurityException("Přístup k privátním IP adresám není povolen.");
+        }
+
+        if ("localhost".equalsIgnoreCase(url.getHost()) ||
+                "127.0.0.1".equals(url.getHost()) ||
+                "0.0.0.0".equals(url.getHost())) {
+            throw new SecurityException("Přístup k localhost není povolen.");
+        }
+
+        int port = url.getPort() == -1 ? url.getDefaultPort() : url.getPort();
+        if (port != 80 && port != 443) {
+            log.warn("Nestandardní port detekován: {}", port);
         }
     }
 }
