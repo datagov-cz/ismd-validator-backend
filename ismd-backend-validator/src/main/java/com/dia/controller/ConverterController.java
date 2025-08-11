@@ -69,7 +69,7 @@ public class ConverterController {
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponseDto> convertFile(
             @RequestParam(value = "file", required = false) MultipartFile file,
-            @RequestParam(value = "fileUrl", required = false) String fileUrl,
+            @RequestParam(value = "urlString", required = false) String urlString,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
@@ -87,21 +87,21 @@ public class ConverterController {
                     file.getOriginalFilename(), file.getSize(), output, removeInvalidSources, includeDetailedReport);
         }
 
-        if (fileUrl != null) {
+        if (urlString != null) {
             log.info("File conversion requested: fileUrl={}, outputFormat={}, remove invalid sources={}, include detailed report={}",
-                    fileUrl, output, removeInvalidSources, includeDetailedReport);
+                    urlString, output, removeInvalidSources, includeDetailedReport);
         }
 
         try {
-            if (file != null && fileUrl != null) {
+            if (file != null && urlString != null) {
                 return ResponseEntity.badRequest()
                         .body(ConversionResponseDto.error("Můžete zvolit pouze jeden způsob nahrání slovníků."));
             }
 
             MultipartFile processedFile = file;
 
-            if (fileUrl != null) {
-                processedFile = downloadAsMultipartFile(fileUrl);
+            if (urlString != null) {
+                processedFile = downloadAsMultipartFile(urlString);
             }
 
             if (!validateSingleFileUpload(request, requestId)) {
