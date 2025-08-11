@@ -637,16 +637,27 @@ public class EnterpriseArchitectReader {
 
         log.debug("cleanTagValue input: '{}'", value);
 
-        if (value.startsWith("#NOTES#")) {
+        if (value.contains("#NOTES#")) {
             log.debug("Processing #NOTES# format");
 
-            if (value.contains("=")) {
-                int lastEqualPos = value.lastIndexOf("=");
-                value = value.substring(lastEqualPos + 1);
-                log.debug("Extracted value after '=': '{}'", value);
+            if (value.startsWith("#NOTES#")) {
+                if (value.contains("Values:")) {
+                    int valuesIndex = value.indexOf("Values:");
+                    value = value.substring(valuesIndex + "Values:".length()).trim();
+                    log.debug("Extracted value after 'Values:': '{}'", value);
+
+                    if (value.contains(",")) {
+                        value = value.split(",")[0].trim();
+                        log.debug("Extracted first value from comma-separated list: '{}'", value);
+                    }
+                } else {
+                    value = value.substring("#NOTES#".length()).trim();
+                    log.debug("Removed #NOTES# prefix: '{}'", value);
+                }
             } else {
-                value = value.substring("#NOTES#".length());
-                log.debug("Removed #NOTES# prefix: '{}'", value);
+                int notesIndex = value.indexOf("#NOTES#");
+                value = value.substring(0, notesIndex).trim();
+                log.debug("Extracted value before '#NOTES#': '{}'", value);
             }
         }
 
@@ -659,11 +670,9 @@ public class EnterpriseArchitectReader {
 
         value = value.trim();
 
-        value = validateAndCleanSourceValue(value);
-
         log.debug("cleanTagValue output: '{}'", value);
 
-        return value;
+        return value.isEmpty() ? null : value;
     }
 
     private String validateAndCleanSourceValue(String source) {
