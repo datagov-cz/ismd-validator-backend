@@ -10,13 +10,13 @@ import java.io.IOException;
 
 public interface ConverterService {
 
-    ConversionResult processArchiFile(String content, Boolean removeInvalidSources) throws FileParsingException, ConversionException;
+    ConversionResult processArchiFile(String content) throws FileParsingException, ConversionException;
 
-    ConversionResult processEAFile(MultipartFile file, Boolean removeInvalidSources) throws FileParsingException, IOException, ConversionException;
+    ConversionResult processEAFile(MultipartFile file) throws FileParsingException, IOException, ConversionException;
 
-    ConversionResult processExcelFile(MultipartFile file, Boolean removeInvalidSources) throws ExcelReadingException, IOException, ConversionException;
+    ConversionResult processExcelFile(MultipartFile file) throws ExcelReadingException, IOException, ConversionException;
 
-    ConversionResult processSSPOntology(String iri, Boolean removeInvalidSources) throws ConversionException;
+    ConversionResult processSSPOntology(String iri) throws ConversionException;
 
     String exportToJson(FileFormat fileFormat, TransformationResult transformationResult) throws JsonExportException;
 

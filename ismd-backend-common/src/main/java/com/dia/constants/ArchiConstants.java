@@ -8,6 +8,8 @@ public class ArchiConstants {
     public static final String XSD = "http://www.w3.org/2001/XMLSchema#";
     public static final String CONTEXT = "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld";
     public static final String IDENT = "identifier";
+    public static final String CAS_NS = "https://slovník.gov.cz/generický/čas/pojem/";
+    public static final String SLOVNIKY_NS = "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/";
 
     // =============== CORE VOCABULARY TERMS ===============
     public static final String POJEM = "pojem";
@@ -19,17 +21,27 @@ public class ArchiConstants {
     public static final String VEREJNY_UDAJ = "veřejný-údaj";
     public static final String NEVEREJNY_UDAJ = "neveřejný-údaj";
     public static final String DATOVY_TYP = "datový-typ";
+    public static final String CASOVY_OKAMZIK = "časový-okamžik";
+    public static final String SLOVNIK = "slovník";
 
     // =============== PROPERTY NAMES ===============
     public static final String TYP = "typ";
     public static final String POPIS = "popis";
     public static final String DEFINICE = "definice";
-    public static final String ZDROJ = "zdroj";
-    public static final String SOUVISEJICI_ZDROJ = "související-zdroj";
     public static final String ALTERNATIVNI_NAZEV = "alternativní-název";
     public static final String EKVIVALENTNI_POJEM = "ekvivalentní-pojem";
     public static final String IDENTIFIKATOR = "identifikátor";
     public static final String NAZEV = "název";
+    public static final String OKAMZIK_POSLEDNI_ZMENY = "okamžik-poslední-změny";
+    public static final String OKAMZIK_VYTVORENI = "okamžik-vytvoření";
+    public static final String DATUM = "datum";
+    public static final String DATUM_A_CAS = "datum-a-čas";
+    public static final String ZDROJ = "zdroj";
+    public static final String SOUVISEJICI_ZDROJ = "související-zdroj";
+    public static final String DEFINUJICI_USTANOVENI = "definující-ustanovení";
+    public static final String SOUVISEJICI_USTANOVENI = "související-ustanovení";
+    public static final String DEFINUJICI_NELEGISLATIVNI_ZDROJ = "definující-nelegislativní-zdroj";
+    public static final String SOUVISEJICI_NELEGISLATIVNI_ZDROJ = "související-nelegislativní-zdroj";
 
     // =============== DATA GOVERNANCE PROPERTIES ===============
     public static final String AIS = "agendový-informační-systém";
@@ -69,7 +81,7 @@ public class ArchiConstants {
     public static final class PropertySets {
 
         public static final String[] CORE_METADATA = {
-                TYP, POPIS, DEFINICE, ZDROJ, SOUVISEJICI_ZDROJ,
+                TYP, POPIS, DEFINICE, DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI,
                 ALTERNATIVNI_NAZEV, EKVIVALENTNI_POJEM, IDENTIFIKATOR, NAZEV
         };
 

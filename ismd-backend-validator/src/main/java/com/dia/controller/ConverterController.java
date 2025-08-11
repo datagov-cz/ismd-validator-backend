@@ -71,7 +71,6 @@ public class ConverterController {
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "urlString", required = false) String urlString,
             @RequestParam(value = "output", required = false) String output,
-            @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
             @RequestParam(value = "includeCatalogRecord", required = false, defaultValue = "true") Boolean includeCatalogRecord,
             @RequestHeader(value = "Accept", required = false) String acceptHeader,
@@ -82,14 +81,18 @@ public class ConverterController {
 
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
+
+        log.info("File conversion requested: filename={}, size={}, outputFormat={}, include detailed report={}",
+                file.getOriginalFilename(), file.getSize(), output, includeDetailedReport);
+
         if (file != null) {
-            log.info("File conversion requested: filename={}, size={}, outputFormat={}, remove invalid sources={}, include detailed report={}",
-                    file.getOriginalFilename(), file.getSize(), output, removeInvalidSources, includeDetailedReport);
+            log.info("File conversion requested: filename={}, size={}, outputFormat={}, include detailed report={}",
+                    file.getOriginalFilename(), file.getSize(), output, includeDetailedReport);
         }
 
         if (urlString != null) {
-            log.info("File conversion requested: fileUrl={}, outputFormat={}, remove invalid sources={}, include detailed report={}",
-                    urlString, output, removeInvalidSources, includeDetailedReport);
+            log.info("File conversion requested: fileUrl={}, outputFormat={}, include detailed report={}",
+                    urlString, output, includeDetailedReport);
         }
 
         try {
@@ -134,8 +137,8 @@ public class ConverterController {
             return switch (fileFormat) {
                 case ARCHI_XML -> {
                     log.debug("Processing Archi XML file: requestId={}", requestId);
-                    String xmlContent = new String(processedFile.getBytes(), StandardCharsets.UTF_8);
-                    ConversionResult conversionResult = converterService.processArchiFile(xmlContent, removeInvalidSources);
+                    String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+                    ConversionResult conversionResult = converterService.processArchiFile(xmlContent);
 
                     ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
                     ValidationResultsDto results = convertReportToDto(report);
@@ -154,7 +157,7 @@ public class ConverterController {
                 }
                 case XMI -> {
                     log.debug("Processing XMI file: requestId={}", requestId);
-                    ConversionResult conversionResult = converterService.processEAFile(processedFile, removeInvalidSources);
+                    ConversionResult conversionResult = converterService.processEAFile(file);
 
                     ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
                     ValidationResultsDto results = convertReportToDto(report);
@@ -173,7 +176,7 @@ public class ConverterController {
                 }
                 case XLSX -> {
                     log.debug("Processing XLSX file: requestId={}", requestId);
-                    ConversionResult conversionResult = converterService.processExcelFile(processedFile, removeInvalidSources);
+                    ConversionResult conversionResult = converterService.processExcelFile(file);
 
                     ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
                     ValidationResultsDto results = convertReportToDto(report);
@@ -225,7 +228,6 @@ public class ConverterController {
     public ResponseEntity<ConversionResponseDto> convertSSPFromIRI(
             @RequestParam(value = "iri") String iri,
             @RequestParam(value = "output", required = false) String output,
-            @RequestParam(value = "removeInvalidSources", required = false) Boolean removeInvalidSources,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
             @RequestParam(value = "includeCatalogRecord", required = false, defaultValue = "true") Boolean includeCatalogRecord,
             @RequestHeader(value = "Accept", required = false) String acceptHeader
@@ -242,7 +244,7 @@ public class ConverterController {
                         ConversionResponseDto.error("Nebylo vloženo IRI slovníku určeného k převodu.")
                 );
             }
-            ConversionResult conversionResult = converterService.processSSPOntology(iri, removeInvalidSources);
+            ConversionResult conversionResult = converterService.processSSPOntology(iri);
 
             ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
             ValidationResultsDto results = convertReportToDto(report);

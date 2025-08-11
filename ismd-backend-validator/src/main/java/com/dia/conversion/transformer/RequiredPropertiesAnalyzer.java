@@ -1,9 +1,6 @@
 package com.dia.conversion.transformer;
 
-import com.dia.conversion.data.ClassData;
-import com.dia.conversion.data.OntologyData;
-import com.dia.conversion.data.PropertyData;
-import com.dia.conversion.data.RelationshipData;
+import com.dia.conversion.data.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashSet;
@@ -28,6 +25,7 @@ public class RequiredPropertiesAnalyzer {
         checkSpecializedFields();
         checkGovernanceFields();
         checkHierarchies();
+        checkTemporalFields();
 
         log.debug("Analysis found {} required properties", requiredProperties.size());
         return requiredProperties;
@@ -37,7 +35,10 @@ public class RequiredPropertiesAnalyzer {
         if (hasNames()) requiredProperties.add(NAZEV);
         if (hasDescriptions()) requiredProperties.add(POPIS);
         if (hasDefinitions()) requiredProperties.add(DEFINICE);
-        if (hasSources()) requiredProperties.add(ZDROJ);
+        if (hasSources()) requiredProperties.add(DEFINUJICI_USTANOVENI);
+        if (hasSources()) requiredProperties.add(DEFINUJICI_NELEGISLATIVNI_ZDROJ);
+        if (hasSources()) requiredProperties.add(SOUVISEJICI_USTANOVENI);
+        if (hasSources()) requiredProperties.add(SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
         if (hasAlternativeNames()) requiredProperties.add(ALTERNATIVNI_NAZEV);
         if (hasEquivalentConcepts()) requiredProperties.add(EKVIVALENTNI_POJEM);
     }
@@ -66,6 +67,25 @@ public class RequiredPropertiesAnalyzer {
         if (!ontologyData.getHierarchies().isEmpty()) {
             requiredProperties.add(NADRAZENA_TRIDA);
         }
+    }
+
+    private void checkTemporalFields() {
+        VocabularyMetadata metadata = ontologyData.getVocabularyMetadata();
+
+        if (metadata != null && hasTemporalMetadata(metadata)) {
+                requiredProperties.add(OKAMZIK_VYTVORENI);
+                requiredProperties.add(OKAMZIK_POSLEDNI_ZMENY);
+                requiredProperties.add(DATUM);
+                requiredProperties.add(DATUM_A_CAS);
+                log.debug("Added temporal properties due to vocabulary metadata");
+            }
+    }
+
+    private boolean hasTemporalMetadata(VocabularyMetadata metadata) {
+        if (hasNonEmptyValue(metadata.getDateOfModification())) {
+            return true;
+        }
+        return hasNonEmptyValue(metadata.getDateOfCreation());
     }
 
     private boolean hasNames() {

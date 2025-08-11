@@ -103,12 +103,12 @@ public class ConverterEngine {
             }
     );
 
-    public ConversionResult processArchiFile(String content, Boolean removeInvalidSources) throws FileParsingException, ConversionException {
+    public ConversionResult processArchiFile(String content) throws FileParsingException, ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Archi file processing: requestId={}", requestId);
 
         OntologyData ontologyData = parseArchiFromString(content);
-        TransformationResult transformationResult = convertArchi(ontologyData, removeInvalidSources);
+        TransformationResult transformationResult = convertArchi(ontologyData);
 
         return new ConversionResult(ontologyData, transformationResult);
     }
@@ -129,13 +129,13 @@ public class ConverterEngine {
         }
     }
 
-    private TransformationResult convertArchi(OntologyData ontologyData, Boolean removeInvalidSources) throws ConversionException {
+    private TransformationResult convertArchi(OntologyData ontologyData) throws ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Archi model conversion: requestId={}", requestId);
 
         try {
             long startTime = System.currentTimeMillis();
-            TransformationResult result = ofnDataTransformer.transform(ontologyData, removeInvalidSources);
+            TransformationResult result = ofnDataTransformer.transform(ontologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("Archi model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
@@ -145,12 +145,12 @@ public class ConverterEngine {
         }
     }
 
-    public ConversionResult processExcelFile(MultipartFile file, Boolean removeInvalidSources) throws ExcelReadingException, IOException, ConversionException {
+    public ConversionResult processExcelFile(MultipartFile file) throws ExcelReadingException, IOException, ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Excel file processing: requestId={}", requestId);
 
         OntologyData ontologyData = parseExcelFromFile(file);
-        TransformationResult transformationResult = convertExcel(ontologyData, removeInvalidSources);
+        TransformationResult transformationResult = convertExcel(ontologyData);
 
         return new ConversionResult(ontologyData, transformationResult);
     }
@@ -174,14 +174,13 @@ public class ConverterEngine {
         }
     }
 
-    private TransformationResult convertExcel(OntologyData ontologyData, Boolean removeInvalidSources) throws ConversionException {
+    private TransformationResult convertExcel(OntologyData ontologyData) throws ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting Excel model conversion: requestId={}", requestId);
-        log.info("Invalid sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
 
         try {
             long startTime = System.currentTimeMillis();
-            TransformationResult result = ofnDataTransformer.transform(ontologyData, removeInvalidSources);
+            TransformationResult result = ofnDataTransformer.transform(ontologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("Excel model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
@@ -194,12 +193,12 @@ public class ConverterEngine {
         }
     }
 
-    public ConversionResult processEAFile(MultipartFile file, Boolean removeInvalidSources) throws FileParsingException, IOException, ConversionException {
+    public ConversionResult processEAFile(MultipartFile file) throws FileParsingException, IOException, ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting EA file processing: requestId={}", requestId);
 
         OntologyData ontologyData = parseEAFromFile(file);
-        TransformationResult transformationResult = convertEA(ontologyData, removeInvalidSources);
+        TransformationResult transformationResult = convertEA(ontologyData);
 
         return new ConversionResult(ontologyData, transformationResult);
     }
@@ -223,14 +222,13 @@ public class ConverterEngine {
         }
     }
 
-    private TransformationResult convertEA(OntologyData ontologyData, Boolean removeInvalidSources) throws ConversionException {
+    private TransformationResult convertEA(OntologyData ontologyData) throws ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting EA model conversion: requestId={}", requestId);
-        log.info("Sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
 
         try {
             long startTime = System.currentTimeMillis();
-            TransformationResult result = ofnDataTransformer.transform(ontologyData, removeInvalidSources);
+            TransformationResult result = ofnDataTransformer.transform(ontologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("EA model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
@@ -243,12 +241,12 @@ public class ConverterEngine {
         }
     }
 
-    public ConversionResult processSSPOntology(String iri, Boolean removeInvalidSources) throws ConversionException {
+    public ConversionResult processSSPOntology(String iri) throws ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting SSP ontology processing: requestId={}", requestId);
 
         OntologyData ontologyData = parseSSPOntology(iri);
-        TransformationResult transformationResult = convertSSP(ontologyData, removeInvalidSources);
+        TransformationResult transformationResult = convertSSP(ontologyData);
 
         return new ConversionResult(ontologyData, transformationResult);
     }
@@ -269,14 +267,13 @@ public class ConverterEngine {
         }
     }
 
-    private TransformationResult convertSSP(OntologyData ontologyData, Boolean removeInvalidSources) throws ConversionException {
+    private TransformationResult convertSSP(OntologyData ontologyData) throws ConversionException {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.info("Starting SSP model conversion: requestId={}", requestId);
-        log.info("Sources removal requested: {}, requestId={}", removeInvalidSources, requestId);
 
         try {
             long startTime = System.currentTimeMillis();
-            TransformationResult result = ofnDataTransformer.transform(ontologyData, removeInvalidSources);
+            TransformationResult result = ofnDataTransformer.transform(ontologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("SSP model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;

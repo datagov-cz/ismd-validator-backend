@@ -28,12 +28,12 @@ import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ArchiConstants.AGENDA;
 import static com.dia.constants.ArchiConstants.AIS;
 import static com.dia.constants.ArchiConstants.JE_PPDF;
+import static com.dia.constants.ArchiConstants.SLOVNIK;
 import static com.dia.constants.ExcelConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 import static com.dia.constants.ExportConstants.Json.NAZEV;
 import static com.dia.constants.ExportConstants.Json.POPIS;
-
 
 @Component
 @Slf4j
@@ -47,9 +47,9 @@ public class OFNDataTransformer {
         this.uriGenerator = new URIGenerator();
     }
 
-    public TransformationResult transform(OntologyData ontologyData, Boolean removeELI) throws ConversionException {
+    public TransformationResult transform(OntologyData ontologyData) throws ConversionException {
         try {
-            log.info("Starting ontology data transformation...");
+            log.info("Starting ontology data transformation with temporal support...");
 
             if (ontologyData == null || ontologyData.getVocabularyMetadata() == null) {
                 throw new ConversionException("Invalid ontology data");
@@ -76,11 +76,11 @@ public class OFNDataTransformer {
             Map<String, Resource> localPropertyResources = new HashMap<>();
             Map<String, Resource> localRelationshipResources = new HashMap<>();
 
-            createOntologyResource(ontologyData.getVocabularyMetadata(), localResourceMap);
+            createOntologyResourceWithTemporal(ontologyData.getVocabularyMetadata(), localResourceMap);
 
-            transformClasses(ontologyData.getClasses(), localClassResources, localResourceMap, removeELI);
-            transformProperties(ontologyData.getProperties(), localPropertyResources, localResourceMap, removeELI);
-            transformRelationships(ontologyData.getRelationships(), localRelationshipResources, localResourceMap, removeELI);
+            transformClasses(ontologyData.getClasses(), localClassResources, localResourceMap);
+            transformProperties(ontologyData.getProperties(), localPropertyResources, localResourceMap);
+            transformRelationships(ontologyData.getRelationships(), localRelationshipResources, localResourceMap);
             transformHierarchies(ontologyData.getHierarchies(), localClassResources, localPropertyResources, localResourceMap);
 
             Map<String, String> modelProperties = createModelProperties(ontologyData.getVocabularyMetadata());
@@ -201,12 +201,6 @@ public class OFNDataTransformer {
         }
     }
 
-    private void addRelationshipSpecificRequirements(OntologyData ontologyData, Set<String> requiredClasses) {
-        if (!ontologyData.getRelationships().isEmpty()) {
-            requiredClasses.add(VZTAH);
-        }
-    }
-
     private boolean isSubjectType(String type) {
         return type.contains("subjekt") ||
                 type.equalsIgnoreCase("typ subjektu") ||
@@ -217,6 +211,12 @@ public class OFNDataTransformer {
         return type.contains("objekt") ||
                 type.equalsIgnoreCase("typ objektu") ||
                 type.equalsIgnoreCase("Objekt práva");
+    }
+
+    private void addRelationshipSpecificRequirements(OntologyData ontologyData, Set<String> requiredClasses) {
+        if (!ontologyData.getRelationships().isEmpty()) {
+            requiredClasses.add(VZTAH);
+        }
     }
 
     private Set<String> analyzeRequiredProperties(OntologyData ontologyData) {
@@ -239,9 +239,9 @@ public class OFNDataTransformer {
                 (prop.getPrivacyProvision() != null && !prop.getPrivacyProvision().trim().isEmpty());
     }
 
-    private void createOntologyResource(VocabularyMetadata metadata, Map<String, Resource> localResourceMap) {
+    private void createOntologyResourceWithTemporal(VocabularyMetadata metadata, Map<String, Resource> localResourceMap) {
         String ontologyIRI = uriGenerator.generateVocabularyURI(metadata.getName(), null);
-        log.debug("Creating ontology resource with IRI: {}", ontologyIRI);
+        log.debug("Creating ontology resource with temporal support and IRI: {}", ontologyIRI);
 
         ontModel.createOntology(ontologyIRI);
         Resource ontologyResource = ontModel.getResource(ontologyIRI);
@@ -249,6 +249,8 @@ public class OFNDataTransformer {
         if (ontologyResource != null) {
             ontologyResource.addProperty(RDF.type, ontModel.getResource("http://www.w3.org/2002/07/owl#Ontology"));
             ontologyResource.addProperty(RDF.type, SKOS.ConceptScheme);
+
+            ontologyResource.addProperty(RDF.type, ontModel.getResource(SLOVNIKY_NS + SLOVNIK));
 
             if (metadata.getName() != null && !metadata.getName().trim().isEmpty()) {
                 ontologyResource.addProperty(SKOS.prefLabel, metadata.getName(), DEFAULT_LANG);
@@ -259,8 +261,61 @@ public class OFNDataTransformer {
                 DataTypeConverter.addTypedProperty(ontologyResource, descProperty, metadata.getDescription(), DEFAULT_LANG, ontModel);
             }
 
+            addTemporalMetadata(ontologyResource, metadata);
+
             localResourceMap.put("ontology", ontologyResource);
-            log.debug("Ontology resource created successfully: {}", ontologyIRI);
+            log.debug("Ontology resource with temporal support created successfully: {}", ontologyIRI);
+        }
+    }
+
+    private void addTemporalMetadata(Resource vocabularyResource, VocabularyMetadata metadata) {
+        if (metadata.getDateOfCreation() != null && !metadata.getDateOfCreation().trim().isEmpty()) {
+            Resource creationInstant = createTemporalInstant("vytvoření", metadata.getDateOfCreation());
+            if (creationInstant != null) {
+                Property creationProperty = ontModel.createProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
+                vocabularyResource.addProperty(creationProperty, creationInstant);
+                log.debug("Added creation temporal instant to vocabulary with date: {}", metadata.getDateOfCreation());
+            }
+        }
+
+        if (metadata.getDateOfModification() != null && !metadata.getDateOfModification().trim().isEmpty()) {
+            Resource modificationInstant = createTemporalInstant("poslední-změna", metadata.getDateOfModification());
+            if (modificationInstant != null) {
+                Property modificationProperty = ontModel.createProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
+                vocabularyResource.addProperty(modificationProperty, modificationInstant);
+                log.debug("Added modification temporal instant to vocabulary with date: {}", metadata.getDateOfModification());
+            }
+        }
+    }
+
+    private Resource createTemporalInstant(String purpose, String dateTimeValue) {
+        try {
+            if (dateTimeValue == null || dateTimeValue.trim().isEmpty()) {
+                log.warn("Cannot create temporal instant for purpose '{}': empty date/time value", purpose);
+                return null;
+            }
+
+            String trimmedValue = dateTimeValue.trim();
+            String instantURI = uriGenerator.getEffectiveNamespace() + "časový-okamžik-" + purpose + "-" + System.currentTimeMillis();
+            Resource instantResource = ontModel.createResource(instantURI);
+
+            instantResource.addProperty(RDF.type, ontModel.getResource(CAS_NS + CASOVY_OKAMZIK));
+
+            if (trimmedValue.contains("T")) {
+                Property dateTimeProperty = ontModel.createProperty(CAS_NS + DATUM_A_CAS);
+                DataTypeConverter.addTypedProperty(instantResource, dateTimeProperty, trimmedValue, null, ontModel);
+                log.debug("Added dateTime property to temporal instant for purpose '{}': {}", purpose, trimmedValue);
+            } else {
+                Property dateProperty = ontModel.createProperty(CAS_NS + DATUM);
+                DataTypeConverter.addTypedProperty(instantResource, dateProperty, trimmedValue, null, ontModel);
+                log.debug("Added date property to temporal instant for purpose '{}': {}", purpose, trimmedValue);
+            }
+
+            return instantResource;
+        } catch (Exception e) {
+            log.error("Failed to create temporal instant for purpose '{}' with value '{}': {}",
+                    purpose, dateTimeValue, e.getMessage(), e);
+            return null;
         }
     }
 
@@ -295,7 +350,7 @@ public class OFNDataTransformer {
     }
 
     private void transformClasses(List<ClassData> classes, Map<String, Resource> localClassResources,
-                                  Map<String, Resource> localResourceMap, Boolean removeELI) {
+                                  Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} classes", classes.size());
         for (ClassData classData : classes) {
             if (!classData.hasValidData()) {
@@ -303,7 +358,7 @@ public class OFNDataTransformer {
                 continue;
             }
             try {
-                Resource classResource = createClassResource(classData, localResourceMap, removeELI);
+                Resource classResource = createClassResource(classData, localResourceMap);
                 localClassResources.put(classData.getName(), classResource);
                 localResourceMap.put(classData.getName(), classResource);
                 log.debug("Created class: {} -> {}", classData.getName(), classResource.getURI());
@@ -313,14 +368,14 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap, Boolean removeELI) {
+    private Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap) {
         String classURI = uriGenerator.generateConceptURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
         classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
         addSpecificClassType(classResource, classData);
 
-        addResourceMetadata(classResource, ResourceMetadata.from(classData), removeELI);
+        addResourceMetadata(classResource, ResourceMetadata.from(classData));
 
         addClassSpecificMetadata(classResource, classData);
         addSchemeRelationship(classResource, localResourceMap);
@@ -339,11 +394,11 @@ public class OFNDataTransformer {
     }
 
     private void transformProperties(List<PropertyData> properties, Map<String, Resource> localPropertyResources,
-                                     Map<String, Resource> localResourceMap, Boolean removeELI) {
+                                     Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
             try {
-                Resource propertyResource = createPropertyResource(propertyData, localResourceMap, removeELI);
+                Resource propertyResource = createPropertyResource(propertyData, localResourceMap);
                 localPropertyResources.put(propertyData.getName(), propertyResource);
                 localResourceMap.put(propertyData.getName(), propertyResource);
                 log.debug("Created property: {} -> {}", propertyData.getName(), propertyResource.getURI());
@@ -353,17 +408,17 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap, Boolean removeELI) {
+    private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap) {
         String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
         Resource propertyResource = ontModel.createResource(propertyURI);
 
         propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
         propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VLASTNOST));
 
-        addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData), removeELI);
+        addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
 
         addPropertySpecificMetadata(propertyResource, propertyData);
-        addDataGovernanceMetadata(propertyResource, propertyData, removeELI);
+        addDataGovernanceMetadata(propertyResource, propertyData);
         addSchemeRelationship(propertyResource, localResourceMap);
         return propertyResource;
     }
@@ -373,7 +428,7 @@ public class OFNDataTransformer {
 
         if (propertyData.getAlternativeName() != null && !propertyData.getAlternativeName().trim().isEmpty()) {
             log.debug("Processing alternative names for property {}: '{}'", propertyData.getName(), propertyData.getAlternativeName());
-            addAlternativeNames(propertyResource, propertyData.getAlternativeName());
+            addAlternativeNamesAsLangString(propertyResource, propertyData.getAlternativeName());
         }
 
         if (propertyData.getEquivalentConcept() != null && !propertyData.getEquivalentConcept().trim().isEmpty()) {
@@ -389,7 +444,7 @@ public class OFNDataTransformer {
     }
 
     private void transformRelationships(List<RelationshipData> relationships, Map<String, Resource> localRelationshipResources,
-                                        Map<String, Resource> localResourceMap, Boolean removeELI) {
+                                        Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} relationships", relationships.size());
         for (RelationshipData relationshipData : relationships) {
             if (!relationshipData.hasValidData()) {
@@ -397,7 +452,7 @@ public class OFNDataTransformer {
                 continue;
             }
             try {
-                Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap, removeELI);
+                Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap);
                 localRelationshipResources.put(relationshipData.getName(), relationshipResource);
                 localResourceMap.put(relationshipData.getName(), relationshipResource);
                 log.debug("Created relationship: {} -> {}", relationshipData.getName(), relationshipResource.getURI());
@@ -407,7 +462,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap, Boolean removeELI) {
+    private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap) {
         String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(),
                 relationshipData.getIdentifier());
         Resource relationshipResource = ontModel.createResource(relationshipURI);
@@ -416,7 +471,7 @@ public class OFNDataTransformer {
         relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VZTAH));
         relationshipResource.addProperty(RDF.type, ontModel.getProperty("http://www.w3.org/2002/07/owl#ObjectProperty"));
 
-        addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData), removeELI);
+        addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData));
 
         addRelationshipSpecificMetadata(relationshipResource, relationshipData);
         addDomainRangeRelationships(relationshipResource, relationshipData);
@@ -429,7 +484,7 @@ public class OFNDataTransformer {
 
         if (relationshipData.getAlternativeName() != null && !relationshipData.getAlternativeName().trim().isEmpty()) {
             log.debug("Processing alternative names for relationship {}: '{}'", relationshipData.getName(), relationshipData.getAlternativeName());
-            addAlternativeNames(relationshipResource, relationshipData.getAlternativeName());
+            addAlternativeNamesAsLangString(relationshipResource, relationshipData.getAlternativeName());
         } else {
             log.debug("No alternative names found for relationship: {}", relationshipData.getName());
         }
@@ -604,7 +659,7 @@ public class OFNDataTransformer {
         return false;
     }
 
-    private void addResourceMetadata(Resource resource, ResourceMetadata metadata, Boolean removeELI) {
+    private void addResourceMetadata(Resource resource, ResourceMetadata metadata) {
         if (metadata.name() != null && !metadata.name().trim().isEmpty()) {
             DataTypeConverter.addTypedProperty(resource, SKOS.prefLabel, metadata.name(), DEFAULT_LANG, ontModel);
         }
@@ -631,56 +686,81 @@ public class OFNDataTransformer {
         }
 
         if (metadata.source() != null && !metadata.source().trim().isEmpty()) {
-            addSourceReferences(resource, metadata.source(), "dcterms:source", removeELI);
+            processSourceField(resource, metadata.source(), true);
         }
 
         if (metadata.relatedSource() != null && !metadata.relatedSource().trim().isEmpty()) {
-            addSourceReferences(resource, metadata.relatedSource(), "dcterms:references", removeELI);
+            processSourceField(resource, metadata.relatedSource(), false);
         }
     }
 
-    private void addSourceReferences(Resource resource, String sourceUrls, String constant, Boolean removeELI) {
+    private void processSourceField(Resource resource, String sourceUrls, boolean isDefining) {
         if (sourceUrls.contains(";")) {
-            addMultipleSourceUrls(resource, sourceUrls, constant, removeELI);
-        } else {
-            addSingleSourceUrl(resource, sourceUrls, constant, removeELI);
-        }
-    }
-
-    private void addMultipleSourceUrls(Resource resource, String sourceUrlString, String constant, Boolean removeELI) {
-        String[] urls = sourceUrlString.split(";");
-        for (String url : urls) {
-            if (url != null && !url.trim().isEmpty()) {
-                addSingleSourceUrl(resource, url.trim(), constant, removeELI);
+            String[] urls = sourceUrls.split(";");
+            for (String url : urls) {
+                if (url != null && !url.trim().isEmpty()) {
+                    processSingleSource(resource, url.trim(), isDefining);
+                }
             }
+        } else {
+            processSingleSource(resource, sourceUrls, isDefining);
         }
     }
 
-    private void addSingleSourceUrl(Resource resource, String url, String constant, Boolean removeELI) {
+    private void processSingleSource(Resource resource, String url, boolean isDefining) {
         if (url == null || url.trim().isEmpty()) {
             return;
         }
 
-        String transformedUrl = UtilityMethods.transformEliUrl(url, removeELI);
+        String trimmedUrl = url.trim();
 
-        if (transformedUrl == null || transformedUrl.trim().isEmpty()) {
-            log.debug("Skipping invalid/filtered source: {}", url);
-            return;
-        }
-
-        Property sourceProp = switch (constant) {
-            case "dcterms:source" -> ontModel.createProperty("http://purl.org/dc/terms/source");
-            case "dcterms:references" -> ontModel.createProperty("http://purl.org/dc/terms/references");
-            default -> ontModel.createProperty(uriGenerator.getEffectiveNamespace() + constant);
-        };
-
-        if (DataTypeConverter.isUri(transformedUrl)) {
-            resource.addProperty(sourceProp, ontModel.createResource(transformedUrl));
-            log.debug("Added source URL as resource: {}", transformedUrl);
+        if (UtilityMethods.containsEliPattern(trimmedUrl)) {
+            handleEliPart(trimmedUrl, resource, isDefining);
         } else {
-            DataTypeConverter.addTypedProperty(resource, sourceProp, transformedUrl, null, ontModel);
-            log.debug("Added source URL as typed literal: {}", transformedUrl);
+            handleNonEliPart(trimmedUrl, resource, isDefining);
         }
+    }
+
+    private void handleEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
+        String eliPart = UtilityMethods.extractEliPart(trimmedUrl);
+        if (eliPart != null) {
+            String transformedUrl = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+            String propertyName = isDefining ? DEFINUJICI_USTANOVENI : SOUVISEJICI_USTANOVENI;
+
+            Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+
+            if (DataTypeConverter.isUri(transformedUrl)) {
+                resource.addProperty(provisionProperty, ontModel.createResource(transformedUrl));
+                log.debug("Added {} as URI: {} -> {}", propertyName, trimmedUrl, transformedUrl);
+            } else {
+                DataTypeConverter.addTypedProperty(resource, provisionProperty, transformedUrl, null, ontModel);
+                log.debug("Added {} as literal: {} -> {}", propertyName, trimmedUrl, transformedUrl);
+            }
+        } else {
+            log.warn("Failed to extract ELI part from URL: {}", trimmedUrl);
+        }
+    }
+
+    private void handleNonEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
+        String propertyName = isDefining ? DEFINUJICI_NELEGISLATIVNI_ZDROJ : SOUVISEJICI_NELEGISLATIVNI_ZDROJ;
+
+        String documentUri = uriGenerator.getEffectiveNamespace() + "digitální-dokument-" + System.currentTimeMillis();
+        Resource digitalDocument = ontModel.createResource(documentUri);
+
+        Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
+
+        if (DataTypeConverter.isUri(trimmedUrl)) {
+            digitalDocument.addProperty(schemaUrlProperty, ontModel.createResource(trimmedUrl));
+            log.debug("Added schema:url as URI to digital document: {}", trimmedUrl);
+        } else {
+            DataTypeConverter.addTypedProperty(digitalDocument, schemaUrlProperty, trimmedUrl, null, ontModel);
+            log.debug("Added schema:url as literal to digital document: {}", trimmedUrl);
+        }
+
+        Property nonLegislativeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+        resource.addProperty(nonLegislativeProperty, digitalDocument);
+
+        log.debug("Added {} as digital document with schema:url: {}", propertyName, trimmedUrl);
     }
 
     private void addClassSpecificMetadata(Resource classResource, ClassData classData) {
@@ -692,7 +772,7 @@ public class OFNDataTransformer {
 
     private void addAlternativeName(Resource classResource, ClassData classData) {
         if (classData.getAlternativeName() != null && !classData.getAlternativeName().trim().isEmpty()) {
-            addAlternativeNames(classResource, classData.getAlternativeName());
+            addAlternativeNamesAsLangString(classResource, classData.getAlternativeName());
         }
     }
 
@@ -758,20 +838,20 @@ public class OFNDataTransformer {
         }
     }
 
-    private void addAlternativeNames(Resource resource, String altNamesValue) {
+    private void addAlternativeNamesAsLangString(Resource resource, String altNamesValue) {
         if (altNamesValue == null || altNamesValue.isEmpty()) {
             log.debug("No alternative names to add for resource: {}", resource.getLocalName());
             return;
         }
 
-        log.debug("Processing alternative names for {}: '{}'", resource.getLocalName(),
+        log.debug("Processing alternative names as rdf:langString for {}: '{}'", resource.getLocalName(),
                 altNamesValue.length() > 100 ? altNamesValue.substring(0, 100) + "..." : altNamesValue);
 
         Property altNameProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + ALTERNATIVNI_NAZEV);
 
         if (!altNamesValue.contains(";")) {
-            DataTypeConverter.addTypedProperty(resource, altNameProperty, altNamesValue, DEFAULT_LANG, ontModel);
-            log.debug("Added single alternative name for {}: {}", resource.getLocalName(),
+            addLangStringLiteral(resource, altNameProperty, altNamesValue);
+            log.debug("Added single alternative name as rdf:langString for {}: {}", resource.getLocalName(),
                     altNamesValue.length() > 50 ? altNamesValue.substring(0, 50) + "..." : altNamesValue);
             return;
         }
@@ -782,13 +862,30 @@ public class OFNDataTransformer {
         for (String name : altNames) {
             String trimmedName = name.trim();
             if (!trimmedName.isEmpty()) {
-                DataTypeConverter.addTypedProperty(resource, altNameProperty, trimmedName, DEFAULT_LANG, ontModel);
-                log.debug("Added alternative name for {}: {}", resource.getLocalName(),
+                addLangStringLiteral(resource, altNameProperty, trimmedName);
+                log.debug("Added alternative name as rdf:langString for {}: {}", resource.getLocalName(),
                         trimmedName.length() > 50 ? trimmedName.substring(0, 50) + "..." : trimmedName);
             }
         }
 
-        log.debug("Finished processing alternative names for {}", resource.getLocalName());
+        log.debug("Finished processing alternative names as rdf:langString for {}", resource.getLocalName());
+    }
+
+    private void addLangStringLiteral(Resource resource, Property property, String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return;
+        }
+
+        try {
+            var literal = ontModel.createLiteral(value, com.dia.constants.ExportConstants.Common.DEFAULT_LANG);
+            resource.addProperty(property, literal);
+
+            log.debug("Added rdf:langString literal: '{}' with language '{}'", value, com.dia.constants.ExportConstants.Common.DEFAULT_LANG);
+        } catch (Exception e) {
+            log.warn("Failed to create rdf:langString literal for value '{}': {}. Using regular language-tagged literal instead.",
+                    value, e.getMessage());
+            resource.addProperty(property, value, com.dia.constants.ExportConstants.Common.DEFAULT_LANG);
+        }
     }
 
     private void addRangeInformation(Resource propertyResource, PropertyData propertyData) {
@@ -816,9 +913,9 @@ public class OFNDataTransformer {
         }
     }
 
-    private void addDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData, Boolean removeELI) {
+    private void addDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
         addPPDFData(propertyResource, propertyData);
-        addPublicOrNonPublicData(propertyResource, propertyData, removeELI);
+        addPublicOrNonPublicData(propertyResource, propertyData);
         handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), "sharing-method");
         handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), "acquisition-method");
         handleGovernanceProperty(propertyResource, propertyData.getContentType(), "content-type");
@@ -841,73 +938,82 @@ public class OFNDataTransformer {
         }
     }
 
-    private void addPublicOrNonPublicData(Resource propertyResource, PropertyData propertyData, Boolean removeELI) {
+    private void addPublicOrNonPublicData(Resource propertyResource, PropertyData propertyData) {
         String isPublicValue = propertyData.getIsPublic();
         String privacyProvision = propertyData.getPrivacyProvision();
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
-            handleNonPublicData(propertyResource, propertyData, privacyProvision, removeELI);
+            handleNonPublicData(propertyResource, propertyData, privacyProvision);
             return;
         }
 
         if (isPublicValue != null && !isPublicValue.trim().isEmpty()) {
-            if (UtilityMethods.isBooleanValue(isPublicValue)) {
-                Boolean isPublic = UtilityMethods.normalizeCzechBoolean(isPublicValue);
-
-                if (Boolean.TRUE.equals(isPublic)) {
-                    if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
-                        log.warn("Concept '{}' marked as public but has privacy provision '{}' - treating as non-public",
-                                propertyData.getName(), privacyProvision);
-                        handleNonPublicData(propertyResource, propertyData, privacyProvision, removeELI);
-                    } else {
-                        propertyResource.addProperty(RDF.type,
-                                ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
-                        log.debug("Added public data type for concept: {}", propertyData.getName());
-                    }
-                } else {
-                    if (privacyProvision == null || privacyProvision.trim().isEmpty()) {
-                        log.warn("Concept '{}' marked as non-public but has no privacy provision - adding non-public type anyway",
-                                propertyData.getName());
-                    }
-                    handleNonPublicData(propertyResource, propertyData, privacyProvision, removeELI);
-                }
-            } else {
-                log.warn("Unrecognized boolean value for public property: '{}' for concept '{}'",
-                        isPublicValue, propertyData.getName());
-            }
+            handlePublicData(propertyResource, propertyData, isPublicValue, privacyProvision);
         }
     }
 
-    private void handleNonPublicData(Resource propertyResource, PropertyData propertyData, String privacyProvision, Boolean removeELI) {
+    private void handleNonPublicData(Resource propertyResource, PropertyData propertyData, String privacyProvision) {
         propertyResource.addProperty(RDF.type,
                 ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
 
         log.debug("Added non-public data type for concept: {}", propertyData.getName());
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
-            validateAndAddPrivacyProvision(propertyResource, propertyData, privacyProvision, removeELI);
+            validateAndAddPrivacyProvision(propertyResource, propertyData, privacyProvision);
         }
     }
 
-    private void validateAndAddPrivacyProvision(Resource propertyResource, PropertyData propertyData, String provision, Boolean removeELI) {
-        String trimmedProvision = provision.trim();
+    private void handlePublicData(Resource propertyResource, PropertyData propertyData, String isPublicValue, String privacyProvision) {
+        if (UtilityMethods.isBooleanValue(isPublicValue)) {
+            Boolean isPublic = UtilityMethods.normalizeCzechBoolean(isPublicValue);
 
-        String transformedProvision = UtilityMethods.transformEliPrivacyProvision(trimmedProvision, removeELI);
-
-        if (transformedProvision != null && !transformedProvision.trim().isEmpty()) {
-            Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
-
-            if (DataTypeConverter.isUri(transformedProvision)) {
-                propertyResource.addProperty(provisionProperty, ontModel.createResource(transformedProvision));
-                log.debug("Added privacy provision as URI for concept '{}': {} -> {}",
-                        propertyData.getName(), trimmedProvision, transformedProvision);
+            if (Boolean.TRUE.equals(isPublic)) {
+                if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+                    log.warn("Concept '{}' marked as public but has privacy provision '{}' - treating as non-public",
+                            propertyData.getName(), privacyProvision);
+                    handleNonPublicData(propertyResource, propertyData, privacyProvision);
+                } else {
+                    propertyResource.addProperty(RDF.type,
+                            ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    log.debug("Added public data type for concept: {}", propertyData.getName());
+                }
             } else {
-                DataTypeConverter.addTypedProperty(propertyResource, provisionProperty, transformedProvision, null, ontModel);
-                log.debug("Added privacy provision as literal for concept '{}': {} -> {}",
-                        propertyData.getName(), trimmedProvision, transformedProvision);
+                if (privacyProvision == null || privacyProvision.trim().isEmpty()) {
+                    log.warn("Concept '{}' marked as non-public but has no privacy provision - adding non-public type anyway",
+                            propertyData.getName());
+                }
+                handleNonPublicData(propertyResource, propertyData, privacyProvision);
             }
         } else {
-            log.warn("Privacy provision transformation resulted in empty value for concept '{}': '{}'",
+            log.warn("Unrecognized boolean value for public property: '{}' for concept '{}'",
+                    isPublicValue, propertyData.getName());
+        }
+    }
+
+    private void validateAndAddPrivacyProvision(Resource propertyResource, PropertyData propertyData, String provision) {
+        String trimmedProvision = provision.trim();
+
+        if (UtilityMethods.containsEliPattern(trimmedProvision)) {
+            String eliPart = UtilityMethods.extractEliPart(trimmedProvision);
+            if (eliPart != null) {
+                String transformedProvision = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+                Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
+
+                if (DataTypeConverter.isUri(transformedProvision)) {
+                    propertyResource.addProperty(provisionProperty, ontModel.createResource(transformedProvision));
+                    log.debug("Added privacy provision as URI for concept '{}': {} -> {}",
+                            propertyData.getName(), trimmedProvision, transformedProvision);
+                } else {
+                    DataTypeConverter.addTypedProperty(propertyResource, provisionProperty, transformedProvision, null, ontModel);
+                    log.debug("Added privacy provision as literal for concept '{}': {} -> {}",
+                            propertyData.getName(), trimmedProvision, transformedProvision);
+                }
+            } else {
+                log.warn("Failed to extract ELI part from privacy provision for concept '{}': '{}'",
+                        propertyData.getName(), trimmedProvision);
+            }
+        } else {
+            log.debug("Privacy provision does not contain ELI pattern for concept '{}': '{}' - skipping",
                     propertyData.getName(), trimmedProvision);
         }
     }
