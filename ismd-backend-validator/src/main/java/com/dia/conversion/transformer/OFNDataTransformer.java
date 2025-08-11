@@ -143,7 +143,7 @@ public class OFNDataTransformer {
             throw new TurtleExportException("Neočekávaná chyba při exportu do Turtle.", e);
         }
     }
-    
+
     private boolean belongsToCurrentVocabulary(String conceptURI) {
         if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
             return false;
