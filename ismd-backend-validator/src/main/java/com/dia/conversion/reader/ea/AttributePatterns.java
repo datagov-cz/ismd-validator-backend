@@ -30,8 +30,9 @@ public class AttributePatterns {
         });
 
         ATTRIBUTE_PATTERNS.put("ZDROJ", new Pattern[]{
-                Pattern.compile(".*zdroj.*", Pattern.CASE_INSENSITIVE),
-                Pattern.compile(".*source.*", Pattern.CASE_INSENSITIVE)
+                Pattern.compile(".*z[aá]klad.*zdroj.*", Pattern.UNICODE_CASE),
+                Pattern.compile("^(?!.*souvisej).*zdroj.*", Pattern.UNICODE_CASE),
+                Pattern.compile("^(?!.*related).*source.*", Pattern.CASE_INSENSITIVE)
         });
 
         ATTRIBUTE_PATTERNS.put("ALTERNATIVNI_NAZEV", new Pattern[]{
@@ -50,8 +51,8 @@ public class AttributePatterns {
         });
 
         ATTRIBUTE_PATTERNS.put("SOUVISEJICI_ZDROJ", new Pattern[]{
-                Pattern.compile(".*souvisej[ií]c[ií]\\s+zdroj.*", Pattern.UNICODE_CASE),
-                Pattern.compile(".*related.*source.*", Pattern.CASE_INSENSITIVE)
+                Pattern.compile(".*souvisej[ií]c[ií][\\s_-]*zdroj.*", Pattern.UNICODE_CASE),
+                Pattern.compile(".*related[\\s_-]*source.*", Pattern.CASE_INSENSITIVE)
         });
 
         ATTRIBUTE_PATTERNS.put("JE_POJEM_SDILEN_V_PPDF", new Pattern[]{

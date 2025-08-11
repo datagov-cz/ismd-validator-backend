@@ -265,7 +265,10 @@ public class EnterpriseArchitectReader {
         String validatedSource = validateAndCleanSourceValue(rawSource);
         classData.setSource(validatedSource);
 
-        classData.setRelatedSource(getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ"));
+        String rawRelatedSource = getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ");
+        String validatedRelatedSource = validateAndCleanSourceValue(rawRelatedSource);
+        classData.setRelatedSource(validatedRelatedSource);
+
         classData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         classData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
         classData.setId(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
@@ -286,7 +289,10 @@ public class EnterpriseArchitectReader {
         String validatedSource = validateAndCleanSourceValue(rawSource);
         propertyData.setSource(validatedSource);
 
-        propertyData.setRelatedSource(getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ"));
+        String rawRelatedSource = getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ");
+        String validatedRelatedSource = validateAndCleanSourceValue(rawRelatedSource);
+        propertyData.setRelatedSource(validatedRelatedSource);
+
         propertyData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         propertyData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
         propertyData.setIdentifier(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));

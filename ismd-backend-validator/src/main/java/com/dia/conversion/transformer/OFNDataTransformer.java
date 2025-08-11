@@ -707,7 +707,7 @@ public class OFNDataTransformer {
             processSourceField(resource, metadata.relatedSource(), false);
         }
     }
-    
+
     private void processSourceField(Resource resource, String sourceUrls, boolean isDefining) {
         if (sourceUrls == null || sourceUrls.trim().isEmpty()) {
             log.debug("Skipping empty source field for resource: {}", resource.getLocalName());
