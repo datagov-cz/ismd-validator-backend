@@ -707,17 +707,30 @@ public class OFNDataTransformer {
             processSourceField(resource, metadata.relatedSource(), false);
         }
     }
-
+    
     private void processSourceField(Resource resource, String sourceUrls, boolean isDefining) {
-        if (sourceUrls.contains(";")) {
-            String[] urls = sourceUrls.split(";");
-            for (String url : urls) {
-                if (url != null && !url.trim().isEmpty()) {
-                    processSingleSource(resource, url.trim(), isDefining);
+        if (sourceUrls == null || sourceUrls.trim().isEmpty()) {
+            log.debug("Skipping empty source field for resource: {}", resource.getLocalName());
+            return;
+        }
+
+        String trimmedUrls = sourceUrls.trim();
+        log.debug("Processing source field for resource {}: '{}'", resource.getLocalName(),
+                trimmedUrls.length() > 100 ? trimmedUrls.substring(0, 100) + "..." : trimmedUrls);
+
+        if (trimmedUrls.contains(";")) {
+            String[] urls = trimmedUrls.split(";");
+            log.debug("Found {} sources separated by semicolons for resource: {}", urls.length, resource.getLocalName());
+
+            for (int i = 0; i < urls.length; i++) {
+                String url = urls[i].trim();
+                if (!url.isEmpty()) {
+                    log.debug("Processing source part {}/{}: '{}'", i+1, urls.length, url);
+                    processSingleSource(resource, url, isDefining);
                 }
             }
         } else {
-            processSingleSource(resource, sourceUrls, isDefining);
+            processSingleSource(resource, trimmedUrls, isDefining);
         }
     }
 
@@ -727,11 +740,14 @@ public class OFNDataTransformer {
         }
 
         String trimmedUrl = url.trim();
+        log.debug("Processing single source for resource {}: '{}'", resource.getLocalName(), trimmedUrl);
 
         if (UtilityMethods.containsEliPattern(trimmedUrl)) {
             handleEliPart(trimmedUrl, resource, isDefining);
+            log.debug("Processed as ELI (legislative) source: {}", trimmedUrl);
         } else {
             handleNonEliPart(trimmedUrl, resource, isDefining);
+            log.debug("Processed as non-ELI (non-legislative) source: {}", trimmedUrl);
         }
     }
 
@@ -752,13 +768,14 @@ public class OFNDataTransformer {
             }
         } else {
             log.warn("Failed to extract ELI part from URL: {}", trimmedUrl);
+            handleNonEliPart(trimmedUrl, resource, isDefining);
         }
     }
 
     private void handleNonEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
         String propertyName = isDefining ? DEFINUJICI_NELEGISLATIVNI_ZDROJ : SOUVISEJICI_NELEGISLATIVNI_ZDROJ;
 
-        String documentUri = uriGenerator.getEffectiveNamespace() + "digitální-dokument-" + System.currentTimeMillis();
+        String documentUri = uriGenerator.getEffectiveNamespace() + "digitální-dokument-" + Math.abs(trimmedUrl.hashCode());
         Resource digitalDocument = ontModel.createResource(documentUri);
 
         Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");

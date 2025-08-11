@@ -2,6 +2,7 @@ package com.dia.conversion.reader.ea;
 
 import com.dia.conversion.data.*;
 import com.dia.exceptions.FileParsingException;
+import com.dia.utility.UtilityMethods;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
@@ -258,7 +259,12 @@ public class EnterpriseArchitectReader {
         classData.setType(STEREOTYPE_TYP_SUBJEKTU.equals(stereotype) ? "Subjekt práva" : "Objekt práva");
         classData.setDescription(getTagValueByPattern(extensionElement, "POPIS"));
         classData.setDefinition(getTagValueByPattern(extensionElement, "DEFINICE"));
-        classData.setSource(getTagValueByPattern(extensionElement, "ZDROJ"));
+
+
+        String rawSource = getTagValueByPattern(extensionElement, "ZDROJ");
+        String validatedSource = validateAndCleanSourceValue(rawSource);
+        classData.setSource(validatedSource);
+
         classData.setRelatedSource(getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ"));
         classData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         classData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
@@ -275,7 +281,11 @@ public class EnterpriseArchitectReader {
         propertyData.setName(umlElement.getAttribute("name"));
         propertyData.setDescription(getTagValueByPattern(extensionElement, "POPIS"));
         propertyData.setDefinition(getTagValueByPattern(extensionElement, "DEFINICE"));
-        propertyData.setSource(getTagValueByPattern(extensionElement, "ZDROJ"));
+
+        String rawSource = getTagValueByPattern(extensionElement, "ZDROJ");
+        String validatedSource = validateAndCleanSourceValue(rawSource);
+        propertyData.setSource(validatedSource);
+
         propertyData.setRelatedSource(getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ"));
         propertyData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         propertyData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
@@ -614,24 +624,71 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
-    private String cleanTagValue(String value) {
+    public String cleanTagValue(String value) {
         if (value == null) {
             return null;
         }
 
+        log.debug("cleanTagValue input: '{}'", value);
+
         if (value.startsWith("#NOTES#")) {
-            if (value.contains("Values:") && !value.contains("=")) {
-                return null;
-            }
+            log.debug("Processing #NOTES# format");
+
             if (value.contains("=")) {
-                value = value.substring(value.lastIndexOf("=") + 1);
+                int lastEqualPos = value.lastIndexOf("=");
+                value = value.substring(lastEqualPos + 1);
+                log.debug("Extracted value after '=': '{}'", value);
             } else {
-                return null;
+                value = value.substring("#NOTES#".length());
+                log.debug("Removed #NOTES# prefix: '{}'", value);
             }
         }
 
-        value = value.replace("&#xA;", "").trim();
+        value = value.replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&amp;", "&")
+                .replace("&quot;", "\"")
+                .replace("&#xA;", "")
+                .replace("&#x0A;", "");
+
+        value = value.trim();
+
+        value = validateAndCleanSourceValue(value);
+
+        log.debug("cleanTagValue output: '{}'", value);
 
         return value;
+    }
+
+    private String validateAndCleanSourceValue(String source) {
+        if (source == null || source.trim().isEmpty()) {
+            return null;
+        }
+
+        source = source.trim();
+
+        if (!UtilityMethods.isValidSource(source)) {
+            log.debug("Filtering out invalid source: '{}'",
+                    source.length() > 50 ? source.substring(0, 50) + "..." : source);
+            return null;
+        }
+
+        if (source.contains(";")) {
+            String[] parts = source.split(";");
+            List<String> validParts = new ArrayList<>();
+
+            for (String part : parts) {
+                part = part.trim();
+                if (UtilityMethods.isValidSource(part)) {
+                    validParts.add(part);
+                } else {
+                    log.debug("Filtering out invalid source part: '{}'", part);
+                }
+            }
+
+            return validParts.isEmpty() ? null : String.join(";", validParts);
+        }
+
+        return source;
     }
 }
