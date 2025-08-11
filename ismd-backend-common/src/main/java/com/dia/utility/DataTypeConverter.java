@@ -213,7 +213,7 @@ public class DataTypeConverter {
 
         if (lowerName.contains("boolean") || lowerName.contains("flag") ||
                 lowerName.contains("indicator") || lowerName.contains("is") ||
-                lowerName.contains("has") || lowerName.contains("je")) {
+                lowerName.contains("has")) {
             return "xsd:boolean";
         }
 
