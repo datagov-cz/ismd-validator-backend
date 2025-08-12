@@ -24,7 +24,11 @@ public class URIGenerator {
             String trimmedIdentifier = identifier.trim();
 
             if (UtilityMethods.isValidIRI(trimmedIdentifier)) {
-                return trimmedIdentifier;
+                if (trimmedIdentifier.contains("/pojem/")) {
+                    return trimmedIdentifier;
+                }
+                String conceptPart = extractConceptName(trimmedIdentifier);
+                return buildConceptURI(conceptPart);
             }
 
             String sanitizedIdentifier = UtilityMethods.sanitizeForIRI(trimmedIdentifier);
@@ -33,6 +37,11 @@ public class URIGenerator {
 
         String sanitizedName = UtilityMethods.sanitizeForIRI(conceptName);
         return buildConceptURI(sanitizedName);
+    }
+
+    private String extractConceptName(String fullIRI) {
+        int lastSlash = fullIRI.lastIndexOf('/');
+        return lastSlash != -1 ? fullIRI.substring(lastSlash + 1) : fullIRI;
     }
 
     private String buildConceptURI(String sanitizedConceptName) {

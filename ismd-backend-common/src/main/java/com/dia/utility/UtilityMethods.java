@@ -508,4 +508,18 @@ public class UtilityMethods {
         }
         return "text/turtle";
     }
+
+    public boolean isValidSource(String source) {
+        if (source == null || source.trim().isEmpty()) {
+            return false;
+        }
+
+        source = source.trim();
+
+        if (source.length() < 3) {
+            return false;
+        }
+
+        return !source.matches("^[^a-zA-Z0-9]*$");
+    }
 }

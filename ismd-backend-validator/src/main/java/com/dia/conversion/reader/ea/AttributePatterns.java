@@ -15,7 +15,9 @@ public class AttributePatterns {
 
     static {
         ATTRIBUTE_PATTERNS.put("POPIS", new Pattern[]{
-                Pattern.compile(".*popis.*", Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*z[aá]klad.*popis.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*\\b1\\.\\s*z[aá]klad\\s*-\\s*popis.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*popis.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
                 Pattern.compile(".*description.*", Pattern.CASE_INSENSITIVE)
         });
 
@@ -25,13 +27,15 @@ public class AttributePatterns {
         });
 
         ATTRIBUTE_PATTERNS.put("DEFINICE", new Pattern[]{
-                Pattern.compile(".*definice.*", Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*z[aá]klad.*definice.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*definice.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
                 Pattern.compile(".*definition.*", Pattern.CASE_INSENSITIVE)
         });
 
         ATTRIBUTE_PATTERNS.put("ZDROJ", new Pattern[]{
-                Pattern.compile(".*zdroj.*", Pattern.CASE_INSENSITIVE),
-                Pattern.compile(".*source.*", Pattern.CASE_INSENSITIVE)
+                Pattern.compile(".*z[aá]klad.*zdroj.*", Pattern.UNICODE_CASE),
+                Pattern.compile("^(?!.*souvisej).*zdroj.*", Pattern.UNICODE_CASE),
+                Pattern.compile("^(?!.*related).*source.*", Pattern.CASE_INSENSITIVE)
         });
 
         ATTRIBUTE_PATTERNS.put("ALTERNATIVNI_NAZEV", new Pattern[]{
@@ -50,24 +54,30 @@ public class AttributePatterns {
         });
 
         ATTRIBUTE_PATTERNS.put("SOUVISEJICI_ZDROJ", new Pattern[]{
-                Pattern.compile(".*souvisej[ií]c[ií]\\s+zdroj.*", Pattern.UNICODE_CASE),
-                Pattern.compile(".*related.*source.*", Pattern.CASE_INSENSITIVE)
+                Pattern.compile(".*souvisej[ií]c[ií][\\s_-]*zdroj.*", Pattern.UNICODE_CASE),
+                Pattern.compile(".*related[\\s_-]*source.*", Pattern.CASE_INSENSITIVE)
         });
 
         ATTRIBUTE_PATTERNS.put("JE_POJEM_SDILEN_V_PPDF", new Pattern[]{
-                Pattern.compile(".*pojem\\s+sd[ií]len.*ppdf.*", Pattern.UNICODE_CASE),
+                Pattern.compile(".*je\\s+pojem\\s+sd[ií]len.*ppdf.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*pojem\\s+sd[ií]len.*ppdf.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*sd[ií]len.*ppdf.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
                 Pattern.compile(".*shared.*ppdf.*", Pattern.CASE_INSENSITIVE)
         });
 
         ATTRIBUTE_PATTERNS.put("JE_POJEM_VEREJNY", new Pattern[]{
-                Pattern.compile(".*pojem\\s+ve[řr]ejn[ýy].*", Pattern.UNICODE_CASE),
-                Pattern.compile(".*public.*concept.*", Pattern.CASE_INSENSITIVE)
+                Pattern.compile(".*je\\s+pojem\\s+ve[řr]ejn[ýy].*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*pojem\\s+ve[řr]ejn[ýy].*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*ve[řr]ejn[ýy].*\\?.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*ve[řr]ejn[ýy].*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*public.*", Pattern.CASE_INSENSITIVE)
         });
 
         ATTRIBUTE_PATTERNS.put("USTANOVENI_DOKLADAJICI_NEVEREJNOST", new Pattern[]{
-                Pattern.compile(".*ustanoven[ií].*dokl[aá]daj[ií]c[ií].*neve[řr]ejnost.*", Pattern.UNICODE_CASE),
-                Pattern.compile(".*privacy.*provision.*", Pattern.CASE_INSENSITIVE),
-                Pattern.compile(".*neve[řr]ejnost.*pojmu.*", Pattern.UNICODE_CASE)
+                Pattern.compile(".*ustanoven[ií].*dokl[aá]daj[ií]c[ií].*neve[řr]ejnost.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*dokl[aá]daj[ií]c[ií].*neve[řr]ejnost.*pojmu.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*neve[řr]ejnost.*pojmu.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*privacy.*provision.*", Pattern.CASE_INSENSITIVE)
         });
 
         ATTRIBUTE_PATTERNS.put("IDENTIFIKATOR", new Pattern[]{

@@ -2,6 +2,7 @@ package com.dia.conversion.reader.ea;
 
 import com.dia.conversion.data.*;
 import com.dia.exceptions.FileParsingException;
+import com.dia.utility.UtilityMethods;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
@@ -77,8 +78,9 @@ public class EnterpriseArchitectReader {
         List<RelationshipData> relationships = new ArrayList<>();
 
         parseElements(document, vocabularyPackageIds, classes, properties);
-
         parseConnectors(document, vocabularyPackageIds, relationships, classes, properties);
+
+        List<HierarchyData> hierarchies = extractHierarchiesFromClasses(classes, document, vocabularyPackageIds);
 
         log.info("Parsed {} classes, {} properties, {} relationships", classes.size(), properties.size(), relationships.size());
 
@@ -87,6 +89,7 @@ public class EnterpriseArchitectReader {
                 .classes(classes)
                 .properties(properties)
                 .relationships(relationships)
+                .hierarchies(hierarchies)
                 .build();
     }
 
@@ -258,8 +261,16 @@ public class EnterpriseArchitectReader {
         classData.setType(STEREOTYPE_TYP_SUBJEKTU.equals(stereotype) ? "Subjekt práva" : "Objekt práva");
         classData.setDescription(getTagValueByPattern(extensionElement, "POPIS"));
         classData.setDefinition(getTagValueByPattern(extensionElement, "DEFINICE"));
-        classData.setSource(getTagValueByPattern(extensionElement, "ZDROJ"));
-        classData.setRelatedSource(getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ"));
+
+
+        String rawSource = getTagValueByPattern(extensionElement, "ZDROJ");
+        String validatedSource = validateAndCleanSourceValue(rawSource);
+        classData.setSource(validatedSource);
+
+        String rawRelatedSource = getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ");
+        String validatedRelatedSource = validateAndCleanSourceValue(rawRelatedSource);
+        classData.setRelatedSource(validatedRelatedSource);
+
         classData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         classData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
         classData.setId(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
@@ -275,8 +286,15 @@ public class EnterpriseArchitectReader {
         propertyData.setName(umlElement.getAttribute("name"));
         propertyData.setDescription(getTagValueByPattern(extensionElement, "POPIS"));
         propertyData.setDefinition(getTagValueByPattern(extensionElement, "DEFINICE"));
-        propertyData.setSource(getTagValueByPattern(extensionElement, "ZDROJ"));
-        propertyData.setRelatedSource(getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ"));
+
+        String rawSource = getTagValueByPattern(extensionElement, "ZDROJ");
+        String validatedSource = validateAndCleanSourceValue(rawSource);
+        propertyData.setSource(validatedSource);
+
+        String rawRelatedSource = getTagValueByPattern(extensionElement, "SOUVISEJICI_ZDROJ");
+        String validatedRelatedSource = validateAndCleanSourceValue(rawRelatedSource);
+        propertyData.setRelatedSource(validatedRelatedSource);
+
         propertyData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         propertyData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
         propertyData.setIdentifier(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
@@ -468,6 +486,100 @@ public class EnterpriseArchitectReader {
         return false;
     }
 
+    private List<HierarchyData> extractHierarchiesFromClasses(List<ClassData> classes, Document document,
+                                                              Set<String> vocabularyPackageIds) {
+        List<HierarchyData> hierarchies = new ArrayList<>();
+
+        log.debug("Extracting hierarchies from {} classes", classes.size());
+
+        for (ClassData classData : classes) {
+            if (classData.getSuperClass() != null && !classData.getSuperClass().trim().isEmpty()) {
+                HierarchyData hierarchy = new HierarchyData();
+                hierarchy.setSubClass(classData.getName());
+                hierarchy.setSuperClass(classData.getSuperClass());
+
+                enrichHierarchyWithConnectorData(hierarchy, document, vocabularyPackageIds);
+
+                hierarchies.add(hierarchy);
+                log.debug("Created hierarchy: {} -> {}", classData.getName(), classData.getSuperClass());
+            }
+        }
+
+        log.info("Extracted {} hierarchical relationships from classes", hierarchies.size());
+        return hierarchies;
+    }
+
+    private void enrichHierarchyWithConnectorData(HierarchyData hierarchy, Document document,
+                                                  Set<String> vocabularyPackageIds) {
+        NodeList connectors = document.getElementsByTagName("connector");
+
+        for (int i = 0; i < connectors.getLength(); i++) {
+            Element connector = (Element) connectors.item(i);
+
+            if (!isConnectorInVocabulary(document, connector, vocabularyPackageIds)) {
+                continue;
+            }
+
+            String connectorType = getConnectorType(connector);
+            if (!"Generalization".equals(connectorType)) {
+                continue;
+            }
+
+            if (isConnectorMatchingHierarchy(connector, hierarchy, document)) {
+                String connectorName = connector.getAttribute("name");
+                if (!connectorName.trim().isEmpty()) {
+                    hierarchy.setRelationshipName(connectorName);
+                } else {
+                    hierarchy.setRelationshipName("rdfs:subClassOf");
+                }
+
+                String connectorId = connector.getAttribute("xmi:id");
+                if (!connectorId.trim().isEmpty()) {
+                    hierarchy.setRelationshipId(connectorId);
+                }
+
+                String description = getTagValueByPattern(connector, "POPIS");
+                if (description != null && !description.trim().isEmpty()) {
+                    hierarchy.setDescription(description);
+                }
+
+                String definition = getTagValueByPattern(connector, "DEFINICE");
+                if (definition != null && !definition.trim().isEmpty()) {
+                    hierarchy.setDefinition(definition);
+                }
+
+                String source = getTagValueByPattern(connector, "ZDROJ");
+                if (source != null && !source.trim().isEmpty()) {
+                    hierarchy.setSource(validateAndCleanSourceValue(source));
+                }
+
+                log.debug("Enriched hierarchy {} -> {} with connector data",
+                        hierarchy.getSubClass(), hierarchy.getSuperClass());
+                break;
+            }
+        }
+    }
+
+    private boolean isConnectorMatchingHierarchy(Element connector, HierarchyData hierarchy, Document document) {
+        NodeList sources = connector.getElementsByTagName(SOURCE);
+        NodeList targets = connector.getElementsByTagName(TARGET);
+
+        if (sources.getLength() == 0 || targets.getLength() == 0) {
+            return false;
+        }
+
+        Element source = (Element) sources.item(0);
+        Element target = (Element) targets.item(0);
+
+        String childId = source.getAttribute(XMI_IDREF);
+        String parentId = target.getAttribute(XMI_IDREF);
+
+        String childName = getElementName(document, childId);
+        String parentName = getElementName(document, parentId);
+
+        return hierarchy.getSubClass().equals(childName) && hierarchy.getSuperClass().equals(parentName);
+    }
+
     private RelationshipData parseRelationshipData(Document document, Element connector) {
         RelationshipData relationshipData = new RelationshipData();
 
@@ -545,21 +657,35 @@ public class EnterpriseArchitectReader {
 
         for (int patternIndex = 0; patternIndex < patterns.length; patternIndex++) {
             Pattern pattern = patterns[patternIndex];
+            log.debug("Trying pattern #{}: '{}'", patternIndex, pattern.pattern());
 
             for (String tagName : availableTags) {
-                if (pattern.matcher(tagName).matches()) {
-                    String value = getTagValue(element, tagName);
-                    if (value != null && !value.trim().isEmpty()) {
-                        log.debug("Found value for '{}' using pattern #{} '{}' -> tag '{}': {}",
-                                logicalAttributeName, patternIndex, pattern.pattern(), tagName,
-                                value.length() > 100 ? value.substring(0, 100) + "..." : value);
-                        return value;
+                boolean matches = pattern.matcher(tagName).matches();
+                log.debug("Pattern '{}' vs tag '{}': {}", pattern.pattern(), tagName, matches);
+
+                if (matches) {
+                    String rawValue = getTagValue(element, tagName);
+                    log.debug("Raw value from tag '{}': '{}'", tagName, rawValue);
+
+                    if (rawValue != null && !rawValue.trim().isEmpty()) {
+                        String cleanedValue = cleanTagValue(rawValue);
+                        log.debug("Cleaned value: '{}'", cleanedValue);
+
+                        if (cleanedValue != null && !cleanedValue.trim().isEmpty()) {
+                            log.debug("Found value for '{}' using pattern #{} '{}' -> tag '{}': {}",
+                                    logicalAttributeName, patternIndex, pattern.pattern(), tagName, cleanedValue);
+                            return cleanedValue;
+                        } else {
+                            log.debug("Cleaned value is empty for tag '{}', continuing search", tagName);
+                        }
+                    } else {
+                        log.debug("Raw value is null/empty for tag '{}', continuing search", tagName);
                     }
                 }
             }
         }
 
-        log.debug("No matching tag found for logical attribute '{}' with patterns: {}",
+        log.debug("No matching tag with non-empty value found for logical attribute '{}' with patterns: {}",
                 logicalAttributeName, Arrays.toString(patterns));
         return null;
     }
@@ -614,24 +740,66 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
-    private String cleanTagValue(String value) {
+    public String cleanTagValue(String value) {
         if (value == null) {
             return null;
         }
 
-        if (value.startsWith("#NOTES#")) {
-            if (value.contains("Values:") && !value.contains("=")) {
-                return null;
-            }
-            if (value.contains("=")) {
-                value = value.substring(value.lastIndexOf("=") + 1);
-            } else {
-                return null;
-            }
+        log.debug("cleanTagValue input: '{}'", value);
+
+        String cleanedValue = value;
+
+        if (cleanedValue.contains("#NOTES#")) {
+            log.debug("Processing #NOTES# format");
+
+            int notesIndex = cleanedValue.indexOf("#NOTES#");
+            cleanedValue = cleanedValue.substring(0, notesIndex).trim();
+            log.debug("Extracted value before '#NOTES#': '{}'", cleanedValue);
         }
 
-        value = value.replace("&#xA;", "").trim();
+        cleanedValue = cleanedValue.replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&amp;", "&")
+                .replace("&quot;", "\"")
+                .replace("&#xA;", "")
+                .replace("&#x0A;", "");
 
-        return value;
+        cleanedValue = cleanedValue.trim();
+
+        log.debug("cleanTagValue output: '{}'", cleanedValue);
+
+        return cleanedValue.isEmpty() ? null : cleanedValue;
+    }
+
+    private String validateAndCleanSourceValue(String source) {
+        if (source == null || source.trim().isEmpty()) {
+            return null;
+        }
+
+        source = source.trim();
+
+        if (!UtilityMethods.isValidSource(source)) {
+            log.debug("Filtering out invalid source: '{}'",
+                    source.length() > 50 ? source.substring(0, 50) + "..." : source);
+            return null;
+        }
+
+        if (source.contains(";")) {
+            String[] parts = source.split(";");
+            List<String> validParts = new ArrayList<>();
+
+            for (String part : parts) {
+                part = part.trim();
+                if (UtilityMethods.isValidSource(part)) {
+                    validParts.add(part);
+                } else {
+                    log.debug("Filtering out invalid source part: '{}'", part);
+                }
+            }
+
+            return validParts.isEmpty() ? null : String.join(";", validParts);
+        }
+
+        return source;
     }
 }
