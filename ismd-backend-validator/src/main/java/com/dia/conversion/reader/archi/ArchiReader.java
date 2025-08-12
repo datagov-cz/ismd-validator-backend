@@ -217,8 +217,8 @@ public class ArchiReader {
 
         classData.setDescription(properties.get(POPIS));
         classData.setDefinition(properties.get(DEFINICE));
-        classData.setSource(properties.get(ZDROJ));
         classData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
+        classData.setSource(properties.get(ZDROJ));
         classData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
         classData.setEquivalentConcept(properties.get(EKVIVALENTNI_POJEM));
         classData.setAgendaCode(properties.get(AGENDA));
@@ -319,8 +319,8 @@ public class ArchiReader {
 
         propertyData.setDescription(properties.get(POPIS));
         propertyData.setDefinition(properties.get(DEFINICE));
+        propertyData.setSource(properties.get(SOUVISEJICI_ZDROJ));
         propertyData.setSource(properties.get(ZDROJ));
-        propertyData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         propertyData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
         propertyData.setDataType(properties.get(DATOVY_TYP));
 
@@ -561,20 +561,14 @@ public class ArchiReader {
     }
 
     private void mapStandardizedLabel(String propId, String propName) {
-        if ("související zdroj".equals(propName)) {
-            propertyMapping.put(propId, SOUVISEJICI_ZDROJ);
-            return;
-        }
-        if ("zdroj".equals(propName)) {
-            propertyMapping.put(propId, ZDROJ);
-            return;
-        }
         if ("ekvivalentní pojem".equals(propName)) {
             propertyMapping.put(propId, EKVIVALENTNI_POJEM);
             return;
         }
 
         Map<String, String> labelPatterns = new HashMap<>();
+        labelPatterns.put("související zdroj", SOUVISEJICI_ZDROJ);
+        labelPatterns.put("zdroj", ZDROJ);
         labelPatterns.put("popis", POPIS);
         labelPatterns.put("definice", DEFINICE);
         labelPatterns.put("identifikátor", IDENTIFIKATOR);
