@@ -16,6 +16,7 @@ public class AttributePatterns {
     static {
         ATTRIBUTE_PATTERNS.put("POPIS", new Pattern[]{
                 Pattern.compile(".*z[aá]klad.*popis.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*\\b1\\.\\s*z[aá]klad\\s*-\\s*popis.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
                 Pattern.compile(".*popis.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
                 Pattern.compile(".*description.*", Pattern.CASE_INSENSITIVE)
         });
@@ -67,8 +68,9 @@ public class AttributePatterns {
         ATTRIBUTE_PATTERNS.put("JE_POJEM_VEREJNY", new Pattern[]{
                 Pattern.compile(".*je\\s+pojem\\s+ve[řr]ejn[ýy].*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
                 Pattern.compile(".*pojem\\s+ve[řr]ejn[ýy].*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*ve[řr]ejn[ýy].*\\?.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
                 Pattern.compile(".*ve[řr]ejn[ýy].*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
-                Pattern.compile(".*public.*concept.*", Pattern.CASE_INSENSITIVE)
+                Pattern.compile(".*public.*", Pattern.CASE_INSENSITIVE)
         });
 
         ATTRIBUTE_PATTERNS.put("USTANOVENI_DOKLADAJICI_NEVEREJNOST", new Pattern[]{
