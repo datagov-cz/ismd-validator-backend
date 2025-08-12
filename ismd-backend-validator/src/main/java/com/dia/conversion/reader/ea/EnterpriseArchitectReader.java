@@ -78,8 +78,9 @@ public class EnterpriseArchitectReader {
         List<RelationshipData> relationships = new ArrayList<>();
 
         parseElements(document, vocabularyPackageIds, classes, properties);
-
         parseConnectors(document, vocabularyPackageIds, relationships, classes, properties);
+
+        List<HierarchyData> hierarchies = extractHierarchiesFromClasses(classes, document, vocabularyPackageIds);
 
         log.info("Parsed {} classes, {} properties, {} relationships", classes.size(), properties.size(), relationships.size());
 
@@ -88,6 +89,7 @@ public class EnterpriseArchitectReader {
                 .classes(classes)
                 .properties(properties)
                 .relationships(relationships)
+                .hierarchies(hierarchies)
                 .build();
     }
 
@@ -482,6 +484,100 @@ public class EnterpriseArchitectReader {
         }
         log.debug("Element {} not found in main model", elementId);
         return false;
+    }
+
+    private List<HierarchyData> extractHierarchiesFromClasses(List<ClassData> classes, Document document,
+                                                              Set<String> vocabularyPackageIds) {
+        List<HierarchyData> hierarchies = new ArrayList<>();
+
+        log.debug("Extracting hierarchies from {} classes", classes.size());
+
+        for (ClassData classData : classes) {
+            if (classData.getSuperClass() != null && !classData.getSuperClass().trim().isEmpty()) {
+                HierarchyData hierarchy = new HierarchyData();
+                hierarchy.setSubClass(classData.getName());
+                hierarchy.setSuperClass(classData.getSuperClass());
+
+                enrichHierarchyWithConnectorData(hierarchy, document, vocabularyPackageIds);
+
+                hierarchies.add(hierarchy);
+                log.debug("Created hierarchy: {} -> {}", classData.getName(), classData.getSuperClass());
+            }
+        }
+
+        log.info("Extracted {} hierarchical relationships from classes", hierarchies.size());
+        return hierarchies;
+    }
+
+    private void enrichHierarchyWithConnectorData(HierarchyData hierarchy, Document document,
+                                                  Set<String> vocabularyPackageIds) {
+        NodeList connectors = document.getElementsByTagName("connector");
+
+        for (int i = 0; i < connectors.getLength(); i++) {
+            Element connector = (Element) connectors.item(i);
+
+            if (!isConnectorInVocabulary(document, connector, vocabularyPackageIds)) {
+                continue;
+            }
+
+            String connectorType = getConnectorType(connector);
+            if (!"Generalization".equals(connectorType)) {
+                continue;
+            }
+
+            if (isConnectorMatchingHierarchy(connector, hierarchy, document)) {
+                String connectorName = connector.getAttribute("name");
+                if (!connectorName.trim().isEmpty()) {
+                    hierarchy.setRelationshipName(connectorName);
+                } else {
+                    hierarchy.setRelationshipName("rdfs:subClassOf");
+                }
+
+                String connectorId = connector.getAttribute("xmi:id");
+                if (!connectorId.trim().isEmpty()) {
+                    hierarchy.setRelationshipId(connectorId);
+                }
+
+                String description = getTagValueByPattern(connector, "POPIS");
+                if (description != null && !description.trim().isEmpty()) {
+                    hierarchy.setDescription(description);
+                }
+
+                String definition = getTagValueByPattern(connector, "DEFINICE");
+                if (definition != null && !definition.trim().isEmpty()) {
+                    hierarchy.setDefinition(definition);
+                }
+
+                String source = getTagValueByPattern(connector, "ZDROJ");
+                if (source != null && !source.trim().isEmpty()) {
+                    hierarchy.setSource(validateAndCleanSourceValue(source));
+                }
+
+                log.debug("Enriched hierarchy {} -> {} with connector data",
+                        hierarchy.getSubClass(), hierarchy.getSuperClass());
+                break;
+            }
+        }
+    }
+
+    private boolean isConnectorMatchingHierarchy(Element connector, HierarchyData hierarchy, Document document) {
+        NodeList sources = connector.getElementsByTagName(SOURCE);
+        NodeList targets = connector.getElementsByTagName(TARGET);
+
+        if (sources.getLength() == 0 || targets.getLength() == 0) {
+            return false;
+        }
+
+        Element source = (Element) sources.item(0);
+        Element target = (Element) targets.item(0);
+
+        String childId = source.getAttribute(XMI_IDREF);
+        String parentId = target.getAttribute(XMI_IDREF);
+
+        String childName = getElementName(document, childId);
+        String parentName = getElementName(document, parentId);
+
+        return hierarchy.getSubClass().equals(childName) && hierarchy.getSuperClass().equals(parentName);
     }
 
     private RelationshipData parseRelationshipData(Document document, Element connector) {

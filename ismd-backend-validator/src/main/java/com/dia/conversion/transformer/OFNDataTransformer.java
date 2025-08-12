@@ -145,7 +145,7 @@ public class OFNDataTransformer {
     }
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
-        if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
+        /*if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
             return false;
         }
 
@@ -153,6 +153,10 @@ public class OFNDataTransformer {
         log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
                 conceptURI, belongs, uriGenerator.getEffectiveNamespace());
         return belongs;
+
+         */
+
+        return true;
     }
 
     private Set<String> analyzeRequiredBaseClasses(OntologyData ontologyData) {
@@ -1052,6 +1056,12 @@ public class OFNDataTransformer {
     private void handleGovernanceProperty(Resource resource, String value, String propertyType) {
         if (value == null || value.trim().isEmpty()) {
             log.debug("Skipping empty governance property '{}' for resource: {}", propertyType, resource.getLocalName());
+            return;
+        }
+
+        List<String> allowedValues = List.of("veřejně přístupné", "poskytované na žádost", "nesdílené", "základních registrů", "jiných agend", "vlastní", "provozní", "identifikační", "evidenční", "statistické");
+        if (!allowedValues.contains(value.toLowerCase())) {
+            log.debug("Skipping unsupported governance property value '{}' for resource: {}", propertyType, resource.getLocalName());
             return;
         }
 
