@@ -657,21 +657,35 @@ public class EnterpriseArchitectReader {
 
         for (int patternIndex = 0; patternIndex < patterns.length; patternIndex++) {
             Pattern pattern = patterns[patternIndex];
+            log.debug("Trying pattern #{}: '{}'", patternIndex, pattern.pattern());
 
             for (String tagName : availableTags) {
-                if (pattern.matcher(tagName).matches()) {
-                    String value = getTagValue(element, tagName);
-                    if (value != null && !value.trim().isEmpty()) {
-                        log.debug("Found value for '{}' using pattern #{} '{}' -> tag '{}': {}",
-                                logicalAttributeName, patternIndex, pattern.pattern(), tagName,
-                                value.length() > 100 ? value.substring(0, 100) + "..." : value);
-                        return value;
+                boolean matches = pattern.matcher(tagName).matches();
+                log.debug("Pattern '{}' vs tag '{}': {}", pattern.pattern(), tagName, matches);
+
+                if (matches) {
+                    String rawValue = getTagValue(element, tagName);
+                    log.debug("Raw value from tag '{}': '{}'", tagName, rawValue);
+
+                    if (rawValue != null && !rawValue.trim().isEmpty()) {
+                        String cleanedValue = cleanTagValue(rawValue);
+                        log.debug("Cleaned value: '{}'", cleanedValue);
+
+                        if (cleanedValue != null && !cleanedValue.trim().isEmpty()) {
+                            log.debug("Found value for '{}' using pattern #{} '{}' -> tag '{}': {}",
+                                    logicalAttributeName, patternIndex, pattern.pattern(), tagName, cleanedValue);
+                            return cleanedValue;
+                        } else {
+                            log.debug("Cleaned value is empty for tag '{}', continuing search", tagName);
+                        }
+                    } else {
+                        log.debug("Raw value is null/empty for tag '{}', continuing search", tagName);
                     }
                 }
             }
         }
 
-        log.debug("No matching tag found for logical attribute '{}' with patterns: {}",
+        log.debug("No matching tag with non-empty value found for logical attribute '{}' with patterns: {}",
                 logicalAttributeName, Arrays.toString(patterns));
         return null;
     }
@@ -733,42 +747,28 @@ public class EnterpriseArchitectReader {
 
         log.debug("cleanTagValue input: '{}'", value);
 
-        if (value.contains("#NOTES#")) {
+        String cleanedValue = value;
+
+        if (cleanedValue.contains("#NOTES#")) {
             log.debug("Processing #NOTES# format");
 
-            if (value.startsWith("#NOTES#")) {
-                if (value.contains("Values:")) {
-                    int valuesIndex = value.indexOf("Values:");
-                    value = value.substring(valuesIndex + "Values:".length()).trim();
-                    log.debug("Extracted value after 'Values:': '{}'", value);
-
-                    if (value.contains(",")) {
-                        value = value.split(",")[0].trim();
-                        log.debug("Extracted first value from comma-separated list: '{}'", value);
-                    }
-                } else {
-                    value = value.substring("#NOTES#".length()).trim();
-                    log.debug("Removed #NOTES# prefix: '{}'", value);
-                }
-            } else {
-                int notesIndex = value.indexOf("#NOTES#");
-                value = value.substring(0, notesIndex).trim();
-                log.debug("Extracted value before '#NOTES#': '{}'", value);
-            }
+            int notesIndex = cleanedValue.indexOf("#NOTES#");
+            cleanedValue = cleanedValue.substring(0, notesIndex).trim();
+            log.debug("Extracted value before '#NOTES#': '{}'", cleanedValue);
         }
 
-        value = value.replace("&lt;", "<")
+        cleanedValue = cleanedValue.replace("&lt;", "<")
                 .replace("&gt;", ">")
                 .replace("&amp;", "&")
                 .replace("&quot;", "\"")
                 .replace("&#xA;", "")
                 .replace("&#x0A;", "");
 
-        value = value.trim();
+        cleanedValue = cleanedValue.trim();
 
-        log.debug("cleanTagValue output: '{}'", value);
+        log.debug("cleanTagValue output: '{}'", cleanedValue);
 
-        return value.isEmpty() ? null : value;
+        return cleanedValue.isEmpty() ? null : cleanedValue;
     }
 
     private String validateAndCleanSourceValue(String source) {
