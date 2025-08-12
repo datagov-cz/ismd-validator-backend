@@ -145,7 +145,7 @@ public class OFNDataTransformer {
     }
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
-        /*if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
+        if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
             return false;
         }
 
@@ -153,10 +153,6 @@ public class OFNDataTransformer {
         log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
                 conceptURI, belongs, uriGenerator.getEffectiveNamespace());
         return belongs;
-
-         */
-
-        return true;
     }
 
     private Set<String> analyzeRequiredBaseClasses(OntologyData ontologyData) {
