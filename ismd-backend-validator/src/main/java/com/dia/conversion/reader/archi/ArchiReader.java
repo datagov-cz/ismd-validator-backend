@@ -574,18 +574,20 @@ public class ArchiReader {
             return;
         }
 
-        Map<String, String> labelPatterns = Map.of(
-                "popis", POPIS,
-                "definice", DEFINICE,
-                "identifikátor", IDENTIFIKATOR,
-                "ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST,
-                "agenda", AGENDA,
-                "agendový informační systém", AIS,
-                "je pojem sdílen v PPDF?", JE_PPDF,
-                "je pojem veřejný?", JE_VEREJNY,
-                "alternativní název", ALTERNATIVNI_NAZEV,
-                "datový typ", DATOVY_TYP
-        );
+        Map<String, String> labelPatterns = new HashMap<>();
+        labelPatterns.put("popis", POPIS);
+        labelPatterns.put("definice", DEFINICE);
+        labelPatterns.put("identifikátor", IDENTIFIKATOR);
+        labelPatterns.put("ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST);
+        labelPatterns.put("agenda", AGENDA);
+        labelPatterns.put("agendový informační systém", AIS);
+        labelPatterns.put("je pojem sdílen v PPDF?", JE_PPDF);
+        labelPatterns.put("je pojem veřejný?", JE_VEREJNY);
+        labelPatterns.put("alternativní název", ALTERNATIVNI_NAZEV);
+        labelPatterns.put("datový typ", DATOVY_TYP);
+        labelPatterns.put("způsob sdílení údaje", ZPUSOB_SDILENI);
+        labelPatterns.put("způsob získání údaje", ZPUSOB_ZISKANI);
+        labelPatterns.put("typ obsahu údaje", TYP_OBSAHU);
 
         for (Map.Entry<String, String> pattern : labelPatterns.entrySet()) {
             if (propName.contains(pattern.getKey())) {
