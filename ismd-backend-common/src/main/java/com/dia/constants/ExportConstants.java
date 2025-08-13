@@ -20,6 +20,9 @@ public class ExportConstants {
         public static final String TYPE_TEZAURUS = "Tezaurus";
         public static final String TYPE_KM = "Konceptuální model";
 
+        public static final String XSD_NS = "http://www.w3.org/2001/XMLSchema#";
+        public static final String RDFS_NS = "http://www.w3.org/2000/01/rdf-schema#";
+
         // =============== JSON-LD TYPE MAPPINGS ===============
         public static final String POJEM_JSON_LD = "Pojem";
         public static final String TRIDA_JSON_LD = "Třída";
@@ -29,6 +32,7 @@ public class ExportConstants {
         public static final String TOP_JSON_LD = "Typ objektu práva";
         public static final String VEREJNY_UDAJ_JSON_LD = "Veřejný údaj";
         public static final String NEVEREJNY_UDAJ_JSON_LD = "Neveřejný údaj";
+        public static final String OBOR_HODNOT_JSON_LD = "obor-hodnot";
 
         private Json() {
         }
