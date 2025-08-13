@@ -759,12 +759,11 @@ public class OFNDataTransformer {
 
             Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
 
-            if (DataTypeConverter.isUri(transformedUrl)) {
+            if (UtilityMethods.isValidUrl(transformedUrl)) {
                 resource.addProperty(provisionProperty, ontModel.createResource(transformedUrl));
                 log.debug("Added {} as URI: {} -> {}", propertyName, trimmedUrl, transformedUrl);
             } else {
-                DataTypeConverter.addTypedProperty(resource, provisionProperty, transformedUrl, null, ontModel);
-                log.debug("Added {} as literal: {} -> {}", propertyName, trimmedUrl, transformedUrl);
+                log.debug("Skipped {}, invalid URL value: {} -> {}", propertyName, trimmedUrl, transformedUrl);
             }
         } else {
             log.warn("Failed to extract ELI part from URL: {}", trimmedUrl);
@@ -780,12 +779,11 @@ public class OFNDataTransformer {
 
         Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
 
-        if (DataTypeConverter.isUri(trimmedUrl)) {
+        if (UtilityMethods.isValidUrl(trimmedUrl)) {
             digitalDocument.addProperty(schemaUrlProperty, ontModel.createResource(trimmedUrl));
             log.debug("Added schema:url as URI to digital document: {}", trimmedUrl);
         } else {
-            DataTypeConverter.addTypedProperty(digitalDocument, schemaUrlProperty, trimmedUrl, null, ontModel);
-            log.debug("Added schema:url as literal to digital document: {}", trimmedUrl);
+            log.debug("Skipped {}, invalid URL value: {}", propertyName, trimmedUrl);
         }
 
         Property nonLegislativeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
