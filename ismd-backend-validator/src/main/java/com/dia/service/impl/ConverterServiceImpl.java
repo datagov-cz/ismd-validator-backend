@@ -19,23 +19,23 @@ public class ConverterServiceImpl implements ConverterService {
     private final ConverterEngine converterEngine;
 
     @Override
-    public ConversionResult processArchiFile(String content, Boolean removeInvalidSources) throws FileParsingException, ConversionException {
-        return converterEngine.processArchiFile(content, removeInvalidSources);
+    public ConversionResult processArchiFile(String content) throws FileParsingException, ConversionException {
+        return converterEngine.processArchiFile(content);
     }
 
     @Override
-    public ConversionResult processExcelFile(MultipartFile file, Boolean removeInvalidSources) throws ExcelReadingException, IOException, ConversionException {
-        return converterEngine.processExcelFile(file, removeInvalidSources);
+    public ConversionResult processExcelFile(MultipartFile file) throws ExcelReadingException, IOException, ConversionException {
+        return converterEngine.processExcelFile(file);
     }
 
     @Override
-    public ConversionResult processEAFile(MultipartFile file, Boolean removeInvalidSources) throws FileParsingException, IOException, ConversionException {
-        return converterEngine.processEAFile(file, removeInvalidSources);
+    public ConversionResult processEAFile(MultipartFile file) throws FileParsingException, IOException, ConversionException {
+        return converterEngine.processEAFile(file);
     }
 
     @Override
-    public ConversionResult processSSPOntology(String iri, Boolean removeInvalidSources) throws ConversionException {
-        return converterEngine.processSSPOntology(iri, removeInvalidSources);
+    public ConversionResult processSSPOntology(String iri) throws ConversionException {
+        return converterEngine.processSSPOntology(iri);
     }
 
     @Override

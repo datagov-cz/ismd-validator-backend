@@ -16,6 +16,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static com.dia.constants.ArchiConstants.*;
 @Slf4j
 public class DataTypeConverter {
 
@@ -43,9 +44,6 @@ public class DataTypeConverter {
     private DataTypeConverter() {
     }
 
-    /**
-     * Add a property with appropriate datatype detection and conversion
-     */
     public static void addTypedProperty(Resource subject, Property property, String value, String lang, Model model) {
         if (value == null || value.trim().isEmpty()) {
             return;
@@ -67,11 +65,11 @@ public class DataTypeConverter {
         }
     }
 
-    /**
-     * Creates a typed literal based on the value content
-     */
     public static Literal createTypedLiteral(String value, Model model, String lang, String propertyName) {
         if (lang != null && !lang.isEmpty()) {
+            if (shouldUseRdfLangString(propertyName)) {
+                return createRdfLangStringLiteral(value, lang, model);
+            }
             return model.createLiteral(value, lang);
         }
 
@@ -90,8 +88,10 @@ public class DataTypeConverter {
                 case "xsd:date" -> model.createTypedLiteral(value, XSDDatatype.XSDdate);
                 case "xsd:time" -> model.createTypedLiteral(value, XSDDatatype.XSDtime);
                 case "xsd:dateTime" -> model.createTypedLiteral(value, XSDDatatype.XSDdateTime);
+                case "xsd:dateTimeStamp" -> model.createTypedLiteral(value, XSDDatatype.XSDdateTimeStamp);
                 case "xsd:anyURI" -> model.createTypedLiteral(value, XSDDatatype.XSDanyURI);
                 case "xsd:string" -> model.createTypedLiteral(value, XSDDatatype.XSDstring);
+                case "rdf:langString" -> createRdfLangStringLiteral(value, "cs", model); // Default to Czech
                 default -> {
                     log.warn("Unrecognized XSD type: {}. Defaulting to rdfs:Literal", result.getXsdType());
                     yield model.createLiteral(value);
@@ -104,6 +104,29 @@ public class DataTypeConverter {
         return model.createLiteral(value);
     }
 
+    public static Literal createRdfLangStringLiteral(String value, String lang, Model model) {
+        try {
+            return model.createLiteral(value, lang);
+        } catch (Exception e) {
+            log.warn("Failed to create rdf:langString literal for '{}': {}. Using regular language-tagged literal.",
+                    value, e.getMessage());
+            return model.createLiteral(value, lang);
+        }
+    }
+
+    private static boolean shouldUseRdfLangString(String propertyName) {
+        if (propertyName == null) {
+            return false;
+        }
+
+        String lowerName = propertyName.toLowerCase();
+
+        return lowerName.contains(ALTERNATIVNI_NAZEV.toLowerCase()) ||
+                lowerName.equals("alternativní-název") ||
+                lowerName.equals("alternative-name") ||
+                lowerName.contains("název") && lowerName.contains("alternativní");
+    }
+
     @Getter
     private static class DetectionResult {
         private final String xsdType;
@@ -113,7 +136,6 @@ public class DataTypeConverter {
             this.xsdType = xsdType;
             this.message = message;
         }
-
     }
 
     private static DetectionResult detectDataType(String value, String propertyName) {
@@ -123,6 +145,10 @@ public class DataTypeConverter {
 
         if (isUri(value)) {
             return new DetectionResult("xsd:anyURI", "Detected as URI");
+        }
+
+        if (isDateTimeStamp(value)) {
+            return new DetectionResult("xsd:dateTimeStamp", "Detected as dateTimeStamp");
         }
 
         if (isDate(value)) {
@@ -150,6 +176,10 @@ public class DataTypeConverter {
             return new DetectionResult(inferredType, "Inferred from property name");
         }
 
+        if (shouldUseRdfLangString(propertyName)) {
+            return new DetectionResult("rdf:langString", "Detected as rdf:langString");
+        }
+
         return new DetectionResult("xsd:string", "Default to string");
     }
 
@@ -160,12 +190,20 @@ public class DataTypeConverter {
 
         String lowerName = propertyName.toLowerCase();
 
+        if (lowerName.contains("datum") && lowerName.contains("čas")) {
+            return "xsd:dateTimeStamp";
+        }
+
         if (lowerName.contains("datum") || lowerName.contains("date")) {
             return "xsd:date";
         }
 
         if (lowerName.contains("cas") || lowerName.contains("time")) {
             return "xsd:time";
+        }
+
+        if (lowerName.contains("okamžik") || lowerName.contains("timestamp")) {
+            return "xsd:dateTimeStamp";
         }
 
         if (lowerName.contains("url") || lowerName.contains("uri") ||
@@ -249,10 +287,20 @@ public class DataTypeConverter {
         return false;
     }
 
+    public static boolean isDateTimeStamp(String value) {
+        if (value == null) return false;
+
+        return value.matches(".*T.*[+-]\\d{2}:\\d{2}$") ||
+                value.matches(".*T.*Z$") ||
+                value.endsWith("+02:00") ||
+                value.endsWith("+01:00") ||
+                value.endsWith("-00:00");
+    }
+
     public static boolean isValidXSDType(String xsdType) {
         Set<String> validXSDTypes = Set.of(
                 "string", "boolean", "decimal", "float", "double", "duration",
-                "dateTime", "time", "date", "gYearMonth", "gYear", "gMonthDay",
+                "dateTime", "dateTimeStamp", "time", "date", "gYearMonth", "gYear", "gMonthDay",
                 "gDay", "gMonth", "hexBinary", "base64Binary", "anyURI", "QName",
                 "NOTATION", "normalizedString", "token", "language", "NMTOKEN",
                 "NMTOKENS", "Name", "NCName", "ID", "IDREF", "IDREFS", "ENTITY",

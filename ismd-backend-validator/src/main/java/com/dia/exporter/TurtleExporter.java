@@ -1,6 +1,7 @@
 package com.dia.exporter;
 
 import com.dia.exceptions.TurtleExportException;
+import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
@@ -40,9 +41,10 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put(PREFIX_SKOS, SKOS.getURI());
         STANDARD_PREFIXES.put(PREFIX_XSD, XSD);
         STANDARD_PREFIXES.put("vsgov", "https://slovník.gov.cz/veřejný-sektor/pojem/");
-        STANDARD_PREFIXES.put("l111-2009", "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/");
+        STANDARD_PREFIXES.put("l111-2009", "https://slovník.gov.cz/legislativním/sbírka/111/2009/pojem/");
         STANDARD_PREFIXES.put("a104", "https://slovník.gov.cz/agendový/104/pojem/");
         STANDARD_PREFIXES.put("slovníky", "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/");
+        STANDARD_PREFIXES.put("čas", CAS_NS);
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
@@ -121,6 +123,27 @@ public class TurtleExporter {
             Property property = model.createProperty(effectiveNamespace + propName);
             removeEmptyPropertyValues(model, property);
         }
+
+        cleanupNewSourceProperties(model);
+    }
+
+    private void cleanupNewSourceProperties(OntModel model) {
+        String[] newSourceProperties = {
+                DEFINUJICI_USTANOVENI,
+                SOUVISEJICI_USTANOVENI,
+                DEFINUJICI_NELEGISLATIVNI_ZDROJ,
+                SOUVISEJICI_NELEGISLATIVNI_ZDROJ
+        };
+
+        for (String propName : newSourceProperties) {
+            Property customProperty = model.createProperty(effectiveNamespace + propName);
+            Property defaultProperty = model.createProperty(DEFAULT_NS + propName);
+
+            removeEmptyPropertyValues(model, customProperty);
+            removeEmptyPropertyValues(model, defaultProperty);
+
+            log.debug("Cleaned up source property: {}", propName);
+        }
     }
 
     private OntModel createTransformedModel() {
@@ -160,18 +183,95 @@ public class TurtleExporter {
         return newModel;
     }
 
-    private boolean isBaseSchemaResource(String uri) {
-        if (uri == null) return false;
+    private boolean shouldFilterAsBaseSchema(String uri) {
+        if (UtilityMethods.isOFNBaseSchemaElement(uri)) {
+            return true;
+        }
 
+        if (!effectiveNamespace.equals(DEFAULT_NS) && uri.startsWith(DEFAULT_NS) && !uri.startsWith(effectiveNamespace)) {
+            if (uri.contains("časový-okamžik-") && isTemporalInstantInUse(uri)) {
+                return false;
+            }
+            return !uri.contains("digitální-dokument-") || isDigitalDocumentInUse(uri);
+        }
+
+        return false;
+    }
+
+    private boolean isBaseSchemaResource(String uri) {
         if (uri.startsWith("http://www.w3.org/2001/XMLSchema#")) {
             return true;
         }
 
+        if (uri.startsWith("http://schema.org/")) {
+            return true;
+        }
+
         if (uri.startsWith("https://slovník.gov.cz/")) {
-            return uri.contains("/datový-slovník-ofn-slovníků/pojem/");
+
+            if (uri.startsWith("https://slovník.gov.cz/datový") ||
+                    uri.startsWith("https://slovník.gov.cz/legislativní") ||
+                    uri.startsWith("https://slovník.gov.cz/veřejný-sektor")) {
+                return false;
+            }
+
+            if (uri.contains("/datový-slovník-ofn-slovníků/pojem/")) {
+                return true;
+            }
+
+            if (uri.startsWith("https://slovník.gov.cz/agendový") && !uri.contains("/pojem/")) {
+                log.debug("Filtering out base schema property: {}", uri);
+                return true;
+            }
+
+            if (uri.startsWith("https://slovník.gov.cz/agendový") && uri.contains("/pojem/")) {
+                return false;
+            }
+
+            if ((uri.startsWith("https://slovník.gov.cz/generický") ||
+                    uri.startsWith("https://slovník.gov.cz/")) &&
+                    !uri.contains("/pojem/") &&
+                    !uri.contains("/slovník")) {
+                log.debug("Filtering out base schema property: {}", uri);
+                return true;
+            }
+        }
+
+        if (shouldFilterAsBaseSchema(uri)) {
+            return true;
+        }
+
+        if (uri.contains("časový-okamžik-")) {
+            return !isTemporalInstantInUse(uri);
+        }
+
+        if (uri.contains("digitální-dokument-")) {
+            return isDigitalDocumentInUse(uri);
         }
 
         return false;
+    }
+
+    private boolean isTemporalInstantInUse(String uri) {
+        Resource instant = ontModel.getResource(uri);
+        if (instant == null) return false;
+
+        Property creationProp = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
+        Property modificationProp = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
+
+        return ontModel.contains(null, creationProp, instant) ||
+                ontModel.contains(null, modificationProp, instant);
+    }
+
+    private boolean isDigitalDocumentInUse(String uri) {
+        Resource document = ontModel.getResource(uri);
+        if (document == null) return true;
+
+        Property definingNonLegProp = ontModel.getProperty(DEFAULT_NS + DEFINUJICI_NELEGISLATIVNI_ZDROJ);
+        Property relatedNonLegProp = ontModel.getProperty(DEFAULT_NS + SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
+
+        return !ontModel.contains(null, definingNonLegProp, document) &&
+                !ontModel.contains(null, relatedNonLegProp, document);
     }
 
     private void applyTransformations(OntModel transformedModel) {
@@ -179,13 +279,19 @@ public class TurtleExporter {
 
         createConceptScheme(transformedModel);
 
+        addTemporalMetadataToConceptScheme(transformedModel);
+
         transformResourcesToSKOSConcepts(transformedModel);
 
         transformLabelsToSKOS(transformedModel);
 
+        transformAlternativeNamesToSKOS(transformedModel);
+
         ensureDomainRangeProperties(transformedModel);
 
         mapCustomPropertiesToStandard(transformedModel);
+
+        transformSourceProperties(transformedModel);
 
         addInSchemeRelationships(transformedModel);
 
@@ -268,6 +374,81 @@ public class TurtleExporter {
         }
 
         log.debug("ConceptScheme configured: {}", ontologyResource.getURI());
+    }
+
+    private void addTemporalMetadataToConceptScheme(OntModel transformedModel) {
+        String ontologyIRI = getOntologyIRI();
+        if (ontologyIRI == null) {
+            return;
+        }
+
+        Resource ontologyResource = transformedModel.getResource(ontologyIRI);
+        if (ontologyResource == null) {
+            return;
+        }
+
+        Resource originalOntologyResource = resourceMap.get("ontology");
+        if (originalOntologyResource != null) {
+            Property creationProperty = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
+            if (originalOntologyResource.hasProperty(creationProperty)) {
+                addCreationDate(originalOntologyResource, ontologyResource, transformedModel, creationProperty);
+            }
+
+            Property modificationProperty = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
+            if (originalOntologyResource.hasProperty(modificationProperty)) {
+                addModificationDate(originalOntologyResource, ontologyResource, transformedModel, modificationProperty);
+            }
+        }
+    }
+
+    private void addCreationDate(Resource originalOntologyResource, Resource ontologyResource, OntModel transformedModel, Property creationProperty) {
+        Statement creationStmt = originalOntologyResource.getProperty(creationProperty);
+        if (creationStmt.getObject().isResource()) {
+            Resource temporalInstant = creationStmt.getObject().asResource();
+            copyTemporalInstant(temporalInstant, transformedModel);
+
+            Property newCreationProperty = transformedModel.createProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
+            Resource newTemporalInstant = transformedModel.getResource(temporalInstant.getURI());
+            if (newTemporalInstant != null) {
+                ontologyResource.addProperty(newCreationProperty, newTemporalInstant);
+                log.debug("Added creation temporal metadata to concept scheme");
+            }
+        }
+    }
+
+    private void addModificationDate(Resource originalOntologyResource, Resource ontologyResource, OntModel transformedModel, Property modificationProperty) {
+        Statement modificationStmt = originalOntologyResource.getProperty(modificationProperty);
+        if (modificationStmt.getObject().isResource()) {
+            Resource temporalInstant = modificationStmt.getObject().asResource();
+            copyTemporalInstant(temporalInstant, transformedModel);
+
+            Property newModificationProperty = transformedModel.createProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
+            Resource newTemporalInstant = transformedModel.getResource(temporalInstant.getURI());
+            if (newTemporalInstant != null) {
+                ontologyResource.addProperty(newModificationProperty, newTemporalInstant);
+                log.debug("Added modification temporal metadata to concept scheme");
+            }
+        }
+    }
+
+    private void copyTemporalInstant(Resource temporalInstant, OntModel transformedModel) {
+        Resource newInstant = transformedModel.createResource(temporalInstant.getURI());
+
+        newInstant.addProperty(RDF.type, transformedModel.createResource(CAS_NS + CASOVY_OKAMZIK));
+
+        Property dateProperty = ontModel.getProperty(CAS_NS + DATUM);
+        if (temporalInstant.hasProperty(dateProperty)) {
+            Statement dateStmt = temporalInstant.getProperty(dateProperty);
+            Property newDateProperty = transformedModel.createProperty(CAS_NS + DATUM);
+            newInstant.addProperty(newDateProperty, dateStmt.getObject());
+        }
+
+        Property dateTimeProperty = ontModel.getProperty(CAS_NS + DATUM_A_CAS);
+        if (temporalInstant.hasProperty(dateTimeProperty)) {
+            Statement dateTimeStmt = temporalInstant.getProperty(dateTimeProperty);
+            Property newDateTimeProperty = transformedModel.createProperty(CAS_NS + DATUM_A_CAS);
+            newInstant.addProperty(newDateTimeProperty, dateTimeStmt.getObject());
+        }
     }
 
     private void transformResourcesToSKOSConcepts(OntModel transformedModel) {
@@ -390,6 +571,45 @@ public class TurtleExporter {
         transformedModel.add(toAdd);
     }
 
+    private void transformAlternativeNamesToSKOS(OntModel transformedModel) {
+        Property altNameProperty = transformedModel.createProperty(effectiveNamespace + ALTERNATIVNI_NAZEV);
+        StmtIterator altNameStmts = transformedModel.listStatements(null, altNameProperty, (RDFNode) null);
+
+        List<Statement> toAdd = new ArrayList<>();
+        List<Statement> toRemove = new ArrayList<>();
+
+        while (altNameStmts.hasNext()) {
+            Statement stmt = altNameStmts.next();
+            if (stmt.getObject().isLiteral()) {
+                Literal lit = stmt.getObject().asLiteral();
+                String value = lit.getString();
+
+                if (value == null || value.isEmpty()) {
+                    toRemove.add(stmt);
+                    continue;
+                }
+
+                String lang = lit.getLanguage();
+                if (lang == null || lang.isEmpty()) {
+                    lang = DEFAULT_LANG;
+                }
+
+                Literal langStringLiteral = transformedModel.createLiteral(value, lang);
+                toAdd.add(transformedModel.createStatement(
+                        stmt.getSubject(),
+                        SKOS.altLabel,
+                        langStringLiteral
+                ));
+            }
+            toRemove.add(stmt);
+        }
+
+        transformedModel.remove(toRemove);
+        transformedModel.add(toAdd);
+
+        log.debug("Transformed {} alternative names to SKOS altLabel as rdf:langString", toAdd.size());
+    }
+
     private void ensureDomainRangeProperties(OntModel transformedModel) {
         Property defOProperty = transformedModel.createProperty(effectiveNamespace + DEFINICNI_OBOR);
         if (transformedModel.listStatements(null, defOProperty, (RDFNode) null).hasNext()) {
@@ -472,6 +692,65 @@ public class TurtleExporter {
         }
 
         transformedModel.remove(toRemove);
+    }
+
+    private void transformSourceProperties(OntModel transformedModel) {
+        transformLegislativeSourceProperties(transformedModel);
+
+        transformNonLegislativeSourceProperties(transformedModel);
+
+        log.debug("Completed transformation of new source properties");
+    }
+
+    private void transformLegislativeSourceProperties(OntModel transformedModel) {
+        Property definingProvisionProp = transformedModel.createProperty(effectiveNamespace + DEFINUJICI_USTANOVENI);
+        Property definingProvisionDefaultProp = transformedModel.createProperty(DEFAULT_NS + DEFINUJICI_USTANOVENI);
+
+        Property slovnikyDefiningProvision = transformedModel.createProperty(SLOVNIKY_NS + DEFINUJICI_USTANOVENI);
+        mapProperty(transformedModel, definingProvisionProp, slovnikyDefiningProvision);
+        mapProperty(transformedModel, definingProvisionDefaultProp, slovnikyDefiningProvision);
+
+        Property relatedProvisionProp = transformedModel.createProperty(effectiveNamespace + SOUVISEJICI_USTANOVENI);
+        Property relatedProvisionDefaultProp = transformedModel.createProperty(DEFAULT_NS + SOUVISEJICI_USTANOVENI);
+
+        Property slovnikyRelatedProvision = transformedModel.createProperty(SLOVNIKY_NS + SOUVISEJICI_USTANOVENI);
+        mapProperty(transformedModel, relatedProvisionProp, slovnikyRelatedProvision);
+        mapProperty(transformedModel, relatedProvisionDefaultProp, slovnikyRelatedProvision);
+
+        log.debug("Transformed legislative source properties to OFN slovníky namespace");
+    }
+
+    private void transformNonLegislativeSourceProperties(OntModel transformedModel) {
+        String[] nonLegislativeProperties = {
+                DEFINUJICI_NELEGISLATIVNI_ZDROJ,
+                SOUVISEJICI_NELEGISLATIVNI_ZDROJ
+        };
+
+        for (String propName : nonLegislativeProperties) {
+            Property customProp = transformedModel.createProperty(effectiveNamespace + propName);
+            Property defaultProp = transformedModel.createProperty(DEFAULT_NS + propName);
+
+            ensureDigitalDocumentUrls(transformedModel, customProp);
+            ensureDigitalDocumentUrls(transformedModel, defaultProp);
+        }
+
+        log.debug("Processed non-legislative source properties and digital documents");
+    }
+
+    private void ensureDigitalDocumentUrls(OntModel transformedModel, Property sourceProperty) {
+        StmtIterator stmts = transformedModel.listStatements(null, sourceProperty, (RDFNode) null);
+
+        while (stmts.hasNext()) {
+            Statement stmt = stmts.next();
+            if (stmt.getObject().isResource()) {
+                Resource digitalDoc = stmt.getObject().asResource();
+
+                Property schemaUrlProp = transformedModel.createProperty("http://schema.org/url");
+                if (!digitalDoc.hasProperty(schemaUrlProp)) {
+                    log.warn("Digital document missing schema:url property: {}", digitalDoc.getURI());
+                }
+            }
+        }
     }
 
     private void mapBooleanProperty(OntModel model, Property sourceProperty, Property targetProperty) {

@@ -1,15 +1,17 @@
 package com.dia.utility;
 
+import com.dia.exceptions.ConversionException;
+import com.dia.exceptions.UnsupportedFormatException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.http.HttpResponse;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.SSPConstants.SGOV_NAMESPACE;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
@@ -164,28 +166,6 @@ public class UtilityMethods {
         return true;
     }
 
-    public String transformEliUrl(String url, Boolean removeInvalidSources) {
-        if (url == null || url.trim().isEmpty()) {
-            return url;
-        }
-
-        String trimmed = url.trim();
-
-        Pattern eliPattern = Pattern.compile(".*?(eli/cz/sb/.*)$");
-        Matcher matcher = eliPattern.matcher(trimmed);
-
-        if (matcher.matches()) {
-            String eliPart = matcher.group(1);
-            return "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
-        } else {
-            if (Boolean.TRUE.equals(removeInvalidSources)) {
-                return "";
-            } else {
-                return trimmed;
-            }
-        }
-    }
-
     public boolean isValidAgendaValue(String value) {
         if (value == null || value.trim().isEmpty()) {
             return false;
@@ -200,7 +180,7 @@ public class UtilityMethods {
             return true;
         }
 
-        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/agenda/A)(\\d+)$");
+        return value.matches("^https://.*?/agenda/A(\\d+)$");
     }
 
     public String transformAgendaValue(String value) {
@@ -217,6 +197,11 @@ public class UtilityMethods {
             return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/" + value;
         }
 
+        if (value.matches("^https://.*?/agenda/A(\\d+)$")) {
+            String agendaCode = value.replaceAll("^https://.*?/agenda/(A\\d+)$", "$1");
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/" + agendaCode;
+        }
+
         return value;
     }
 
@@ -230,7 +215,7 @@ public class UtilityMethods {
             return true;
         }
 
-        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/isvs/)(\\d+)$");
+        return value.matches("^https://.*?/isvs/(\\d+)$");
     }
 
     public String transformAISValue(String value) {
@@ -243,31 +228,12 @@ public class UtilityMethods {
             return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/" + value;
         }
 
+        if (value.matches("^https://.*?/isvs/(\\d+)$")) {
+            String isvsCode = value.replaceAll("^https://.*?/isvs/(\\d+)$", "$1");
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/" + isvsCode;
+        }
+
         return value;
-    }
-
-    public String transformEliPrivacyProvision(String provision, Boolean removeELI) {
-        if (provision == null || provision.trim().isEmpty()) {
-            return null;
-        }
-
-        provision = provision.trim();
-
-        if (containsEliPattern(provision)) {
-            String eliPart = extractEliPart(provision);
-            if (eliPart != null) {
-                String transformed = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
-                log.debug("Transformed ELI provision: {} -> {}", provision, transformed);
-                return transformed;
-            }
-        }
-
-        if (Boolean.TRUE.equals(removeELI)) {
-            log.debug("Filtering out non-ELI provision (removeELI=true): {}", provision);
-            return null;
-        }
-
-        return provision;
     }
 
     public boolean containsEliPattern(String provision) {
@@ -452,5 +418,118 @@ public class UtilityMethods {
         }
 
         return iri;
+    }
+
+    public boolean isOFNBaseSchemaElement(String uri) {
+        if (!uri.startsWith(DEFAULT_NS)) {
+            return false;
+        }
+
+        String localName = uri.substring(DEFAULT_NS.length());
+
+        Set<String> baseSchemaClasses = Set.of(
+                POJEM,
+                TRIDA,
+                VLASTNOST,
+                VZTAH,
+                TSP,
+                TOP,
+                VEREJNY_UDAJ,
+                NEVEREJNY_UDAJ
+        );
+
+        Set<String> baseSchemaProperties = Set.of(
+                NAZEV,
+                ALTERNATIVNI_NAZEV,
+                POPIS,
+                DEFINICE,
+                DEFINUJICI_USTANOVENI,
+                SOUVISEJICI_USTANOVENI,
+                DEFINUJICI_NELEGISLATIVNI_ZDROJ,
+                SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+                JE_PPDF,
+                AGENDA,
+                AIS,
+                USTANOVENI_NEVEREJNOST,
+                DEFINICNI_OBOR,
+                OBOR_HODNOT,
+                NADRAZENA_TRIDA,
+                ZPUSOB_SDILENI,
+                ZPUSOB_ZISKANI,
+                TYP_OBSAHU,
+                EKVIVALENTNI_POJEM
+        );
+
+        boolean isBaseElement = baseSchemaClasses.contains(localName) || baseSchemaProperties.contains(localName);
+
+        if (isBaseElement) {
+            log.debug("Filtering out base schema element: {}", uri);
+        }
+
+        return isBaseElement;
+    }
+
+    public URL validateUrl(String urlString, Set<String> allowedProtocols) throws ConversionException {
+        if (urlString == null || urlString.trim().isEmpty()) {
+            throw new IllegalArgumentException("URL nemůže být prázdná.");
+        }
+
+        try {
+            URL url = new URL(urlString.trim());
+
+            if (!allowedProtocols.contains(url.getProtocol().toLowerCase())) {
+                throw new IllegalArgumentException("Protokol není povolen: " + url.getProtocol());
+            }
+
+            return url;
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Neplatný formát URL: " + e.getMessage());
+        }
+    }
+
+    public String extractFilenameFromUrl(URL url) {
+        String path = url.getPath();
+        if (path == null || path.isEmpty() || path.equals("/")) {
+            return "downloaded-file";
+        }
+
+        String filename = path.substring(path.lastIndexOf('/') + 1);
+        if (filename.isEmpty()) {
+            return "downloaded-file";
+        }
+
+        int queryIndex = filename.indexOf('?');
+        if (queryIndex > 0) {
+            filename = filename.substring(0, queryIndex);
+        }
+
+        return filename;
+    }
+
+    public String extractContentType(HttpResponse<byte[]> response, String filename) {
+        return response.headers()
+                .firstValue("content-type")
+                .orElse(guessContentTypeFromFilename(filename));
+    }
+
+    private String guessContentTypeFromFilename(String filename) {
+        if (!filename.endsWith(".ttl")) {
+            throw new UnsupportedFormatException("Nepodporovaný typ souboru: " + filename);
+        }
+        return "text/turtle";
+    }
+
+    public boolean isValidSource(String source) {
+        if (source == null || source.trim().isEmpty()) {
+            return false;
+        }
+
+        source = source.trim();
+
+        if (source.length() < 3) {
+            return false;
+        }
+
+        return !source.matches("^[^a-zA-Z0-9]*$");
     }
 }

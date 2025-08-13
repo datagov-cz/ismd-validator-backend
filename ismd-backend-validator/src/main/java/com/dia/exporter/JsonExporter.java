@@ -82,6 +82,64 @@ public class JsonExporter {
         if (description != null && !description.isEmpty()) {
             addMultilingualModelProperty(root, Json.POPIS, description);
         }
+
+        addTemporalMetadata(root);
+    }
+
+    private void addTemporalMetadata(JSONObject root) throws JSONException {
+        Resource vocabularyResource = resourceMap.get("ontology");
+        if (vocabularyResource != null) {
+            Property creationProperty = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
+            if (vocabularyResource.hasProperty(creationProperty)) {
+                handleCreationDate(vocabularyResource, creationProperty, root);
+            }
+            Property modificationProperty = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
+            if (vocabularyResource.hasProperty(modificationProperty)) {
+                handleModificationDate(vocabularyResource, modificationProperty, root);
+            }
+        }
+    }
+
+    private void handleCreationDate(Resource vocabularyResource, Property creationProperty, JSONObject root) {
+        Statement creationStmt = vocabularyResource.getProperty(creationProperty);
+        if (creationStmt.getObject().isResource()) {
+            Resource instantResource = creationStmt.getObject().asResource();
+            String dateValue = extractTemporalValue(instantResource);
+            if (dateValue != null) {
+                root.put(OKAMZIK_VYTVORENI, dateValue);
+            }
+        }
+    }
+
+    private void handleModificationDate(Resource vocabularyResource, Property modificationProperty, JSONObject root) {
+        Statement modificationStmt = vocabularyResource.getProperty(modificationProperty);
+        if (modificationStmt.getObject().isResource()) {
+            Resource instantResource = modificationStmt.getObject().asResource();
+            String dateValue = extractTemporalValue(instantResource);
+            if (dateValue != null) {
+                root.put(OKAMZIK_POSLEDNI_ZMENY, dateValue);
+            }
+        }
+    }
+
+    private String extractTemporalValue(Resource instantResource) {
+        Property dateTimeProperty = ontModel.getProperty(CAS_NS + DATUM_A_CAS);
+        if (instantResource.hasProperty(dateTimeProperty)) {
+            Statement dateTimeStmt = instantResource.getProperty(dateTimeProperty);
+            if (dateTimeStmt.getObject().isLiteral()) {
+                return dateTimeStmt.getString();
+            }
+        }
+
+        Property dateProperty = ontModel.getProperty(CAS_NS + DATUM);
+        if (instantResource.hasProperty(dateProperty)) {
+            Statement dateStmt = instantResource.getProperty(dateProperty);
+            if (dateStmt.getObject().isLiteral()) {
+                return dateStmt.getString();
+            }
+        }
+
+        return null;
     }
 
     private void addMultilingualModelProperty(JSONObject root, String propertyName,
@@ -162,6 +220,9 @@ public class JsonExporter {
         addFieldWithDefault(originalMap, orderedMap, Json.NAZEV, createEmptyMultilingualField());
         addFieldWithDefault(originalMap, orderedMap, Json.POPIS, createEmptyMultilingualField());
 
+        addFieldIfExists(originalMap, orderedMap, OKAMZIK_VYTVORENI);
+        addFieldIfExists(originalMap, orderedMap, OKAMZIK_POSLEDNI_ZMENY);
+
         return orderedMap;
     }
 
@@ -223,11 +284,15 @@ public class JsonExporter {
         target.put(fieldName, source.getOrDefault(fieldName, defaultValue));
     }
 
-
     private Map<String, Object> orderPojemFields(Map<String, Object> pojemMap) {
         Map<String, Object> orderedPojem = new LinkedHashMap<>();
 
-        String[] orderedFields = {"iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice", "ekvivalentní pojem", "způsob-sdílení-údaje", "způsob-získání-údaje", "typ-obsahu-údaje"};
+        String[] orderedFields = {
+                "iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice", "ekvivalentní pojem",
+                DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI,
+                DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+                "způsob-sdílení-údaje", "způsob-získání-údaje", "typ-obsahu-údaje"
+        };
 
         for (String field : orderedFields) {
             addFieldIfExists(pojemMap, orderedPojem, field);
@@ -318,11 +383,7 @@ public class JsonExporter {
 
         addResourceArrayPropertyFromEitherNamespace(concept, pojemObj, effectiveNamespace);
 
-        Property sourceProperty = ontModel.createProperty("http://purl.org/dc/terms/source");
-        addResourceArrayProperty(concept, sourceProperty, ZDROJ, pojemObj);
-
-        Property referencesProperty = ontModel.createProperty("http://purl.org/dc/terms/references");
-        addResourceArrayProperty(concept, referencesProperty, SOUVISEJICI_ZDROJ, pojemObj);
+        addNewSourceProperties(concept, pojemObj);
 
         addDomainAndRangeFromStandardProperties(concept, pojemObj);
 
@@ -333,6 +394,87 @@ public class JsonExporter {
         addRppMetadataWithBothNamespaces(concept, pojemObj, effectiveNamespace);
 
         return pojemObj;
+    }
+
+    private void addNewSourceProperties(Resource concept, JSONObject pojemObj) throws JSONException {
+        addSourcePropertyFromEitherNamespace(concept, pojemObj, effectiveNamespace,
+                DEFINUJICI_USTANOVENI, DEFINUJICI_USTANOVENI);
+
+        addSourcePropertyFromEitherNamespace(concept, pojemObj, effectiveNamespace,
+                SOUVISEJICI_USTANOVENI, SOUVISEJICI_USTANOVENI);
+
+        addNonLegislativeSourceProperty(concept, pojemObj, effectiveNamespace,
+                DEFINUJICI_NELEGISLATIVNI_ZDROJ, DEFINUJICI_NELEGISLATIVNI_ZDROJ);
+
+        addNonLegislativeSourceProperty(concept, pojemObj, effectiveNamespace,
+                SOUVISEJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
+    }
+
+    private void addSourcePropertyFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace,
+                                                      String propertyName, String jsonFieldName) throws JSONException {
+        Property customProperty = ontModel.getProperty(namespace + propertyName);
+        Property defaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + propertyName);
+
+        if (concept.hasProperty(customProperty)) {
+            addResourceArrayProperty(concept, customProperty, jsonFieldName, pojemObj);
+        } else if (concept.hasProperty(defaultProperty)) {
+            addResourceArrayProperty(concept, defaultProperty, jsonFieldName, pojemObj);
+        }
+    }
+
+    private void addNonLegislativeSourceProperty(Resource concept, JSONObject pojemObj, String namespace,
+                                                 String propertyName, String jsonFieldName) throws JSONException {
+        Property customProperty = ontModel.getProperty(namespace + propertyName);
+        Property defaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + propertyName);
+
+        Property sourceProperty = null;
+        if (concept.hasProperty(customProperty)) {
+            sourceProperty = customProperty;
+        } else if (concept.hasProperty(defaultProperty)) {
+            sourceProperty = defaultProperty;
+        }
+
+        if (sourceProperty != null) {
+            handleSourceProperty(concept, pojemObj, sourceProperty, jsonFieldName);
+        }
+    }
+
+    private void handleSourceProperty(Resource concept, JSONObject pojemObj, Property sourceProperty, String jsonFieldName) throws JSONException {
+        StmtIterator propIter = concept.listProperties(sourceProperty);
+        if (propIter.hasNext()) {
+            JSONArray sourceArray = new JSONArray();
+
+            addSourceProperty(propIter, sourceArray);
+
+            if (sourceArray.length() > 0) {
+                pojemObj.put(jsonFieldName, sourceArray);
+            }
+        }
+    }
+
+    private void addSourceProperty(StmtIterator propIter, JSONArray sourceArray) {
+        while (propIter.hasNext()) {
+            Statement propStmt = propIter.next();
+            if (propStmt.getObject().isResource()) {
+                Resource digitalDoc = propStmt.getObject().asResource();
+
+                Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
+                Statement urlStmt = digitalDoc.getProperty(schemaUrlProperty);
+
+                if (urlStmt != null) {
+                    JSONObject docObj = new JSONObject();
+                    if (urlStmt.getObject().isResource()) {
+                        docObj.put("url", urlStmt.getObject().asResource().getURI());
+                    } else if (urlStmt.getObject().isLiteral()) {
+                        docObj.put("url", urlStmt.getString());
+                    }
+
+                    if (docObj.has("url")) {
+                        sourceArray.put(docObj);
+                    }
+                }
+            }
+        }
     }
 
     private void addGovernanceProperties(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
