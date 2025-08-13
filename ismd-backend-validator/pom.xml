@@ -82,7 +82,7 @@
         <dependency>
             <groupId>com.dia</groupId>
             <artifactId>ismd-backend-common</artifactId>
-            <version>${version}</version>
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
