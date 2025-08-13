@@ -217,8 +217,8 @@ public class ArchiReader {
 
         classData.setDescription(properties.get(POPIS));
         classData.setDefinition(properties.get(DEFINICE));
-        classData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         classData.setSource(properties.get(ZDROJ));
+        classData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         classData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
         classData.setEquivalentConcept(properties.get(EKVIVALENTNI_POJEM));
         classData.setAgendaCode(properties.get(AGENDA));
@@ -319,8 +319,8 @@ public class ArchiReader {
 
         propertyData.setDescription(properties.get(POPIS));
         propertyData.setDefinition(properties.get(DEFINICE));
-        propertyData.setSource(properties.get(SOUVISEJICI_ZDROJ));
         propertyData.setSource(properties.get(ZDROJ));
+        propertyData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         propertyData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
         propertyData.setDataType(properties.get(DATOVY_TYP));
 
@@ -484,7 +484,6 @@ public class ArchiReader {
         return idToNameMap;
     }
 
-
     private RelationshipData createRelationshipData(Element relationship, Map<String, String> idToNameMap) {
         String name = getRelationshipName(relationship);
         if (name == null || name.isEmpty()) {
@@ -566,35 +565,37 @@ public class ArchiReader {
             return;
         }
 
-        Map<String, String> labelPatterns = new HashMap<>();
-        labelPatterns.put("související zdroj", SOUVISEJICI_ZDROJ);
-        labelPatterns.put("zdroj", ZDROJ);
-        labelPatterns.put("popis", POPIS);
-        labelPatterns.put("definice", DEFINICE);
-        labelPatterns.put("identifikátor", IDENTIFIKATOR);
-        labelPatterns.put("ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST);
-        labelPatterns.put("agenda", AGENDA);
-        labelPatterns.put("agendový informační systém", AIS);
-        labelPatterns.put("je pojem sdílen v PPDF?", JE_PPDF);
-        labelPatterns.put("je pojem veřejný?", JE_VEREJNY);
-        labelPatterns.put("alternativní název", ALTERNATIVNI_NAZEV);
-        labelPatterns.put("datový typ", DATOVY_TYP);
-        labelPatterns.put("způsob sdílení údaje", ZPUSOB_SDILENI);
-        labelPatterns.put("způsob získání údaje", ZPUSOB_ZISKANI);
-        labelPatterns.put("typ obsahu údaje", TYP_OBSAHU);
+        Map<String, String> specificPatterns = new LinkedHashMap<>();
+        specificPatterns.put("související zdroj", SOUVISEJICI_ZDROJ);
+        specificPatterns.put("ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST);
+        specificPatterns.put("agendový informační systém", AIS);
+        specificPatterns.put("je pojem sdílen v PPDF?", JE_PPDF);
+        specificPatterns.put("je pojem veřejný?", JE_VEREJNY);
+        specificPatterns.put("alternativní název", ALTERNATIVNI_NAZEV);
+        specificPatterns.put("datový typ", DATOVY_TYP);
+        specificPatterns.put("způsob sdílení údaje", ZPUSOB_SDILENI);
+        specificPatterns.put("způsob získání údaje", ZPUSOB_ZISKANI);
+        specificPatterns.put("typ obsahu údaje", TYP_OBSAHU);
+        specificPatterns.put("adresa lokálního katalogu dat", LOKALNI_KATALOG);
 
-        for (Map.Entry<String, String> pattern : labelPatterns.entrySet()) {
+        specificPatterns.put("zdroj", ZDROJ);
+        specificPatterns.put("popis", POPIS);
+        specificPatterns.put("definice", DEFINICE);
+        specificPatterns.put("identifikátor", IDENTIFIKATOR);
+        specificPatterns.put("agenda", AGENDA);
+
+        for (Map.Entry<String, String> pattern : specificPatterns.entrySet()) {
             if (propName.contains(pattern.getKey())) {
                 propertyMapping.put(propId, pattern.getValue());
-                break;
+                log.debug("Mapped propId '{}' with name '{}' to constant '{}'",
+                        propId, propName, pattern.getValue());
+                return;
             }
         }
 
         if (propName.contains("typ")) {
             propertyMapping.put(propId, TYP);
             log.debug("Mapped propId '{}' with name '{}' to TYP constant", propId, propName);
-        } else if (propName.contains("adresa lokálního katalogu dat")) {
-            propertyMapping.put(propId, LOKALNI_KATALOG);
         }
     }
 
