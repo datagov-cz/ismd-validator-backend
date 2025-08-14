@@ -1,0 +1,116 @@
+name: Reusable Docker Build Workflow
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'Branch name (main or dev)'
+        required: true
+        type: string
+      module:
+        description: 'Module to build (common, validator, or empty for all)'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with: 
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up repository path
+        id: repo-setup
+        run: |
+          # Convert repository name to lowercase and set as base path
+          REPO_PATH=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Append branch suffix for non-main branches
+          if [ "${{ inputs.branch }}" != "main" ]; then
+            REPO_PATH="${REPO_PATH}-${{ inputs.branch }}"
+          fi
+          
+          echo "REPO_PATH=${REPO_PATH}" >> $GITHUB_ENV
+
+      - name: Get version info
+        id: version
+        run: |
+          # Get the base version from Maven
+          if [ -z "${{ inputs.module }}" ] || [ "${{ inputs.module }}" = "root" ]; then
+            BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+          else
+            BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -pl ismd-backend-${{ inputs.module }})
+          fi
+          
+          # For dev branches, create a version with Git SHA
+          if [ "${{ inputs.branch }}" != "main" ]; then
+            GIT_SHA=$(git rev-parse --short HEAD)
+            VERSION="${BASE_VERSION}-${GIT_SHA}"
+          else
+            VERSION="${BASE_VERSION}"
+            GIT_SHA=""
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
+          echo "git_sha=$GIT_SHA" >> $GITHUB_OUTPUT
+          
+          echo "Using version: $VERSION (base: $BASE_VERSION, git: $GIT_SHA)"
+
+      - name: Build and push Docker images
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Determine which modules to build
+          if [ -z "${{ inputs.module }}" ]; then
+            # Build only the validator module as common is just a library
+            MODULES=("validator")
+            MODULE_ARG="."  # Build everything
+          else
+            # Build specific module
+            MODULES=("${{ inputs.module }}")
+            MODULE_ARG="ismd-backend-${{ inputs.module }}"
+          fi
+          
+          # Build and push each module
+          for MODULE in "${MODULES[@]}"; do
+            echo "Building module: $MODULE"
+            
+            # Use the precomputed repository path
+            IMAGE_TAG="ghcr.io/${{ env.REPO_PATH }}:${{ steps.version.outputs.version }}"
+            LATEST_TAG="ghcr.io/${{ env.REPO_PATH }}:latest"
+            
+            echo "Building $MODULE with tags:"
+            echo "  - $IMAGE_TAG"
+            echo "  - $LATEST_TAG"
+            
+            # Build and push the image using the root Dockerfile
+            docker build \
+              --target ${MODULE}-runtime \
+              --build-arg MODULE="${MODULE_ARG}" \
+              --build-arg MODULE_VERSION="${{ steps.version.outputs.version }}" \
+              --build-arg GIT_COMMIT="${{ steps.version.outputs.git_sha }}" \
+              -t $IMAGE_TAG \
+              ${LATEST_TAG:+-t $LATEST_TAG} \
+              .
+            
+            # Push the built image
+            docker push $IMAGE_TAG
+            
+            # Push both version and latest tags
+            docker push $LATEST_TAG
+            
+            echo "Successfully pushed $IMAGE_TAG"
+            echo "Successfully pushed $LATEST_TAG"
+          done

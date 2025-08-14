@@ -1,0 +1,302 @@
+name: Trigger Deployment
+
+on:
+  # Triggered when a new image is published
+  workflow_run:
+    workflows: [Build Docker on Main, Build Docker on Dev]
+    types: [completed]
+    branches: [main, dev]
+  
+  # Manual trigger with environment and version selection
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+        default: dev
+      version:
+        description: 'Image version to deploy (leave empty for latest)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  deployments: write
+  actions: read
+
+env:
+  INFRA_REPO: ${{ github.repository_owner }}/ismd-infrastructure
+  COMPONENT_NAME: backend
+
+jobs:
+  determine-params:
+    name: Determine Deployment Parameters
+    runs-on: ubuntu-latest
+    # Only run if this is a workflow_dispatch or workflow_run event with successful conclusion
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    outputs:
+      environment: ${{ steps.determine_params.outputs.environment }}
+      image_tag: ${{ steps.determine_params.outputs.image_tag }}
+      workflow_run_id: ${{ steps.determine_params.outputs.workflow_run_id }}
+      ref: ${{ steps.determine_params.outputs.ref }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: dev
+      
+      - name: Determine environment and version
+        id: determine_params
+        run: |
+          # For manual triggers, use the specified environment
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            ENVIRONMENT="${{ github.event.inputs.environment }}"
+            # Normalize to uppercase for job routing
+            ENVIRONMENT="${ENVIRONMENT^^}"
+            
+            # If version is specified, use it
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              IMAGE_TAG="${{ github.event.inputs.version }}"
+            else
+              # Otherwise get the latest version from pom.xml
+              IMAGE_TAG=$(grep -m 1 "<version>" pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+            fi
+
+            # For manual DEV, append short SHA only when no explicit version was provided
+            if [ "$ENVIRONMENT" = "DEV" ] && [ -z "${{ github.event.inputs.version }}" ]; then
+              SHORT_SHA=${GITHUB_SHA:0:7}
+              IMAGE_TAG="${IMAGE_TAG}-${SHORT_SHA}"
+            fi
+          else
+            # For automated triggers, determine environment from branch
+            if [ "${{ github.event.workflow_run.head_branch }}" == "main" ]; then
+              ENVIRONMENT="TEST"
+            else
+              ENVIRONMENT="DEV"
+            fi
+            
+            # Get the version from pom.xml
+            IMAGE_TAG=$(grep -m 1 "<version>" pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+            
+            # For dev branch, append the short SHA
+            if [ "${{ github.event.workflow_run.head_branch }}" == "dev" ]; then
+              SHORT_SHA=$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-7)
+              IMAGE_TAG="${IMAGE_TAG}-${SHORT_SHA}"
+            fi
+          fi
+
+          # Determine the correct ref for the deployment
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            REF="${{ github.event.workflow_run.head_sha }}"
+          else
+            REF="${GITHUB_SHA}"
+          fi
+
+          # Safe workflow_run_id extraction
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            WORKFLOW_RUN_ID="${{ github.event.workflow_run.id }}"
+          else
+            WORKFLOW_RUN_ID=""
+          fi
+          
+          echo "ENVIRONMENT=${ENVIRONMENT}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+          echo "Environment: ${ENVIRONMENT}"
+          echo "Image tag: ${IMAGE_TAG}"
+          echo "Ref: ${REF}"
+          echo "Workflow Run ID: ${WORKFLOW_RUN_ID}"
+          
+          # Set outputs for later steps
+          echo "environment=${ENVIRONMENT}" >> $GITHUB_OUTPUT
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "workflow_run_id=${WORKFLOW_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "ref=${REF}" >> $GITHUB_OUTPUT
+      
+  # Deploy to dev environment
+  deploy-to-dev:
+    name: Deploy to Dev
+    needs: determine-params
+    if: needs.determine-params.outputs.environment == 'DEV'
+    runs-on: ubuntu-latest
+    environment:
+      name: DEV
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Create GitHub Deployment
+        id: create_deployment
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: ${{ github.token }}
+          environment: DEV
+          ref: ${{ needs.determine-params.outputs.ref }}
+          description: 'Deployment of ${{ env.COMPONENT_NAME }} image ${{ needs.determine-params.outputs.image_tag }} to DEV'
+          auto-merge: false
+          payload: |
+            {
+              "image_tag": "${{ needs.determine-params.outputs.image_tag }}",
+              "component": "${{ env.COMPONENT_NAME }}",
+              "triggered_by": "${{ github.actor }}",
+              "timestamp": "${{ github.event.repository.updated_at }}",
+              "workflow_run_id": "${{ needs.determine-params.outputs.workflow_run_id }}"
+            }
+
+      - name: Update Deployment Status
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
+          state: "pending"
+          description: "Preparing to deploy"
+      
+      - name: Trigger Infrastructure Deployment
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+          repository: ${{ env.INFRA_REPO }}
+          event-type: new-image-dev
+          client-payload: |
+            {
+              "component": "${{ env.COMPONENT_NAME }}",
+              "image_tag": "${{ needs.determine-params.outputs.image_tag }}",
+              "source_repo": "${{ github.repository }}",
+              "source_deployment_id": "${{ steps.create_deployment.outputs.deployment_id }}"
+            }
+      
+      - name: Update Deployment Status
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
+          state: "in_progress"
+          description: "Deployment triggered in infrastructure repository"
+  
+  # Deploy to test environment
+  deploy-to-test:
+    name: Deploy to Test
+    needs: determine-params
+    if: needs.determine-params.outputs.environment == 'TEST'
+    runs-on: ubuntu-latest
+    environment:
+      name: TEST
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Create GitHub Deployment
+        id: create_deployment
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: ${{ github.token }}
+          environment: TEST
+          ref: ${{ needs.determine-params.outputs.ref }}
+          description: 'Deployment of ${{ env.COMPONENT_NAME }} image ${{ needs.determine-params.outputs.image_tag }} to TEST'
+          auto-merge: false
+          payload: |
+            {
+              "image_tag": "${{ needs.determine-params.outputs.image_tag }}",
+              "component": "${{ env.COMPONENT_NAME }}",
+              "triggered_by": "${{ github.actor }}",
+              "timestamp": "${{ github.event.repository.updated_at }}",
+              "workflow_run_id": "${{ needs.determine-params.outputs.workflow_run_id }}"
+            }
+
+      - name: Update Deployment Status
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
+          state: "pending"
+          description: "Preparing to deploy"
+      
+      - name: Trigger Infrastructure Deployment
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+          repository: ${{ env.INFRA_REPO }}
+          event-type: new-image-test
+          client-payload: |
+            {
+              "component": "${{ env.COMPONENT_NAME }}",
+              "image_tag": "${{ needs.determine-params.outputs.image_tag }}",
+              "source_repo": "${{ github.repository }}",
+              "source_deployment_id": "${{ steps.create_deployment.outputs.deployment_id }}"
+            }
+      
+      - name: Update Deployment Status
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
+          state: "in_progress"
+          description: "Deployment triggered in infrastructure repository"
+  
+  # Deploy to prod environment
+  deploy-to-prod:
+    name: Deploy to Production
+    needs: determine-params
+    if: needs.determine-params.outputs.environment == 'PROD'
+    runs-on: ubuntu-latest
+    environment:
+      name: PROD
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Create GitHub Deployment
+        id: create_deployment
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: ${{ github.token }}
+          environment: PROD
+          ref: ${{ needs.determine-params.outputs.ref }}
+          description: 'Deployment of ${{ env.COMPONENT_NAME }} image ${{ needs.determine-params.outputs.image_tag }} to PROD'
+          auto-merge: false
+          payload: |
+            {
+              "image_tag": "${{ needs.determine-params.outputs.image_tag }}",
+              "component": "${{ env.COMPONENT_NAME }}",
+              "triggered_by": "${{ github.actor }}",
+              "timestamp": "${{ github.event.repository.updated_at }}",
+              "workflow_run_id": "${{ needs.determine-params.outputs.workflow_run_id }}"
+            }
+
+      - name: Update Deployment Status
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
+          state: "pending"
+          description: "Preparing to deploy"
+      
+      - name: Trigger Infrastructure Deployment
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+          repository: ${{ env.INFRA_REPO }}
+          event-type: new-image-prod
+          client-payload: |
+            {
+              "component": "${{ env.COMPONENT_NAME }}",
+              "image_tag": "${{ needs.determine-params.outputs.image_tag }}",
+              "source_repo": "${{ github.repository }}",
+              "source_deployment_id": "${{ steps.create_deployment.outputs.deployment_id }}"
+            }
+      
+      - name: Update Deployment Status
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
+          state: "in_progress"
+          description: "Deployment triggered in infrastructure repository"
