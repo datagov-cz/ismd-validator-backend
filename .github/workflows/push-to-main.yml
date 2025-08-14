@@ -1,0 +1,66 @@
+name: Build Docker on Main
+
+on:
+  push:
+    branches:
+      - main
+    # Blacklist approach - ignore these paths
+    paths-ignore:
+      - '**/README.md'
+      - '**/.gitignore'
+      - '**/*.md'
+      - '**/.gitkeep'
+      - '**/LICENSE'
+      - '**/target/**'
+      - '**/.idea/**'
+      - '**/*.iml'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # Build Docker image for main branch
+  build-validator:
+    uses: ./.github/workflows/reusable-docker-build.yml
+    with:
+      branch: main
+      module: validator
+      
+  # Sync dev with main after Docker build
+  sync-dev:
+    needs: build-validator
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Get full history
+      
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin git@github.com:${{ github.repository }}.git
+      
+      - name: Recreate dev from main
+        run: |
+          # Get the current main branch
+          git fetch origin main
+          
+          # Create a temporary branch from main
+          git checkout main
+          git checkout -b temp-dev
+          
+          # Force push this branch to dev
+          echo "Recreating dev from main..."
+          git push --force origin temp-dev:dev
+          
+          echo "Dev branch has been recreated from main"
