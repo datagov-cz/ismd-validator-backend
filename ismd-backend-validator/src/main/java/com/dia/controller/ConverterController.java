@@ -69,7 +69,7 @@ public class ConverterController {
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponseDto> convertFile(
             @RequestParam(value = "file", required = false) MultipartFile file,
-            @RequestParam(value = "urlString", required = false) String urlString,
+            @RequestParam(value = "fileUrl", required = false) String fileUrl,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
             @RequestParam(value = "includeCatalogRecord", required = false, defaultValue = "true") Boolean includeCatalogRecord,
@@ -81,30 +81,20 @@ public class ConverterController {
 
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
-
-        log.info("File conversion requested: filename={}, size={}, outputFormat={}, include detailed report={}",
-                file.getOriginalFilename(), file.getSize(), output, includeDetailedReport);
-
         if (file != null) {
             log.info("File conversion requested: filename={}, size={}, outputFormat={}, include detailed report={}",
                     file.getOriginalFilename(), file.getSize(), output, includeDetailedReport);
         }
 
-        if (urlString != null) {
+        if (fileUrl != null) {
             log.info("File conversion requested: fileUrl={}, outputFormat={}, include detailed report={}",
-                    urlString, output, includeDetailedReport);
+                    fileUrl, output, includeDetailedReport);
         }
 
         try {
-            if (file != null && urlString != null) {
+            if (file != null && fileUrl != null) {
                 return ResponseEntity.badRequest()
                         .body(ConversionResponseDto.error("Můžete zvolit pouze jeden způsob nahrání slovníků."));
-            }
-
-            MultipartFile processedFile = file;
-
-            if (urlString != null) {
-                processedFile = downloadAsMultipartFile(urlString);
             }
 
             if (!validateSingleFileUpload(request, requestId)) {
@@ -112,7 +102,13 @@ public class ConverterController {
                         .body(ConversionResponseDto.error("Můžete nahrát pouze jeden soubor."));
             }
 
-            if (processedFile.isEmpty()) {
+            MultipartFile processedFile = file;
+
+            if (fileUrl != null) {
+                processedFile = downloadAsMultipartFile(fileUrl);
+            }
+
+            if (processedFile == null || processedFile.isEmpty()) {
                 log.warn("Empty file upload attempt");
                 return ResponseEntity.badRequest()
                         .body(ConversionResponseDto.error("Nebyl vložen žádný soubor."));
