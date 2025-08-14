@@ -49,7 +49,7 @@ public class ArchiConstants {
     public static final String AGENDA = "agenda";
     public static final String JE_PPDF = "je-sdílen-v-ppdf";
     public static final String JE_VEREJNY = "je-pojem-veřejný";
-    public static final String USTANOVENI_NEVEREJNOST = "ustanovení-dokládající-neveřejnost";
+    public static final String USTANOVENI_NEVEREJNOST = "ustanovení-dokládající-neveřejnost-údaje";
     public static final String LOKALNI_KATALOG = "adresa-lokálního-katalogu-dat-ve-kterém-bude-slovník-registrován";
     public static final String DEFINICNI_OBOR = "definiční-obor";
     public static final String OBOR_HODNOT = "obor-hodnot";
