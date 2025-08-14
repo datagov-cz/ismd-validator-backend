@@ -22,7 +22,6 @@
         <developer/>
     </developers>
     <modules>
-        <module>ismd-backend-common</module>
         <module>ismd-backend-validator</module>
     </modules>
     <scm>
@@ -33,5 +32,6 @@
     </scm>
     <properties>
         <java.version>17</java.version>
+        <ismd-validator-common.version>1.0-SNAPSHOT</ismd-validator-common.version>
     </properties>
 </project>

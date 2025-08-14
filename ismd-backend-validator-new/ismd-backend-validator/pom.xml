@@ -81,8 +81,8 @@
         </dependency>
         <dependency>
             <groupId>com.dia</groupId>
-            <artifactId>ismd-backend-common</artifactId>
-            <version>${version}</version>
+            <artifactId>ismd-validator-common</artifactId>
+            <version>${ismd-validator-common.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
