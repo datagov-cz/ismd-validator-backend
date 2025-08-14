@@ -28,6 +28,7 @@ permissions:
   contents: read
   deployments: write
   actions: read
+  packages: read
 
 env:
   INFRA_REPO: ${{ github.repository_owner }}/ismd-infrastructure
@@ -51,6 +52,12 @@ jobs:
         with:
           ref: dev
       
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
       - name: Determine environment and version
         id: determine_params
         run: |
@@ -64,8 +71,10 @@ jobs:
             if [ -n "${{ github.event.inputs.version }}" ]; then
               IMAGE_TAG="${{ github.event.inputs.version }}"
             else
-              # Otherwise get the latest version from pom.xml
-              IMAGE_TAG=$(grep -m 1 "<version>" pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+              # Otherwise get version from module POM via Maven
+              chmod +x mvnw || true
+              BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -pl ismd-backend-validator)
+              IMAGE_TAG="$BASE_VERSION"
             fi
 
             # For manual DEV, append short SHA only when no explicit version was provided
@@ -81,8 +90,10 @@ jobs:
               ENVIRONMENT="DEV"
             fi
             
-            # Get the version from pom.xml
-            IMAGE_TAG=$(grep -m 1 "<version>" pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+            # Get version from module POM via Maven
+            chmod +x mvnw || true
+            BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -pl ismd-backend-validator)
+            IMAGE_TAG="$BASE_VERSION"
             
             # For dev branch, append the short SHA
             if [ "${{ github.event.workflow_run.head_branch }}" == "dev" ]; then
@@ -117,11 +128,38 @@ jobs:
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "workflow_run_id=${WORKFLOW_RUN_ID}" >> $GITHUB_OUTPUT
           echo "ref=${REF}" >> $GITHUB_OUTPUT
+  
+  # Ensure the image tag exists in GHCR before dispatching to infra
+  validate-image:
+    name: Validate Image Tag Exists
+    runs-on: ubuntu-latest
+    needs: determine-params
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check manifest exists
+        run: |
+          ENV_UPPER='${{ needs.determine-params.outputs.environment }}'
+          ENV_LOWER=$(echo "$ENV_UPPER" | tr '[:upper:]' '[:lower:]')
+          IMAGE_TAG='${{ needs.determine-params.outputs.image_tag }}'
+          REPO_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${REPO_OWNER}/ismd-validator-backend-${ENV_LOWER}:${IMAGE_TAG}"
+          echo "Validating image: $IMAGE"
+          if ! docker manifest inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "ERROR: Image manifest not found for $IMAGE" >&2
+            exit 1
+          fi
+          echo "Image exists: $IMAGE"
       
   # Deploy to dev environment
   deploy-to-dev:
     name: Deploy to Dev
-    needs: determine-params
+    needs: [determine-params, validate-image]
     if: needs.determine-params.outputs.environment == 'DEV'
     runs-on: ubuntu-latest
     environment:
@@ -182,7 +220,7 @@ jobs:
   # Deploy to test environment
   deploy-to-test:
     name: Deploy to Test
-    needs: determine-params
+    needs: [determine-params, validate-image]
     if: needs.determine-params.outputs.environment == 'TEST'
     runs-on: ubuntu-latest
     environment:
@@ -243,7 +281,7 @@ jobs:
   # Deploy to prod environment
   deploy-to-prod:
     name: Deploy to Production
-    needs: determine-params
+    needs: [determine-params, validate-image]
     if: needs.determine-params.outputs.environment == 'PROD'
     runs-on: ubuntu-latest
     environment:
