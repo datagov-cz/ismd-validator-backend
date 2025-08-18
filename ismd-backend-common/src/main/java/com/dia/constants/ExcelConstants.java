@@ -24,9 +24,9 @@ public class ExcelConstants {
     public static final String JE_PPDF = "Je pojem sdílen v PPDF?";
     public static final String JE_VEREJNY = "Je pojem veřejný?";
     public static final String USTANOVENI_DOKLADAJICI_NEVEREJNOST = "Ustanovení dokládající neveřejnost pojmu";
-    public static final String ZPUSOB_SDILENI_UDEJE = "Způsob sdílení údaje";
-    public static final String ZPUSOB_ZISKANI_UDEJE = "Způsob získání údaje";
-    public static final String TYP_OBSAHU_UDAJE = "Typ obsahu údaje";
+    public static final String ZPUSOB_SDILENI_UDEJE = "Způsob sdílení údajů";
+    public static final String ZPUSOB_ZISKANI_UDEJE = "Způsob získání údajů";
+    public static final String TYP_OBSAHU_UDAJE = "Typ obsahu údajů";
 
     private ExcelConstants() {
     }
