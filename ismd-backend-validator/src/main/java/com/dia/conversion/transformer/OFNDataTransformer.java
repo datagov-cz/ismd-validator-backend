@@ -1163,9 +1163,9 @@ public class OFNDataTransformer {
 
     private String getGovernancePropertyConstant(String propertyType) {
         return switch (propertyType) {
-            case "sharing-method" -> getConstantValue(ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údaje");
-            case "acquisition-method" -> getConstantValue(ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údaje");
-            case "content-type" -> getConstantValue(TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údaje");
+            case "sharing-method" -> getConstantValue(ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údajů");
+            case "acquisition-method" -> getConstantValue(ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
+            case "content-type" -> getConstantValue(TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
             default -> {
                 log.warn("Unknown governance property type: {}", propertyType);
                 yield null;
@@ -1184,17 +1184,43 @@ public class OFNDataTransformer {
     }
 
     private void addGovernanceProperty(Resource resource, String value, String propertyName) {
-        if (value != null && !value.trim().isEmpty()) {
-            Property property = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
-
-            if (DataTypeConverter.isUri(value)) {
-                resource.addProperty(property, ontModel.createResource(value));
-                log.debug("Added governance property {} as URI: {}", propertyName, value);
-            } else {
-                DataTypeConverter.addTypedProperty(resource, property, value, null, ontModel);
-                log.debug("Added governance property {} as typed literal: {}", propertyName, value);
-            }
+        if (value == null || value.trim().isEmpty()) {
+            return;
         }
+
+        String trimmedValue = value.trim();
+        Property property = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+
+        String governanceIRI = transformToGovernanceIRI(propertyName, trimmedValue);
+
+        if (governanceIRI != null) {
+            resource.addProperty(property, ontModel.createResource(governanceIRI));
+            log.debug("Added governance property {} as governance IRI: {} -> {}", propertyName, trimmedValue, governanceIRI);
+        } else if (DataTypeConverter.isUri(trimmedValue)) {
+            resource.addProperty(property, ontModel.createResource(trimmedValue));
+            log.debug("Added governance property {} as URI: {}", propertyName, trimmedValue);
+        } else {
+            DataTypeConverter.addTypedProperty(resource, property, trimmedValue, null, ontModel);
+            log.debug("Added governance property {} as typed literal: {}", propertyName, trimmedValue);
+        }
+    }
+
+    private String transformToGovernanceIRI(String propertyName, String value) {
+        if (propertyName == null || value == null) {
+            return null;
+        }
+
+        String sanitizedValue = UtilityMethods.sanitizeForIRI(value);
+
+        return switch (propertyName) {
+            case "typ-obsahu-údajů" ->
+                    "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/" + sanitizedValue;
+            case "způsob-sdílení-údajů" ->
+                    "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/" + sanitizedValue;
+            case "způsob-získání-údajů" ->
+                    "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/" + sanitizedValue;
+            default -> null;
+        };
     }
 
     private void addDomainRangeRelationships(Resource relationshipResource, RelationshipData relationshipData) {
