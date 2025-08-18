@@ -25,10 +25,11 @@ import java.util.List;
 import java.util.Map;
 
 import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.ArchiConstants.EKVIVALENTNI_POJEM;
+import static com.dia.constants.ArchiConstants.JE_PPDF;
 import static com.dia.constants.ArchiConstants.POPIS;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
-import static com.dia.constants.ExcelConstants.TYP_OBSAHU_UDAJE;
-import static com.dia.constants.ExcelConstants.ZPUSOB_ZISKANI_UDEJE;
+import static com.dia.constants.ExcelConstants.*;
 import static com.dia.constants.ExportConstants.Json.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -170,12 +171,12 @@ class JsonExporterUnitTest {
         JsonNode concept = pojmyArray.get(0);
 
         // Check governance properties
-        assertTrue(concept.has("způsob-sdílení-údaje"), "Should have sharing method");
-        assertTrue(concept.has("způsob-získání-údaje"), "Should have acquisition method");
-        assertTrue(concept.has("typ-obsahu-údaje"), "Should have content type");
+        assertTrue(concept.has("způsob-sdílení-údajů"), "Should have sharing method");
+        assertTrue(concept.has("způsob-získání-údajů"), "Should have acquisition method");
+        assertTrue(concept.has("typ-obsahu-údajů"), "Should have content type");
 
         // Verify arrays are properly formatted
-        JsonNode sharingMethod = concept.get("způsob-sdílení-údaje");
+        JsonNode sharingMethod = concept.get("způsob-sdílení-údajů");
         assertTrue(sharingMethod.isArray(), "Sharing method should be array");
         assertFalse(sharingMethod.isEmpty(), "Should have at least one sharing method");
     }
@@ -194,9 +195,9 @@ class JsonExporterUnitTest {
         JsonNode concept = pojmyArray.get(0);
 
         // Should find governance properties from fallback namespace
-        assertTrue(concept.has("způsob-sdílení-údaje") ||
-                        concept.has("způsob-získání-údaje") ||
-                        concept.has("typ-obsahu-údaje"),
+        assertTrue(concept.has("způsob-sdílení-údajů") ||
+                        concept.has("způsob-získání-údajů") ||
+                        concept.has("typ-obsahu-údajů"),
                 "Should have at least one governance property from fallback");
     }
 
@@ -213,7 +214,7 @@ class JsonExporterUnitTest {
         JsonNode pojmyArray = rootNode.get("pojmy");
         JsonNode concept = pojmyArray.get(0);
 
-        JsonNode sharingMethod = concept.get("způsob-sdílení-údaje");
+        JsonNode sharingMethod = concept.get("způsob-sdílení-údajů");
         assertTrue(sharingMethod.isArray(), "Should be array");
         assertEquals(3, sharingMethod.size(), "Should split semicolon-separated values");
         assertEquals("Method1", sharingMethod.get(0).asText());
@@ -600,7 +601,7 @@ class JsonExporterUnitTest {
         concept.addProperty(SKOS.prefLabel, "Governance Concept", "cs");
 
         // Add governance properties
-        Property sharingProp = ontModel.createProperty(effectiveNamespace + "Způsob sdílení údaje");
+        Property sharingProp = ontModel.createProperty(effectiveNamespace + ZPUSOB_SDILENI_UDEJE);
         concept.addProperty(sharingProp, "Public sharing");
         concept.addProperty(sharingProp, "Restricted sharing");
 
@@ -641,7 +642,7 @@ class JsonExporterUnitTest {
         concept.addProperty(SKOS.prefLabel, "Multi Value Concept", "cs");
 
         // Add property with semicolon-separated values
-        Property sharingProp = ontModel.createProperty(effectiveNamespace + "Způsob sdílení údaje");
+        Property sharingProp = ontModel.createProperty(effectiveNamespace + ZPUSOB_SDILENI_UDEJE);
         concept.addProperty(sharingProp, "Method1;Method2;Method3");
 
         resourceMap.put("multi-value-concept-id", concept);
