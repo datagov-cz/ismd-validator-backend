@@ -27,7 +27,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class SSPReaderTest {
+class SSPReaderUnitTest {
 
     @Mock
     private SPARQLConfiguration config;
