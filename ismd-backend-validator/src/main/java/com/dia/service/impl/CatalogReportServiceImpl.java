@@ -89,7 +89,7 @@ public class CatalogReportServiceImpl implements CatalogReportService {
 
     private boolean shouldGenerateCatalogReport(ValidationResultsDto validationResults) {
         if (validationResults == null || validationResults.getSeverityGroups() == null) {
-            return false;
+            return true;
         }
 
         return validationResults.getSeverityGroups().stream()
