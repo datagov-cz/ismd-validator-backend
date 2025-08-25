@@ -14,6 +14,7 @@ import com.dia.utility.UtilityMethods;
 import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +67,10 @@ public class ConverterController {
 
     private HttpClient httpClient;
 
+    @Operation(
+            summary = "Konverze slovníku ze souboru nebo URL do formátu dle OFN a jeho export dle parametrů,",
+            description = "Konverze slovníku ze souboru nebo URL do formátu dle OFN a jeho export dle parametrů. Podporuje vstup v Archi xml, EA xmi, Excel xlsx, a SSP. Podporuje vložení pouze jednoho souboru. Podporuje slovníky v url dle OFN. Formát výstupu konverze podporuje json-ld a ttl. Podporuje validaci dle SHACL. Podporuje generaci výpisu z validace a generaci nekompletního katalogizačního záznamu do NKD."
+    )
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponseDto> convertFile(
             @RequestParam(value = "file", required = false) MultipartFile file,
@@ -220,6 +225,10 @@ public class ConverterController {
         }
     }
 
+    @Operation(
+            summary = "Konverze slovníku vyhledaného dle IRI do formátu dle OFN a jeho export dle parametrů.",
+            description = "Konverze slovníku vyhledaného přes SPARQL do formátu dle OFN a jeho export dle parametrů. Podporuje vyhedávání dle IRI. Formát výstupu konverze podporuje json-ld a ttl. Podporuje validaci dle SHACL. Podporuje generaci výpisu z validace a generaci nekompletního katalogizačního záznamu do NKD."
+    )
     @PostMapping("/ssp/convert")
     public ResponseEntity<ConversionResponseDto> convertSSPFromIRI(
             @RequestParam(value = "iri") String iri,
@@ -267,6 +276,10 @@ public class ConverterController {
         }
     }
 
+    @Operation(
+            summary = "Stažení validační zprávy.",
+            description = "Stažení validační zprávy z kontroly slovníku dle SHACL. Soubor je ve formátu csv."
+    )
     @PostMapping("/convert/detailed-report/csv")
     public ResponseEntity<byte[]> downloadDetailedValidationReportCSV(
             @RequestPart (value = "detailedReport") DetailedValidationReportDto detailedReport,
@@ -318,6 +331,10 @@ public class ConverterController {
         }
     }
 
+    @Operation(
+            summary = "Stažení nekompletního katalogizačního záznamu.",
+            description = "Stažení nekompletního katalogizačního záznamu pro nahrání do NKD. Soubor je ve formátu json."
+    )
     @PostMapping("/convert/catalog-record/json")
     public ResponseEntity<String> downloadCatalogRecordJSON(
             @RequestPart (value = "catalogRecord") CatalogRecordDto catalogRecord,
