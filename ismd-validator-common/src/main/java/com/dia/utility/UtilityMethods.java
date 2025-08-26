@@ -4,7 +4,6 @@ import com.dia.exceptions.ConversionException;
 import com.dia.exceptions.UnsupportedFormatException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.http.HttpResponse;
@@ -181,7 +180,7 @@ public class UtilityMethods {
             return true;
         }
 
-        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/agenda/A)(\\d+)$");
+        return value.matches("^https://.*?/agenda/A(\\d+)$");
     }
 
     public String transformAgendaValue(String value) {
@@ -198,6 +197,11 @@ public class UtilityMethods {
             return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/" + value;
         }
 
+        if (value.matches("^https://.*?/agenda/A(\\d+)$")) {
+            String agendaCode = value.replaceAll("^https://.*?/agenda/(A\\d+)$", "$1");
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/" + agendaCode;
+        }
+
         return value;
     }
 
@@ -211,7 +215,7 @@ public class UtilityMethods {
             return true;
         }
 
-        return value.matches("^(https://rpp-opendata\\.egon\\.gov\\.cz/odrpp/zdroj/isvs/)(\\d+)$");
+        return value.matches("^https://.*?/isvs/(\\d+)$");
     }
 
     public String transformAISValue(String value) {
@@ -224,6 +228,11 @@ public class UtilityMethods {
             return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/" + value;
         }
 
+        if (value.matches("^https://.*?/isvs/(\\d+)$")) {
+            String isvsCode = value.replaceAll("^https://.*?/isvs/(\\d+)$", "$1");
+            return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/" + isvsCode;
+        }
+
         return value;
     }
 
@@ -233,8 +242,8 @@ public class UtilityMethods {
 
     public String extractEliPart(String provision) {
         String pattern = ".*?([/\\\\]eli[/\\\\]cz[/\\\\].*)";
-        Pattern regex = Pattern.compile(pattern);
-        Matcher matcher = regex.matcher(provision);
+        java.util.regex.Pattern regex = java.util.regex.Pattern.compile(pattern);
+        java.util.regex.Matcher matcher = regex.matcher(provision);
 
         if (matcher.find()) {
             String eliPart = matcher.group(1);

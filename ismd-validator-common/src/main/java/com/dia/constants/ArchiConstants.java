@@ -49,15 +49,15 @@ public class ArchiConstants {
     public static final String AGENDA = "agenda";
     public static final String JE_PPDF = "je-sdílen-v-ppdf";
     public static final String JE_VEREJNY = "je-pojem-veřejný";
-    public static final String USTANOVENI_NEVEREJNOST = "ustanovení-dokládající-neveřejnost";
+    public static final String USTANOVENI_NEVEREJNOST = "ustanovení-dokládající-neveřejnost-údaje";
     public static final String LOKALNI_KATALOG = "adresa-lokálního-katalogu-dat-ve-kterém-bude-slovník-registrován";
     public static final String DEFINICNI_OBOR = "definiční-obor";
     public static final String OBOR_HODNOT = "obor-hodnot";
     public static final String NADRAZENA_TRIDA = "nadřazená-třída";
     public static final String SUPP = "související-ustanovení-právního-předpisu";
-    public static final String ZPUSOB_SDILENI = "má-způsob-sdílení-údaje";
-    public static final String ZPUSOB_ZISKANI = "má-kategorii-údaje";
-    public static final String TYP_OBSAHU = "má-typ-obsahu-údaje";
+    public static final String ZPUSOB_SDILENI = "má-způsob-sdílení-údajů";
+    public static final String ZPUSOB_ZISKANI = "má-kategorii-údajů";
+    public static final String TYP_OBSAHU = "má-typ-obsahu-údajů";
 
     // =============== LONG FORM PROPERTIES ===============
     public static final String JE_PPDF_LONG = "je-sdílen-v-propojeném-datovém-fondu";

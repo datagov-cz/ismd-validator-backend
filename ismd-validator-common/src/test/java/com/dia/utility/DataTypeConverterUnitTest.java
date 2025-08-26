@@ -1,6 +1,5 @@
-package dia.utility;
+package com.dia.utility;
 
-import com.dia.utility.DataTypeConverter;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
