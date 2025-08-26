@@ -484,7 +484,6 @@ public class ArchiReader {
         return idToNameMap;
     }
 
-
     private RelationshipData createRelationshipData(Element relationship, Map<String, String> idToNameMap) {
         String name = getRelationshipName(relationship);
         if (name == null || name.isEmpty()) {
@@ -561,44 +560,42 @@ public class ArchiReader {
     }
 
     private void mapStandardizedLabel(String propId, String propName) {
-        if ("související zdroj".equals(propName)) {
-            propertyMapping.put(propId, SOUVISEJICI_ZDROJ);
-            return;
-        }
-        if ("zdroj".equals(propName)) {
-            propertyMapping.put(propId, ZDROJ);
-            return;
-        }
         if ("ekvivalentní pojem".equals(propName)) {
             propertyMapping.put(propId, EKVIVALENTNI_POJEM);
             return;
         }
 
-        Map<String, String> labelPatterns = Map.of(
-                "popis", POPIS,
-                "definice", DEFINICE,
-                "identifikátor", IDENTIFIKATOR,
-                "ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST,
-                "agenda", AGENDA,
-                "agendový informační systém", AIS,
-                "je pojem sdílen v PPDF?", JE_PPDF,
-                "je pojem veřejný?", JE_VEREJNY,
-                "alternativní název", ALTERNATIVNI_NAZEV,
-                "datový typ", DATOVY_TYP
-        );
+        Map<String, String> specificPatterns = new LinkedHashMap<>();
+        specificPatterns.put("související zdroj", SOUVISEJICI_ZDROJ);
+        specificPatterns.put("ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST);
+        specificPatterns.put("agendový informační systém", AIS);
+        specificPatterns.put("je pojem sdílen v PPDF?", JE_PPDF);
+        specificPatterns.put("je pojem veřejný?", JE_VEREJNY);
+        specificPatterns.put("alternativní název", ALTERNATIVNI_NAZEV);
+        specificPatterns.put("datový typ", DATOVY_TYP);
+        specificPatterns.put("způsob sdílení údaje", ZPUSOB_SDILENI);
+        specificPatterns.put("způsob získání údaje", ZPUSOB_ZISKANI);
+        specificPatterns.put("typ obsahu údaje", TYP_OBSAHU);
+        specificPatterns.put("adresa lokálního katalogu dat", LOKALNI_KATALOG);
 
-        for (Map.Entry<String, String> pattern : labelPatterns.entrySet()) {
+        specificPatterns.put("zdroj", ZDROJ);
+        specificPatterns.put("popis", POPIS);
+        specificPatterns.put("definice", DEFINICE);
+        specificPatterns.put("identifikátor", IDENTIFIKATOR);
+        specificPatterns.put("agenda", AGENDA);
+
+        for (Map.Entry<String, String> pattern : specificPatterns.entrySet()) {
             if (propName.contains(pattern.getKey())) {
                 propertyMapping.put(propId, pattern.getValue());
-                break;
+                log.debug("Mapped propId '{}' with name '{}' to constant '{}'",
+                        propId, propName, pattern.getValue());
+                return;
             }
         }
 
         if (propName.contains("typ")) {
             propertyMapping.put(propId, TYP);
             log.debug("Mapped propId '{}' with name '{}' to TYP constant", propId, propName);
-        } else if (propName.contains("adresa lokálního katalogu dat")) {
-            propertyMapping.put(propId, LOKALNI_KATALOG);
         }
     }
 

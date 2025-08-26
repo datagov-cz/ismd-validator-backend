@@ -291,7 +291,7 @@ public class JsonExporter {
                 "iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice", "ekvivalentní pojem",
                 DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI,
                 DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
-                "způsob-sdílení-údaje", "způsob-získání-údaje", "typ-obsahu-údaje"
+                "způsob-sdílení-údajů", "způsob-získání-údajů", "typ-obsahu-údajů"
         };
 
         for (String field : orderedFields) {
@@ -479,13 +479,13 @@ public class JsonExporter {
 
     private void addGovernanceProperties(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
         addGovernancePropertyWithFallback(concept, pojemObj, namespace,
-                "Způsob sdílení údaje", ZPUSOB_SDILENI, "způsob-sdílení-údaje");
+                "Způsob sdílení údajů", ZPUSOB_SDILENI, "způsob-sdílení-údajů");
 
         addGovernancePropertyWithFallback(concept, pojemObj, namespace,
-                ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údaje");
+                ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
 
         addGovernancePropertyWithFallback(concept, pojemObj, namespace,
-                TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údaje");
+                TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
     }
 
     private void addGovernancePropertyWithFallback(Resource concept, JSONObject pojemObj, String namespace,

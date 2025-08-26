@@ -112,7 +112,7 @@ public class SSPReader {
         }
     }
 
-    private VocabularyMetadata readVocabularyMetadata(String ontologyIRI) {
+    public VocabularyMetadata readVocabularyMetadata(String ontologyIRI) {
         log.debug("Reading vocabulary metadata for: {}", ontologyIRI);
 
         VocabularyMetadata metadata = new VocabularyMetadata();
@@ -162,7 +162,7 @@ public class SSPReader {
         return metadata;
     }
 
-    private Map<String, ConceptData> readVocabularyConcepts(String namespace) {
+    public Map<String, ConceptData> readVocabularyConcepts(String namespace) {
         log.debug("Reading vocabulary concepts for namespace: {}", namespace);
 
         String queryString = String.format(VOCABULARY_CONCEPTS_QUERY, namespace);
@@ -218,7 +218,7 @@ public class SSPReader {
         return concepts;
     }
 
-    private Map<String, String> readConceptTypes(String namespace) {
+    public Map<String, String> readConceptTypes(String namespace) {
         log.debug("Reading concept types for namespace: {}", namespace);
 
         Map<String, String> conceptTypes = new HashMap<>();
@@ -299,7 +299,7 @@ public class SSPReader {
                 name.matches(".*\\b(číslo|kód|název|datum|hodnota)\\b.*");
     }
 
-    private Map<String, RelationshipInfo> readRelationshipElements(String namespace) {
+    public Map<String, RelationshipInfo> readRelationshipElements(String namespace) {
         log.debug("Reading relationship elements for namespace: {}", namespace);
 
         String queryString = String.format(RELATIONSHIP_ELEMENTS_SIMPLE_QUERY, namespace);
@@ -349,7 +349,7 @@ public class SSPReader {
         return relationshipInfos;
     }
 
-    private Map<String, DomainRangeInfo> readDomainRangeInfo(String namespace) {
+    public Map<String, DomainRangeInfo> readDomainRangeInfo(String namespace) {
         log.debug("Reading domain/range information for namespace: {}", namespace);
 
         String queryString = String.format(DOMAIN_RANGE_QUERY, namespace);
@@ -396,7 +396,7 @@ public class SSPReader {
         return domainRangeMap;
     }
 
-    private List<HierarchyData> readHierarchies(String namespace, Map<String, ConceptData> concepts) {
+    public List<HierarchyData> readHierarchies(String namespace, Map<String, ConceptData> concepts) {
         log.debug("Reading hierarchies for namespace: {}", namespace);
 
         String queryString = String.format(HIERARCHY_QUERY, namespace);

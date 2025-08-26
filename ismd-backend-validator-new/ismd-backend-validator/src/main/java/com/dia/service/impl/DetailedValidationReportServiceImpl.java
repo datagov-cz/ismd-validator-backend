@@ -232,7 +232,8 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
             Map<String, RuleViolationDto> ruleViolations = new HashMap<>();
 
             Map<String, List<ValidationResult>> resultsByRule = results.stream()
-                    .collect(Collectors.groupingBy(ValidationResult::ruleName));
+                    .collect(Collectors.groupingBy(result ->
+                            result.ruleName() != null ? result.ruleName() : "unknown-rule"));
 
             resultsByRule.forEach((ruleName, ruleResults) -> {
                 ValidationResult firstResult = ruleResults.get(0);

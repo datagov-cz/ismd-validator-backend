@@ -14,6 +14,7 @@ import com.dia.utility.UtilityMethods;
 import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,10 +67,14 @@ public class ConverterController {
 
     private HttpClient httpClient;
 
+    @Operation(
+            summary = "Konverze slovníku ze souboru nebo URL do formátu dle OFN a jeho export dle parametrů,",
+            description = "Konverze slovníku ze souboru nebo URL do formátu dle OFN a jeho export dle parametrů. Podporuje vstup v Archi xml, EA xmi, Excel xlsx, a SSP. Podporuje vložení pouze jednoho souboru. Podporuje slovníky v url dle OFN. Formát výstupu konverze podporuje json-ld a ttl. Podporuje validaci dle SHACL. Podporuje generaci výpisu z validace a generaci nekompletního katalogizačního záznamu do NKD."
+    )
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponseDto> convertFile(
             @RequestParam(value = "file", required = false) MultipartFile file,
-            @RequestParam(value = "urlString", required = false) String urlString,
+            @RequestParam(value = "fileUrl", required = false) String fileUrl,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
             @RequestParam(value = "includeCatalogRecord", required = false, defaultValue = "true") Boolean includeCatalogRecord,
@@ -81,30 +86,20 @@ public class ConverterController {
 
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
-
-        log.info("File conversion requested: filename={}, size={}, outputFormat={}, include detailed report={}",
-                file.getOriginalFilename(), file.getSize(), output, includeDetailedReport);
-
         if (file != null) {
             log.info("File conversion requested: filename={}, size={}, outputFormat={}, include detailed report={}",
                     file.getOriginalFilename(), file.getSize(), output, includeDetailedReport);
         }
 
-        if (urlString != null) {
+        if (fileUrl != null) {
             log.info("File conversion requested: fileUrl={}, outputFormat={}, include detailed report={}",
-                    urlString, output, includeDetailedReport);
+                    fileUrl, output, includeDetailedReport);
         }
 
         try {
-            if (file != null && urlString != null) {
+            if (file != null && fileUrl != null) {
                 return ResponseEntity.badRequest()
                         .body(ConversionResponseDto.error("Můžete zvolit pouze jeden způsob nahrání slovníků."));
-            }
-
-            MultipartFile processedFile = file;
-
-            if (urlString != null) {
-                processedFile = downloadAsMultipartFile(urlString);
             }
 
             if (!validateSingleFileUpload(request, requestId)) {
@@ -112,7 +107,13 @@ public class ConverterController {
                         .body(ConversionResponseDto.error("Můžete nahrát pouze jeden soubor."));
             }
 
-            if (processedFile.isEmpty()) {
+            MultipartFile processedFile = file;
+
+            if (fileUrl != null) {
+                processedFile = downloadAsMultipartFile(fileUrl);
+            }
+
+            if (processedFile == null || processedFile.isEmpty()) {
                 log.warn("Empty file upload attempt");
                 return ResponseEntity.badRequest()
                         .body(ConversionResponseDto.error("Nebyl vložen žádný soubor."));
@@ -224,6 +225,10 @@ public class ConverterController {
         }
     }
 
+    @Operation(
+            summary = "Konverze slovníku vyhledaného dle IRI do formátu dle OFN a jeho export dle parametrů.",
+            description = "Konverze slovníku vyhledaného přes SPARQL do formátu dle OFN a jeho export dle parametrů. Podporuje vyhedávání dle IRI. Formát výstupu konverze podporuje json-ld a ttl. Podporuje validaci dle SHACL. Podporuje generaci výpisu z validace a generaci nekompletního katalogizačního záznamu do NKD."
+    )
     @PostMapping("/ssp/convert")
     public ResponseEntity<ConversionResponseDto> convertSSPFromIRI(
             @RequestParam(value = "iri") String iri,
@@ -271,6 +276,10 @@ public class ConverterController {
         }
     }
 
+    @Operation(
+            summary = "Stažení validační zprávy.",
+            description = "Stažení validační zprávy z kontroly slovníku dle SHACL. Soubor je ve formátu csv."
+    )
     @PostMapping("/convert/detailed-report/csv")
     public ResponseEntity<byte[]> downloadDetailedValidationReportCSV(
             @RequestPart (value = "detailedReport") DetailedValidationReportDto detailedReport,
@@ -322,6 +331,10 @@ public class ConverterController {
         }
     }
 
+    @Operation(
+            summary = "Stažení nekompletního katalogizačního záznamu.",
+            description = "Stažení nekompletního katalogizačního záznamu pro nahrání do NKD. Soubor je ve formátu json."
+    )
     @PostMapping("/convert/catalog-record/json")
     public ResponseEntity<String> downloadCatalogRecordJSON(
             @RequestPart (value = "catalogRecord") CatalogRecordDto catalogRecord,
