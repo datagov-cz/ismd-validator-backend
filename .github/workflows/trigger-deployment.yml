@@ -6,6 +6,9 @@ on:
     workflows: [Build Docker on Main, Build Docker on Dev]
     types: [completed]
     branches: [main, dev]
+  # Receive completion signal from the infrastructure repo
+  repository_dispatch:
+    types: [infra-deploy-complete]
   
   # Manual trigger with environment and version selection
   workflow_dispatch:
@@ -60,6 +63,7 @@ jobs:
       
       - name: Determine environment and version
         id: determine_params
+        working-directory: ismd-backend-validator-new
         run: |
           # For manual triggers, use the specified environment
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
@@ -128,6 +132,21 @@ jobs:
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "workflow_run_id=${WORKFLOW_RUN_ID}" >> $GITHUB_OUTPUT
           echo "ref=${REF}" >> $GITHUB_OUTPUT
+
+  # Finalize the GitHub Deployment when infra reports completion
+  finalize-deployment:
+    name: Finalize Deployment Status
+    runs-on: ubuntu-latest
+    if: github.event_name == 'repository_dispatch' && github.event.action == 'infra-deploy-complete'
+    steps:
+      - name: Update Deployment Status (final)
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ github.event.client_payload.deployment_id }}
+          state: ${{ github.event.client_payload.state }}
+          description: Deployment completed in infrastructure repository
+          log-url: ${{ github.event.client_payload.infra_run_url }}
   
   # Ensure the image tag exists in GHCR before dispatching to infra
   validate-image:
@@ -155,6 +174,9 @@ jobs:
             exit 1
           fi
           echo "Image exists: $IMAGE"
+  
+  # Note: Environment gate jobs removed to avoid duplicate Deployments.
+  # Protections will be enforced in the infrastructure repository's workflow.
       
   # Deploy to dev environment
   deploy-to-dev:
@@ -162,8 +184,6 @@ jobs:
     needs: [determine-params, validate-image]
     if: needs.determine-params.outputs.environment == 'DEV'
     runs-on: ubuntu-latest
-    environment:
-      name: DEV
     
     steps:
       - name: Checkout code
@@ -194,6 +214,7 @@ jobs:
           deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
           state: "pending"
           description: "Preparing to deploy"
+          log-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       
       - name: Trigger Infrastructure Deployment
         uses: peter-evans/repository-dispatch@v3
@@ -216,6 +237,7 @@ jobs:
           deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
           state: "in_progress"
           description: "Deployment triggered in infrastructure repository"
+          log-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   
   # Deploy to test environment
   deploy-to-test:
@@ -223,8 +245,6 @@ jobs:
     needs: [determine-params, validate-image]
     if: needs.determine-params.outputs.environment == 'TEST'
     runs-on: ubuntu-latest
-    environment:
-      name: TEST
     
     steps:
       - name: Checkout code
@@ -284,8 +304,6 @@ jobs:
     needs: [determine-params, validate-image]
     if: needs.determine-params.outputs.environment == 'PROD'
     runs-on: ubuntu-latest
-    environment:
-      name: PROD
     
     steps:
       - name: Checkout code

@@ -37,14 +37,16 @@ jobs:
 
       - name: Get current version in dev
         id: current-version
+        working-directory: ismd-backend-validator-new
         run: echo "version=$(./mvnw help:evaluate -DforceStdout -q -Dexpression=project.version)" >> $GITHUB_OUTPUT
 
       - name: Get version in main
         id: main-version
+        working-directory: ismd-backend-validator-new
         run: |
           # Get main branch version by directly parsing the output of git show
           ARTIFACT_ID=$(./mvnw help:evaluate -DforceStdout -q -Dexpression=project.artifactId)
-          MAIN_VERSION=$(git show main:pom.xml | grep -A 10 "<artifactId>$ARTIFACT_ID</artifactId>" | grep '<version>' | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
+          MAIN_VERSION=$(git show main:ismd-backend-validator-new/pom.xml | grep -A 10 "<artifactId>$ARTIFACT_ID</artifactId>" | grep '<version>' | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
           echo "version=$MAIN_VERSION" >> $GITHUB_OUTPUT
           echo "Main branch version: $MAIN_VERSION"
 
@@ -92,7 +94,7 @@ jobs:
           if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
             echo "Updating version from $CURRENT_VERSION to $NEW_VERSION"
             # Update version in root POM and all modules
-            ./mvnw versions:set -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false -DprocessAllModules=true
+            ismd-backend-validator-new/mvnw versions:set -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false -DprocessAllModules=true
           
             # Configure git
             git config user.name "github-actions[bot]"
@@ -109,7 +111,12 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
           fi
 
+      - name: Install common library locally
+        working-directory: ismd-backend-validator-new
+        run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
+
       - name: Run tests
+        working-directory: ismd-backend-validator-new
         run: |
           # Build and run tests to ensure the release is stable
           ./mvnw clean test

@@ -24,8 +24,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
+      - name: Install common library locally
+        working-directory: ismd-backend-validator-new
+        run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
+
       - name: Build with Maven
+        working-directory: ismd-backend-validator-new
         run: ./mvnw clean package -DskipTests=true
 
       - name: Run tests
+        working-directory: ismd-backend-validator-new
         run: ./mvnw test
