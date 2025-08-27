@@ -45,6 +45,7 @@ jobs:
 
       - name: Get version info
         id: version
+        working-directory: ismd-backend-validator-new
         run: |
           # Get the base version from Maven
           if [ -z "${{ inputs.module }}" ] || [ "${{ inputs.module }}" = "root" ]; then

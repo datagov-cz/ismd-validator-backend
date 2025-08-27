@@ -25,7 +25,9 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Build with Maven
+        working-directory: ismd-backend-validator-new
         run: ./mvnw clean package -DskipTests=true
 
       - name: Run tests
+        working-directory: ismd-backend-validator-new
         run: ./mvnw test
