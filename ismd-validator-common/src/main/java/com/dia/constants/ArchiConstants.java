@@ -36,10 +36,8 @@ public class ArchiConstants {
     public static final String OKAMZIK_VYTVORENI = "okamžik-vytvoření";
     public static final String DATUM = "datum";
     public static final String DATUM_A_CAS = "datum-a-čas";
-    public static final String ZDROJ = "zdroj";
-    public static final String SOUVISEJICI_ZDROJ = "související-zdroj";
-    public static final String DEFINUJICI_USTANOVENI = "definující-ustanovení";
-    public static final String SOUVISEJICI_USTANOVENI = "související-ustanovení";
+    public static final String DEFINUJICI_USTANOVENI = "definující-ustanovení-právního-předpisu";
+    public static final String SOUVISEJICI_USTANOVENI = "související-ustanovení-právního-předpisu";
     public static final String DEFINUJICI_NELEGISLATIVNI_ZDROJ = "definující-nelegislativní-zdroj";
     public static final String SOUVISEJICI_NELEGISLATIVNI_ZDROJ = "související-nelegislativní-zdroj";
 
