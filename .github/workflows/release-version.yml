@@ -111,6 +111,10 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
           fi
 
+      - name: Install common library locally
+        working-directory: ismd-backend-validator-new
+        run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
+
       - name: Run tests
         working-directory: ismd-backend-validator-new
         run: |
