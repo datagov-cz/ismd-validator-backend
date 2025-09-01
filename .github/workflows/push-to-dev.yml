@@ -36,70 +36,11 @@ jobs:
           else
             echo "skip-build=false" >> $GITHUB_OUTPUT
           fi
-    
-  check-changes:
-    needs: check-version-bump
-    if: needs.check-version-bump.outputs.skip-build != 'true'
-    runs-on: ubuntu-latest
-    outputs:
-      build-validator: ${{ steps.check-files.outputs.build-validator }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2  # Need previous commit for comparison
-      
-      - name: Check for file changes
-        id: check-files
-        run: |
-          # Get list of changed files
-          echo "Checking for changed files..."
-          git diff --name-only HEAD^ HEAD > changed_files.txt
-          cat changed_files.txt
-          
-          # Define files to ignore (blacklist)
-          IGNORE_FILES=('README.md' '*.md' '.gitignore' '.gitkeep' 'LICENSE' '*.iml')
-          
-          # Create a temporary file with all changes
-          cp changed_files.txt relevant_changes.txt
-          
-          # Filter out ignored files
-          for pattern in "${IGNORE_FILES[@]}"; do
-            grep -v "$pattern" relevant_changes.txt > temp && mv temp relevant_changes.txt || true
-          done
-          
-          # If no relevant files changed, skip builds
-          if [ ! -s relevant_changes.txt ]; then
-            echo "No relevant files changed, skipping builds"
-            echo "build-validator=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          # Check for changes that require both modules to be rebuilt
-          if grep -q '^\.github/workflows/' relevant_changes.txt || grep -q '^pom\.xml$' relevant_changes.txt; then
-            echo "Workflow files or root POM changed, rebuilding validator module"
-            echo "build-validator=true" >> $GITHUB_OUTPUT
-          else
-            # Check for module-specific changes if no workflow changes
-            # Only rebuild validator if common module's POM changed (version change)
-            if grep -q '^ismd-backend-common/pom.xml' relevant_changes.txt; then
-              echo "Common module POM changed, need to rebuild validator"
-              echo "build-validator=true" >> $GITHUB_OUTPUT
-            fi
-            
-            if grep -q '^ismd-backend-validator/' relevant_changes.txt; then
-              echo "Validator module files changed"
-              echo "build-validator=true" >> $GITHUB_OUTPUT
-            else
-              echo "No validator module changes"
-              echo "build-validator=false" >> $GITHUB_OUTPUT
-            fi
-          fi
-
-
-  # Build validator module if changed
+  
+  # Build validator module on every push (except version bump commits)
   build-validator:
-    needs: [run-tests, check-changes]
-    if: needs.check-changes.outputs.build-validator == 'true'
+    needs: [run-tests, check-version-bump]
+    if: needs.check-version-bump.outputs.skip-build != 'true'
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       branch: dev
