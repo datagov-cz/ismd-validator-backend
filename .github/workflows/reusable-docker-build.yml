@@ -70,7 +70,6 @@ jobs:
           echo "Using version: $VERSION (base: $BASE_VERSION, git: $GIT_SHA)"
 
       - name: Build and push Docker images
-        working-directory: ismd-backend-validator-new
         run: |
           REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           
@@ -97,8 +96,9 @@ jobs:
             echo "  - $IMAGE_TAG"
             echo "  - $LATEST_TAG"
             
-            # Build and push the image using the root Dockerfile
+            # Build and push the image using Dockerfile in ismd-backend-validator-new with repo-root context
             docker build \
+              -f ismd-backend-validator-new/Dockerfile \
               --target ${MODULE}-runtime \
               --build-arg MODULE="${MODULE_ARG}" \
               --build-arg MODULE_VERSION="${{ steps.version.outputs.version }}" \
