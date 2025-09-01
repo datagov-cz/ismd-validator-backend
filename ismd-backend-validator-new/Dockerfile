@@ -5,8 +5,12 @@ WORKDIR /app
 # Install bash
 RUN apk add --no-cache bash
 
-# Copy all files
-COPY . .
+# Copy validator and common modules from repo root context
+COPY ismd-backend-validator-new/ ./ismd-backend-validator-new
+COPY ismd-validator-common/ ./ismd-validator-common
+
+# Switch to validator module root (contains mvnw)
+WORKDIR /app/ismd-backend-validator-new
 
 # Make mvnw executable
 RUN chmod +x mvnw
@@ -15,6 +19,11 @@ RUN chmod +x mvnw
 ARG MODULE=.
 ARG BUILD_ARGS="-DskipTests"
 ARG MODULE_VERSION=unknown
+
+# Pre-install common library if present (temporary until published)
+RUN if [ -d ../ismd-validator-common ]; then \
+      ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install; \
+    fi
 
 # Build the specified module (or everything if not specified)
 RUN if [ "$MODULE" = "." ]; then \
@@ -43,7 +52,7 @@ ENV APP_VERSION=${MODULE_VERSION}
 ENV SPRING_PROFILES_ACTIVE=production
 
 # Copy the built JAR
-COPY --from=builder /app/ismd-backend-validator/target/ismd-backend-validator-*.jar app.jar
+COPY --from=builder /app/ismd-backend-validator-new/ismd-backend-validator/target/ismd-backend-validator-*.jar app.jar
 
 # Add labels for better image identification
 LABEL org.opencontainers.image.title="ISMD Backend Validator"
