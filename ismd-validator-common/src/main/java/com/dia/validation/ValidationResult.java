@@ -1,6 +1,6 @@
-package com.dia.validation.data;
+package com.dia.validation;
 
-import com.dia.enums.ValidationSeverity;
+import com.dia.utility.UtilityMethods;
 
 public record ValidationResult(ValidationSeverity severity, String message, String ruleName, String focusNodeUri,
                                String resultPathUri, String value) {
@@ -18,19 +18,7 @@ public record ValidationResult(ValidationSeverity severity, String message, Stri
     }
 
     public String getFocusNodeName() {
-        if (focusNodeUri == null) {
-            return null;
-        }
-
-        int lastSlash = focusNodeUri.lastIndexOf('/');
-        int lastHash = focusNodeUri.lastIndexOf('#');
-        int splitIndex = Math.max(lastSlash, lastHash);
-
-        if (splitIndex >= 0 && splitIndex < focusNodeUri.length() - 1) {
-            return focusNodeUri.substring(splitIndex + 1);
-        }
-
-        return focusNodeUri;
+        return UtilityMethods.extractNameFromIRI(focusNodeUri);
     }
 
     @Override

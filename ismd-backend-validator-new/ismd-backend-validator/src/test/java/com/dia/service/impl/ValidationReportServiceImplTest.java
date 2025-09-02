@@ -2,9 +2,9 @@ package com.dia.service.impl;
 
 import com.dia.controller.dto.SeverityGroupDto;
 import com.dia.controller.dto.ValidationResultsDto;
-import com.dia.enums.ValidationSeverity;
+import com.dia.validation.ValidationResult;
+import com.dia.validation.ValidationSeverity;
 import com.dia.validation.data.ISMDValidationReport;
-import com.dia.validation.data.ValidationResult;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

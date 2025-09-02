@@ -1,6 +1,7 @@
 package com.dia.validation.data;
 
-import com.dia.enums.ValidationSeverity;
+import com.dia.validation.ValidationResult;
+import com.dia.validation.ValidationSeverity;
 
 import java.time.Instant;
 import java.util.Collections;

@@ -1,8 +1,9 @@
 package com.dia.service.impl;
 
-import com.dia.enums.ValidationSeverity;
 import com.dia.exceptions.ValidationException;
 import com.dia.service.DetailedValidationReportService;
+import com.dia.validation.ValidationResult;
+import com.dia.validation.ValidationSeverity;
 import com.dia.validation.data.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
