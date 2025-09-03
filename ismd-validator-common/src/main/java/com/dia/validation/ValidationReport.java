@@ -8,11 +8,4 @@ public interface ValidationReport {
     boolean isValid();
     Instant getTimestamp();
     String getOntologyIri();
-
-    List<ValidationResult> getErrors();
-    List<ValidationResult> getWarnings();
-    long getErrorCount();
-    long getWarningCount();
-    boolean hasErrors();
-    String getSummary();
 }
