@@ -2,10 +2,10 @@ package com.dia.service.impl;
 
 import com.dia.controller.dto.SeverityGroupDto;
 import com.dia.controller.dto.ValidationResultsDto;
-import com.dia.enums.ValidationSeverity;
 import com.dia.service.ValidationReportService;
+import com.dia.validation.ValidationResult;
+import com.dia.validation.ValidationSeverity;
 import com.dia.validation.data.ISMDValidationReport;
-import com.dia.validation.data.ValidationResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
