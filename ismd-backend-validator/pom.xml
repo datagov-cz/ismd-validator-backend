@@ -9,11 +9,11 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.dia</groupId>
-    <artifactId>ismd-backend</artifactId>
+    <artifactId>ismd-backend-validator</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>ismd-backend</name>
-    <description>ismd-backend</description>
+    <name>ismd-backend-validator</name>
+    <description>ismd-backend-validator</description>
     <url/>
     <licenses>
         <license/>
