@@ -7,9 +7,8 @@ public interface ValidationReport {
     List<ValidationResult> getResults();
     boolean isValid();
     Instant getTimestamp();
-    String getOntologyId();
+    String getOntologyIri();
 
-    // Convenience methods
     List<ValidationResult> getErrors();
     List<ValidationResult> getWarnings();
     long getErrorCount();
