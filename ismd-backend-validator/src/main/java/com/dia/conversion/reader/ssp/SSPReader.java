@@ -324,7 +324,19 @@ public class SSPReader {
     public Map<String, RelationshipInfo> readRelationshipElements(String namespace) {
         log.debug("Reading relationship elements for namespace: {}", namespace);
 
-        String queryString = String.format(RELATIONSHIP_ELEMENTS_SIMPLE_QUERY, namespace);
+        Map<String, RelationshipInfo> relationshipInfos = executeRelationshipElementsQuery(namespace, RELATIONSHIP_ELEMENTS_SIMPLE_QUERY, true);
+        
+        if (relationshipInfos.isEmpty()) {
+            log.debug("Primary relationship elements query returned no results, trying fallback query");
+            relationshipInfos = executeRelationshipElementsQuery(namespace, RELATIONSHIP_ELEMENTS_FALLBACK_QUERY, false);
+        }
+
+        log.debug("Found relationship elements for {} relationships", relationshipInfos.size());
+        return relationshipInfos;
+    }
+
+    private Map<String, RelationshipInfo> executeRelationshipElementsQuery(String namespace, String queryTemplate, boolean useGraphPattern) {
+        String queryString = String.format(queryTemplate, namespace);
         log.debug("Executing relationship elements query: {}", queryString);
         Map<String, RelationshipInfo> relationshipInfos = new HashMap<>();
 
@@ -361,20 +373,31 @@ public class SSPReader {
                     }
                 }
 
-                log.debug("Processed {} relationship element results", resultCount);
+                log.debug("Processed {} relationship element results with pattern: {}", resultCount, useGraphPattern ? "GRAPH" : "FALLBACK");
             }
         } catch (Exception e) {
-            log.error("Error reading relationship elements", e);
+            log.error("Error reading relationship elements with query pattern: {}", useGraphPattern ? "GRAPH" : "FALLBACK", e);
         }
 
-        log.debug("Found relationship elements for {} relationships", relationshipInfos.size());
         return relationshipInfos;
     }
 
     public Map<String, DomainRangeInfo> readDomainRangeInfo(String namespace) {
         log.debug("Reading domain/range information for namespace: {}", namespace);
 
-        String queryString = String.format(DOMAIN_RANGE_QUERY, namespace);
+        Map<String, DomainRangeInfo> domainRangeMap = executeDomainRangeQuery(namespace, DOMAIN_RANGE_QUERY, true);
+        
+        if (domainRangeMap.isEmpty()) {
+            log.debug("Primary domain/range query returned no results, trying fallback query");
+            domainRangeMap = executeDomainRangeQuery(namespace, DOMAIN_RANGE_FALLBACK_QUERY, false);
+        }
+
+        log.debug("Found domain/range info for {} concepts", domainRangeMap.size());
+        return domainRangeMap;
+    }
+
+    private Map<String, DomainRangeInfo> executeDomainRangeQuery(String namespace, String queryTemplate, boolean useGraphPattern) {
+        String queryString = String.format(queryTemplate, namespace);
         log.debug("Executing domain/range query: {}", queryString);
         Map<String, DomainRangeInfo> domainRangeMap = new HashMap<>();
 
@@ -408,20 +431,31 @@ public class SSPReader {
                     }
                 }
 
-                log.debug("Processed {} domain/range results", resultCount);
+                log.debug("Processed {} domain/range results with pattern: {}", resultCount, useGraphPattern ? "GRAPH" : "FALLBACK");
             }
         } catch (Exception e) {
-            log.error("Error reading domain/range information", e);
+            log.error("Error reading domain/range information with query pattern: {}", useGraphPattern ? "GRAPH" : "FALLBACK", e);
         }
 
-        log.debug("Found domain/range info for {} concepts", domainRangeMap.size());
         return domainRangeMap;
     }
 
     public List<HierarchyData> readHierarchies(String namespace, Map<String, ConceptData> concepts) {
         log.debug("Reading hierarchies for namespace: {}", namespace);
 
-        String queryString = String.format(HIERARCHY_QUERY, namespace);
+        List<HierarchyData> hierarchies = executeHierarchiesQuery(namespace, concepts, HIERARCHY_QUERY, true);
+        
+        if (hierarchies.isEmpty()) {
+            log.debug("Primary hierarchies query returned no results, trying fallback query");
+            hierarchies = executeHierarchiesQuery(namespace, concepts, HIERARCHY_FALLBACK_QUERY, false);
+        }
+
+        log.debug("Found {} hierarchical relationships", hierarchies.size());
+        return hierarchies;
+    }
+
+    private List<HierarchyData> executeHierarchiesQuery(String namespace, Map<String, ConceptData> concepts, String queryTemplate, boolean useGraphPattern) {
+        String queryString = String.format(queryTemplate, namespace);
         log.debug("Executing hierarchies query: {}", queryString);
         List<HierarchyData> hierarchies = new ArrayList<>();
 
@@ -456,13 +490,12 @@ public class SSPReader {
                     }
                 }
 
-                log.debug("Processed {} hierarchy results, added {} valid hierarchies", resultCount, addedCount);
+                log.debug("Processed {} hierarchy results, added {} valid hierarchies with pattern: {}", resultCount, addedCount, useGraphPattern ? "GRAPH" : "FALLBACK");
             }
         } catch (Exception e) {
-            log.error("Error reading hierarchies", e);
+            log.error("Error reading hierarchies with query pattern: {}", useGraphPattern ? "GRAPH" : "FALLBACK", e);
         }
 
-        log.debug("Found {} hierarchical relationships", hierarchies.size());
         return hierarchies;
     }
 
