@@ -165,10 +165,8 @@ public class SSPReader {
     public Map<String, ConceptData> readVocabularyConcepts(String namespace) {
         log.debug("Reading vocabulary concepts for namespace: {}", namespace);
 
-        // Try primary query first
         Map<String, ConceptData> concepts = executeVocabularyConceptsQuery(namespace, VOCABULARY_CONCEPTS_QUERY, true);
         
-        // If no results, try fallback query
         if (concepts.isEmpty()) {
             log.debug("Primary vocabulary concepts query returned no results, trying fallback query");
             concepts = executeVocabularyConceptsQuery(namespace, VOCABULARY_CONCEPTS_FALLBACK_QUERY, false);
@@ -236,10 +234,8 @@ public class SSPReader {
 
         Map<String, String> conceptTypes;
 
-        // Try primary query first
         conceptTypes = executeConceptTypesQuery(namespace, MODEL_TYPES_QUERY, true);
         
-        // If no results, try fallback query
         if (conceptTypes.isEmpty()) {
             log.debug("Primary concept types query returned no results, trying fallback query");
             conceptTypes = executeConceptTypesQuery(namespace, MODEL_TYPES_FALLBACK_QUERY, false);
@@ -258,7 +254,6 @@ public class SSPReader {
             String name = concept.getName().toLowerCase();
             String defaultType;
 
-            // Use naming patterns to infer type for untyped concepts
             if (isRelationshipName(name)) {
                 defaultType = "https://slovník.gov.cz/základní/pojem/typ-vztahu";
                 log.debug("Assigned relationship type to untyped concept: {} ({})", concept.getName(), conceptIRI);
