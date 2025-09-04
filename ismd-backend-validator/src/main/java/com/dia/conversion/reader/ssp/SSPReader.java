@@ -165,7 +165,21 @@ public class SSPReader {
     public Map<String, ConceptData> readVocabularyConcepts(String namespace) {
         log.debug("Reading vocabulary concepts for namespace: {}", namespace);
 
-        String queryString = String.format(VOCABULARY_CONCEPTS_QUERY, namespace);
+        // Try primary query first
+        Map<String, ConceptData> concepts = executeVocabularyConceptsQuery(namespace, VOCABULARY_CONCEPTS_QUERY, true);
+        
+        // If no results, try fallback query
+        if (concepts.isEmpty()) {
+            log.debug("Primary vocabulary concepts query returned no results, trying fallback query");
+            concepts = executeVocabularyConceptsQuery(namespace, VOCABULARY_CONCEPTS_FALLBACK_QUERY, false);
+        }
+
+        log.debug("Found {} unique concepts", concepts.size());
+        return concepts;
+    }
+
+    private Map<String, ConceptData> executeVocabularyConceptsQuery(String namespace, String queryTemplate, boolean useGraphPattern) {
+        String queryString = String.format(queryTemplate, namespace);
         log.debug("Executing vocabulary concepts query: {}", queryString);
         Map<String, ConceptData> concepts = new HashMap<>();
 
@@ -211,48 +225,24 @@ public class SSPReader {
                 log.debug("Processed {} vocabulary concept results", resultCount);
             }
         } catch (Exception e) {
-            log.error("Error reading vocabulary concepts", e);
+            log.error("Error reading vocabulary concepts with query pattern: {}", useGraphPattern ? "GRAPH" : "FALLBACK", e);
         }
 
-        log.debug("Found {} unique concepts", concepts.size());
         return concepts;
     }
 
     public Map<String, String> readConceptTypes(String namespace) {
         log.debug("Reading concept types for namespace: {}", namespace);
 
-        Map<String, String> conceptTypes = new HashMap<>();
+        Map<String, String> conceptTypes;
 
-        String queryString = String.format(MODEL_TYPES_QUERY, namespace);
-        log.debug("Executing concept types query: {}", queryString);
-
-        try {
-            Query query = QueryFactory.create(queryString);
-
-            try (QueryExecution qexec = QueryExecutionHTTPBuilder
-                    .service(config.getSparqlEndpoint())
-                    .query(query)
-                    .sendMode(QuerySendMode.asPost)
-                    .build()) {
-
-                ResultSet results = qexec.execSelect();
-                int resultCount = 0;
-
-                while (results.hasNext()) {
-                    QuerySolution solution = results.nextSolution();
-                    resultCount++;
-
-                    String conceptIRI = solution.getResource("concept").getURI();
-                    String type = solution.getResource("type").getURI();
-
-                    conceptTypes.put(conceptIRI, type);
-                    log.debug("Found explicit type: {} -> {}", conceptIRI, type);
-                }
-
-                log.debug("Found {} explicitly typed concepts", resultCount);
-            }
-        } catch (Exception e) {
-            log.error("Error reading explicit concept types", e);
+        // Try primary query first
+        conceptTypes = executeConceptTypesQuery(namespace, MODEL_TYPES_QUERY, true);
+        
+        // If no results, try fallback query
+        if (conceptTypes.isEmpty()) {
+            log.debug("Primary concept types query returned no results, trying fallback query");
+            conceptTypes = executeConceptTypesQuery(namespace, MODEL_TYPES_FALLBACK_QUERY, false);
         }
 
         Map<String, ConceptData> allConcepts = readVocabularyConcepts(namespace);
@@ -287,6 +277,43 @@ public class SSPReader {
         return conceptTypes;
     }
 
+    private Map<String, String> executeConceptTypesQuery(String namespace, String queryTemplate, boolean useGraphPattern) {
+        String queryString = String.format(queryTemplate, namespace);
+        log.debug("Executing concept types query: {}", queryString);
+        Map<String, String> conceptTypes = new HashMap<>();
+
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
+
+                ResultSet results = qexec.execSelect();
+                int resultCount = 0;
+
+                while (results.hasNext()) {
+                    QuerySolution solution = results.nextSolution();
+                    resultCount++;
+
+                    String conceptIRI = solution.getResource("concept").getURI();
+                    String type = solution.getResource("type").getURI();
+
+                    conceptTypes.put(conceptIRI, type);
+                    log.debug("Found explicit type: {} -> {}", conceptIRI, type);
+                }
+
+                log.debug("Found {} explicitly typed concepts with pattern: {}", resultCount, useGraphPattern ? "GRAPH" : "FALLBACK");
+            }
+        } catch (Exception e) {
+            log.error("Error reading concept types with query pattern: {}", useGraphPattern ? "GRAPH" : "FALLBACK", e);
+        }
+
+        return conceptTypes;
+    }
+
     private boolean isRelationshipName(String name) {
         return name.contains("vykonává") || name.contains("má") || name.contains("je") ||
                 name.contains("obsahuje") || name.contains("patří") || name.contains("souvisí") ||
@@ -295,7 +322,7 @@ public class SSPReader {
 
 
     private boolean isPropertyName(String name) {
-        return name.startsWith("má-") || name.contains("hodnota") || name.contains("vlastnost") ||
+        return name.startsWith("má-") || name.startsWith("má ") || name.contains("hodnota") || name.contains("vlastnost") ||
                 name.matches(".*\\b(číslo|kód|název|datum|hodnota)\\b.*");
     }
 
