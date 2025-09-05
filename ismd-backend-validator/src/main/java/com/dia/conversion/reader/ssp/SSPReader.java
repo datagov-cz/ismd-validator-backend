@@ -3,6 +3,8 @@ package com.dia.conversion.reader.ssp;
 import com.dia.conversion.data.*;
 import com.dia.conversion.reader.ssp.config.SPARQLConfiguration;
 import com.dia.conversion.reader.ssp.data.ConceptData;
+import com.dia.conversion.reader.ssp.data.DomainRangeInfo;
+import com.dia.conversion.reader.ssp.data.PropertyDomainInfo;
 import com.dia.exceptions.ConversionException;
 import com.dia.utility.UtilityMethods;
 import lombok.Data;
@@ -51,6 +53,11 @@ public class SSPReader {
             Map<String, String> conceptTypes = readSGovConceptTypes(ontologyIRI, ownedConcepts);
             log.info("Found {} concept types", conceptTypes.size());
 
+            Map<String, DomainRangeInfo> relationshipDomainRangeInfo = readRelationshipDomainRangeInfo(ontologyIRI);
+            Map<String, PropertyDomainInfo> propertyDomainInfo = readPropertyDomainInfo(ontologyIRI);
+            log.info("Found {} relationship domain/range definitions", relationshipDomainRangeInfo.size());
+            log.info("Found {} property domain definitions", propertyDomainInfo.size());
+
             OntologyData.Builder builder = OntologyData.builder().vocabularyMetadata(metadata);
             List<ClassData> classes = new ArrayList<>();
             List<PropertyData> properties = new ArrayList<>();
@@ -74,17 +81,19 @@ public class SSPReader {
                             log.debug("Created class #{}: name='{}', identifier='{}'", classesCreated, classData.getName(), classData.getIdentifier());
                         }
                         case "https://slovník.gov.cz/základní/pojem/typ-vlastnosti" -> {
-                            PropertyData propertyData = convertToPropertyData(concept, conceptIRI);
+                            PropertyData propertyData = convertToPropertyData(concept, conceptIRI, propertyDomainInfo.get(conceptIRI));
                             properties.add(propertyData);
                             propertiesCreated++;
                             log.debug("Created property #{}: name='{}', identifier='{}'", propertiesCreated, propertyData.getName(), propertyData.getIdentifier());
                         }
                         case "https://slovník.gov.cz/základní/pojem/typ-vztahu" -> {
-                            RelationshipData relationshipData = convertToRelationshipData(concept, conceptIRI);
+                            DomainRangeInfo domainRangeInfo = relationshipDomainRangeInfo.get(conceptIRI);
+                            log.info("CONVERSION INPUT: {} -> domainRangeInfo={}", conceptIRI, domainRangeInfo);
+                            RelationshipData relationshipData = convertToRelationshipData(concept, conceptIRI, domainRangeInfo);
                             relationships.add(relationshipData);
                             relationshipsCreated++;
-                            log.debug("Created relationship #{}: name='{}', identifier='{}'",
-                                    relationshipsCreated, relationshipData.getName(), relationshipData.getIdentifier());
+                            log.info("CONVERSION OUTPUT: {} -> domain='{}', range='{}'", 
+                                    relationshipData.getIdentifier(), relationshipData.getDomain(), relationshipData.getRange());
                         }
                         default -> log.debug("Skipping concept with unsupported type: {} - {}", conceptIRI, type);
                     }
@@ -209,6 +218,99 @@ public class SSPReader {
         
         log.debug("Found {} concept types (explicit + inferred)", conceptTypes.size());
         return conceptTypes;
+    }
+
+    public Map<String, DomainRangeInfo> readRelationshipDomainRangeInfo(String namespace) {
+        log.debug("Reading relationship domain/range information for namespace: {}", namespace);
+        
+        String queryString = String.format(SGOV_SIMPLE_DOMAIN_RANGE_QUERY, namespace);
+        log.debug("Executing relationship domain/range query: {}", queryString);
+        Map<String, DomainRangeInfo> domainRangeMap = new HashMap<>();
+
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
+
+                ResultSet results = qexec.execSelect();
+                int resultCount = 0;
+
+                while (results.hasNext()) {
+                    QuerySolution solution = results.nextSolution();
+                    resultCount++;
+
+                    String relationshipIRI = solution.getResource("relationship").getURI();
+                    String domain = solution.contains("domain") ? 
+                            solution.getResource("domain").getURI() : null;
+                    String range = solution.contains("range") ? 
+                            solution.getResource("range").getURI() : null;
+
+                    DomainRangeInfo info = new DomainRangeInfo();
+                    info.setDomain(domain);
+                    info.setRange(range);
+                    
+                    domainRangeMap.put(relationshipIRI, info);
+                    log.info("DOMAIN/RANGE EXTRACTED: {} -> domain={}, range={}", 
+                             relationshipIRI, domain, range);
+                }
+
+                log.debug("Found {} relationships with domain/range information", resultCount);
+            }
+        } catch (Exception e) {
+            log.error("Error reading relationship domain/range information", e);
+        }
+
+        return domainRangeMap;
+    }
+
+    public Map<String, PropertyDomainInfo> readPropertyDomainInfo(String namespace) {
+        log.debug("Reading property domain information for namespace: {}", namespace);
+        
+        String queryString = String.format(SGOV_PROPERTY_DOMAIN_QUERY, namespace);
+        log.debug("Executing property domain query: {}", queryString);
+        Map<String, PropertyDomainInfo> propertyDomainMap = new HashMap<>();
+
+        try {
+            Query query = QueryFactory.create(queryString);
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
+
+                ResultSet results = qexec.execSelect();
+                int resultCount = 0;
+
+                while (results.hasNext()) {
+                    QuerySolution solution = results.nextSolution();
+                    resultCount++;
+
+                    String propertyIRI = solution.getResource("property").getURI();
+                    String domain = solution.contains("domain") ? 
+                            solution.getResource("domain").getURI() : null;
+                    String domainLabel = getStringValue(solution, "domainLabel");
+
+                    PropertyDomainInfo info = new PropertyDomainInfo();
+                    info.setDomain(domain);
+                    info.setDomainLabel(domainLabel);
+                    
+                    propertyDomainMap.put(propertyIRI, info);
+                    log.debug("Found property domain for {}: domain={}, domainLabel={}", 
+                             propertyIRI, domain, domainLabel);
+                }
+
+                log.debug("Found {} properties with domain information", resultCount);
+            }
+        } catch (Exception e) {
+            log.error("Error reading property domain information", e);
+        }
+
+        return propertyDomainMap;
     }
 
     private String getStringValue(QuerySolution solution, String varName) {
@@ -415,7 +517,7 @@ public class SSPReader {
         return classData;
     }
 
-    private PropertyData convertToPropertyData(ConceptData concept, String conceptIRI) {
+    private PropertyData convertToPropertyData(ConceptData concept, String conceptIRI, PropertyDomainInfo domainInfo) {
         PropertyData propertyData = new PropertyData();
         propertyData.setName(concept.getName());
         propertyData.setDefinition(concept.getDefinition());
@@ -426,12 +528,20 @@ public class SSPReader {
             propertyData.setAlternativeName(String.join(";", concept.getAlternativeNames()));
         }
 
-        // TODO: Add domain/range logic if needed
+        if (domainInfo != null) {
+            if (domainInfo.getDomain() != null) {
+                propertyData.setDomain(UtilityMethods.extractNameFromIRI(domainInfo.getDomain()));
+                log.debug("Set property domain: {} -> {}", conceptIRI, domainInfo.getDomain());
+            }
+            if (domainInfo.getDomainLabel() != null) {
+                log.debug("Property domain label: {} -> {}", conceptIRI, domainInfo.getDomainLabel());
+            }
+        }
         
         return propertyData;
     }
 
-    private RelationshipData convertToRelationshipData(ConceptData concept, String conceptIRI) {
+    private RelationshipData convertToRelationshipData(ConceptData concept, String conceptIRI, DomainRangeInfo domainRange) {
         RelationshipData relationshipData = new RelationshipData();
         relationshipData.setName(concept.getName());
         relationshipData.setDefinition(concept.getDefinition());
@@ -442,7 +552,22 @@ public class SSPReader {
             relationshipData.setAlternativeName(String.join(";", concept.getAlternativeNames()));
         }
 
-        // TODO: Add domain/range logic if needed
+        if (domainRange != null) {
+            log.info("PROCESSING DOMAIN/RANGE: {} -> domainRange.domain={}, domainRange.range={}", 
+                    conceptIRI, domainRange.getDomain(), domainRange.getRange());
+            if (domainRange.getDomain() != null) {
+                String extractedDomain = UtilityMethods.extractNameFromIRI(domainRange.getDomain());
+                relationshipData.setDomain(extractedDomain);
+                log.info("SET DOMAIN: {} -> '{}' (from {})", conceptIRI, extractedDomain, domainRange.getDomain());
+            }
+            if (domainRange.getRange() != null) {
+                String extractedRange = UtilityMethods.extractNameFromIRI(domainRange.getRange());
+                relationshipData.setRange(extractedRange);
+                log.info("SET RANGE: {} -> '{}' (from {})", conceptIRI, extractedRange, domainRange.getRange());
+            }
+        } else {
+            log.info("NO DOMAIN/RANGE INFO: {} -> domainRange is null", conceptIRI);
+        }
 
         return relationshipData;
     }
@@ -450,18 +575,60 @@ public class SSPReader {
     public void discoverSGovStructure(String namespace) {
         log.info("=== DISCOVERING SGOV STRUCTURE FOR: {} ===", namespace);
 
+        debugTypes(namespace);
+        debugRelationshipProperties(namespace);
+        debugOwlRestrictions(namespace);
         testOwnershipQuery(namespace);
+        exploreRelationshipRestrictions(namespace);
+        explorePropertyRestrictions(namespace);
+        exploreDirectDomainRange(namespace);
+    }
+    
+    public void debugTypes(String namespace) {
+        log.info("--- Debugging: Discovering Types ---");
+        String queryString = String.format(DEBUG_TYPES_QUERY, namespace);
+        executeExploratoryQuery(queryString, "Debug Types");
+    }
+    
+    public void debugRelationshipProperties(String namespace) {
+        log.info("--- Debugging: Relationship Properties ---");
+        String queryString = String.format(DEBUG_RELATIONSHIP_PROPERTIES_QUERY, namespace);
+        executeExploratoryQuery(queryString, "Debug Relationship Properties");
+    }
+    
+    public void debugOwlRestrictions(String namespace) {
+        log.info("--- Debugging: OWL Restrictions ---");
+        String queryString = String.format(DEBUG_OWL_RESTRICTIONS_QUERY, namespace);
+        executeExploratoryQuery(queryString, "Debug OWL Restrictions");
+    }
+    
+    public void exploreRelationshipRestrictions(String namespace) {
+        log.info("--- Exploring Relationship Restrictions ---");
+        String queryString = String.format(EXPLORE_RELATIONSHIP_RESTRICTIONS_QUERY, namespace);
+        executeExploratoryQuery(queryString, "Relationship Restrictions");
+    }
+    
+    public void explorePropertyRestrictions(String namespace) {
+        log.info("--- Exploring Property Restrictions ---");
+        String queryString = String.format(EXPLORE_PROPERTY_RESTRICTIONS_QUERY, namespace);
+        executeExploratoryQuery(queryString, "Property Restrictions");
+    }
+    
+    public void exploreDirectDomainRange(String namespace) {
+        log.info("--- Exploring Direct Domain/Range ---");
+        String queryString = String.format(EXPLORE_DIRECT_DOMAIN_RANGE_QUERY, namespace);
+        executeExploratoryQuery(queryString, "Direct Domain/Range");
     }
 
     
     public void testOwnershipQuery(String namespace) {
         log.info("--- Testing SGoV Ownership Query ---");
         String queryString = String.format(SGOV_ALL_CONCEPTS_WITH_OWNERSHIP_QUERY, namespace);
-        executeExploratoryQuery(queryString);
+        executeExploratoryQuery(queryString, "SGoV Ownership Test");
     }
 
-    private void executeExploratoryQuery(String queryString) {
-        log.debug("Executing exploratory query: {}", "SGoV Ownership Test");
+    private void executeExploratoryQuery(String queryString, String queryName) {
+        log.debug("Executing exploratory query: {}", queryName);
         log.debug("Query: {}", queryString);
 
         try {
@@ -508,10 +675,10 @@ public class SSPReader {
                     }
                 }
 
-                log.info("Total results for {}: {}", "SGoV Ownership Test", resultCount);
+                log.info("Total results for {}: {}", queryName, resultCount);
             }
         } catch (Exception e) {
-            log.error("Error executing exploratory query: {}", "SGoV Ownership Test", e);
+            log.error("Error executing exploratory query: {}", queryName, e);
         }
     }
 }

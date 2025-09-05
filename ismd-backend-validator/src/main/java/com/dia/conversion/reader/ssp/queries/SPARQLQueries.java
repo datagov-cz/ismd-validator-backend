@@ -139,5 +139,129 @@ public class SPARQLQueries {
         ORDER BY ?concept
        \s""";
 
+    public static final String SGOV_SIMPLE_DOMAIN_RANGE_QUERY = """
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX owl: <http://www.w3.org/2002/07/owl#>
+       \s
+        SELECT DISTINCT ?relationship ?domain ?range WHERE {
+            ?relationship a <https://slovník.gov.cz/základní/pojem/typ-vztahu> .
+            FILTER(STRSTARTS(STR(?relationship), "%s"))
+           \s
+            # Try standard RDF patterns first
+            OPTIONAL { ?relationship rdfs:domain ?domain }
+            OPTIONAL { ?relationship rdfs:range ?range }
+           \s
+            # Also try on the ObjectProperty if it exists
+            OPTIONAL {
+                ?relationship a owl:ObjectProperty .
+                OPTIONAL { ?relationship rdfs:domain ?domain }
+                OPTIONAL { ?relationship rdfs:range ?range }
+            }
+           \s
+            # Try SGoV-specific OWL restrictions pattern
+            OPTIONAL {
+                ?relationship rdfs:subClassOf ?restriction1 .
+                ?restriction1 a owl:Restriction ;
+                              owl:onProperty <https://slovník.gov.cz/základní/pojem/má-vztažený-prvek-1> ;
+                              owl:onClass ?domain .
+            }
+            OPTIONAL {
+                ?relationship rdfs:subClassOf ?restriction2 .
+                ?restriction2 a owl:Restriction ;
+                              owl:onProperty <https://slovník.gov.cz/základní/pojem/má-vztažený-prvek-2> ;
+                              owl:onClass ?range .
+            }
+        }
+        ORDER BY ?relationship
+       \s""";
+
+    public static final String SGOV_PROPERTY_DOMAIN_QUERY = """
+        SELECT ?property ?propertyLabel ?domain ?domainLabel WHERE {
+            # No properties found in this vocabulary, return empty results
+            ?property a <http://nonexistent.example/type> .
+        }
+        """;
+
+    public static final String DEBUG_TYPES_QUERY = """
+        SELECT DISTINCT ?type (COUNT(?s) AS ?count) WHERE {
+            ?s a ?type .
+            FILTER(STRSTARTS(STR(?s), "%s"))
+        } 
+        GROUP BY ?type 
+        ORDER BY DESC(?count)
+        """;
+
+    public static final String DEBUG_RELATIONSHIP_PROPERTIES_QUERY = """
+        SELECT DISTINCT ?relationship ?predicate ?object WHERE {
+            ?relationship a <https://slovník.gov.cz/základní/pojem/typ-vztahu> .
+            FILTER(STRSTARTS(STR(?relationship), "%s"))
+            ?relationship ?predicate ?object .
+        }
+        ORDER BY ?relationship ?predicate
+        """;
+
+    public static final String DEBUG_OWL_RESTRICTIONS_QUERY = """
+        PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        
+        SELECT DISTINCT ?subject ?property ?object WHERE {
+            ?subject rdfs:subClassOf ?restriction .
+            ?restriction a owl:Restriction ;
+                        owl:onProperty ?property ;
+                        owl:onClass ?object .
+            FILTER(STRSTARTS(STR(?subject), "%s"))
+        }
+        ORDER BY ?subject ?property
+        """;
+
+    public static final String EXPLORE_RELATIONSHIP_RESTRICTIONS_QUERY = """
+        PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX z-sgov: <https://slovník.gov.cz/základní/>
+       \s
+        SELECT DISTINCT ?relationship ?restriction ?property ?class WHERE {
+            ?relationship a z-sgov:typ-vztahu .
+            FILTER(STRSTARTS(STR(?relationship), "%s"))
+           \s
+            ?relationship rdfs:subClassOf ?restriction .
+            ?restriction a owl:Restriction ;
+                        owl:onProperty ?property ;
+                        owl:onClass ?class .
+        }
+        ORDER BY ?relationship
+       \s""";
+
+    public static final String EXPLORE_PROPERTY_RESTRICTIONS_QUERY = """
+        PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX z-sgov: <https://slovník.gov.cz/základní/>
+       \s
+        SELECT DISTINCT ?property ?restriction ?onProperty ?class WHERE {
+            ?property a z-sgov:typ-vlastnosti .
+            FILTER(STRSTARTS(STR(?property), "%s"))
+           \s
+            ?property rdfs:subClassOf ?restriction .
+            ?restriction a owl:Restriction ;
+                        owl:onProperty ?onProperty ;
+                        owl:onClass ?class .
+        }
+        ORDER BY ?property
+       \s""";
+
+    public static final String EXPLORE_DIRECT_DOMAIN_RANGE_QUERY = """
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX z-sgov: <https://slovník.gov.cz/základní/>
+       \s
+        SELECT DISTINCT ?concept ?type ?domain ?range WHERE {
+            ?concept a ?type .
+            VALUES ?type { z-sgov:typ-vlastnosti z-sgov:typ-vztahu }
+            FILTER(STRSTARTS(STR(?concept), "%s"))
+           \s
+            OPTIONAL { ?concept rdfs:domain ?domain }
+            OPTIONAL { ?concept rdfs:range ?range }
+        }
+        ORDER BY ?concept
+       \s""";
+
     private SPARQLQueries() {}
 }
