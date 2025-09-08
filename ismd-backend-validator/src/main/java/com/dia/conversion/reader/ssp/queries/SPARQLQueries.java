@@ -182,38 +182,6 @@ public class SPARQLQueries {
         }
         """;
 
-    public static final String DEBUG_TYPES_QUERY = """
-        SELECT DISTINCT ?type (COUNT(?s) AS ?count) WHERE {
-            ?s a ?type .
-            FILTER(STRSTARTS(STR(?s), "%s"))
-        } 
-        GROUP BY ?type 
-        ORDER BY DESC(?count)
-        """;
-
-    public static final String DEBUG_RELATIONSHIP_PROPERTIES_QUERY = """
-        SELECT DISTINCT ?relationship ?predicate ?object WHERE {
-            ?relationship a <https://slovník.gov.cz/základní/pojem/typ-vztahu> .
-            FILTER(STRSTARTS(STR(?relationship), "%s"))
-            ?relationship ?predicate ?object .
-        }
-        ORDER BY ?relationship ?predicate
-        """;
-
-    public static final String DEBUG_OWL_RESTRICTIONS_QUERY = """
-        PREFIX owl: <http://www.w3.org/2002/07/owl#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        
-        SELECT DISTINCT ?subject ?property ?object WHERE {
-            ?subject rdfs:subClassOf ?restriction .
-            ?restriction a owl:Restriction ;
-                        owl:onProperty ?property ;
-                        owl:onClass ?object .
-            FILTER(STRSTARTS(STR(?subject), "%s"))
-        }
-        ORDER BY ?subject ?property
-        """;
-
     public static final String EXPLORE_RELATIONSHIP_RESTRICTIONS_QUERY = """
         PREFIX owl: <http://www.w3.org/2002/07/owl#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -261,6 +229,41 @@ public class SPARQLQueries {
             OPTIONAL { ?concept rdfs:range ?range }
         }
         ORDER BY ?concept
+       \s""";
+
+    public static final String SGOV_OWL_SPECIALIZATION_HIERARCHY_QUERY = """
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+        PREFIX z-sgov: <https://slovník.gov.cz/základní/>
+       \s
+        SELECT ?child ?childLabel ?parent ?parentLabel ?elementType WHERE {
+            ?child rdfs:subClassOf ?parent .
+           \s
+            ?child a ?elementType .
+            VALUES ?elementType {
+                z-sgov:typ-objektu
+                z-sgov:typ-vlastnosti \s
+                z-sgov:typ-vztahu
+                z-sgov:typ-události
+                <https://slovník.gov.cz/základní/pojem/typ-objektu>
+                <https://slovník.gov.cz/základní/pojem/typ-vlastnosti>
+                <https://slovník.gov.cz/základní/pojem/typ-vztahu>
+                <https://slovník.gov.cz/základní/pojem/typ-události>
+            }
+           \s
+            FILTER(!isBlank(?parent))
+           \s
+            FILTER(
+                EXISTS { ?parent a ?elementType } ||
+                STRSTARTS(STR(?parent), "https://slovník.gov.cz/základní/pojem/")
+            )
+           \s
+            FILTER(STRSTARTS(STR(?child), "%s"))
+           \s
+            OPTIONAL { ?child skos:prefLabel ?childLabel }
+            OPTIONAL { ?parent skos:prefLabel ?parentLabel }
+        }
+        ORDER BY ?elementType ?parentLabel ?childLabel
        \s""";
 
     private SPARQLQueries() {}

@@ -58,6 +58,9 @@ public class SSPReader {
             log.info("Found {} relationship domain/range definitions", relationshipDomainRangeInfo.size());
             log.info("Found {} property domain definitions", propertyDomainInfo.size());
 
+            List<HierarchyData> hierarchies = readSGovHierarchies(ontologyIRI);
+            log.info("Found {} hierarchy relationships", hierarchies.size());
+
             OntologyData.Builder builder = OntologyData.builder().vocabularyMetadata(metadata);
             List<ClassData> classes = new ArrayList<>();
             List<PropertyData> properties = new ArrayList<>();
@@ -109,7 +112,7 @@ public class SSPReader {
                     .classes(classes)
                     .properties(properties)
                     .relationships(relationships)
-                    .hierarchies(new ArrayList<>()) // TODO: implement hierarchies
+                    .hierarchies(hierarchies)
                     .build();
 
         } catch (Exception e) {
@@ -311,6 +314,71 @@ public class SSPReader {
         }
 
         return propertyDomainMap;
+    }
+
+    public List<HierarchyData> readSGovHierarchies(String namespace) {
+        log.info("=== READING SGOV HIERARCHIES FOR: {} ===", namespace);
+        
+        String queryString = String.format(SGOV_OWL_SPECIALIZATION_HIERARCHY_QUERY, namespace);
+        log.debug("Executing hierarchy query:\n{}", queryString);
+        List<HierarchyData> hierarchies = new ArrayList<>();
+
+        try {
+            Query query = QueryFactory.create(queryString);
+            log.debug("Query parsed successfully, executing against endpoint: {}", config.getSparqlEndpoint());
+
+            try (QueryExecution qexec = QueryExecutionHTTPBuilder
+                    .service(config.getSparqlEndpoint())
+                    .query(query)
+                    .sendMode(QuerySendMode.asPost)
+                    .build()) {
+
+                ResultSet results = qexec.execSelect();
+                int resultCount = 0;
+                log.debug("Query execution started, processing results...");
+
+                while (results.hasNext()) {
+                    QuerySolution solution = results.nextSolution();
+                    resultCount++;
+
+                    String childIRI = solution.getResource("child").getURI();
+                    String parentIRI = solution.getResource("parent").getURI();
+                    String childLabel = getStringValue(solution, "childLabel");
+                    String parentLabel = getStringValue(solution, "parentLabel");
+
+                    log.debug("Hierarchy result #{}: childIRI='{}', parentIRI='{}', childLabel='{}', parentLabel='{}'", 
+                             resultCount, childIRI, parentIRI, childLabel, parentLabel);
+
+                    String childName = childLabel != null ? childLabel : UtilityMethods.extractNameFromIRI(childIRI);
+                    String parentName = parentLabel != null ? parentLabel : UtilityMethods.extractNameFromIRI(parentIRI);
+
+                    log.debug("Extracted names: childName='{}', parentName='{}'", childName, parentName);
+
+                    HierarchyData hierarchyData = new HierarchyData();
+                    hierarchyData.setSubClass(childName);
+                    hierarchyData.setSuperClass(parentName);
+                    hierarchyData.setRelationshipId(childIRI);
+                    hierarchyData.setRelationshipName("rdfs:subClassOf");
+
+                    if (hierarchyData.hasValidData()) {
+                        hierarchies.add(hierarchyData);
+                        log.info("HIERARCHY ADDED: {} -> {} (IRI: {})", childName, parentName, childIRI);
+                    } else {
+                        log.warn("SKIPPING invalid hierarchy data: child='{}', parent='{}' (childIRI: {}, parentIRI: {})", 
+                                childName, parentName, childIRI, parentIRI);
+                    }
+                }
+
+                log.info("Hierarchy query completed: {} total results, {} valid hierarchies added", 
+                        resultCount, hierarchies.size());
+            }
+        } catch (Exception e) {
+            log.error("Error reading SGoV hierarchies for namespace: {}", namespace, e);
+            log.error("Query that failed: {}", queryString);
+        }
+
+        log.info("=== HIERARCHY EXTRACTION COMPLETE: {} relationships found ===", hierarchies.size());
+        return hierarchies;
     }
 
     private String getStringValue(QuerySolution solution, String varName) {
@@ -575,31 +643,10 @@ public class SSPReader {
     public void discoverSGovStructure(String namespace) {
         log.info("=== DISCOVERING SGOV STRUCTURE FOR: {} ===", namespace);
 
-        debugTypes(namespace);
-        debugRelationshipProperties(namespace);
-        debugOwlRestrictions(namespace);
         testOwnershipQuery(namespace);
         exploreRelationshipRestrictions(namespace);
         explorePropertyRestrictions(namespace);
         exploreDirectDomainRange(namespace);
-    }
-    
-    public void debugTypes(String namespace) {
-        log.info("--- Debugging: Discovering Types ---");
-        String queryString = String.format(DEBUG_TYPES_QUERY, namespace);
-        executeExploratoryQuery(queryString, "Debug Types");
-    }
-    
-    public void debugRelationshipProperties(String namespace) {
-        log.info("--- Debugging: Relationship Properties ---");
-        String queryString = String.format(DEBUG_RELATIONSHIP_PROPERTIES_QUERY, namespace);
-        executeExploratoryQuery(queryString, "Debug Relationship Properties");
-    }
-    
-    public void debugOwlRestrictions(String namespace) {
-        log.info("--- Debugging: OWL Restrictions ---");
-        String queryString = String.format(DEBUG_OWL_RESTRICTIONS_QUERY, namespace);
-        executeExploratoryQuery(queryString, "Debug OWL Restrictions");
     }
     
     public void exploreRelationshipRestrictions(String namespace) {
