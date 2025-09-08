@@ -11,6 +11,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 public class ValidationReportDto implements ValidationReport {
+    private String id;
     private List<ValidationResult> results;
     private boolean isValid;
     private Instant timestamp;
