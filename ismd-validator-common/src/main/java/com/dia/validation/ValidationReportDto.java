@@ -24,6 +24,11 @@ public class ValidationReportDto implements ValidationReport {
         this.timestamp = timestamp;
     }
 
+    public ValidationReportDto(List<ValidationResult> results, Instant timestamp) {
+        this.results = results;
+        this.timestamp = timestamp;
+    }
+
     @Override
     public Long getId() {
         return id;
