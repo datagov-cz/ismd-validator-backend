@@ -4,8 +4,9 @@ import java.time.Instant;
 import java.util.List;
 
 public interface ValidationReport {
+    Long getId();
     List<ValidationResult> getResults();
     boolean isValid();
     Instant getTimestamp();
-    String getOntologyId();
+    Long getOntologyId();
 }

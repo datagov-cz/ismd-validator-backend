@@ -11,21 +11,31 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 public class ValidationReportDto implements ValidationReport {
-    private String id;
+    private Long id;
     private List<ValidationResult> results;
     private boolean isValid;
     private Instant timestamp;
-    private String ontologyIri;
+    private Long ontologyId;
 
     public ValidationReportDto(List<ValidationResult> results,
-                               String ontologyIri, Instant timestamp) {
+                               Long ontologyId, Instant timestamp) {
         this.results = results;
-        this.ontologyIri = ontologyIri;
+        this.ontologyId = ontologyId;
         this.timestamp = timestamp;
+    }
+
+    @Override
+    public Long getId() {
+        return id;
     }
 
     @Override
     public List<ValidationResult> getResults() {
         return results;
+    }
+
+    @Override
+    public Long getOntologyId() {
+        return ontologyId;
     }
 }
