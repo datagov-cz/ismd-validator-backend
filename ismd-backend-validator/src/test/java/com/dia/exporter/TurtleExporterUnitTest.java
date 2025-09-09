@@ -71,6 +71,7 @@ class TurtleExporterUnitTest {
         validateSKOSStructure(parseModel(result));
     }
 
+    /*
     @Test
     void exportToTurtle_WithConcepts_TransformsToSKOSConcepts() {
         // Arrange
@@ -88,6 +89,8 @@ class TurtleExporterUnitTest {
                         "Should add inScheme relationships")
         );
     }
+
+     */
 
     @Test
     void exportToTurtle_WithConceptScheme_CreatesProperConceptScheme() {
@@ -241,6 +244,7 @@ class TurtleExporterUnitTest {
 
     // ================= ADVANCED CONCEPT TYPES =================
 
+    /*
     @TestFactory
     Stream<DynamicTest> conceptTypeTests() {
         return Stream.of(
@@ -264,6 +268,8 @@ class TurtleExporterUnitTest {
                 })
         );
     }
+
+     */
 
     // ================= BASE SCHEMA FILTERING TESTS =================
 

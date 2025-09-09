@@ -15,11 +15,10 @@ import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
+import org.apache.jena.ontology.OntProperty;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.vocabulary.RDF;
-import org.apache.jena.vocabulary.RDFS;
-import org.apache.jena.vocabulary.SKOS;
+import org.apache.jena.vocabulary.*;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
@@ -180,7 +179,6 @@ public class OFNDataTransformer {
 
         addClassSpecificRequirements(ontologyData, requiredClasses);
         addPropertySpecificRequirements(ontologyData, requiredClasses);
-        addRelationshipSpecificRequirements(ontologyData, requiredClasses);
 
         log.debug("Analysis found {} required base classes", requiredClasses.size());
         return requiredClasses;
@@ -216,8 +214,6 @@ public class OFNDataTransformer {
             return;
         }
 
-        requiredClasses.add(VLASTNOST);
-
         for (PropertyData prop : ontologyData.getProperties()) {
             if (hasPublicDataClassification(prop)) {
                 requiredClasses.add(VEREJNY_UDAJ);
@@ -238,12 +234,6 @@ public class OFNDataTransformer {
         return type.contains("objekt") ||
                 type.equalsIgnoreCase("typ objektu") ||
                 type.equalsIgnoreCase("Objekt práva");
-    }
-
-    private void addRelationshipSpecificRequirements(OntologyData ontologyData, Set<String> requiredClasses) {
-        if (!ontologyData.getRelationships().isEmpty()) {
-            requiredClasses.add(VZTAH);
-        }
     }
 
     private Set<String> analyzeRequiredProperties(OntologyData ontologyData) {
@@ -430,7 +420,7 @@ public class OFNDataTransformer {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
             try {
-                Resource propertyResource = createPropertyResource(propertyData, localResourceMap);
+                Resource propertyResource = createPropertyResource(propertyData);
                 localPropertyResources.put(propertyData.getName(), propertyResource);
                 localResourceMap.put(propertyData.getName(), propertyResource);
                 log.debug("Created property: {} -> {}", propertyData.getName(), propertyResource.getURI());
@@ -440,21 +430,20 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap) {
+    private Resource createPropertyResource(PropertyData propertyData) {
         String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
-        Resource propertyResource = ontModel.createResource(propertyURI);
 
-        propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
-        propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VLASTNOST));
+        OntProperty propertyResource;
+        if (isObjectProperty(propertyData)) {
+            propertyResource = ontModel.createObjectProperty(propertyURI);
+        } else {
+            propertyResource = ontModel.createDatatypeProperty(propertyURI);
+        }
 
         if (belongsToCurrentVocabulary(propertyURI)) {
             addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
             addPropertySpecificMetadata(propertyResource, propertyData);
             addDataGovernanceMetadata(propertyResource, propertyData);
-            addSchemeRelationship(propertyResource, localResourceMap);
-            log.debug("Added full metadata for local property: {}", propertyURI);
-        } else {
-            log.debug("Skipped full metadata for external property (different namespace): {}", propertyURI);
         }
 
         return propertyResource;
@@ -489,7 +478,7 @@ public class OFNDataTransformer {
                 continue;
             }
             try {
-                Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap);
+                Resource relationshipResource = createRelationshipResource(relationshipData);
                 localRelationshipResources.put(relationshipData.getName(), relationshipResource);
                 localResourceMap.put(relationshipData.getName(), relationshipResource);
                 log.debug("Created relationship: {} -> {}", relationshipData.getName(), relationshipResource.getURI());
@@ -499,19 +488,18 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap) {
+    private Resource createRelationshipResource(RelationshipData relationshipData) {
         String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(),
                 relationshipData.getIdentifier());
-        Resource relationshipResource = ontModel.createResource(relationshipURI);
 
-        relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
-        relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VZTAH));
-        relationshipResource.addProperty(RDF.type, ontModel.getProperty("http://www.w3.org/2002/07/owl#ObjectProperty"));
+        OntProperty relationshipResource = ontModel.createObjectProperty(relationshipURI);
+        relationshipResource.addProperty(RDF.type, OWL2.ObjectProperty);
+
+        log.debug("Created ObjectProperty for relationship: {} -> {}", relationshipData.getName(), relationshipURI);
 
         if (belongsToCurrentVocabulary(relationshipURI)) {
             addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData));
             addRelationshipSpecificMetadata(relationshipResource, relationshipData);
-            addSchemeRelationship(relationshipResource, localResourceMap);
             log.debug("Added full metadata for local relationship: {}", relationshipURI);
         } else {
             log.debug("Skipped full metadata for external relationship (different namespace): {}", relationshipURI);
@@ -703,7 +691,7 @@ public class OFNDataTransformer {
 
     private void addResourceMetadata(Resource resource, ResourceMetadata metadata) {
         if (metadata.name() != null && !metadata.name().trim().isEmpty()) {
-            DataTypeConverter.addTypedProperty(resource, SKOS.prefLabel, metadata.name(), DEFAULT_LANG, ontModel);
+            DataTypeConverter.addTypedProperty(resource, RDFS.label, metadata.name(), DEFAULT_LANG, ontModel);
         }
 
         if (metadata.description() != null && !metadata.description().trim().isEmpty()) {
@@ -1078,10 +1066,10 @@ public class OFNDataTransformer {
     }
 
     private void handleNonPublicData(Resource propertyResource, PropertyData propertyData, String privacyProvision) {
-        propertyResource.addProperty(RDF.type,
-                ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
+        Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
+        propertyResource.addProperty(dataClassificationProp, "non-public");
 
-        log.debug("Added non-public data type for concept: {}", propertyData.getName());
+        log.debug("Added non-public data annotation for property: {}", propertyData.getName());
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
             validateAndAddPrivacyProvision(propertyResource, propertyData, privacyProvision);
@@ -1094,23 +1082,20 @@ public class OFNDataTransformer {
 
             if (Boolean.TRUE.equals(isPublic)) {
                 if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
-                    log.warn("Concept '{}' marked as public but has privacy provision '{}' - treating as non-public",
+                    log.warn("Property '{}' marked as public but has privacy provision '{}' - treating as non-public",
                             propertyData.getName(), privacyProvision);
                     handleNonPublicData(propertyResource, propertyData, privacyProvision);
                 } else {
-                    propertyResource.addProperty(RDF.type,
-                            ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
-                    log.debug("Added public data type for concept: {}", propertyData.getName());
+                    Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
+                    propertyResource.addProperty(dataClassificationProp, "public");
+
+                    log.debug("Added public data annotation for property: {}", propertyData.getName());
                 }
             } else {
-                if (privacyProvision == null || privacyProvision.trim().isEmpty()) {
-                    log.warn("Concept '{}' marked as non-public but has no privacy provision - adding non-public type anyway",
-                            propertyData.getName());
-                }
                 handleNonPublicData(propertyResource, propertyData, privacyProvision);
             }
         } else {
-            log.warn("Unrecognized boolean value for public property: '{}' for concept '{}'",
+            log.warn("Unrecognized boolean value for public property: '{}' for property '{}'",
                     isPublicValue, propertyData.getName());
         }
     }
@@ -1247,5 +1232,38 @@ public class OFNDataTransformer {
                 log.debug("Added typed literal reference: {} -> {}", property.getLocalName(), referenceName);
             }
         }
+    }
+
+    private boolean isObjectProperty(PropertyData propertyData) {
+        String dataType = propertyData.getDataType();
+        String domain = propertyData.getDomain();
+
+        if (domain != null && !domain.trim().isEmpty()) {
+            String trimmedDomain = domain.trim();
+            if (isDatatype(trimmedDomain)) {
+                return true;
+            }
+        }
+
+        if (dataType != null && !dataType.trim().isEmpty()) {
+            String trimmedDataType = dataType.trim();
+            if (isDatatype(trimmedDataType)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isDatatype(String value) {
+        if (value.startsWith("xsd:") || value.startsWith(XSD_NS)) {
+            return false;
+        }
+
+        if (CZECH_TO_XSD_MAPPING.containsKey(value)) {
+            return false;
+        }
+
+        return !value.matches("(?i)(string|boolean|integer|double|date|time|datetime|uri|literal).*");
     }
 }

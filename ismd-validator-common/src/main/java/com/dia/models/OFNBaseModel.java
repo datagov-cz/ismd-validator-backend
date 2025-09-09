@@ -40,18 +40,6 @@ public class OFNBaseModel {
     }
 
     private void createDynamicBaseModel(Set<String> requiredBaseClasses, Set<String> requiredProperties) {
-        if (requiresXSDTypes(requiredProperties)) {
-            ontModel.createClass(XSD + "string");
-            ontModel.createClass(XSD + "boolean");
-            ontModel.createClass(XSD + "anyURI");
-            ontModel.createClass(XSD + "date");
-            ontModel.createClass(XSD + "dateTimeStamp");
-        }
-
-        if (requiresLangString(requiredProperties)) {
-            ontModel.createClass(RDF.getURI() + "langString");
-        }
-
         OntClass pojemClass = null;
         if (requiredBaseClasses.contains(POJEM)) {
             pojemClass = ontModel.createClass(DEFAULT_NS + POJEM);
@@ -95,18 +83,6 @@ public class OFNBaseModel {
             typObjektuClass.addSuperClass(tridaClass);
         }
 
-        if (requiredBaseClasses.contains(VLASTNOST) && pojemClass != null) {
-            OntClass vlastnostClass = ontModel.createClass(DEFAULT_NS + VLASTNOST);
-            vlastnostClass.addLabel(VLASTNOST, "cs");
-            vlastnostClass.addSuperClass(pojemClass);
-        }
-
-        if (requiredBaseClasses.contains(VZTAH) && pojemClass != null) {
-            OntClass vztahClass = ontModel.createClass(DEFAULT_NS + VZTAH);
-            vztahClass.addLabel(VZTAH, "cs");
-            vztahClass.addSuperClass(pojemClass);
-        }
-
         if (requiredBaseClasses.contains(DATOVY_TYP)) {
             OntClass datovyTyp = ontModel.createClass(DEFAULT_NS + DATOVY_TYP);
             datovyTyp.addLabel(DATOVY_TYP, "cs");
@@ -117,62 +93,54 @@ public class OFNBaseModel {
             verejnyUdajClass.addLabel(VEREJNY_UDAJ, "cs");
         }
 
+        OntClass neverejnyUdajClass = null;
         if (requiredBaseClasses.contains(NEVEREJNY_UDAJ)) {
-            OntClass neverejnyUdajClass = ontModel.createClass(DEFAULT_NS + NEVEREJNY_UDAJ);
+            neverejnyUdajClass = ontModel.createClass(DEFAULT_NS + NEVEREJNY_UDAJ);
             neverejnyUdajClass.addLabel(NEVEREJNY_UDAJ, "cs");
         }
 
-        createRequiredProperties(requiredProperties, pojemClass,
-                requiredBaseClasses.contains(NEVEREJNY_UDAJ) ?
-                        ontModel.createClass(DEFAULT_NS + NEVEREJNY_UDAJ) : null,
+        createRequiredProperties(requiredProperties, pojemClass, neverejnyUdajClass,
                 casovyOkamzikClass, slovnikClass, digitalDocumentClass);
     }
 
     private void createRequiredProperties(Set<String> requiredProperties, OntClass pojemClass,
                                           OntClass neverejnyUdajClass, OntClass casovyOkamzikClass,
                                           OntClass slovnikClass, OntClass digitalDocumentClass) {
-        OntClass xsdString = requiresXSDTypes(requiredProperties) ? ontModel.createClass(XSD + "string") : null;
-        OntClass xsdBoolean = requiresXSDTypes(requiredProperties) ? ontModel.createClass(XSD + "boolean") : null;
-        OntClass xsdAnyURI = requiresXSDTypes(requiredProperties) ? ontModel.createClass(XSD + "anyURI") : null;
-        OntClass xsdDate = requiresXSDTypes(requiredProperties) ? ontModel.createClass(XSD + "date") : null;
-        OntClass xsdDateTimeStamp = requiresXSDTypes(requiredProperties) ? ontModel.createClass(XSD + "dateTimeStamp") : null;
-        OntClass rdfLangString = requiresLangString(requiredProperties) ? ontModel.createClass(RDF.getURI() + "langString") : null;
-
         for (String propertyName : requiredProperties) {
             switch (propertyName) {
                 case NAZEV:
-                    if (pojemClass != null && xsdString != null) {
+                    if (pojemClass != null) {
                         OntProperty nazevProp = ontModel.createOntProperty(DEFAULT_NS + NAZEV);
                         nazevProp.addLabel(NAZEV, "cs");
                         nazevProp.addDomain(pojemClass);
-                        nazevProp.addRange(xsdString);
+                        nazevProp.addRange(org.apache.jena.vocabulary.XSD.xstring);
                     }
                     break;
 
                 case ALTERNATIVNI_NAZEV:
-                    if (pojemClass != null && rdfLangString != null) {
+                    if (pojemClass != null) {
                         OntProperty alternativniNazevProp = ontModel.createOntProperty(DEFAULT_NS + ALTERNATIVNI_NAZEV);
                         alternativniNazevProp.addLabel(ALTERNATIVNI_NAZEV, "cs");
                         alternativniNazevProp.addDomain(pojemClass);
-                        alternativniNazevProp.addRange(rdfLangString);
+                        alternativniNazevProp.addRange(RDF.langString);
                     }
                     break;
 
                 case POPIS:
-                    if (pojemClass != null && xsdString != null) {
+                    if (pojemClass != null) {
                         OntProperty popisProp = ontModel.createOntProperty(DEFAULT_NS + POPIS);
                         popisProp.addLabel(POPIS, "cs");
                         popisProp.addDomain(pojemClass);
-                        popisProp.addRange(xsdString);
+                        popisProp.addRange(org.apache.jena.vocabulary.XSD.xstring);
                     }
                     break;
 
                 case DEFINICE:
-                    if (pojemClass != null && xsdString != null) {
+                    if (pojemClass != null) {
                         OntProperty definiceProp = ontModel.createOntProperty(DEFAULT_NS + DEFINICE);
                         definiceProp.addLabel(DEFINICE, "cs");
                         definiceProp.addDomain(pojemClass);
-                        definiceProp.addRange(xsdString);
+                        definiceProp.addRange(org.apache.jena.vocabulary.XSD.xstring);
                     }
                     break;
 
@@ -182,7 +150,6 @@ public class OFNBaseModel {
                         definujiciUstanoveniProp.addLabel(DEFINUJICI_USTANOVENI, "cs");
                         definujiciUstanoveniProp.addDomain(pojemClass);
                         definujiciUstanoveniProp.addRange(RDFS.Resource);
-                        log.debug("Created property for defining provisions: {}", DEFINUJICI_USTANOVENI);
                     }
                     break;
 
@@ -192,7 +159,6 @@ public class OFNBaseModel {
                         souvisejiciUstanoveniProp.addLabel(SOUVISEJICI_USTANOVENI, "cs");
                         souvisejiciUstanoveniProp.addDomain(pojemClass);
                         souvisejiciUstanoveniProp.addRange(RDFS.Resource);
-                        log.debug("Created property for related provisions: {}", SOUVISEJICI_USTANOVENI);
                     }
                     break;
 
@@ -202,7 +168,6 @@ public class OFNBaseModel {
                         definujiciNelegislativniZdrojProp.addLabel(DEFINUJICI_NELEGISLATIVNI_ZDROJ, "cs");
                         definujiciNelegislativniZdrojProp.addDomain(pojemClass);
                         definujiciNelegislativniZdrojProp.addRange(RDFS.Resource);
-                        log.debug("Created property for defining non-legislative sources: {}", DEFINUJICI_NELEGISLATIVNI_ZDROJ);
                     }
                     break;
 
@@ -212,26 +177,24 @@ public class OFNBaseModel {
                         souvisejiciNelegislativniZdrojProp.addLabel(SOUVISEJICI_NELEGISLATIVNI_ZDROJ, "cs");
                         souvisejiciNelegislativniZdrojProp.addDomain(pojemClass);
                         souvisejiciNelegislativniZdrojProp.addRange(RDFS.Resource);
-                        log.debug("Created property for related non-legislative sources: {}", SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
                     }
                     break;
 
                 case "schema:url":
-                    if (digitalDocumentClass != null && xsdAnyURI != null) {
+                    if (digitalDocumentClass != null) {
                         OntProperty schemaUrlProp = ontModel.createOntProperty("http://schema.org/url");
                         schemaUrlProp.addLabel("url", "en");
                         schemaUrlProp.addDomain(digitalDocumentClass);
-                        schemaUrlProp.addRange(xsdAnyURI);
-                        log.debug("Created schema:url property for digital documents");
+                        schemaUrlProp.addRange(org.apache.jena.vocabulary.XSD.anyURI);
                     }
                     break;
 
                 case JE_PPDF:
-                    if (pojemClass != null && xsdBoolean != null) {
+                    if (pojemClass != null) {
                         OntProperty jeSdilenVPpdfProp = ontModel.createOntProperty(DEFAULT_NS + JE_PPDF);
                         jeSdilenVPpdfProp.addLabel(JE_PPDF, "cs");
                         jeSdilenVPpdfProp.addDomain(pojemClass);
-                        jeSdilenVPpdfProp.addRange(xsdBoolean);
+                        jeSdilenVPpdfProp.addRange(org.apache.jena.vocabulary.XSD.xboolean);
                     }
                     break;
 
@@ -323,20 +286,20 @@ public class OFNBaseModel {
                     break;
 
                 case DATUM:
-                    if (casovyOkamzikClass != null && xsdDate != null) {
+                    if (casovyOkamzikClass != null) {
                         OntProperty datumProp = ontModel.createOntProperty(CAS_NS + DATUM);
                         datumProp.addLabel(DATUM, "cs");
                         datumProp.addDomain(casovyOkamzikClass);
-                        datumProp.addRange(xsdDate);
+                        datumProp.addRange(org.apache.jena.vocabulary.XSD.date);
                     }
                     break;
 
                 case DATUM_A_CAS:
-                    if (casovyOkamzikClass != null && xsdDateTimeStamp != null) {
+                    if (casovyOkamzikClass != null) {
                         OntProperty datumACasProp = ontModel.createOntProperty(CAS_NS + DATUM_A_CAS);
                         datumACasProp.addLabel(DATUM_A_CAS, "cs");
                         datumACasProp.addDomain(casovyOkamzikClass);
-                        datumACasProp.addRange(xsdDateTimeStamp);
+                        datumACasProp.addRange(org.apache.jena.vocabulary.XSD.dateTimeStamp);
                     }
                     break;
 
@@ -345,21 +308,6 @@ public class OFNBaseModel {
                     break;
             }
         }
-    }
-
-    private boolean requiresXSDTypes(Set<String> requiredProperties) {
-        return requiredProperties.contains(NAZEV) ||
-                requiredProperties.contains(POPIS) ||
-                requiredProperties.contains(DEFINICE) ||
-                requiredProperties.contains(JE_PPDF) ||
-                requiredProperties.contains(DATUM) ||
-                requiredProperties.contains(DATUM_A_CAS) ||
-                requiredProperties.contains("schema:url");
-
-    }
-
-    private boolean requiresLangString(Set<String> requiredProperties) {
-        return requiredProperties.contains(ALTERNATIVNI_NAZEV);
     }
 
     private boolean requiresTemporalSupport(Set<String> requiredProperties) {
