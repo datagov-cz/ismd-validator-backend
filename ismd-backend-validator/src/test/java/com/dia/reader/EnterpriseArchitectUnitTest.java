@@ -214,10 +214,8 @@ class EnterpriseArchitectUnitTest {
         OntologyData result = reader.readXmiFromBytes(validXmlBytes);
 
         result.getRelationships().forEach(relationship -> {
-            if (relationship.hasValidData()) {
-                assertNotNull(relationship.getDomain(), "Relationship should have domain: " + relationship.getName());
-                assertNotNull(relationship.getRange(), "Relationship should have range: " + relationship.getName());
-            }
+            assertNotNull(relationship.getDomain(), "Relationship should have domain: " + relationship.getName());
+            assertNotNull(relationship.getRange(), "Relationship should have range: " + relationship.getName());
         });
     }
 
@@ -290,7 +288,7 @@ class EnterpriseArchitectUnitTest {
         OntologyData result = reader.readXmiFromBytes(validXmlBytes);
 
         boolean foundAssociation = result.getRelationships().stream()
-                .anyMatch(r -> r.getName() != null && r.hasValidData());
+                .anyMatch(r -> r.getName() != null);
         assertTrue(foundAssociation, "Should find association relationships");
     }
 
@@ -386,11 +384,9 @@ class EnterpriseArchitectUnitTest {
         OntologyData result = reader.readXmiFromBytes(validXmlBytes);
 
         result.getRelationships().forEach(relationship -> {
-            if (relationship.hasValidData()) {
-                assertNotNull(relationship.getName(), "Valid relationship should have name");
-                assertNotNull(relationship.getDomain(), "Valid relationship should have domain");
-                assertNotNull(relationship.getRange(), "Valid relationship should have range");
-            }
+            assertNotNull(relationship.getName(), "Valid relationship should have name");
+            assertNotNull(relationship.getDomain(), "Valid relationship should have domain");
+            assertNotNull(relationship.getRange(), "Valid relationship should have range");
         });
     }
 

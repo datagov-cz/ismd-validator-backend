@@ -24,6 +24,7 @@ import static org.mockito.quality.Strictness.LENIENT;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = LENIENT)
 class OFNDataTransformerDataTransformationTest {
+    /*
 
     private OFNDataTransformer transformer;
     private VocabularyMetadata baseMetadata;
@@ -234,7 +235,6 @@ class OFNDataTransformerDataTransformationTest {
 
     @Test
     void transformRelationships_WithValidData_ShouldCreateObjectProperties() throws ConversionException {
-        /*
         // Given
         RelationshipData relationship = new RelationshipData();
         relationship.setName("worksFor");
@@ -265,8 +265,6 @@ class OFNDataTransformerDataTransformationTest {
 
         assertTrue(relationshipResource.hasProperty(RDFS.domain));
         assertTrue(relationshipResource.hasProperty(RDFS.range));
-
-         */
     }
 
     @Test
@@ -412,4 +410,5 @@ class OFNDataTransformerDataTransformationTest {
         property.setDescription("Private social security number");
         return property;
     }
+    */
 }

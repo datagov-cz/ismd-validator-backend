@@ -12,7 +12,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.dia.constants.ArchiConstants.*;
-import static com.dia.constants.ExportConstants.Json.XSD_NS;
 import static com.dia.constants.SSPConstants.SGOV_NAMESPACE;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 

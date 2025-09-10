@@ -68,6 +68,7 @@ public class OFNBaseModel {
         OntClass digitalDocumentClass = null;
         if (requiresDigitalDocumentSupport(requiredProperties)) {
             digitalDocumentClass = ontModel.createClass("http://schema.org/DigitalDocument");
+            digitalDocumentClass.addProperty(RDFS.seeAlso, ontModel.createResource("http://schema.org/DigitalDocument"));
             digitalDocumentClass.addLabel("digitální-dokument", "cs");
         }
 
@@ -88,15 +89,55 @@ public class OFNBaseModel {
             datovyTyp.addLabel(DATOVY_TYP, "cs");
         }
 
-        if (requiredBaseClasses.contains(VEREJNY_UDAJ)) {
+        OntClass udajClass = null;
+        if (requiredBaseClasses.contains(UDAJ) && pojemClass != null) {
+            udajClass = ontModel.createClass(DEFAULT_NS + UDAJ);
+            udajClass.addLabel(UDAJ, "cs");
+            udajClass.addSuperClass(pojemClass);
+        }
+
+        OntClass polozkaClass = null;
+        if (requiredBaseClasses.contains(POLOZKA_CISELNIKU)) {
+            polozkaClass = ontModel.createClass(DEFAULT_NS + POLOZKA_CISELNIKU);
+            polozkaClass.addLabel(POLOZKA_CISELNIKU, "cs");
+        }
+
+        if (requiredBaseClasses.contains(VEREJNY_UDAJ) && udajClass != null) {
             OntClass verejnyUdajClass = ontModel.createClass(DEFAULT_NS + VEREJNY_UDAJ);
             verejnyUdajClass.addLabel(VEREJNY_UDAJ, "cs");
+            verejnyUdajClass.addSuperClass(udajClass);
         }
 
         OntClass neverejnyUdajClass = null;
-        if (requiredBaseClasses.contains(NEVEREJNY_UDAJ)) {
+        if (requiredBaseClasses.contains(NEVEREJNY_UDAJ) && udajClass != null) {
             neverejnyUdajClass = ontModel.createClass(DEFAULT_NS + NEVEREJNY_UDAJ);
             neverejnyUdajClass.addLabel(NEVEREJNY_UDAJ, "cs");
+            neverejnyUdajClass.addSuperClass(udajClass);
+        }
+
+        if (requiredBaseClasses.contains(ZPUSOB_SDILENI_UDAJE) && polozkaClass != null) {
+            OntClass zpusobSdileniClass = ontModel.createClass(DEFAULT_NS + ZPUSOB_SDILENI_UDAJE);
+            zpusobSdileniClass.addLabel(ZPUSOB_SDILENI_UDAJE, "cs");
+            zpusobSdileniClass.addSuperClass(polozkaClass);
+        }
+
+        if (requiredBaseClasses.contains(ZPUSOB_ZISKANI_UDAJE) && polozkaClass != null) {
+            OntClass zpusobZiskaniClass = ontModel.createClass(DEFAULT_NS + ZPUSOB_ZISKANI_UDAJE);
+            zpusobZiskaniClass.addLabel(ZPUSOB_ZISKANI_UDAJE, "cs");
+            zpusobZiskaniClass.addSuperClass(polozkaClass);
+        }
+
+        if (requiredBaseClasses.contains("číselník")) {
+            OntClass ciselnikClass = ontModel.createClass(DEFAULT_NS + "číselník");
+            ciselnikClass.addLabel("číselník", "cs");
+        }
+
+        if (requiredBaseClasses.contains("typ-vlastnosti")) {
+            OntClass typVlastnostiClass = ontModel.createClass(DEFAULT_NS + "typ-vlastnosti");
+            typVlastnostiClass.addLabel("typ-vlastnosti", "cs");
+            if (pojemClass != null) {
+                typVlastnostiClass.addSuperClass(pojemClass);
+            }
         }
 
         createRequiredProperties(requiredProperties, pojemClass, neverejnyUdajClass,
@@ -114,6 +155,7 @@ public class OFNBaseModel {
                         nazevProp.addLabel(NAZEV, "cs");
                         nazevProp.addDomain(pojemClass);
                         nazevProp.addRange(org.apache.jena.vocabulary.XSD.xstring);
+                        nazevProp.addProperty(RDF.type, OWL2.FunctionalProperty);
                     }
                     break;
 
@@ -228,6 +270,8 @@ public class OFNBaseModel {
                 case DEFINICNI_OBOR:
                     OntProperty definicniOborProp = ontModel.createOntProperty(DEFAULT_NS + DEFINICNI_OBOR);
                     definicniOborProp.addLabel(DEFINICNI_OBOR, "cs");
+                    definicniOborProp.addDomain(ontModel.createResource(RDF.Property.getURI()));
+                    definicniOborProp.addRange(ontModel.createResource(RDFS.Class.getURI()));
                     break;
 
                 case OBOR_HODNOT:

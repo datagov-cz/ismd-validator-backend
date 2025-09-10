@@ -109,6 +109,11 @@ public class AttributePatterns {
                 Pattern.compile(".*zp[ůu]sob\\s+z[ií]sk[aá]n[ií]\\s+[uú]daje.*", Pattern.UNICODE_CASE),
                 Pattern.compile(".*acquisition.*method.*", Pattern.CASE_INSENSITIVE)
         });
+
+        ATTRIBUTE_PATTERNS.put("TYP", new Pattern[]{
+                Pattern.compile(".*\\btyp\\b.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*type.*", Pattern.CASE_INSENSITIVE)
+        });
     }
 
     private AttributePatterns() {}
