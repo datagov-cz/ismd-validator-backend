@@ -348,8 +348,9 @@ public class JsonExporter {
         JSONArray pojmy = new JSONArray();
         Resource pojemType = ontModel.getResource(OFN_NAMESPACE + POJEM);
 
-        ontModel.listSubjectsWithProperty(RDF.type, pojemType)
-                .forEachRemaining(concept -> {
+        resourceMap.values().stream()
+                .filter(resource -> resource.hasProperty(RDF.type, pojemType))
+                .forEach(concept -> {
                     try {
                         pojmy.put(createConceptObject(concept));
                     } catch (JSONException e) {

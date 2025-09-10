@@ -43,6 +43,8 @@ public class OFNDataTransformer {
     private OntModel ontModel;
     private final URIGenerator uriGenerator;
     private static final Map<String, String> CZECH_TO_XSD_MAPPING = createDataTypeMapping();
+    
+    private Map<String, Resource> allClassResourcesForHierarchies;
 
     private static Map<String, String> createDataTypeMapping() {
         Map<String, String> mapping = new HashMap<>();
@@ -161,12 +163,30 @@ public class OFNDataTransformer {
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
         if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
+            log.info("Namespace check failed - conceptURI='{}', effectiveNamespace='{}'", 
+                conceptURI, uriGenerator.getEffectiveNamespace());
             return false;
         }
 
-        boolean belongs = conceptURI.startsWith(uriGenerator.getEffectiveNamespace());
-        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
-                conceptURI, belongs, uriGenerator.getEffectiveNamespace());
+        String effectiveNamespace = uriGenerator.getEffectiveNamespace();
+        
+        StringBuilder vocabularyNamespace = new StringBuilder(effectiveNamespace);
+        if (vocabularyNamespace.toString().endsWith("/")) {
+            vocabularyNamespace.setLength(vocabularyNamespace.length() - 1);
+        }
+        
+        if (uriGenerator.getVocabularyName() != null && !uriGenerator.getVocabularyName().trim().isEmpty()) {
+            String sanitizedVocabName = com.dia.utility.UtilityMethods.sanitizeForIRI(uriGenerator.getVocabularyName());
+            vocabularyNamespace.append("/").append(sanitizedVocabName);
+        }
+        vocabularyNamespace.append("/pojem/");
+        
+        String vocabularySpecificNamespace = vocabularyNamespace.toString();
+        boolean belongs = conceptURI.startsWith(vocabularySpecificNamespace);
+        
+        log.info("Namespace check for '{}': belongs={} (startsWith check: '{}' starts with vocabulary-specific namespace '{}')",
+                conceptURI, belongs, conceptURI, vocabularySpecificNamespace);
+        
         return belongs;
     }
 
@@ -178,7 +198,6 @@ public class OFNDataTransformer {
         }
 
         addClassSpecificRequirements(ontologyData, requiredClasses);
-        addPropertySpecificRequirements(ontologyData, requiredClasses);
 
         log.debug("Analysis found {} required base classes", requiredClasses.size());
         return requiredClasses;
@@ -207,9 +226,7 @@ public class OFNDataTransformer {
                 }
             }
         }
-    }
 
-    private void addPropertySpecificRequirements(OntologyData ontologyData, Set<String> requiredClasses) {
         for (ClassData classData : ontologyData.getClasses()) {
             if (hasPublicDataClassification(classData)) {
                 requiredClasses.add(VEREJNY_UDAJ);
@@ -365,20 +382,39 @@ public class OFNDataTransformer {
     private void transformClasses(List<ClassData> classes, Map<String, Resource> localClassResources,
                                   Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} classes", classes.size());
+        
+        Map<String, Resource> allClassResources = new HashMap<>();
+        
         for (ClassData classData : classes) {
             if (!classData.hasValidData()) {
                 log.warn("Skipping invalid class: {}", classData.getName());
                 continue;
             }
+            
+            String identifier = classData.getIdentifier();
+            String classURI = uriGenerator.generateConceptURI(classData.getName(), identifier);
+            log.debug("Processing class '{}' with identifier='{}' -> URI={}", 
+                classData.getName(), identifier, classURI);
+            
             try {
                 Resource classResource = createClassResource(classData, localResourceMap);
-                localClassResources.put(classData.getName(), classResource);
-                localResourceMap.put(classData.getName(), classResource);
-                log.debug("Created class: {} -> {}", classData.getName(), classResource.getURI());
+                
+                allClassResources.put(classData.getName(), classResource);
+                
+                if (belongsToCurrentVocabulary(classURI)) {
+                    localClassResources.put(classData.getName(), classResource);
+                    localResourceMap.put(classData.getName(), classResource);
+                    log.debug("Created local class: {} -> {}", classData.getName(), classResource.getURI());
+                } else {
+                    log.info("Created external concept (for relationships only): '{}' with identifier='{}' -> URI={}", 
+                        classData.getName(), identifier, classURI);
+                }
             } catch (Exception e) {
                 log.error("Failed to create class: {}", classData.getName(), e);
             }
         }
+
+        this.allClassResourcesForHierarchies = allClassResources;
     }
 
     private Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap) {
@@ -415,6 +451,14 @@ public class OFNDataTransformer {
                                      Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
+            // Check if this concept should be included as a standalone concept
+            String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
+            if (!belongsToCurrentVocabulary(propertyURI)) {
+                log.debug("Skipping external property (will be referenced in relationships): {} -> {}", 
+                    propertyData.getName(), propertyURI);
+                continue;
+            }
+            
             try {
                 Resource propertyResource = createPropertyResource(propertyData);
                 localPropertyResources.put(propertyData.getName(), propertyResource);
@@ -473,6 +517,13 @@ public class OFNDataTransformer {
                                         Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} relationships", relationships.size());
         for (RelationshipData relationshipData : relationships) {
+            String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(), relationshipData.getIdentifier());
+            if (!belongsToCurrentVocabulary(relationshipURI)) {
+                log.debug("Skipping external relationship (will be referenced in relationships): {} -> {}", 
+                    relationshipData.getName(), relationshipURI);
+                continue;
+            }
+            
             try {
                 Resource relationshipResource = createRelationshipResource(relationshipData);
                 localRelationshipResources.put(relationshipData.getName(), relationshipResource);
@@ -610,6 +661,14 @@ public class OFNDataTransformer {
         if (resource != null) {
             log.debug("Found resource in general resource map: {}", className);
             return resource;
+        }
+
+        if (allClassResourcesForHierarchies != null) {
+            resource = allClassResourcesForHierarchies.get(className);
+            if (resource != null) {
+                log.debug("Found resource in all class resources map (including external): {}", className);
+                return resource;
+            }
         }
 
         return null;
