@@ -27,7 +27,6 @@ import static org.mockito.quality.Strictness.LENIENT;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = LENIENT)
 class OFNDataTransformerMainWorkflowTest {
-    /*
 
     private OFNDataTransformer transformer;
     private OntologyData validOntologyData;
@@ -272,7 +271,6 @@ class OFNDataTransformerMainWorkflowTest {
         email.setDescription("Email address");
         email.setDataType("URI, IRI, URL");
         email.setDomain("Person");
-        email.setIsPublic("ano");
         email.setIdentifier("email-1");
 
         return List.of(name, email);
@@ -315,6 +313,4 @@ class OFNDataTransformerMainWorkflowTest {
                 .hierarchies(createTestHierarchies())
                 .build();
     }
-
-     */
 }

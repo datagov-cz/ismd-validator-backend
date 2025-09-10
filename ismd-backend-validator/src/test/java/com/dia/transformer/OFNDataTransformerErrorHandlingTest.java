@@ -25,7 +25,6 @@ import static org.mockito.quality.Strictness.LENIENT;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = LENIENT)
 class OFNDataTransformerErrorHandlingTest {
-    /*
 
     private OFNDataTransformer transformer;
     private VocabularyMetadata validMetadata;
@@ -384,25 +383,25 @@ class OFNDataTransformerErrorHandlingTest {
     @Test
     void transform_WithMalformedPrivacyProvisions_ShouldHandleGracefully() throws ConversionException {
         // Given
-        PropertyData propertyWithMalformedProvision = new PropertyData();
-        propertyWithMalformedProvision.setName("malformedProvisionProp");
-        propertyWithMalformedProvision.setIsPublic("ne");
-        propertyWithMalformedProvision.setPrivacyProvision("malformed-eli-reference");
-        propertyWithMalformedProvision.setDescription("Property with malformed privacy provision");
+        ClassData classWithMalformedProvision = new ClassData();
+        classWithMalformedProvision.setName("malformedProvisionClass");
+        classWithMalformedProvision.setType("Objekt práva");
+        classWithMalformedProvision.setIsPublic("ne");
+        classWithMalformedProvision.setPrivacyProvision("malformed-eli-reference");
+        classWithMalformedProvision.setDescription("Class with malformed privacy provision");
 
         OntologyData data = OntologyData.builder()
                 .vocabularyMetadata(validMetadata)
-                .properties(List.of(propertyWithMalformedProvision))
+                .classes(List.of(classWithMalformedProvision))
                 .build();
 
         // When & Then
         assertDoesNotThrow(() -> {
             TransformationResult result = transformer.transform(data);
             assertNotNull(result);
-            assertTrue(result.getResourceMap().containsKey("malformedProvisionProp"));
+            assertTrue(result.getResourceMap().containsKey("malformedProvisionClass"));
         });
     }
-
 
     // Helper methods
 
@@ -428,6 +427,4 @@ class OFNDataTransformerErrorHandlingTest {
 
         return transformer.transform(simpleData);
     }
-
-     */
 }

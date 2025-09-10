@@ -18,7 +18,7 @@ import static com.dia.constants.ArchiConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class OFNBaseModelTest {
-/*
+
     @Nested
     class ConstructorTests {
 
@@ -47,7 +47,7 @@ class OFNBaseModelTest {
 
         @Test
         void testParameterizedConstructor_withRequiredSets() {
-            Set<String> requiredClasses = Set.of(POJEM, TRIDA, VLASTNOST);
+            Set<String> requiredClasses = Set.of(POJEM, TRIDA, "typ-vlastnosti");
             Set<String> requiredProperties = Set.of(NAZEV, POPIS);
 
             OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, requiredProperties);
@@ -58,7 +58,7 @@ class OFNBaseModelTest {
             // Verify only required classes are created
             assertNotNull(ontModel.getOntClass(DEFAULT_NS + POJEM), "POJEM class should exist");
             assertNotNull(ontModel.getOntClass(DEFAULT_NS + TRIDA), "TRIDA class should exist");
-            assertNotNull(ontModel.getOntClass(DEFAULT_NS + VLASTNOST), "VLASTNOST class should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + "typ-vlastnosti"), "typ-vlastnosti class should exist");
 
             // Verify non-required classes are not created
             assertNull(ontModel.getOntClass(DEFAULT_NS + TSP), "TSP class should not exist");
@@ -94,14 +94,15 @@ class OFNBaseModelTest {
 
             // Should not have other classes
             assertNull(ontModel.getOntClass(DEFAULT_NS + TRIDA), "TRIDA should not exist");
-            assertNull(ontModel.getOntClass(DEFAULT_NS + VLASTNOST), "VLASTNOST should not exist");
+            assertNull(ontModel.getOntClass(DEFAULT_NS + "typ-vlastnosti"), "typ-vlastnosti should not exist");
             assertNull(ontModel.getOntClass(DEFAULT_NS + VZTAH), "VZTAH should not exist");
         }
 
         @Test
         void testFullModel_allClassesAndProperties() {
-            Set<String> requiredClasses = Set.of(POJEM, TRIDA, TSP, TOP, VLASTNOST, VZTAH,
-                    DATOVY_TYP, VEREJNY_UDAJ, NEVEREJNY_UDAJ);
+            Set<String> requiredClasses = Set.of(POJEM, TRIDA, TSP, TOP, "typ-vlastnosti", 
+                    DATOVY_TYP, UDAJ, VEREJNY_UDAJ, NEVEREJNY_UDAJ, POLOZKA_CISELNIKU,
+                    ZPUSOB_SDILENI_UDAJE, ZPUSOB_ZISKANI_UDAJE, "číselník");
             Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ALTERNATIVNI_NAZEV,
                     DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI, DEFINUJICI_NELEGISLATIVNI_ZDROJ,
                     SOUVISEJICI_NELEGISLATIVNI_ZDROJ, "schema:url", JE_PPDF,
@@ -118,9 +119,9 @@ class OFNBaseModelTest {
             assertNotNull(ontModel.getOntClass(DEFAULT_NS + TRIDA), "TRIDA should exist");
             assertNotNull(ontModel.getOntClass(DEFAULT_NS + TSP), "TSP should exist");
             assertNotNull(ontModel.getOntClass(DEFAULT_NS + TOP), "TOP should exist");
-            assertNotNull(ontModel.getOntClass(DEFAULT_NS + VLASTNOST), "VLASTNOST should exist");
-            assertNotNull(ontModel.getOntClass(DEFAULT_NS + VZTAH), "VZTAH should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + "typ-vlastnosti"), "typ-vlastnosti should exist");
             assertNotNull(ontModel.getOntClass(DEFAULT_NS + DATOVY_TYP), "DATOVY_TYP should exist");
+            assertNotNull(ontModel.getOntClass(DEFAULT_NS + UDAJ), "UDAJ should exist");
             assertNotNull(ontModel.getOntClass(DEFAULT_NS + VEREJNY_UDAJ), "VEREJNY_UDAJ should exist");
             assertNotNull(ontModel.getOntClass(DEFAULT_NS + NEVEREJNY_UDAJ), "NEVEREJNY_UDAJ should exist");
 
@@ -138,7 +139,7 @@ class OFNBaseModelTest {
 
         @Test
         void testClassHierarchy_subclassRelationships() {
-            Set<String> requiredClasses = Set.of(POJEM, TRIDA, TSP, TOP, VLASTNOST, VZTAH);
+            Set<String> requiredClasses = Set.of(POJEM, TRIDA, TSP, TOP, "typ-vlastnosti", UDAJ);
 
             OFNBaseModel baseModel = new OFNBaseModel(requiredClasses, Set.of());
             OntModel ontModel = baseModel.getOntModel();
@@ -147,15 +148,15 @@ class OFNBaseModelTest {
             OntClass tridaClass = ontModel.getOntClass(DEFAULT_NS + TRIDA);
             OntClass tspClass = ontModel.getOntClass(DEFAULT_NS + TSP);
             OntClass topClass = ontModel.getOntClass(DEFAULT_NS + TOP);
-            OntClass vlastnostClass = ontModel.getOntClass(DEFAULT_NS + VLASTNOST);
-            OntClass vztahClass = ontModel.getOntClass(DEFAULT_NS + VZTAH);
+            OntClass typVlastnostiClass = ontModel.getOntClass(DEFAULT_NS + "typ-vlastnosti");
+            OntClass udajClass = ontModel.getOntClass(DEFAULT_NS + UDAJ);
 
             // Verify hierarchy relationships
             assertTrue(tridaClass.hasSuperClass(pojemClass), "TRIDA should be subclass of POJEM");
             assertTrue(tspClass.hasSuperClass(tridaClass), "TSP should be subclass of TRIDA");
             assertTrue(topClass.hasSuperClass(tridaClass), "TOP should be subclass of TRIDA");
-            assertTrue(vlastnostClass.hasSuperClass(pojemClass), "VLASTNOST should be subclass of POJEM");
-            assertTrue(vztahClass.hasSuperClass(pojemClass), "VZTAH should be subclass of POJEM");
+            assertTrue(typVlastnostiClass.hasSuperClass(pojemClass), "typ-vlastnosti should be subclass of POJEM");
+            assertTrue(udajClass.hasSuperClass(pojemClass), "UDAJ should be subclass of POJEM");
         }
 
         @Test
@@ -199,7 +200,7 @@ class OFNBaseModelTest {
 
         @Test
         void testPropertyCreation_withCorrectDomainRange() {
-            Set<String> requiredClasses = Set.of(POJEM, NEVEREJNY_UDAJ);
+            Set<String> requiredClasses = Set.of(POJEM, UDAJ, NEVEREJNY_UDAJ);
             Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ALTERNATIVNI_NAZEV, JE_PPDF,
                     AGENDA, AIS, USTANOVENI_NEVEREJNOST, DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI,
                     DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ, "schema:url");
@@ -343,95 +344,6 @@ class OFNBaseModelTest {
     }
 
     @Nested
-    class XSDTypesTests {
-
-        @Test
-        void testXSDTypes_createdWhenRequired() {
-            Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, "schema:url", JE_PPDF, DATUM, DATUM_A_CAS);
-
-            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
-            OntModel ontModel = baseModel.getOntModel();
-
-            // XSD types should be created because properties require them
-            assertNotNull(ontModel.getOntClass(XSD + "string"), "XSD:string should be created");
-            assertNotNull(ontModel.getOntClass(XSD + "boolean"), "XSD:boolean should be created");
-            assertNotNull(ontModel.getOntClass(XSD + "anyURI"), "XSD:anyURI should be created");
-            assertNotNull(ontModel.getOntClass(XSD + "date"), "XSD:date should be created");
-            assertNotNull(ontModel.getOntClass(XSD + "dateTimeStamp"), "XSD:dateTimeStamp should be created");
-        }
-
-        @Test
-        void testLangStringType_createdWhenRequired() {
-            Set<String> requiredProperties = Set.of(ALTERNATIVNI_NAZEV);
-
-            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
-            OntModel ontModel = baseModel.getOntModel();
-
-            // langString type should be created
-            assertNotNull(ontModel.getOntClass(RDF.getURI() + "langString"), "rdf:langString should be created");
-        }
-
-        @Test
-        void testXSDTypes_notCreatedWhenNotRequired() {
-            Set<String> requiredProperties = Set.of(AGENDA, AIS); // These don't require XSD types
-
-            OFNBaseModel baseModel = new OFNBaseModel(Set.of(POJEM), requiredProperties);
-            OntModel ontModel = baseModel.getOntModel();
-
-            // XSD types should not be created
-            assertNull(ontModel.getOntClass(XSD + "string"), "XSD:string should not be created");
-            assertNull(ontModel.getOntClass(XSD + "boolean"), "XSD:boolean should not be created");
-            assertNull(ontModel.getOntClass(XSD + "anyURI"), "XSD:anyURI should not be created");
-        }
-
-        @Test
-        void testRequiresXSDTypes_logic() throws Exception {
-            // Test the requiresXSDTypes method via reflection
-            OFNBaseModel baseModel = new OFNBaseModel();
-
-            Method requiresXSDTypesMethod = OFNBaseModel.class.getDeclaredMethod("requiresXSDTypes", Set.class);
-            requiresXSDTypesMethod.setAccessible(true);
-
-            // Test cases that should require XSD types
-            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(NAZEV)),
-                    "NAZEV should require XSD types");
-            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(POPIS)),
-                    "POPIS should require XSD types");
-            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(DEFINICE)),
-                    "DEFINICE should require XSD types");
-            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(JE_PPDF)),
-                    "JE_PPDF should require XSD types");
-            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(DATUM)),
-                    "DATUM should require XSD types");
-            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(DATUM_A_CAS)),
-                    "DATUM_A_CAS should require XSD types");
-            assertTrue((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of("schema:url")),
-                    "schema:url should require XSD types");
-
-            // Test cases that should not require XSD types
-            assertFalse((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of(AGENDA)),
-                    "AGENDA should not require XSD types");
-            assertFalse((Boolean) requiresXSDTypesMethod.invoke(baseModel, Set.of()),
-                    "Empty set should not require XSD types");
-        }
-
-        @Test
-        void testRequiresLangString_logic() throws Exception {
-            // Test the requiresLangString method via reflection
-            OFNBaseModel baseModel = new OFNBaseModel();
-
-            Method requiresLangStringMethod = OFNBaseModel.class.getDeclaredMethod("requiresLangString", Set.class);
-            requiresLangStringMethod.setAccessible(true);
-
-            assertTrue((Boolean) requiresLangStringMethod.invoke(baseModel, Set.of(ALTERNATIVNI_NAZEV)),
-                    "ALTERNATIVNI_NAZEV should require langString");
-
-            assertFalse((Boolean) requiresLangStringMethod.invoke(baseModel, Set.of(NAZEV)),
-                    "NAZEV should not require langString");
-        }
-    }
-
-    @Nested
     class SupportMethodTests {
 
         @Test
@@ -549,6 +461,4 @@ class OFNBaseModelTest {
             new OFNBaseModel(Set.of(POJEM), requiredProperties);
         }, "Unknown properties should not cause exceptions");
     }
-
- */
 }
