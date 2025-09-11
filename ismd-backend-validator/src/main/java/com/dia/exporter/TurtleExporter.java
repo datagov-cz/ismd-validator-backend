@@ -452,9 +452,6 @@ public class TurtleExporter {
     }
 
     private void transformResourcesToSKOSConcepts(OntModel transformedModel) {
-        Resource ofnPojemType = transformedModel.createResource(OFN_NAMESPACE + POJEM);
-        ResIterator pojemResources = transformedModel.listSubjectsWithProperty(RDF.type, ofnPojemType);
-
         Set<String> baseSchemaClasses = Set.of(
                 OFN_NAMESPACE + POJEM,
                 OFN_NAMESPACE + VLASTNOST,
@@ -466,11 +463,14 @@ public class TurtleExporter {
                 OFN_NAMESPACE + NEVEREJNY_UDAJ
         );
 
+        ResIterator classResources = transformedModel.listSubjectsWithProperty(RDF.type,
+                transformedModel.createResource(OFN_NAMESPACE + TRIDA));
+
         int conceptCount = 0;
         int filteredCount = 0;
 
-        while (pojemResources.hasNext()) {
-            Resource resource = pojemResources.next();
+        while (classResources.hasNext()) {
+            Resource resource = classResources.next();
 
             if (baseSchemaClasses.contains(resource.getURI())) {
                 filteredCount++;
@@ -478,16 +478,22 @@ public class TurtleExporter {
                 continue;
             }
 
-            conceptCount++;
+            if (resource.hasProperty(RDF.type, OWL2.ObjectProperty) ||
+                    resource.hasProperty(RDF.type, OWL2.DatatypeProperty)) {
+                filteredCount++;
+                log.debug("Skipping OWL property from SKOS concepts: {}", resource.getURI());
+                continue;
+            }
 
             if (!resource.hasProperty(RDF.type, SKOS.Concept)) {
                 resource.addProperty(RDF.type, SKOS.Concept);
+                conceptCount++;
             }
 
-            log.debug("Processing OFN pojem as SKOS concept: {}", resource.getURI());
+            log.debug("Processing class as SKOS concept: {}", resource.getURI());
         }
 
-        log.debug("Found and processed {} OFN pojmy as SKOS concepts, filtered out {} base schema classes",
+        log.debug("Processed {} classes as SKOS concepts, filtered out {} properties/base classes",
                 conceptCount, filteredCount);
     }
 
@@ -521,8 +527,16 @@ public class TurtleExporter {
             Resource subject = entry.getKey();
             Map<String, String> labels = entry.getValue();
 
+            Property labelProperty;
+            if (subject.hasProperty(RDF.type, OWL2.ObjectProperty) ||
+                    subject.hasProperty(RDF.type, OWL2.DatatypeProperty)) {
+                labelProperty = RDFS.label;
+            } else {
+                labelProperty = SKOS.prefLabel;
+            }
+
             for (Map.Entry<String, String> langLabel : labels.entrySet()) {
-                subject.addProperty(SKOS.prefLabel,
+                subject.addProperty(labelProperty,
                         transformedModel.createLiteral(langLabel.getValue(), langLabel.getKey()));
             }
         }
@@ -818,16 +832,15 @@ public class TurtleExporter {
         }
 
         ResIterator conceptIter = transformedModel.listSubjectsWithProperty(RDF.type, SKOS.Concept);
-        int conceptCount = 0;
         while (conceptIter.hasNext()) {
             Resource concept = conceptIter.next();
-            concept.removeAll(SKOS.inScheme);
-            concept.addProperty(SKOS.inScheme, conceptScheme);
-            conceptCount++;
-            log.debug("Added skos:inScheme: {} -> {}", concept.getURI(), conceptScheme.getURI());
-        }
 
-        log.debug("Added skos:inScheme relationships for {} concepts to full IRI: {}", conceptCount, ontologyIRI);
+            if (!concept.hasProperty(RDF.type, OWL2.ObjectProperty) &&
+                    !concept.hasProperty(RDF.type, OWL2.DatatypeProperty)) {
+                concept.removeAll(SKOS.inScheme);
+                concept.addProperty(SKOS.inScheme, conceptScheme);
+            }
+        }
     }
 
     private <T> T handleTurtleOperation(TurtleSupplier<T> operation) throws TurtleExportException {

@@ -40,3 +40,4 @@ build/
 ### General ###
 .DS_Store
 .codacy
+*.json

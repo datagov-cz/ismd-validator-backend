@@ -271,7 +271,6 @@ class OFNDataTransformerMainWorkflowTest {
         email.setDescription("Email address");
         email.setDataType("URI, IRI, URL");
         email.setDomain("Person");
-        email.setIsPublic("ano");
         email.setIdentifier("email-1");
 
         return List.of(name, email);
