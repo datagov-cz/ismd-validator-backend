@@ -1,11 +1,11 @@
 package com.dia.service.impl;
 
-import com.dia.enums.ValidationSeverity;
 import com.dia.exceptions.ValidationException;
+import com.dia.validation.ValidationResult;
+import com.dia.validation.ValidationSeverity;
 import com.dia.validation.data.ConceptValidationDto;
 import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
-import com.dia.validation.data.ValidationResult;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;

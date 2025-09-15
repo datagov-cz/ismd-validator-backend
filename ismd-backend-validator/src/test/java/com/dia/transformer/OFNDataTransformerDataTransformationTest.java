@@ -357,7 +357,7 @@ class OFNDataTransformerDataTransformationTest {
         assertNotNull(classResource);
 
         assertTrue(classResource.hasProperty(
-                result.getOntModel().createProperty(baseMetadata.getNamespace() + "definující-ustanovení")));
+                result.getOntModel().createProperty(baseMetadata.getNamespace() + "definující-ustanovení-právního-předpisu")));
 
         assertTrue(classResource.hasProperty(
                 result.getOntModel().createProperty(baseMetadata.getNamespace() + "související-nelegislativní-zdroj")));

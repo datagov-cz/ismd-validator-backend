@@ -1,4 +1,4 @@
-package com.dia.enums;
+package com.dia.validation;
 
 import lombok.Getter;
 
