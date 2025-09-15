@@ -571,12 +571,12 @@ public class OFNDataTransformer {
         Resource superClassResource = findClassResource(superClassName, localClassResources, localPropertyResources, localResourceMap);
 
         if (subClassResource == null) {
-            log.warn("Subclass resource not found: {}", subClassName);
+            log.warn("Subclass resource not found for name: '{}'", subClassName);
             return false;
         }
 
         if (superClassResource == null) {
-            log.warn("Superclass resource not found: {}", superClassName);
+            log.warn("Superclass resource not found for name: '{}'", superClassName);
             return false;
         }
 
@@ -585,9 +585,6 @@ public class OFNDataTransformer {
         String namespace = uriGenerator.getEffectiveNamespace();
         Property hierarchyProperty = ontModel.createProperty(namespace + "nadřazená-třída");
         subClassResource.addProperty(hierarchyProperty, superClassResource);
-
-        log.debug("Created hierarchy relationship: {} rdfs:subClassOf {}",
-                subClassResource.getURI(), superClassResource.getURI());
 
         addHierarchyMetadata(subClassResource, hierarchyData);
 
@@ -608,8 +605,30 @@ public class OFNDataTransformer {
 
         resource = localResourceMap.get(className);
         if (resource != null) {
-            log.debug("Found resource in general resource map: {}", className);
             return resource;
+        }
+
+        for (Map.Entry<String, Resource> entry : localClassResources.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(className)) {
+                return entry.getValue();
+            }
+        }
+
+        for (Map.Entry<String, Resource> entry : localPropertyResources.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(className)) {
+                return entry.getValue();
+            }
+        }
+
+        for (Map.Entry<String, Resource> entry : localClassResources.entrySet()) {
+            if (entry.getKey().contains(className) || className.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+
+        if (className.startsWith("http")) {
+            String iriName = UtilityMethods.extractNameFromIRI(className);
+            return findClassResource(iriName, localClassResources, localPropertyResources, localResourceMap);
         }
 
         return null;
