@@ -63,14 +63,14 @@ class JsonExporterUnitTest {
         // Set up MDC for logging
         MDC.put(LOG_REQUEST_ID, "test-request-123");
 
-        // Initialize exporter
-        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
+        // Note: JsonExporter will be created after setup in each test method
     }
 
     @Test
     void exportToJson_WithMinimalModel_ReturnsValidJson() throws Exception {
         // Arrange
         setupMinimalOntologyModel();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -98,6 +98,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithConceptsInModel_IncludesConceptsInOutput() throws Exception {
         // Arrange
         setupModelWithConcepts();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -121,6 +122,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithMultilingualLabels_IncludesAllLanguages() throws Exception {
         // Arrange
         setupModelWithMultilingualConcept();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -142,6 +144,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithAlternativeNames_IncludesNamesArray() throws Exception {
         // Arrange
         setupModelWithAlternativeNames();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -164,6 +167,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithGovernanceProperties_IncludesGovernanceData() throws Exception {
         // Arrange
         setupModelWithGovernanceProperties();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -188,6 +192,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithGovernancePropertiesFallback_UsesCorrectNamespace() throws Exception {
         // Arrange
         setupModelWithGovernancePropertiesFallback();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -208,6 +213,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithSplitMultipleValues_HandlesCorrectly() throws Exception {
         // Arrange
         setupModelWithMultipleValuesInGovernanceProperties();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -229,8 +235,8 @@ class JsonExporterUnitTest {
     void exportToJson_WithModelMetadata_IncludesMetadataInOutput() throws Exception {
         // Arrange
         modelProperties.put(POPIS, "Test model description");
-        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
         setupMinimalOntologyModel();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -253,6 +259,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithFieldOrdering_MaintainsCorrectOrder() throws Exception {
         // Arrange
         setupModelWithConcepts();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -277,6 +284,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithDifferentConceptTypes_AssignsCorrectTypes() throws Exception {
         // Arrange
         setupModelWithDifferentConceptTypes();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -305,6 +313,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithRppMetadata_IncludesCorrectBooleanValues() throws Exception {
         // Arrange
         setupModelWithRppMetadata();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -324,6 +333,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithExactMatchProperty_FormatsCorrectly() throws Exception {
         // Arrange
         setupModelWithExactMatch();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -345,6 +355,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithDomainAndRange_IncludesPropertyMetadata() throws Exception {
         // Arrange
         setupModelWithDomainAndRange();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -372,6 +383,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithHierarchy_IncludesSuperClasses() throws Exception {
         // Arrange
         setupModelWithHierarchy();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -392,8 +404,8 @@ class JsonExporterUnitTest {
     void exportToJson_WithNamespaceFallback_UsesCorrectNamespace() throws Exception {
         // Arrange
         String customNamespace = "https://custom.example.org/";
-        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, customNamespace);
         setupModelWithConceptsUsingCustomNamespace(customNamespace);
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, customNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -414,6 +426,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithOntologyIRI_UsesCorrectOntologyReference() throws Exception {
         // Arrange
         setupModelWithOntologyIRI();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();
@@ -461,6 +474,9 @@ class JsonExporterUnitTest {
         Resource objectResource = ontModel.createResource(effectiveNamespace + "object");
         subject.addProperty(prop, objectResource);
 
+        // Create exporter for testing
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
+
         Method method = JsonExporter.class.getDeclaredMethod("extractStatementValue",
                 org.apache.jena.rdf.model.Statement.class);
         method.setAccessible(true);
@@ -477,6 +493,8 @@ class JsonExporterUnitTest {
     @Test
     void splitMultipleValues_WithSemicolonSeparated_SplitsCorrectly() throws Exception {
         // Test the splitMultipleValues helper method
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
+
         Method method = JsonExporter.class.getDeclaredMethod("splitMultipleValues", String.class);
         method.setAccessible(true);
 
@@ -492,6 +510,8 @@ class JsonExporterUnitTest {
     @Test
     void splitMultipleValues_WithSingleValue_ReturnsOriginal() throws Exception {
         // Test single value handling
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
+
         Method method = JsonExporter.class.getDeclaredMethod("splitMultipleValues", String.class);
         method.setAccessible(true);
 
@@ -506,6 +526,7 @@ class JsonExporterUnitTest {
     void exportToJson_WithComplexProperties_HandlesAllPropertyTypes() throws Exception {
         // Arrange
         setupModelWithComplexProperties();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
 
         // Act
         String result = exporter.exportToJson();

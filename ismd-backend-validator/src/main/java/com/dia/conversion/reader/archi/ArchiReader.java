@@ -209,16 +209,21 @@ public class ArchiReader {
         classData.setType(mapArchiType(elementType));
 
         String rawIdentifier = properties.get(IDENTIFIKATOR);
+        log.info("Properties for class '{}': {}", name, properties);
+        log.info("Looking for identifier using key '{}', found: '{}'", IDENTIFIKATOR, rawIdentifier);
+        
         if (rawIdentifier != null && !rawIdentifier.trim().isEmpty()) {
             String trimmedIdentifier = rawIdentifier.trim();
 
             if (UtilityMethods.isValidIRI(trimmedIdentifier)) {
                 classData.setIdentifier(trimmedIdentifier);
-                log.debug("Valid identifier set for class '{}': {}", name, trimmedIdentifier);
+                log.info("Valid identifier set for class '{}': {}", name, trimmedIdentifier);
             } else {
                 log.warn("Invalid identifier '{}' for class '{}' - not a valid IRI/URI, ignoring",
                         trimmedIdentifier, name);
             }
+        } else {
+            log.info("No identifier found for class '{}' using key '{}'", name, IDENTIFIKATOR);
         }
 
         classData.setDescription(properties.get(POPIS));
@@ -593,7 +598,7 @@ public class ArchiReader {
         for (Map.Entry<String, String> pattern : specificPatterns.entrySet()) {
             if (propName.contains(pattern.getKey())) {
                 propertyMapping.put(propId, pattern.getValue());
-                log.debug("Mapped propId '{}' with name '{}' to constant '{}'",
+                log.info("Mapped propId '{}' with name '{}' to constant '{}'",
                         propId, propName, pattern.getValue());
                 return;
             }
