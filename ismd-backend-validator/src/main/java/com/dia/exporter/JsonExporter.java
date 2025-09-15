@@ -671,18 +671,39 @@ public class JsonExporter {
         }
 
         if (stmtIter.hasNext()) {
-            JSONArray altNamesArray = new JSONArray();
+            JSONObject altNamesObj = new JSONObject();
+            boolean hasNonEmptyValue = false;
 
             while (stmtIter.hasNext()) {
                 Statement stmt = stmtIter.next();
                 String value = stmt.getString();
-                if (value != null && !value.isEmpty()) {
-                    altNamesArray.put(value);
+                if (value == null || value.isEmpty()) {
+                    continue;
                 }
+
+                String lang = stmt.getLanguage();
+                if (lang == null || lang.isEmpty()) {
+                    lang = "cs";
+                }
+
+                if (altNamesObj.has(lang)) {
+                    Object existingValue = altNamesObj.get(lang);
+                    if (existingValue instanceof JSONArray) {
+                        ((JSONArray) existingValue).put(value);
+                    } else {
+                        JSONArray langArray = new JSONArray();
+                        langArray.put(existingValue);
+                        langArray.put(value);
+                        altNamesObj.put(lang, langArray);
+                    }
+                } else {
+                    altNamesObj.put(lang, value);
+                }
+                hasNonEmptyValue = true;
             }
 
-            if (altNamesArray.length() > 0) {
-                pojemObj.put(ALTERNATIVNI_NAZEV, altNamesArray);
+            if (hasNonEmptyValue && altNamesObj.length() > 0) {
+                pojemObj.put(ALTERNATIVNI_NAZEV, altNamesObj);
             }
         }
     }

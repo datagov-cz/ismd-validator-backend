@@ -153,8 +153,11 @@ class JsonExporterUnitTest {
 
         assertTrue(concept.has("alternativní-název"), "Should have alternative names");
         JsonNode altNames = concept.get("alternativní-název");
-        assertTrue(altNames.isArray(), "Alternative names should be array");
-        assertEquals(2, altNames.size(), "Should have 2 alternative names");
+        assertTrue(altNames.isObject(), "Alternative names should be an object with language tags");
+        assertTrue(altNames.has("cs"), "Should have Czech alternative names");
+        JsonNode csAltNames = altNames.get("cs");
+        assertTrue(csAltNames.isArray(), "Czech alternative names should be an array");
+        assertEquals(2, csAltNames.size(), "Should have 2 alternative names in Czech");
     }
 
     @Test
