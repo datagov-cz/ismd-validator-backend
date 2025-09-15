@@ -239,11 +239,9 @@ class ArchiReaderUnitTest {
         result.getProperties().forEach(p -> assertNotNull(p.getName()));
 
         result.getRelationships().forEach(r -> {
-            if (r.hasValidData()) {
-                assertNotNull(r.getName());
-                assertNotNull(r.getDomain());
-                assertNotNull(r.getRange());
-            }
+            assertNotNull(r.getName());
+            assertNotNull(r.getDomain());
+            assertNotNull(r.getRange());
         });
 
         // Performance check
@@ -365,11 +363,9 @@ class ArchiReaderUnitTest {
 
         // Check that relationships have proper domain and range set
         result.getRelationships().forEach(relationship -> {
-            if (relationship.hasValidData()) {
-                assertNotNull(relationship.getDomain(), "Relationship should have domain: " + relationship.getName());
-                assertNotNull(relationship.getRange(), "Relationship should have range: " + relationship.getName());
-                assertNotNull(relationship.getRelationshipType(), "Relationship should have type: " + relationship.getName());
-            }
+            assertNotNull(relationship.getDomain(), "Relationship should have domain: " + relationship.getName());
+            assertNotNull(relationship.getRange(), "Relationship should have range: " + relationship.getName());
+            assertNotNull(relationship.getRelationshipType(), "Relationship should have type: " + relationship.getName());
         });
     }
 

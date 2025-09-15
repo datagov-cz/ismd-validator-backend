@@ -18,9 +18,13 @@ public class ArchiConstants {
     public static final String VLASTNOST = "vlastnost";
     public static final String TSP = "typ-subjektu-práva";
     public static final String TOP = "typ-objektu-práva";
+    public static final String UDAJ = "údaj";
     public static final String VEREJNY_UDAJ = "veřejný-údaj";
     public static final String NEVEREJNY_UDAJ = "neveřejný-údaj";
     public static final String DATOVY_TYP = "datový-typ";
+    public static final String POLOZKA_CISELNIKU = "položka-číselníku";
+    public static final String ZPUSOB_SDILENI_UDAJE = "způsob-sdílení-údaje";
+    public static final String ZPUSOB_ZISKANI_UDAJE = "způsob-získání-údaje";
     public static final String CASOVY_OKAMZIK = "časový-okamžik";
     public static final String SLOVNIK = "slovník";
 
@@ -96,8 +100,9 @@ public class ArchiConstants {
         };
 
         public static final String[] VOCABULARY_TYPES = {
-                POJEM, TRIDA, VZTAH, VLASTNOST, TSP, TOP,
-                VEREJNY_UDAJ, NEVEREJNY_UDAJ, DATOVY_TYP
+                POJEM, TRIDA, VZTAH, VLASTNOST, TSP, TOP, UDAJ,
+                VEREJNY_UDAJ, NEVEREJNY_UDAJ, DATOVY_TYP, POLOZKA_CISELNIKU,
+                ZPUSOB_SDILENI_UDAJE, ZPUSOB_ZISKANI_UDAJE
         };
 
         public static final String[] NAMESPACE_PATHS = {

@@ -45,9 +45,7 @@ public class RelationshipSheetProcessor extends BaseSheetProcessor<List<Relation
             if (isRowEmpty(row)) continue;
 
             RelationshipData relationshipData = processDataRow(row, columnMap, mapping);
-            if (relationshipData.hasValidData()) {
-                relationships.add(relationshipData);
-            }
+            relationships.add(relationshipData);
         }
 
         return relationships;
