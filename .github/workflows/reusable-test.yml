@@ -8,10 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -25,13 +25,13 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Install common library locally
-        working-directory: ismd-backend-validator-new
+        working-directory: ismd-backend-validator
         run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
 
       - name: Build with Maven
-        working-directory: ismd-backend-validator-new
+        working-directory: ismd-backend-validator
         run: ./mvnw clean package -DskipTests=true
 
       - name: Run tests
-        working-directory: ismd-backend-validator-new
+        working-directory: ismd-backend-validator
         run: ./mvnw test
