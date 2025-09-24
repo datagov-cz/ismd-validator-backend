@@ -89,6 +89,20 @@ public class URIGenerator {
         return baseNamespace + "/" + sanitizedVocabularyName;
     }
 
+    private String buildVocabularyURIWithGivenNamesapce(String sanitizedVocabularyName, String namespace) {
+        String baseNamespace = null;
+        if (namespace == null || namespace.trim().isEmpty()) {
+            baseNamespace = effectiveNamespace;
+        } else {
+            baseNamespace = namespace;
+            if (baseNamespace.endsWith("/")) {
+                baseNamespace = baseNamespace.substring(0, baseNamespace.length() - 1);
+            }
+        }
+
+        return baseNamespace + "/" + sanitizedVocabularyName;
+    }
+
     public String generateRuleIRI(String ruleName, boolean isLocal) {
         try {
             String sanitizedName = UtilityMethods.sanitizeForIRI(ruleName);
