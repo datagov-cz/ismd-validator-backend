@@ -81,6 +81,15 @@ public class URIGenerator {
         return buildVocabularyURI(sanitizedName);
     }
 
+    public String generateVocabularyURIFromGivenNamespace(String vocabularyName, String namespace) {
+        if (vocabularyName == null || vocabularyName.trim().isEmpty()) {
+            return effectiveNamespace;
+        }
+
+        String sanitizedName = UtilityMethods.sanitizeForIRI(vocabularyName);
+        return buildVocabularyURIWithGivenNamesapce(sanitizedName, namespace);
+    }
+
     private String buildVocabularyURI(String sanitizedVocabularyName) {
         String baseNamespace = effectiveNamespace;
         if (baseNamespace.endsWith("/")) {
