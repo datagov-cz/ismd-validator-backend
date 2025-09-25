@@ -16,6 +16,7 @@ import java.io.InputStream;
 import static com.dia.constants.ExcelConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("ExcelReader – jednotkové testy čtení ontologie z Excelu")
 class ExcelReaderUnitTest {
 
     private ExcelReader reader;
@@ -28,7 +29,7 @@ class ExcelReaderUnitTest {
     }
 
     @Test
-    @DisplayName("constructor: instance se vytvoři a je připravena k použizí")
+    @DisplayName("constructor: instance se vytvoří a je připravena k použití")
     void constructor_shouldInitialize() {
         assertNotNull(reader, "Instance ExcelReader musí být inicializovaná v @BeforeEach");
     }
@@ -51,6 +52,7 @@ class ExcelReaderUnitTest {
     }
 
     @Test
+    @DisplayName("readOntologyFromExcel: vyhodí chybu, když chybí list 'Slovník'")
     void readOntologyFromExcel_missingVocabularySheet_shouldThrow() throws Exception {
         // Arrange: workbook WITHOUT the 'Slovník' sheet
         Workbook wb = new XSSFWorkbook();
@@ -70,7 +72,7 @@ class ExcelReaderUnitTest {
     }
 
     @Test
-    @DisplayName("readOntologyFromExcel: throws when 'Subjekty a objekty práva' sheet is missing")
+    @DisplayName("readOntologyFromExcel: vyhodí chybu, když chybí list 'Subjekty a objekty práva'")
     void readOntologyFromExcel_missingClassesSheet_shouldThrow() throws Exception {
         // Arrange: workbook WITHOUT the 'Subjekty a objekty práva' sheet
         Workbook wb = new XSSFWorkbook();
@@ -90,7 +92,7 @@ class ExcelReaderUnitTest {
     }
 
     @Test
-    @DisplayName("readOntologyFromExcel: throws when 'Vlastnosti' sheet is missing")
+    @DisplayName("readOntologyFromExcel: vyhodí chybu, když chybí list 'Vlastnosti'")
     void readOntologyFromExcel_missingPropertiesSheet_shouldThrow() throws Exception {
         // Arrange: workbook WITHOUT the 'Vlastnosti' sheet
         Workbook wb = new XSSFWorkbook();
@@ -108,7 +110,7 @@ class ExcelReaderUnitTest {
     }
 
     @Test
-    @DisplayName("readOntologyFromExcel: throws when 'Vztahy' sheet is missing")
+    @DisplayName("readOntologyFromExcel: vyhodí chybu, když chybí list 'Vztahy'")
     void readOntologyFromExcel_missingRelationshipsSheet_shouldThrow() throws Exception {
         // Arrange: workbook WITHOUT the 'Vztahy' sheet
         Workbook wb = new XSSFWorkbook();
@@ -141,7 +143,7 @@ class ExcelReaderUnitTest {
         row1.createCell(0).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:");
         row1.createCell(1).setCellValue("http://example.com/ontology/");
 
-        // Ostatní povinné listy s minimálním obsahem, aby se test nedostal na jiné chyby
+        // Ostatní povinné listy s minimálním obsahem
         final String[] HEADERS_CLASSES = {"Název", "Typ", "Popis", "Definice"};
         createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, HEADERS_CLASSES);
         addOneDataRow(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Osoba", "Subjekt práva", "Popis", "Definice"});
@@ -238,7 +240,7 @@ class ExcelReaderUnitTest {
     }
 
     @Test
-    @DisplayName("readOntologyFromExcel: happy path with minimal valid workbook")
+    @DisplayName("readOntologyFromExcel: happy path - minimální platný sešit")
     void readOntologyFromExcel_happyPath_shouldReturnData() throws Exception {
         Workbook wb = new XSSFWorkbook();
         // Slovník – přesně očekávané klíče s dvojtečkou, bez hlavičky tabulky
@@ -451,9 +453,15 @@ class ExcelReaderUnitTest {
         // Slovník - minimální validní trojice kličů
         var slovnik = wb.createSheet(SLOVNIK);
         int r = 0;
-        var row0 = slovnik.createRow(r++); row0.createCell(0).setCellValue("Název slovníku:"); row0.createCell(1).setCellValue("Test");
-        var row1 = slovnik.createRow(r++); row1.createCell(1).setCellValue("Popis slovníku"); row1.createCell(1).setCellValue("Popis");
-        var row2 = slovnik.createRow(r++); row2.createCell(2).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:"); row2.createCell(1).setCellValue("http://example.com/");
+        var row0 = slovnik.createRow(r++);
+        row0.createCell(0).setCellValue("Název slovníku:");
+        row0.createCell(1).setCellValue("Test");
+        var row1 = slovnik.createRow(r++);
+        row1.createCell(1).setCellValue("Popis slovníku");
+        row1.createCell(1).setCellValue("Popis");
+        var row2 = slovnik.createRow(r++);
+        row2.createCell(2).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:");
+        row2.createCell(1).setCellValue("http://example.com/");
 
         // Subjekty a objekty práva – přesně očekávané hlavičky
         createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Název", "Typ", "Popis", "Definice"});
@@ -481,9 +489,15 @@ class ExcelReaderUnitTest {
         // Slovník - minimální validní trojice kličů
         var slovnik = wb.createSheet(SLOVNIK);
         int r = 0;
-        var row0 = slovnik.createRow(r++); row0.createCell(0).setCellValue("Název slovníku:"); row0.createCell(1).setCellValue("Test");
-        var row1 = slovnik.createRow(r++); row1.createCell(1).setCellValue("Popis slovníku"); row1.createCell(1).setCellValue("Popis");
-        var row2 = slovnik.createRow(r++); row2.createCell(2).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:"); row2.createCell(1).setCellValue("http://example.com/");
+        var row0 = slovnik.createRow(r++);
+        row0.createCell(0).setCellValue("Název slovníku:");
+        row0.createCell(1).setCellValue("Test");
+        var row1 = slovnik.createRow(r++);
+        row1.createCell(1).setCellValue("Popis slovníku");
+        row1.createCell(1).setCellValue("Popis");
+        var row2 = slovnik.createRow(r++);
+        row2.createCell(2).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:");
+        row2.createCell(1).setCellValue("http://example.com/");
 
         // Subjekty a objekty práva – přesně očekávané hlavičky
         createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Název", "Typ", "Popis", "Definice"});
@@ -516,9 +530,15 @@ class ExcelReaderUnitTest {
         // Slovník – minimální validní trojice klíčů
         var slovnik = wb.createSheet(SLOVNIK);
         int r = 0;
-        var row0 = slovnik.createRow(r++); row0.createCell(0).setCellValue("Název slovníku:"); row0.createCell(1).setCellValue("Test");
-        var row1 = slovnik.createRow(r++); row1.createCell(0).setCellValue("Popis slovníku:"); row1.createCell(1).setCellValue("Popis");
-        var row2 = slovnik.createRow(r++); row2.createCell(0).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:"); row2.createCell(1).setCellValue("http://example.com/");
+        var row0 = slovnik.createRow(r++);
+        row0.createCell(0).setCellValue("Název slovníku:");
+        row0.createCell(1).setCellValue("Test");
+        var row1 = slovnik.createRow(r++);
+        row1.createCell(0).setCellValue("Popis slovníku:");
+        row1.createCell(1).setCellValue("Popis");
+        var row2 = slovnik.createRow(r++);
+        row2.createCell(0).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:");
+        row2.createCell(1).setCellValue("http://example.com/");
 
         // Subjekty a objekty práva – ZNÁMÉ hlavičky, ale v jiném pořadí
         var sop = wb.createSheet(SUBJEKTY_OBJEKTY_PRAVA);
@@ -556,9 +576,15 @@ class ExcelReaderUnitTest {
         // Slovník – minimálně validní
         var slovnik = wb.createSheet(SLOVNIK);
         int r = 0;
-        var row0 = slovnik.createRow(r++); row0.createCell(0).setCellValue("Název slovníku:"); row0.createCell(1).setCellValue("Test");
-        var row1 = slovnik.createRow(r++); row1.createCell(0).setCellValue("Popis slovníku:"); row1.createCell(1).setCellValue("Popis");
-        var row2 = slovnik.createRow(r++); row2.createCell(0).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:"); row2.createCell(1).setCellValue("http://example.com/");
+        var row0 = slovnik.createRow(r++);
+        row0.createCell(0).setCellValue("Název slovníku:");
+        row0.createCell(1).setCellValue("Test");
+        var row1 = slovnik.createRow(r++);
+        row1.createCell(0).setCellValue("Popis slovníku:");
+        row1.createCell(1).setCellValue("Popis");
+        var row2 = slovnik.createRow(r++);
+        row2.createCell(0).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:");
+        row2.createCell(1).setCellValue("http://example.com/");
 
         // Subjekty a objekty práva – standardní validní hlavičky
         createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Název", "Typ", "Popis", "Definice"});
@@ -593,9 +619,15 @@ class ExcelReaderUnitTest {
         // Slovník – minimální validní trojice kličů
         var slovnik = wb.createSheet(SLOVNIK);
         int r = 0;
-        var row0 = slovnik.createRow(r++); row0.createCell(0).setCellValue("Název slovníku:"); row0.createCell(1).setCellValue("Test");
-        var row1 = slovnik.createRow(r++); row1.createCell(0).setCellValue("Popis slovníku:"); row1.createCell(1).setCellValue("Popis");
-        var row2 = slovnik.createRow(r++); row2.createCell(0).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:"); row2.createCell(1).setCellValue("http://example.com/");
+        var row0 = slovnik.createRow(r++);
+        row0.createCell(0).setCellValue("Název slovníku:");
+        row0.createCell(1).setCellValue("Test");
+        var row1 = slovnik.createRow(r++);
+        row1.createCell(0).setCellValue("Popis slovníku:");
+        row1.createCell(1).setCellValue("Popis");
+        var row2 = slovnik.createRow(r++);
+        row2.createCell(0).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:");
+        row2.createCell(1).setCellValue("http://example.com/");
 
         // Subjekty a objekty práva – standardní validní hlavičky
         createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Název", "Typ", "Popis", "Definice"});
@@ -622,7 +654,40 @@ class ExcelReaderUnitTest {
                     "Přeházené pořadí známých hlaviček vztahů nesmí shodit zpracování");
         }
     }
-    
+
+    @Test
+    @DisplayName("setupVocabularyMappings: známé klíče ve Slovníku v libovolném pořadí → nepadá")
+    void setupVocabularyMappings_knownKeysAnyOrder_shouldNotThrow() throws Exception {
+        Workbook wb = new XSSFWorkbook();
+
+        // Slovník – stejné tři povinné klíče, ale v JINÉM pořadí
+        var slovnik = wb.createSheet(SLOVNIK);
+        int r = 0;
+        var row0 = slovnik.createRow(r++); // Nejdřív base URI
+        row0.createCell(0).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:");
+        row0.createCell(1).setCellValue("http://example.com/ontology/");
+        var row1 = slovnik.createRow(r++); // Popis
+        row1.createCell(0).setCellValue("Popis slovníku:");
+        row1.createCell(1).setCellValue("Popis slovníku pro test");
+        var row2 = slovnik.createRow(r++); // Název
+        row2.createCell(0).setCellValue("Název slovníku:");
+        row2.createCell(1).setCellValue("Ukázkový slovník");
+
+        // Ostatní listy s validními hlavičkami
+        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Název", "Typ", "Popis", "Definice"});
+        addOneDataRow(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Osoba", "Subjekt práva", "Popis", "Definice"});
+
+        createSheetWithHeader(wb, VLASTNOSTI, new String[]{"Název", "Subjekt nebo objekt práva", "Popis"});
+        addOneDataRow(wb, VLASTNOSTI, new String[]{"hasName", "Osoba", "desc"});
+
+        createSheetWithHeader(wb, VZTAHY, new String[]{"Subjekt nebo objekt práva", "Název", "Rozsah"});
+        addOneDataRow(wb, VZTAHY, new String[]{"Osoba", "hasName", "http://www.w3.org/2001/XMLSchema#string"});
+
+        try (InputStream in = asStream(wb)) {
+            assertDoesNotThrow(() -> reader.readOntologyFromExcel(in),
+                    "Přeházené pořadí známých klíčů ve Slovníku nesmí shodit zpracování");
+        }
+    }
 
     @Test
     @DisplayName("readOntologyFromExcel: více tříd/vlastností/vztahů → nepadá (agregace)")
@@ -632,35 +697,51 @@ class ExcelReaderUnitTest {
         // Slovník - minimální validní trojice kličů
         var slovnik = wb.createSheet(SLOVNIK);
         int r = 0;
-        var row0 = slovnik.createRow(r++); row0.createCell(0).setCellValue("Název slovníku:"); row0.createCell(1).setCellValue("Test");
-        var row1 = slovnik.createRow(r++); row1.createCell(1).setCellValue("Popis slovníku"); row1.createCell(1).setCellValue("Popis");
-        var row2 = slovnik.createRow(r++); row2.createCell(2).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:"); row2.createCell(1).setCellValue("http://example.com/");
+        var row0 = slovnik.createRow(r++);
+        row0.createCell(0).setCellValue("Název slovníku:");
+        row0.createCell(1).setCellValue("Test");
+        var row1 = slovnik.createRow(r++);
+        row1.createCell(1).setCellValue("Popis slovníku");
+        row1.createCell(1).setCellValue("Popis");
+        var row2 = slovnik.createRow(r++);
+        row2.createCell(2).setCellValue("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:");
+        row2.createCell(1).setCellValue("http://example.com/");
 
         // Subjekty a objekty práva – 2 řádky
         createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Název", "Typ", "Popis", "Definice"});
         var sop = wb.getSheet(SUBJEKTY_OBJEKTY_PRAVA);
-        sop.createRow(1).createCell(0).setCellValue("Osoba"); sop.getRow(1).createCell(1).setCellValue("Subjekt práva");
-        sop.getRow(1).createCell(2).setCellValue("Popis1"); sop.getRow(1).createCell(3).setCellValue("Def1");
-        sop.createRow(2).createCell(0).setCellValue("Dokument"); sop.getRow(2).createCell(1).setCellValue("Objekt práva");
-        sop.getRow(2).createCell(2).setCellValue("Popis2"); sop.getRow(2).createCell(3).setCellValue("Def2");
+        sop.createRow(1).createCell(0).setCellValue("Osoba");
+        sop.getRow(1).createCell(1).setCellValue("Subjekt práva");
+        sop.getRow(1).createCell(2).setCellValue("Popis1");
+        sop.getRow(1).createCell(3).setCellValue("Def1");
+        sop.createRow(2).createCell(0).setCellValue("Dokument");
+        sop.getRow(2).createCell(1).setCellValue("Objekt práva");
+        sop.getRow(2).createCell(2).setCellValue("Popis2");
+        sop.getRow(2).createCell(3).setCellValue("Def2");
 
         // Vlastnosti - 2 řádky, každá k jinému objektu
         createSheetWithHeader(wb, VLASTNOSTI, new String[]{"Název", "Subjekt nebo objekt práva", "Popis"});
         var prop = wb.getSheet(VLASTNOSTI);
-        prop.createRow(1).createCell(0).setCellValue("hasname"); prop.getRow(1).createCell(1).setCellValue("Osoba"); prop.getRow(1).createCell(2).setCellValue("desc1");
-        prop.createRow(2).createCell(0).setCellValue("hasIdentifier"); prop.getRow(2).createCell(1).setCellValue("Dokument"); prop.getRow(2).createCell(2).setCellValue("desc2");
+        prop.createRow(1).createCell(0).setCellValue("hasname");
+        prop.getRow(1).createCell(1).setCellValue("Osoba");
+        prop.getRow(1).createCell(2).setCellValue("desc1");
+        prop.createRow(2).createCell(0).setCellValue("hasIdentifier");
+        prop.getRow(2).createCell(1).setCellValue("Dokument");
+        prop.getRow(2).createCell(2).setCellValue("desc2");
 
-        // Vztahy - 2 řádky a růzmné rozsahy
+        // Vztahy - 2 řádky a rozsahy
         createSheetWithHeader(wb, VZTAHY, new String[]{"Subjekt nebo objekt práva", "Název", "Rozsah"});
         var rel = wb.getSheet(VZTAHY);
-        rel.createRow(1).createCell(0).setCellValue("Osoba"); rel.getRow(1).createCell(1).setCellValue("hasName"); rel.getRow(1).createCell(2).setCellValue("http://www.w3.org/2001/XMLSchema#string");
-        rel.createRow(2).createCell(0).setCellValue("Dokument"); rel.getRow(2).createCell(1).setCellValue("hasIdentifier"); rel.getRow(2).createCell(2).setCellValue("http://www.w3.org/2001/XMLSchema#string");
+        rel.createRow(1).createCell(0).setCellValue("Osoba");
+        rel.getRow(1).createCell(1).setCellValue("hasName");
+        rel.getRow(1).createCell(2).setCellValue("http://www.w3.org/2001/XMLSchema#string");
+        rel.createRow(2).createCell(0).setCellValue("Dokument");
+        rel.getRow(2).createCell(1).setCellValue("hasIdentifier");
+        rel.getRow(2).createCell(2).setCellValue("http://www.w3.org/2001/XMLSchema#string");
 
         try (InputStream in = asStream(wb)) {
             assertDoesNotThrow(() -> reader.readOntologyFromExcel(in),
                     "Agregace více řádků napříč listy nesmí padat");
         }
-
-
     }
 }
