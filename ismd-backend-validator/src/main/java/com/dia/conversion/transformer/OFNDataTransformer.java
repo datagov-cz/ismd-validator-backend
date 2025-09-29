@@ -451,7 +451,6 @@ public class OFNDataTransformer {
                                      Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
-            // Check if this concept should be included as a standalone concept
             String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
             if (!belongsToCurrentVocabulary(propertyURI)) {
                 log.debug("Skipping external property (will be referenced in relationships): {} -> {}", 
@@ -486,6 +485,7 @@ public class OFNDataTransformer {
         if (belongsToCurrentVocabulary(propertyURI)) {
             addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
             addPropertySpecificMetadata(propertyResource, propertyData);
+            addPropertySuperPropertyRelationship(propertyResource, propertyData);
         }
 
         return propertyResource;
@@ -511,6 +511,23 @@ public class OFNDataTransformer {
         addPropertyPPDFData(propertyResource, propertyData);
 
         addRangeInformation(propertyResource, propertyData);
+    }
+
+    private void addPropertySuperPropertyRelationship(Resource propertyResource, PropertyData propertyData) {
+        if (propertyData.getSuperProperty() != null && !propertyData.getSuperProperty().trim().isEmpty()) {
+            String superProperty = propertyData.getSuperProperty().trim();
+
+            String superPropertyURI;
+            if (DataTypeConverter.isUri(superProperty)) {
+                superPropertyURI = superProperty;
+            } else {
+                superPropertyURI = uriGenerator.generateConceptURI(superProperty, null);
+            }
+
+            propertyResource.addProperty(RDFS.subPropertyOf, ontModel.createResource(superPropertyURI));
+
+            log.debug("Added subPropertyOf relationship: {} -> {}", propertyResource.getURI(), superPropertyURI);
+        }
     }
 
     private void transformRelationships(List<RelationshipData> relationships, Map<String, Resource> localRelationshipResources,
@@ -541,12 +558,15 @@ public class OFNDataTransformer {
 
         OntProperty relationshipResource = ontModel.createObjectProperty(relationshipURI);
         relationshipResource.addProperty(RDF.type, OWL2.ObjectProperty);
+        relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
+        relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VZTAH));
 
         log.debug("Created ObjectProperty for relationship: {} -> {}", relationshipData.getName(), relationshipURI);
 
         if (belongsToCurrentVocabulary(relationshipURI)) {
             addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData));
             addRelationshipSpecificMetadata(relationshipResource, relationshipData);
+            addRelationshipSuperPropertyRelationship(relationshipResource, relationshipData);
             log.debug("Added full metadata for local relationship: {}", relationshipURI);
         } else {
             log.debug("Skipped full metadata for external relationship (different namespace): {}", relationshipURI);
@@ -569,6 +589,23 @@ public class OFNDataTransformer {
         if (relationshipData.getEquivalentConcept() != null && !relationshipData.getEquivalentConcept().trim().isEmpty()) {
             log.debug("Processing equivalent concept for relationship {}: '{}'", relationshipData.getName(), relationshipData.getEquivalentConcept());
             addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), "relationship");
+        }
+    }
+
+    private void addRelationshipSuperPropertyRelationship(Resource relationshipResource, RelationshipData relationshipData) {
+        if (relationshipData.getSuperRelation() != null && !relationshipData.getSuperRelation().trim().isEmpty()) {
+            String superRelation = relationshipData.getSuperRelation().trim();
+
+            String superRelationURI;
+            if (DataTypeConverter.isUri(superRelation)) {
+                superRelationURI = superRelation;
+            } else {
+                superRelationURI = uriGenerator.generateConceptURI(superRelation, null);
+            }
+
+            relationshipResource.addProperty(RDFS.subPropertyOf, ontModel.createResource(superRelationURI));
+
+            log.debug("Added subPropertyOf relationship: {} -> {}", relationshipResource.getURI(), superRelationURI);
         }
     }
 
