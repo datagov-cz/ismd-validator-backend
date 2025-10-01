@@ -43,3 +43,6 @@ build/
 *.json
 .*
 
+### don't ignore ###
+!.github/
+!.github/**
