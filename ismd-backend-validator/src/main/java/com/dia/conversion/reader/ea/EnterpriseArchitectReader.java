@@ -227,9 +227,15 @@ public class EnterpriseArchitectReader {
         Element extensionElement = findExtensionElement(document, elementId);
         if (extensionElement != null) {
             String stereotype = getStereotype(extensionElement);
-            log.debug("Found element {} with stereotype: {}", umlClass.getAttribute("name"), stereotype);
+            String elementType = getTagValueByPattern(extensionElement, "TYP");
+            log.debug("Found element {} with stereotype: {}, type: {}", umlClass.getAttribute("name"), stereotype, elementType);
 
             if (STEREOTYPE_TYP_OBJEKTU.equals(stereotype) || STEREOTYPE_TYP_SUBJEKTU.equals(stereotype)) {
+                if (isPropertyType(elementType)) {
+                    log.debug("Skipping '{}' from class extraction - it's a property type (type: '{}')", umlClass.getAttribute("name"), elementType);
+                    return;
+                }
+                
                 ClassData classData = parseClassData(umlClass, extensionElement, stereotype);
                 if (classData.hasValidData()) {
                     classes.add(classData);
@@ -277,6 +283,12 @@ public class EnterpriseArchitectReader {
         classData.setAgendaCode(getTagValueByPattern(extensionElement, "AGENDA"));
         classData.setAgendaSystemCode(getTagValueByPattern(extensionElement, "AGENDOVY_INFORMACNI_SYSTEM"));
 
+        classData.setIsPublic(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_VEREJNY"));
+        classData.setPrivacyProvision(getTagValueByPattern(extensionElement, "USTANOVENI_DOKLADAJICI_NEVEREJNOST"));
+        classData.setSharingMethod(getTagValueByPattern(extensionElement, "ZPUSOB_SDILENI_UDAJE"));
+        classData.setAcquisitionMethod(getTagValueByPattern(extensionElement, "ZPUSOB_ZISKANI_UDAJE"));
+        classData.setContentType(getTagValueByPattern(extensionElement, "TYP_OBSAHU_UDAJE"));
+
         return classData;
     }
 
@@ -299,15 +311,7 @@ public class EnterpriseArchitectReader {
         propertyData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
         propertyData.setIdentifier(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
         propertyData.setDataType(getTagValueByPattern(extensionElement, "DATOVY_TYP"));
-
         propertyData.setSharedInPPDF(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_SDILEN_V_PPDF"));
-        propertyData.setIsPublic(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_VEREJNY"));
-
-        propertyData.setPrivacyProvision(getTagValueByPattern(extensionElement, "USTANOVENI_DOKLADAJICI_NEVEREJNOST"));
-
-        propertyData.setSharingMethod(getTagValueByPattern(extensionElement, "ZPUSOB_SDILENI_UDAJE"));
-        propertyData.setAcquisitionMethod(getTagValueByPattern(extensionElement, "ZPUSOB_ZISKANI_UDAJE"));
-        propertyData.setContentType(getTagValueByPattern(extensionElement, "TYP_OBSAHU_UDAJE"));
 
         propertyData.setDomain("Subjekt nebo objekt práva");
 
@@ -336,10 +340,8 @@ public class EnterpriseArchitectReader {
                 case "Association":
                     if (isValidAssociationConnector(connector)) {
                         RelationshipData relationshipData = parseRelationshipData(document, connector);
-                        if (relationshipData.hasValidData()) {
-                            relationships.add(relationshipData);
-                            log.debug("Added association: {}", relationshipData.getName());
-                        }
+                        relationships.add(relationshipData);
+                        log.debug("Added association: {}", relationshipData.getName());
                     }
                     break;
                 case "Generalization":
@@ -592,14 +594,6 @@ public class EnterpriseArchitectReader {
         relationshipData.setEquivalentConcept(getTagValueByPattern(connector, "EKVIVALENTNI_POJEM"));
         relationshipData.setIdentifier(getTagValueByPattern(connector, "IDENTIFIKATOR"));
 
-        relationshipData.setSharedInPPDF(getBooleanTagValueByPattern(connector, "JE_POJEM_SDILEN_V_PPDF"));
-        relationshipData.setIsPublic(getBooleanTagValueByPattern(connector, "JE_POJEM_VEREJNY"));
-
-        relationshipData.setPrivacyProvision(getTagValueByPattern(connector, "USTANOVENI_DOKLADAJICI_NEVEREJNOST"));
-
-        relationshipData.setSharingMethod(getTagValueByPattern(connector, "ZPUSOB_SDILENI_UDAJE"));
-        relationshipData.setAcquisitionMethod(getTagValueByPattern(connector, "ZPUSOB_ZISKANI_UDAJE"));
-        relationshipData.setContentType(getTagValueByPattern(connector, "TYP_OBSAHU_UDAJE"));
 
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);
@@ -801,5 +795,14 @@ public class EnterpriseArchitectReader {
         }
 
         return source;
+    }
+
+    private static boolean isPropertyType(String elementType) {
+        if (elementType == null || elementType.trim().isEmpty()) {
+            return false;
+        }
+        String trimmedType = elementType.trim();
+        return "typ vlastnosti".equals(trimmedType) || 
+                trimmedType.toLowerCase().contains("vlastnost");
     }
 }

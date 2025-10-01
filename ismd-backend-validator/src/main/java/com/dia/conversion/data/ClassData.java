@@ -21,6 +21,11 @@ public class ClassData {
 
     private String agendaCode;
     private String agendaSystemCode;
+    private String isPublic;
+    private String privacyProvision;
+    private String sharingMethod;
+    private String acquisitionMethod;
+    private String contentType;
 
     public boolean hasValidData() {
         return name != null && !name.trim().isEmpty();

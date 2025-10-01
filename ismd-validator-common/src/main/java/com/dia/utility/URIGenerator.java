@@ -81,11 +81,34 @@ public class URIGenerator {
         return buildVocabularyURI(sanitizedName);
     }
 
+    public String generateVocabularyURIFromGivenNamespace(String vocabularyName, String namespace) {
+        if (vocabularyName == null || vocabularyName.trim().isEmpty()) {
+            return effectiveNamespace;
+        }
+
+        String sanitizedName = UtilityMethods.sanitizeForIRI(vocabularyName);
+        return buildVocabularyURIWithGivenNamesapce(sanitizedName, namespace);
+    }
+
     private String buildVocabularyURI(String sanitizedVocabularyName) {
         String baseNamespace = effectiveNamespace;
         if (baseNamespace.endsWith("/")) {
             baseNamespace = baseNamespace.substring(0, baseNamespace.length() - 1);
         }
+        return baseNamespace + "/" + sanitizedVocabularyName;
+    }
+
+    private String buildVocabularyURIWithGivenNamesapce(String sanitizedVocabularyName, String namespace) {
+        String baseNamespace = null;
+        if (namespace == null || namespace.trim().isEmpty()) {
+            baseNamespace = effectiveNamespace;
+        } else {
+            baseNamespace = namespace;
+            if (baseNamespace.endsWith("/")) {
+                baseNamespace = baseNamespace.substring(0, baseNamespace.length() - 1);
+            }
+        }
+
         return baseNamespace + "/" + sanitizedVocabularyName;
     }
 

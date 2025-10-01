@@ -21,21 +21,4 @@ public class RelationshipData {
     private String alternativeName;
     private String equivalentConcept;
     private String identifier;
-
-    private String sharedInPPDF;
-    private String isPublic;
-    private String privacyProvision;
-
-    private String sharingMethod;
-    private String acquisitionMethod;
-    private String contentType;
-
-    public boolean hasValidData() {
-        /*return name != null && !name.trim().isEmpty() &&
-                domain != null && !domain.trim().isEmpty() &&
-                range != null && !range.trim().isEmpty();
-
-         */
-        return true;
-    }
 }

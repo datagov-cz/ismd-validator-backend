@@ -184,6 +184,12 @@ public class ArchiReader {
 
             String elementType = elementProperties.getOrDefault(TYP, "").trim();
 
+            // Skip elements that are property types to avoid dual classification
+            if (isPropertyType(elementType)) {
+                log.debug("Skipping '{}' from class extraction - it's a property type (type: '{}')", name, elementType);
+                continue;
+            }
+
             ClassData classData = createClassData(name, id, elementType, elementProperties);
             if (classData.hasValidData()) {
                 classes.add(classData);
@@ -203,16 +209,21 @@ public class ArchiReader {
         classData.setType(mapArchiType(elementType));
 
         String rawIdentifier = properties.get(IDENTIFIKATOR);
+        log.info("Properties for class '{}': {}", name, properties);
+        log.info("Looking for identifier using key '{}', found: '{}'", IDENTIFIKATOR, rawIdentifier);
+        
         if (rawIdentifier != null && !rawIdentifier.trim().isEmpty()) {
             String trimmedIdentifier = rawIdentifier.trim();
 
             if (UtilityMethods.isValidIRI(trimmedIdentifier)) {
                 classData.setIdentifier(trimmedIdentifier);
-                log.debug("Valid identifier set for class '{}': {}", name, trimmedIdentifier);
+                log.info("Valid identifier set for class '{}': {}", name, trimmedIdentifier);
             } else {
                 log.warn("Invalid identifier '{}' for class '{}' - not a valid IRI/URI, ignoring",
                         trimmedIdentifier, name);
             }
+        } else {
+            log.info("No identifier found for class '{}' using key '{}'", name, IDENTIFIKATOR);
         }
 
         classData.setDescription(properties.get(POPIS));
@@ -223,6 +234,12 @@ public class ArchiReader {
         classData.setEquivalentConcept(properties.get(EKVIVALENTNI_POJEM));
         classData.setAgendaCode(properties.get(AGENDA));
         classData.setAgendaSystemCode(properties.get(AIS));
+
+        extractAndValidateClassPublicityData(classData, properties, name);
+
+        classData.setSharingMethod(properties.get(ZPUSOB_SDILENI));
+        classData.setAcquisitionMethod(properties.get(ZPUSOB_ZISKANI));
+        classData.setContentType(properties.get(TYP_OBSAHU));
 
         return classData;
     }
@@ -323,26 +340,20 @@ public class ArchiReader {
         propertyData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         propertyData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
         propertyData.setDataType(properties.get(DATOVY_TYP));
-
-        extractAndValidatePublicityData(propertyData, properties, name);
-
         propertyData.setSharedInPPDF(properties.get(JE_PPDF));
-        propertyData.setSharingMethod(properties.get(ZPUSOB_SDILENI));
-        propertyData.setAcquisitionMethod(properties.get(ZPUSOB_ZISKANI));
-        propertyData.setContentType(properties.get(TYP_OBSAHU));
 
         return propertyData;
     }
 
-    private void extractAndValidatePublicityData(PropertyData propertyData, Map<String, String> properties, String conceptName) {
+    private void extractAndValidateClassPublicityData(ClassData classData, Map<String, String> properties, String conceptName) {
         String isPublicValue = properties.get(JE_VEREJNY);
         String privacyProvision = properties.get(USTANOVENI_NEVEREJNOST);
 
         isPublicValue = UtilityMethods.cleanBooleanValue(isPublicValue);
         privacyProvision = UtilityMethods.cleanProvisionValue(privacyProvision);
 
-        propertyData.setIsPublic(isPublicValue);
-        propertyData.setPrivacyProvision(privacyProvision);
+        classData.setIsPublic(isPublicValue);
+        classData.setPrivacyProvision(privacyProvision);
 
         validatePublicityConsistency(conceptName, isPublicValue, privacyProvision);
     }
@@ -394,7 +405,7 @@ public class ArchiReader {
 
             if ("Association".equals(type) || "Composition".equals(type) || "Specialization".equals(type)) {
                 RelationshipData relationshipData = createRelationshipData(relationship, idToNameMap);
-                if (relationshipData != null && relationshipData.hasValidData()) {
+                if (relationshipData != null) {
                     relationships.add(relationshipData);
                     log.debug("Successfully extracted relationship: {} (type: {})", relationshipData.getName(), type);
                 } else {
@@ -587,7 +598,7 @@ public class ArchiReader {
         for (Map.Entry<String, String> pattern : specificPatterns.entrySet()) {
             if (propName.contains(pattern.getKey())) {
                 propertyMapping.put(propId, pattern.getValue());
-                log.debug("Mapped propId '{}' with name '{}' to constant '{}'",
+                log.info("Mapped propId '{}' with name '{}' to constant '{}'",
                         propId, propName, pattern.getValue());
                 return;
             }
@@ -715,5 +726,16 @@ public class ArchiReader {
                 log.debug("Found {} name for multilingual labeling: {}", lang, nameElement.getTextContent());
             }
         }
+    }
+
+    private static boolean isPropertyType(String elementType) {
+        if (elementType == null || elementType.trim().isEmpty()) {
+            return false;
+        }
+
+        String trimmedType = elementType.trim();
+
+        return "typ vlastnosti".equals(trimmedType) ||
+                trimmedType.toLowerCase().contains("vlastnost");
     }
 }

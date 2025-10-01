@@ -133,7 +133,7 @@ public class RequiredPropertiesAnalyzer {
     }
 
     private boolean hasPrivacyProvisions() {
-        return hasAnyPropertyFieldValue(PropertyData::getPrivacyProvision, ontologyData.getProperties());
+        return hasAnyFieldValue(ClassData::getPrivacyProvision, ontologyData.getClasses());
     }
 
     private boolean hasDataTypesOrDomainRange() {
@@ -145,10 +145,10 @@ public class RequiredPropertiesAnalyzer {
     }
 
     private boolean hasGovernanceProps() {
-        return ontologyData.getProperties().stream().anyMatch(p ->
-                hasNonEmptyValue(p.getSharingMethod()) ||
-                        hasNonEmptyValue(p.getAcquisitionMethod()) ||
-                        hasNonEmptyValue(p.getContentType()));
+        return ontologyData.getClasses().stream().anyMatch(c ->
+                hasNonEmptyValue(c.getSharingMethod()) ||
+                        hasNonEmptyValue(c.getAcquisitionMethod()) ||
+                        hasNonEmptyValue(c.getContentType()));
     }
 
     private boolean hasAnyFieldValue(Function<ClassData, String> fieldExtractor, List<ClassData> classes) {

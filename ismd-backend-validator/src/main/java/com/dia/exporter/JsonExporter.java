@@ -291,6 +291,7 @@ public class JsonExporter {
                 "iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice", "ekvivalentní pojem",
                 DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI,
                 DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+                "definiční-obor", "obor-hodnot", "nadřazený-vztah", "nadřazená-vlastnost", "nadřazená-třída",
                 "způsob-sdílení-údajů", "způsob-získání-údajů", "typ-obsahu-údajů"
         };
 
@@ -346,10 +347,21 @@ public class JsonExporter {
             throw new JsonExportException("Ontology model is null or empty.");
         }
         JSONArray pojmy = new JSONArray();
-        Resource pojemType = ontModel.getResource(OFN_NAMESPACE + POJEM);
 
-        ontModel.listSubjectsWithProperty(RDF.type, pojemType)
-                .forEachRemaining(concept -> {
+        Set<Resource> conceptTypes = Set.of(
+                ontModel.getResource(OFN_NAMESPACE + POJEM),
+                ontModel.getResource(OFN_NAMESPACE + VZTAH),
+                ontModel.getResource(OFN_NAMESPACE + VLASTNOST),
+                ontModel.getResource(OFN_NAMESPACE + TRIDA),
+                ontModel.getResource(OFN_NAMESPACE + TSP),
+                ontModel.getResource(OFN_NAMESPACE + TOP),
+                ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ),
+                ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ)
+        );
+
+        resourceMap.values().stream()
+                .filter(resource -> conceptTypes.stream().anyMatch(type -> resource.hasProperty(RDF.type, type)))
+                .forEach(concept -> {
                     try {
                         pojmy.put(createConceptObject(concept));
                     } catch (JSONException e) {
@@ -388,6 +400,8 @@ public class JsonExporter {
         addDomainAndRangeFromStandardProperties(concept, pojemObj);
 
         addHierarchyFromStandardProperty(concept, pojemObj);
+
+        addSuperPropertyHierarchy(concept, pojemObj);
 
         addGovernanceProperties(concept, pojemObj, effectiveNamespace);
 
@@ -660,6 +674,29 @@ public class JsonExporter {
         }
     }
 
+    private void addSuperPropertyHierarchy(Resource concept, JSONObject pojemObj) throws JSONException {
+        StmtIterator subPropertyIter = concept.listProperties(RDFS.subPropertyOf);
+        if (subPropertyIter.hasNext()) {
+            JSONArray superPropertyArray = new JSONArray();
+
+            while (subPropertyIter.hasNext()) {
+                Statement stmt = subPropertyIter.next();
+                if (stmt.getObject().isResource()) {
+                    superPropertyArray.put(stmt.getObject().asResource().getURI());
+                }
+            }
+
+            if (superPropertyArray.length() > 0) {
+                if (concept.hasProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VZTAH))) {
+                    pojemObj.put("nadřazený-vztah", superPropertyArray);
+                }
+                else if (concept.hasProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VLASTNOST))) {
+                    pojemObj.put("nadřazená-vlastnost", superPropertyArray);
+                }
+            }
+        }
+    }
+
     private void addAlternativeNamesFromStandardProperty(Resource concept, JSONObject pojemObj) throws JSONException {
         Property anPropDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + ALTERNATIVNI_NAZEV);
         Property anPropCustom = ontModel.getProperty(effectiveNamespace + ALTERNATIVNI_NAZEV);
@@ -670,18 +707,39 @@ public class JsonExporter {
         }
 
         if (stmtIter.hasNext()) {
-            JSONArray altNamesArray = new JSONArray();
+            JSONObject altNamesObj = new JSONObject();
+            boolean hasNonEmptyValue = false;
 
             while (stmtIter.hasNext()) {
                 Statement stmt = stmtIter.next();
                 String value = stmt.getString();
-                if (value != null && !value.isEmpty()) {
-                    altNamesArray.put(value);
+                if (value == null || value.isEmpty()) {
+                    continue;
                 }
+
+                String lang = stmt.getLanguage();
+                if (lang == null || lang.isEmpty()) {
+                    lang = "cs";
+                }
+
+                if (altNamesObj.has(lang)) {
+                    Object existingValue = altNamesObj.get(lang);
+                    if (existingValue instanceof JSONArray) {
+                        ((JSONArray) existingValue).put(value);
+                    } else {
+                        JSONArray langArray = new JSONArray();
+                        langArray.put(existingValue);
+                        langArray.put(value);
+                        altNamesObj.put(lang, langArray);
+                    }
+                } else {
+                    altNamesObj.put(lang, value);
+                }
+                hasNonEmptyValue = true;
             }
 
-            if (altNamesArray.length() > 0) {
-                pojemObj.put(ALTERNATIVNI_NAZEV, altNamesArray);
+            if (hasNonEmptyValue && altNamesObj.length() > 0) {
+                pojemObj.put(ALTERNATIVNI_NAZEV, altNamesObj);
             }
         }
     }

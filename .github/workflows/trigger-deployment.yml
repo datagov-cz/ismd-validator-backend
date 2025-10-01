@@ -56,14 +56,14 @@ jobs:
           ref: dev
       
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
       
       - name: Determine environment and version
         id: determine_params
-        working-directory: ismd-backend-validator-new
+        working-directory: ismd-backend-validator
         run: |
           # For manual triggers, use the specified environment
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
@@ -77,7 +77,7 @@ jobs:
             else
               # Otherwise get version from module POM via Maven
               chmod +x mvnw || true
-              BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -pl ismd-backend-validator)
+              BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
               IMAGE_TAG="$BASE_VERSION"
             fi
 
@@ -96,7 +96,7 @@ jobs:
             
             # Get version from module POM via Maven
             chmod +x mvnw || true
-            BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -pl ismd-backend-validator)
+            BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
             IMAGE_TAG="$BASE_VERSION"
             
             # For dev branch, append the short SHA

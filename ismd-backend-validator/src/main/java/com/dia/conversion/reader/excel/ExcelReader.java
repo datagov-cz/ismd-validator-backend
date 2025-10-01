@@ -19,7 +19,6 @@ import static com.dia.constants.ExcelConstants.*;
 
 /**
  * ExcelReader - Reads and pareses ontology data from Excel files
- * TODO: verify possibility of TypeMappings usage
  */
 @Component
 @Slf4j
@@ -284,6 +283,11 @@ public class ExcelReader {
                 .withColumn(IDENTIFIKATOR, ClassData::setIdentifier)
                 .withColumn(AGENDA, ClassData::setAgendaCode)
                 .withColumn(AIS, ClassData::setAgendaSystemCode)
+                .withColumn(JE_VEREJNY, ClassData::setIsPublic)
+                .withColumn(USTANOVENI_DOKLADAJICI_NEVEREJNOST, ClassData::setPrivacyProvision)
+                .withColumn(ZPUSOB_SDILENI_UDEJE, ClassData::setSharingMethod)
+                .withColumn(ZPUSOB_ZISKANI_UDEJE, ClassData::setAcquisitionMethod)
+                .withColumn(TYP_OBSAHU_UDAJE, ClassData::setContentType)
                 .build();
 
         mappingRegistry.registerMapping(SUBJEKTY_OBJEKTY_PRAVA, classMapping);
@@ -303,11 +307,6 @@ public class ExcelReader {
                 .withColumn(IDENTIFIKATOR, PropertyData::setIdentifier)
                 .withColumn(DATOVY_TYP, PropertyData::setDataType)
                 .withColumn(JE_PPDF, PropertyData::setSharedInPPDF)
-                .withColumn(JE_VEREJNY, PropertyData::setIsPublic)
-                .withColumn(USTANOVENI_DOKLADAJICI_NEVEREJNOST, PropertyData::setPrivacyProvision)
-                .withColumn(ZPUSOB_SDILENI_UDEJE, PropertyData::setSharingMethod)
-                .withColumn(ZPUSOB_ZISKANI_UDEJE, PropertyData::setAcquisitionMethod)
-                .withColumn(TYP_OBSAHU_UDAJE, PropertyData::setContentType)
                 .build();
 
         mappingRegistry.registerMapping(VLASTNOSTI, propertyMapping);
@@ -326,12 +325,6 @@ public class ExcelReader {
                 .withColumn(NADRAZENY_POJEM, RelationshipData::setSuperRelation)
                 .withColumn(EKVIVALENTNI_POJEM, RelationshipData::setEquivalentConcept)
                 .withColumn(IDENTIFIKATOR, RelationshipData::setIdentifier)
-                .withColumn(JE_PPDF, RelationshipData::setSharedInPPDF)
-                .withColumn(JE_VEREJNY, RelationshipData::setIsPublic)
-                .withColumn(USTANOVENI_DOKLADAJICI_NEVEREJNOST, RelationshipData::setPrivacyProvision)
-                .withColumn(ZPUSOB_SDILENI_UDEJE, RelationshipData::setSharingMethod)
-                .withColumn(ZPUSOB_ZISKANI_UDEJE, RelationshipData::setAcquisitionMethod)
-                .withColumn(TYP_OBSAHU_UDAJE, RelationshipData::setContentType)
                 .build();
 
         mappingRegistry.registerMapping(VZTAHY, relationMapping);

@@ -19,12 +19,5 @@ public class PropertyData {
     private String alternativeName;
     private String equivalentConcept;
     private String dataType;
-
     private String sharedInPPDF;
-    private String isPublic;
-    private String privacyProvision;
-
-    private String sharingMethod;
-    private String acquisitionMethod;
-    private String contentType;
 }

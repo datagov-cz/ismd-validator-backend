@@ -1,5 +1,7 @@
 package com.dia.constants;
 
+import java.util.Set;
+
 public class ArchiConstants {
     // =============== CORE NAMESPACES ===============
     public static final String DEFAULT_NS = "https://slovník.gov.cz/";
@@ -10,6 +12,7 @@ public class ArchiConstants {
     public static final String IDENT = "identifier";
     public static final String CAS_NS = "https://slovník.gov.cz/generický/čas/pojem/";
     public static final String SLOVNIKY_NS = "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/";
+    public static final String SCHEMA_URL = "http://schema.org/url";
 
     // =============== CORE VOCABULARY TERMS ===============
     public static final String POJEM = "pojem";
@@ -18,11 +21,18 @@ public class ArchiConstants {
     public static final String VLASTNOST = "vlastnost";
     public static final String TSP = "typ-subjektu-práva";
     public static final String TOP = "typ-objektu-práva";
+    public static final String UDAJ = "údaj";
     public static final String VEREJNY_UDAJ = "veřejný-údaj";
     public static final String NEVEREJNY_UDAJ = "neveřejný-údaj";
     public static final String DATOVY_TYP = "datový-typ";
+    public static final String POLOZKA_CISELNIKU = "položka-číselníku";
+    public static final String ZPUSOB_SDILENI_UDAJE = "způsob-sdílení-údaje";
+    public static final String ZPUSOB_ZISKANI_UDAJE = "způsob-získání-údaje";
     public static final String CASOVY_OKAMZIK = "časový-okamžik";
     public static final String SLOVNIK = "slovník";
+    public static final String DIGITALNI_DOKUMENT = "digitální-dokument";
+    public static final String CISELNIK = "číselník";
+    public static final String TYP_VLASTNOSTI = "typ-vlastnosti";
 
     // =============== PROPERTY NAMES ===============
     public static final String TYP = "typ";
@@ -96,8 +106,9 @@ public class ArchiConstants {
         };
 
         public static final String[] VOCABULARY_TYPES = {
-                POJEM, TRIDA, VZTAH, VLASTNOST, TSP, TOP,
-                VEREJNY_UDAJ, NEVEREJNY_UDAJ, DATOVY_TYP
+                POJEM, TRIDA, VZTAH, VLASTNOST, TSP, TOP, UDAJ,
+                VEREJNY_UDAJ, NEVEREJNY_UDAJ, DATOVY_TYP, POLOZKA_CISELNIKU,
+                ZPUSOB_SDILENI_UDAJE, ZPUSOB_ZISKANI_UDAJE
         };
 
         public static final String[] NAMESPACE_PATHS = {
@@ -120,5 +131,67 @@ public class ArchiConstants {
 
         private PropertySets() {
         }
+    }
+
+    /**
+     * Organized sets for OFN class and property identification
+     */
+    public static final class OFNSets {
+
+        public static final Set<String> OFN_CLASSES = Set.of(
+                POJEM,
+                TRIDA,
+                TSP,
+                TOP,
+                UDAJ,
+                VEREJNY_UDAJ,
+                NEVEREJNY_UDAJ,
+                DATOVY_TYP,
+                POLOZKA_CISELNIKU,
+                ZPUSOB_SDILENI_UDAJE,
+                ZPUSOB_ZISKANI_UDAJE,
+                CASOVY_OKAMZIK,
+                SLOVNIK,
+                DIGITALNI_DOKUMENT,
+                CISELNIK,
+                TYP_VLASTNOSTI
+        );
+
+        public static final Set<String> OFN_PROPERTIES = Set.of(
+                NAZEV,
+                ALTERNATIVNI_NAZEV,
+                POPIS,
+                DEFINICE,
+                DEFINUJICI_USTANOVENI,
+                SOUVISEJICI_USTANOVENI,
+                DEFINUJICI_NELEGISLATIVNI_ZDROJ,
+                SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+                JE_PPDF,
+                AGENDA,
+                AIS,
+                USTANOVENI_NEVEREJNOST,
+                DEFINICNI_OBOR,
+                OBOR_HODNOT,
+                NADRAZENA_TRIDA,
+                ZPUSOB_SDILENI,
+                ZPUSOB_ZISKANI,
+                TYP_OBSAHU,
+                OKAMZIK_POSLEDNI_ZMENY,
+                OKAMZIK_VYTVORENI,
+                DATUM,
+                DATUM_A_CAS
+        );
+
+        public static final Set<String> OFN_SPECIAL_PROPERTIES = Set.of(
+                SCHEMA_URL
+        );
+
+        public static final Set<String> OFN_NAMESPACES = Set.of(
+                DEFAULT_NS,
+                CAS_NS,
+                SLOVNIKY_NS
+        );
+
+        private OFNSets() {}
     }
 }
