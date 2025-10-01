@@ -45,13 +45,13 @@ jobs:
 
       - name: Get version info
         id: version
-        working-directory: ismd-backend-validator-new
+        working-directory: ismd-backend-validator
         run: |
           # Get the base version from Maven
           if [ -z "${{ inputs.module }}" ] || [ "${{ inputs.module }}" = "root" ]; then
             BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
           else
-            BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout -pl ismd-backend-${{ inputs.module }})
+            BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
           fi
           
           # For dev branches, create a version with Git SHA
@@ -81,7 +81,7 @@ jobs:
           else
             # Build specific module
             MODULES=("${{ inputs.module }}")
-            MODULE_ARG="ismd-backend-${{ inputs.module }}"
+            MODULE_ARG="."
           fi
           
           # Build and push each module
@@ -96,9 +96,9 @@ jobs:
             echo "  - $IMAGE_TAG"
             echo "  - $LATEST_TAG"
             
-            # Build and push the image using Dockerfile in ismd-backend-validator-new with repo-root context
+            # Build and push the image using Dockerfile in ismd-backend-validator with repo root as build context
             docker build \
-              -f ismd-backend-validator-new/Dockerfile \
+              -f ismd-backend-validator/Dockerfile \
               --target ${MODULE}-runtime \
               --build-arg MODULE="${MODULE_ARG}" \
               --build-arg MODULE_VERSION="${{ steps.version.outputs.version }}" \
