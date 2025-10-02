@@ -1,8 +1,13 @@
 package com.dia.reader;
 
+import com.dia.conversion.data.ClassData;
+import com.dia.conversion.data.OntologyData;
+import com.dia.conversion.data.PropertyData;
+import com.dia.conversion.data.RelationshipData;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.exceptions.ExcelReadingException;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,9 +28,7 @@ class ExcelReaderUnitTest {
 
     @BeforeEach
     void setUp() {
-
         reader = new ExcelReader();
-
     }
 
     @Test
@@ -144,14 +147,14 @@ class ExcelReaderUnitTest {
         row1.createCell(1).setCellValue("http://example.com/ontology/");
 
         // Ostatní povinné listy s minimálním obsahem
-        final String[] HEADERS_CLASSES = {"Název", "Typ", "Popis", "Definice"};
-        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, HEADERS_CLASSES);
+        final String[] headersClasses = {"Název", "Typ", "Popis", "Definice"};
+        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, headersClasses);
         addOneDataRow(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Osoba", "Subjekt práva", "Popis", "Definice"});
-        final String[] HEADERS_PROPERTIES = {"Název", "Subjekt nebo objekt práva", "Popis"};
-        createSheetWithHeader(wb, VLASTNOSTI, HEADERS_PROPERTIES);
+        final String[] headersProperties = {"Název", "Subjekt nebo objekt práva", "Popis"};
+        createSheetWithHeader(wb, VLASTNOSTI, headersProperties);
         addOneDataRow(wb, VLASTNOSTI, new String[]{"hasName", "Osoba", "desc"});
-        final String[] HEADERS_RELATIONSHIPS = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
-        createSheetWithHeader(wb, VZTAHY, HEADERS_RELATIONSHIPS);
+        final String[] headersRelationships = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
+        createSheetWithHeader(wb, VZTAHY, headersRelationships);
         addOneDataRow(wb, VZTAHY, new String[]{"Osoba", "hasName", "http://www.w3.org/2001/XMLSchema#string"});
 
         try (InputStream in = asStream(wb)) {
@@ -180,14 +183,14 @@ class ExcelReaderUnitTest {
         row1.createCell(1).setCellValue("Popis slovníku pro test");
 
         // Ostatní povinné listy s minimálním obsahem, aby se test nedostal na jiné chyby
-        final String[] HEADERS_CLASSES = {"Název", "Typ", "Popis", "Definice"};
-        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, HEADERS_CLASSES);
+        final String[] headersClasses = {"Název", "Typ", "Popis", "Definice"};
+        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, headersClasses);
         addOneDataRow(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Osoba","Subjekt práva","Popis","Definice"});
-        final String[] HEADERS_PROPERTIES = {"Název", "Subjekt nebo objekt práva", "Popis"};
-        createSheetWithHeader(wb, VLASTNOSTI, HEADERS_PROPERTIES);
+        final String[] headersProperties = {"Název", "Subjekt nebo objekt práva", "Popis"};
+        createSheetWithHeader(wb, VLASTNOSTI, headersProperties);
         addOneDataRow(wb, VLASTNOSTI, new String[]{"hasName","Osoba","desc"});
-        final String[] HEADERS_RELATIONSHIPS = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
-        createSheetWithHeader(wb, VZTAHY, HEADERS_RELATIONSHIPS);
+        final String[] headersRelationships = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
+        createSheetWithHeader(wb, VZTAHY, headersRelationships);
         addOneDataRow(wb, VZTAHY, new String[]{"Osoba","hasName","http://www.w3.org/2001/XMLSchema#string"});
 
         try (InputStream in = asStream(wb)) {
@@ -203,14 +206,14 @@ class ExcelReaderUnitTest {
         Workbook wb = new XSSFWorkbook();
         wb.createSheet(SLOVNIK).createRow(0).createCell(0).setCellValue("Něco jiného");
         // Ostatní listy
-        final String[] HEADERS_CLASSES = {"Název", "Typ", "Popis", "Definice"};
-        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, HEADERS_CLASSES);
+        final String[] headersClasses = {"Název", "Typ", "Popis", "Definice"};
+        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, headersClasses);
         addOneDataRow(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Osoba","Subjekt práva","Popis","Definice"});
-        final String[] HEADERS_PROPERTIES = {"Název", "Subjekt nebo objekt práva", "Popis"};
-        createSheetWithHeader(wb, VLASTNOSTI, HEADERS_PROPERTIES);
+        final String[] headersProperties = {"Název", "Subjekt nebo objekt práva", "Popis"};
+        createSheetWithHeader(wb, VLASTNOSTI, headersProperties);
         addOneDataRow(wb, VLASTNOSTI, new String[]{"hasName","Osoba","desc"});
-        final String[] HEADERS_RELATIONSHIPS = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
-        createSheetWithHeader(wb, VZTAHY, HEADERS_RELATIONSHIPS);
+        final String[] headersRelationships = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
+        createSheetWithHeader(wb, VZTAHY, headersRelationships);
         addOneDataRow(wb, VZTAHY, new String[]{"Osoba","hasName","http://www.w3.org/2001/XMLSchema#string"});
 
         try (InputStream in = asStream(wb)) {
@@ -219,7 +222,6 @@ class ExcelReaderUnitTest {
             assertNotNull(msg, "Chybová zpráva musí být vyplněna");
         }
     }
-
 
     // ---------- Pozitivní scénář (happy path) ----------
 
@@ -260,8 +262,8 @@ class ExcelReaderUnitTest {
         row2.createCell(1).setCellValue("http://example.com/ontology/");
 
         // Subjekty a objekty práva – povinné sloupce: "Název", "Typ", "Popis", "Definice"
-        final String[] HEADERS_CLASSES = {"Název", "Typ", "Popis", "Definice"};
-        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, HEADERS_CLASSES);
+        final String[] headersClasses = {"Název", "Typ", "Popis", "Definice"};
+        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, headersClasses);
         addOneDataRow(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{
                 "Osoba",          // Název
                 "Subjekt práva",  // Typ (validní hodnota)
@@ -270,8 +272,8 @@ class ExcelReaderUnitTest {
         });
 
         // Vlastnosti – minimální sada, názvy sloupců přesně dle očekávání processoru
-        final String[] HEADERS_PROPERTIES = {"Název", "Subjekt nebo objekt práva", "Popis"};
-        createSheetWithHeader(wb, VLASTNOSTI, HEADERS_PROPERTIES);
+        final String[] headersProperties = {"Název", "Subjekt nebo objekt práva", "Popis"};
+        createSheetWithHeader(wb, VLASTNOSTI, headersProperties);
         addOneDataRow(wb, VLASTNOSTI, new String[]{
                 "hasName",
                 "Osoba",
@@ -279,8 +281,8 @@ class ExcelReaderUnitTest {
         });
 
         // Vztahy – pořadí: 0=domain, 1=name, 2=range
-        final String[] HEADERS_RELATIONSHIPS = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
-        createSheetWithHeader(wb, VZTAHY, HEADERS_RELATIONSHIPS);
+        final String[] headersRelationships = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
+        createSheetWithHeader(wb, VZTAHY, headersRelationships);
         addOneDataRow(wb, VZTAHY, new String[]{
                 "Osoba",
                 "hasName",
@@ -315,18 +317,18 @@ class ExcelReaderUnitTest {
         row2.createCell(1).setCellValue("http://example.com/ontology/");
 
         // Subjekty a objekty práva
-        final String[] HEADERS_CLASSES = {"Název", "Typ", "Popis", "Definice"};
-        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, HEADERS_CLASSES);
+        final String[] headersClasses = {"Název", "Typ", "Popis", "Definice"};
+        createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, headersClasses);
         addOneDataRow(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Osoba", "Subjekt práva", "Popis", "Definice"});
 
         // Vlastnosti
-        final String[] HEADERS_PROPERTIES = {"Název", "Subjekt nebo objekt práva", "Popis"};
-        createSheetWithHeader(wb, VLASTNOSTI, HEADERS_PROPERTIES);
+        final String[] headersProperties = {"Název", "Subjekt nebo objekt práva", "Popis"};
+        createSheetWithHeader(wb, VLASTNOSTI, headersProperties);
         addOneDataRow(wb, VLASTNOSTI, new String[]{"hasName", "Osoba", "desc"});
 
         // Vztahy
-        final String[] HEADERS_RELATIONSHIPS = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
-        createSheetWithHeader(wb, VZTAHY, HEADERS_RELATIONSHIPS);
+        final String[] headersRelationships = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
+        createSheetWithHeader(wb, VZTAHY, headersRelationships);
         addOneDataRow(wb, VZTAHY, new String[]{"Osoba", "hasName", "http://www.w3.org/2001/XMLSchema#string"});
 
         return wb;
@@ -350,29 +352,29 @@ class ExcelReaderUnitTest {
         row2.createCell(1).setCellValue("http://example.com/ontology/");
 
         // Subjekty a objekty práva
-        final String[] HEADERS_CLASSES = {"Název", "Typ", "Popis", "Definice"};
+        final String[] headersClasses = {"Název", "Typ", "Popis", "Definice"};
         if (SUBJEKTY_OBJEKTY_PRAVA.equals(sheetNameToBreak)) {
             wb.createSheet(SUBJEKTY_OBJEKTY_PRAVA).createRow(0).createCell(0).setCellValue("Špatná hlavička");
         } else {
-            createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, HEADERS_CLASSES);
+            createSheetWithHeader(wb, SUBJEKTY_OBJEKTY_PRAVA, headersClasses);
         }
         addOneDataRow(wb, SUBJEKTY_OBJEKTY_PRAVA, new String[]{"Osoba", "Subjekt práva", "Popis", "Definice"});
 
         // Vlastnosti
-        final String[] HEADERS_PROPERTIES = {"Název", "Subjekt nebo objekt práva", "Popis"};
+        final String[] headersProperties = {"Název", "Subjekt nebo objekt práva", "Popis"};
         if (VLASTNOSTI.equals(sheetNameToBreak)) {
             wb.createSheet(VLASTNOSTI).createRow(0).createCell(0).setCellValue("Špatná hlavička");
         } else {
-            createSheetWithHeader(wb, VLASTNOSTI, HEADERS_PROPERTIES);
+            createSheetWithHeader(wb, VLASTNOSTI, headersProperties);
         }
         addOneDataRow(wb, VLASTNOSTI, new String[]{"hasName", "Osoba", "desc"});
 
         // Vztahy
-        final String[] HEADERS_RELATIONSHIPS = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
+        final String[] headersRelationships = {"Subjekt nebo objekt práva", "Název", "Rozsah"};
         if (VZTAHY.equals(sheetNameToBreak)) {
             wb.createSheet(VZTAHY).createRow(0).createCell(0).setCellValue("Špatná hlavička");
         } else {
-            createSheetWithHeader(wb, VZTAHY, HEADERS_RELATIONSHIPS);
+            createSheetWithHeader(wb, VZTAHY, headersRelationships);
         }
         addOneDataRow(wb, VZTAHY, new String[]{"Osoba", "hasName", "http://www.w3.org/2001/XMLSchema#string"});
 

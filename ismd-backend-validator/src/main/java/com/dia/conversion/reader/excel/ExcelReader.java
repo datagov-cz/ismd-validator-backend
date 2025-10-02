@@ -297,7 +297,8 @@ public class ExcelReader {
         ColumnMapping<PropertyData> propertyMapping = ColumnMapping.<PropertyData>builder()
                 .withColumn(NAZEV, PropertyData::setName)
                 .withColumn(ALT_NAZEV, PropertyData::setAlternativeName)
-                .withColumn(SUBJEKTY_OBJEKTY_PRAVA, PropertyData::setDomain)
+                // TODO: verify
+                .withColumn(SUBJEKT_NEBO_OBJEKT_PRAVA, PropertyData::setDomain)
                 .withColumn(POPIS, PropertyData::setDescription)
                 .withColumn(DEFINICE, PropertyData::setDefinition)
                 .withColumn(ZDROJ, PropertyData::setSource)
@@ -314,10 +315,11 @@ public class ExcelReader {
 
     private void setupRelationshipsMappings() {
         ColumnMapping<RelationshipData> relationMapping = ColumnMapping.<RelationshipData>builder()
-                .withColumn(SUBJEKTY_OBJEKTY_PRAVA, RelationshipData::setDomain)
+                .withColumn(SUBJEKT_NEBO_OBJEKT_PRAVA, RelationshipData::setDomain)
                 .withColumn(NAZEV, RelationshipData::setName)
                 .withColumn(ALT_NAZEV, RelationshipData::setAlternativeName)
-                .withColumn(SUBJEKTY_OBJEKTY_PRAVA, RelationshipData::setRange)
+                // TODO: verify
+                .withColumn(SUBJEKT_NEBO_OBJEKT_PRAVA, RelationshipData::setRange)
                 .withColumn(POPIS, RelationshipData::setDescription)
                 .withColumn(DEFINICE, RelationshipData::setDefinition)
                 .withColumn(ZDROJ, RelationshipData::setSource)

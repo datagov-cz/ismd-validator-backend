@@ -6,6 +6,7 @@ public class ExcelConstants {
     public static final String SUBJEKTY_OBJEKTY_PRAVA = "Subjekty a objekty práva";
     public static final String VLASTNOSTI = "Vlastnosti";
     public static final String VZTAHY = "Vztahy";
+    public static final String SUBJEKT_NEBO_OBJEKT_PRAVA = "Subjekt nebo objekt práva";
 
     // =============== CORE VOCABULARY PROPERTIES ===============
     public static final String NAZEV = "Název";
