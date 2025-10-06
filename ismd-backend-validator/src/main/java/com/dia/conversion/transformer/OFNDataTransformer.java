@@ -451,13 +451,6 @@ public class OFNDataTransformer {
                                      Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
-            String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
-            if (!belongsToCurrentVocabulary(propertyURI)) {
-                log.debug("Skipping external property (will be referenced in relationships): {} -> {}", 
-                    propertyData.getName(), propertyURI);
-                continue;
-            }
-            
             try {
                 Resource propertyResource = createPropertyResource(propertyData);
                 localPropertyResources.put(propertyData.getName(), propertyResource);
@@ -534,13 +527,10 @@ public class OFNDataTransformer {
                                         Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} relationships", relationships.size());
         for (RelationshipData relationshipData : relationships) {
-            String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(), relationshipData.getIdentifier());
-            if (!belongsToCurrentVocabulary(relationshipURI)) {
-                log.debug("Skipping external relationship (will be referenced in relationships): {} -> {}", 
-                    relationshipData.getName(), relationshipURI);
+            if (!relationshipData.hasValidData()) {
+                log.warn("Skipping invalid relationship: {}", relationshipData.getName());
                 continue;
             }
-            
             try {
                 Resource relationshipResource = createRelationshipResource(relationshipData);
                 localRelationshipResources.put(relationshipData.getName(), relationshipResource);
