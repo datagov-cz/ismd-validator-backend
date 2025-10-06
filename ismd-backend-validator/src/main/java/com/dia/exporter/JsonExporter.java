@@ -347,21 +347,10 @@ public class JsonExporter {
             throw new JsonExportException("Ontology model is null or empty.");
         }
         JSONArray pojmy = new JSONArray();
+        Resource pojemType = ontModel.getResource(OFN_NAMESPACE + POJEM);
 
-        Set<Resource> conceptTypes = Set.of(
-                ontModel.getResource(OFN_NAMESPACE + POJEM),
-                ontModel.getResource(OFN_NAMESPACE + VZTAH),
-                ontModel.getResource(OFN_NAMESPACE + VLASTNOST),
-                ontModel.getResource(OFN_NAMESPACE + TRIDA),
-                ontModel.getResource(OFN_NAMESPACE + TSP),
-                ontModel.getResource(OFN_NAMESPACE + TOP),
-                ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ),
-                ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ)
-        );
-
-        resourceMap.values().stream()
-                .filter(resource -> conceptTypes.stream().anyMatch(type -> resource.hasProperty(RDF.type, type)))
-                .forEach(concept -> {
+        ontModel.listSubjectsWithProperty(RDF.type, pojemType)
+                .forEachRemaining(concept -> {
                     try {
                         pojmy.put(createConceptObject(concept));
                     } catch (JSONException e) {
