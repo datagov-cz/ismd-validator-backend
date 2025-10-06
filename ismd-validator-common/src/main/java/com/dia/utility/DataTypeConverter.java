@@ -23,6 +23,8 @@ public class DataTypeConverter {
     private static final Pattern INTEGER_PATTERN = Pattern.compile("^-?\\d+$");
     private static final Pattern DOUBLE_PATTERN = Pattern.compile("^-?\\d+(\\.\\d+)?$");
 
+    private static final String XSD_NAMESPACE = "http://www.w3.org/2001/XMLSchema#";
+
     private static final DateTimeFormatter[] DATE_FORMATTERS = {
             DateTimeFormatter.ISO_LOCAL_DATE,
             DateTimeFormatter.ofPattern("dd.MM.yyyy"),
@@ -311,5 +313,28 @@ public class DataTypeConverter {
         );
 
         return validXSDTypes.contains(xsdType);
+    }
+
+    public static String getXSDTypeURI(String xsdType) {
+        if (xsdType == null || xsdType.trim().isEmpty()) {
+            return null;
+        }
+
+        String cleanType = xsdType.trim();
+
+        if (cleanType.startsWith("http://")) {
+            return cleanType;
+        }
+
+        if (cleanType.startsWith("xsd:")) {
+            cleanType = cleanType.substring(4);
+        }
+
+        if (!isValidXSDType(cleanType)) {
+            log.warn("Invalid XSD type: {}. Returning null.", xsdType);
+            return null;
+        }
+
+        return XSD_NAMESPACE + cleanType;
     }
 }
