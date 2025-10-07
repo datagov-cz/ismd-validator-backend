@@ -163,30 +163,12 @@ public class OFNDataTransformer {
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
         if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
-            log.info("Namespace check failed - conceptURI='{}', effectiveNamespace='{}'", 
-                conceptURI, uriGenerator.getEffectiveNamespace());
             return false;
         }
 
-        String effectiveNamespace = uriGenerator.getEffectiveNamespace();
-        
-        StringBuilder vocabularyNamespace = new StringBuilder(effectiveNamespace);
-        if (vocabularyNamespace.toString().endsWith("/")) {
-            vocabularyNamespace.setLength(vocabularyNamespace.length() - 1);
-        }
-        
-        if (uriGenerator.getVocabularyName() != null && !uriGenerator.getVocabularyName().trim().isEmpty()) {
-            String sanitizedVocabName = com.dia.utility.UtilityMethods.sanitizeForIRI(uriGenerator.getVocabularyName());
-            vocabularyNamespace.append("/").append(sanitizedVocabName);
-        }
-        vocabularyNamespace.append("/pojem/");
-        
-        String vocabularySpecificNamespace = vocabularyNamespace.toString();
-        boolean belongs = conceptURI.startsWith(vocabularySpecificNamespace);
-        
-        log.info("Namespace check for '{}': belongs={} (startsWith check: '{}' starts with vocabulary-specific namespace '{}')",
-                conceptURI, belongs, conceptURI, vocabularySpecificNamespace);
-        
+        boolean belongs = conceptURI.startsWith(uriGenerator.getEffectiveNamespace());
+        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
+                conceptURI, belongs, uriGenerator.getEffectiveNamespace());
         return belongs;
     }
 
@@ -527,10 +509,6 @@ public class OFNDataTransformer {
                                         Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} relationships", relationships.size());
         for (RelationshipData relationshipData : relationships) {
-            if (!relationshipData.hasValidData()) {
-                log.warn("Skipping invalid relationship: {}", relationshipData.getName());
-                continue;
-            }
             try {
                 Resource relationshipResource = createRelationshipResource(relationshipData);
                 localRelationshipResources.put(relationshipData.getName(), relationshipResource);
@@ -773,7 +751,7 @@ public class OFNDataTransformer {
 
     private void addResourceMetadata(Resource resource, ResourceMetadata metadata) {
         if (metadata.name() != null && !metadata.name().trim().isEmpty()) {
-            DataTypeConverter.addTypedProperty(resource, RDFS.label, metadata.name(), DEFAULT_LANG, ontModel);
+            DataTypeConverter.addTypedProperty(resource, SKOS.prefLabel, metadata.name(), DEFAULT_LANG, ontModel);
         }
 
         if (metadata.description() != null && !metadata.description().trim().isEmpty()) {

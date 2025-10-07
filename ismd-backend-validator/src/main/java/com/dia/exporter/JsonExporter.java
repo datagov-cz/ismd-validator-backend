@@ -62,7 +62,8 @@ public class JsonExporter {
             addModelMetadata(unorderedRoot);
 
             log.debug("Creating concepts array: requestId={}", requestId);
-            unorderedRoot.put(Json.POJMY, createConceptsArray());
+            JSONArray conceptsArray = createConceptsArray();
+            unorderedRoot.put(Json.POJMY, conceptsArray);
 
             log.debug("Formatting and ordering JSON: requestId={}", requestId);
             return formatJsonWithOrderedFields(unorderedRoot);
