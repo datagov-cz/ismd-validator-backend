@@ -364,31 +364,33 @@ public class OFNDataTransformer {
     private void transformClasses(List<ClassData> classes, Map<String, Resource> localClassResources,
                                   Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} classes", classes.size());
-        
+
         Map<String, Resource> allClassResources = new HashMap<>();
-        
+
         for (ClassData classData : classes) {
             if (!classData.hasValidData()) {
                 log.warn("Skipping invalid class: {}", classData.getName());
                 continue;
             }
-            
+
             String identifier = classData.getIdentifier();
             String classURI = uriGenerator.generateConceptURI(classData.getName(), identifier);
-            log.debug("Processing class '{}' with identifier='{}' -> URI={}", 
+            log.debug("Processing class '{}' with identifier='{}' -> URI={}",
                 classData.getName(), identifier, classURI);
-            
+
             try {
                 Resource classResource = createClassResource(classData, localResourceMap);
-                
+
                 allClassResources.put(classData.getName(), classResource);
-                
+
                 if (belongsToCurrentVocabulary(classURI)) {
                     localClassResources.put(classData.getName(), classResource);
                     localResourceMap.put(classData.getName(), classResource);
                     log.debug("Created local class: {} -> {}", classData.getName(), classResource.getURI());
                 } else {
-                    log.info("Created external concept (for relationships only): '{}' with identifier='{}' -> URI={}", 
+                    // Also add external concepts to localResourceMap so they can be referenced
+                    localResourceMap.put(classData.getName(), classResource);
+                    log.info("Created external concept (for relationships only): '{}' with identifier='{}' -> URI={}",
                         classData.getName(), identifier, classURI);
                 }
             } catch (Exception e) {
@@ -434,7 +436,7 @@ public class OFNDataTransformer {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
             try {
-                Resource propertyResource = createPropertyResource(propertyData);
+                Resource propertyResource = createPropertyResource(propertyData, localResourceMap);
                 localPropertyResources.put(propertyData.getName(), propertyResource);
                 localResourceMap.put(propertyData.getName(), propertyResource);
                 log.debug("Created property: {} -> {}", propertyData.getName(), propertyResource.getURI());
@@ -444,7 +446,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createPropertyResource(PropertyData propertyData) {
+    private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap) {
         String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
 
         OntProperty propertyResource;
@@ -459,14 +461,14 @@ public class OFNDataTransformer {
 
         if (belongsToCurrentVocabulary(propertyURI)) {
             addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
-            addPropertySpecificMetadata(propertyResource, propertyData);
+            addPropertySpecificMetadata(propertyResource, propertyData, localResourceMap);
             addPropertySuperPropertyRelationship(propertyResource, propertyData);
         }
 
         return propertyResource;
     }
 
-    private void addPropertySpecificMetadata(Resource propertyResource, PropertyData propertyData) {
+    private void addPropertySpecificMetadata(Resource propertyResource, PropertyData propertyData, Map<String, Resource> localResourceMap) {
         log.debug("Adding property-specific metadata for: {}", propertyData.getName());
 
         if (propertyData.getAlternativeName() != null && !propertyData.getAlternativeName().trim().isEmpty()) {
@@ -480,7 +482,7 @@ public class OFNDataTransformer {
         }
 
         if (propertyData.getDomain() != null && !propertyData.getDomain().trim().isEmpty()) {
-            addResourceReference(propertyResource, RDFS.domain, propertyData.getDomain());
+            addResourceReference(propertyResource, RDFS.domain, propertyData.getDomain(), localResourceMap);
         }
 
         addPropertyPPDFData(propertyResource, propertyData);
@@ -510,7 +512,7 @@ public class OFNDataTransformer {
         log.debug("Transforming {} relationships", relationships.size());
         for (RelationshipData relationshipData : relationships) {
             try {
-                Resource relationshipResource = createRelationshipResource(relationshipData);
+                Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap);
                 localRelationshipResources.put(relationshipData.getName(), relationshipResource);
                 localResourceMap.put(relationshipData.getName(), relationshipResource);
                 log.debug("Created relationship: {} -> {}", relationshipData.getName(), relationshipResource.getURI());
@@ -520,7 +522,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createRelationshipResource(RelationshipData relationshipData) {
+    private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap) {
         String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(),
                 relationshipData.getIdentifier());
 
@@ -540,7 +542,7 @@ public class OFNDataTransformer {
             log.debug("Skipped full metadata for external relationship (different namespace): {}", relationshipURI);
         }
 
-        addDomainRangeRelationships(relationshipResource, relationshipData);
+        addDomainRangeRelationships(relationshipResource, relationshipData, localResourceMap);
         return relationshipResource;
     }
 
@@ -1168,25 +1170,34 @@ public class OFNDataTransformer {
         };
     }
 
-    private void addDomainRangeRelationships(Resource relationshipResource, RelationshipData relationshipData) {
+    private void addDomainRangeRelationships(Resource relationshipResource, RelationshipData relationshipData, Map<String, Resource> localResourceMap) {
         if (relationshipData.getDomain() != null && !relationshipData.getDomain().trim().isEmpty()) {
-            addResourceReference(relationshipResource, RDFS.domain, relationshipData.getDomain());
+            addResourceReference(relationshipResource, RDFS.domain, relationshipData.getDomain(), localResourceMap);
         }
 
         if (relationshipData.getRange() != null && !relationshipData.getRange().trim().isEmpty()) {
-            addResourceReference(relationshipResource, RDFS.range, relationshipData.getRange());
+            addResourceReference(relationshipResource, RDFS.range, relationshipData.getRange(), localResourceMap);
         }
     }
 
-    private void addResourceReference(Resource subject, Property property, String referenceName) {
+    private void addResourceReference(Resource subject, Property property, String referenceName, Map<String, Resource> resourceMap) {
         if (DataTypeConverter.isUri(referenceName)) {
             subject.addProperty(property, ontModel.createResource(referenceName));
             log.debug("Added URI resource reference: {} -> {}", property.getLocalName(), referenceName);
         } else {
             if (property.equals(RDFS.domain) || property.equals(RDFS.range)) {
-                String conceptUri = uriGenerator.generateConceptURI(referenceName, null);
-                subject.addProperty(property, ontModel.createResource(conceptUri));
-                log.debug("Added generated URI reference for domain/range: {} -> {}", property.getLocalName(), conceptUri);
+                Resource existingResource = resourceMap.get(referenceName);
+
+                if (existingResource != null) {
+                    subject.addProperty(property, existingResource);
+                    log.debug("Added mapped resource reference for domain/range: {} -> {} (from resourceMap)",
+                        property.getLocalName(), existingResource.getURI());
+                } else {
+                    String conceptUri = uriGenerator.generateConceptURI(referenceName, null);
+                    subject.addProperty(property, ontModel.createResource(conceptUri));
+                    log.debug("Added generated URI reference for domain/range: {} -> {} (generated, not in resourceMap)",
+                        property.getLocalName(), conceptUri);
+                }
             } else {
                 DataTypeConverter.addTypedProperty(subject, property, referenceName, null, ontModel);
                 log.debug("Added typed literal reference: {} -> {}", property.getLocalName(), referenceName);
