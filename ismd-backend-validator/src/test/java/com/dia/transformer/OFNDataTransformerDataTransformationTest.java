@@ -8,6 +8,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.vocabulary.SKOS;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,7 +67,7 @@ class OFNDataTransformerDataTransformationTest {
         assertTrue(hasSubjectType, "PersonSubject should have subject type. Actual types: " +
                 subjectResource.listProperties(RDF.type).toList());
 
-        assertTrue(subjectResource.hasProperty(RDFS.label), "PersonSubject should have prefLabel");
+        assertTrue(subjectResource.hasProperty(SKOS.prefLabel), "PersonSubject should have prefLabel");
 
         // Verify object class
         Resource objectResource = result.getResourceMap().get("PropertyObject");
