@@ -997,10 +997,18 @@ public class OFNDataTransformer {
         String trimmedDataType = dataType.trim();
         log.debug("Processing data type for property '{}': '{}'", propertyData.getName(), trimmedDataType);
 
-        checkIfXsdType(trimmedDataType, rangeProperty, propertyResource);
-        checkIfFullXsdUri(trimmedDataType, rangeProperty, propertyResource);
-        checkIfValidUri(trimmedDataType, rangeProperty, propertyResource);
-        checkCzechDataType(trimmedDataType, rangeProperty, propertyResource);
+        if (checkIfXsdType(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
+        if (checkIfFullXsdUri(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
+        if (checkIfValidUri(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
+        if (checkCzechDataType(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
 
         String detectedType = tryDetectDataTypeFromValue(trimmedDataType);
         if (detectedType != null) {
@@ -1013,54 +1021,64 @@ public class OFNDataTransformer {
         log.debug("Unrecognized data type '{}' - using rdfs:Literal as fallback", trimmedDataType);
     }
 
-    private void checkIfXsdType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+    private boolean checkIfXsdType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         if (trimmedDataType.startsWith("xsd:")) {
             String localName = trimmedDataType.substring(4);
             if (DataTypeConverter.isValidXSDType(localName)) {
                 String xsdType = XSD_NS + localName;
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
                 log.debug("Added valid XSD range type: {}", xsdType);
+                return true;
             } else {
                 log.warn("Invalid XSD type '{}' - falling back to rdfs:Literal", trimmedDataType);
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+                return true;
             }
         }
+        return false;
     }
 
-    private void checkIfFullXsdUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+    private boolean checkIfFullXsdUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         if (trimmedDataType.startsWith(XSD_NS)) {
             String localName = trimmedDataType.substring(XSD_NS.length());
             if (DataTypeConverter.isValidXSDType(localName)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(trimmedDataType));
                 log.debug("Added valid full XSD URI range type: {}", trimmedDataType);
+                return true;
             } else {
                 log.warn("Invalid XSD URI '{}' - falling back to rdfs:Literal", trimmedDataType);
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+                return true;
             }
         }
+        return false;
     }
 
-    private void checkIfValidUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+    private boolean checkIfValidUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         if (DataTypeConverter.isUri(trimmedDataType)) {
             propertyResource.addProperty(rangeProperty, ontModel.createResource(trimmedDataType));
             log.debug("Added URI range type: {}", trimmedDataType);
+            return true;
         }
+        return false;
     }
 
-    private void checkCzechDataType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+    private boolean checkCzechDataType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         String mappedXsdType = CZECH_TO_XSD_MAPPING.get(trimmedDataType);
         if (mappedXsdType != null) {
             propertyResource.addProperty(rangeProperty, ontModel.createResource(mappedXsdType));
             log.debug("Mapped Czech data type '{}' to XSD type: {}", trimmedDataType, mappedXsdType);
+            return true;
         }
 
         for (Map.Entry<String, String> entry : CZECH_TO_XSD_MAPPING.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(trimmedDataType)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(entry.getValue()));
                 log.debug("Mapped Czech data type '{}' (case-insensitive) to XSD type: {}", trimmedDataType, entry.getValue());
-                return;
+                return true;
             }
         }
+        return false;
     }
 
     private String tryDetectDataTypeFromValue(String value) {
