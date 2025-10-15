@@ -488,6 +488,8 @@ public class OFNDataTransformer {
         addPropertyPPDFData(propertyResource, propertyData);
 
         addRangeInformation(propertyResource, propertyData);
+
+        addPropertyDataGovernanceMetadata(propertyResource, propertyData);
     }
 
     private void addPropertySuperPropertyRelationship(Resource propertyResource, PropertyData propertyData) {
@@ -1114,7 +1116,7 @@ public class OFNDataTransformer {
             return;
         }
 
-        List<String> allowedValues = List.of("veřejně přístupné", "poskytované na žádost", "nesdílené", "základních registrů", "jiných agend", "vlastní", "provozní", "identifikační", "evidenční", "statistické");
+        List<String> allowedValues = List.of("veřejně přístupné", "poskytované na žádost", "nesdílené", "zpřístupňované pro výkon agendy", "základních registrů", "jiných agend", "vlastní", "provozní", "identifikační", "evidenční", "statistické");
         if (!allowedValues.contains(value.toLowerCase())) {
             log.debug("Skipping unsupported governance property value '{}' for resource: {}", propertyType, resource.getLocalName());
             return;
@@ -1259,6 +1261,12 @@ public class OFNDataTransformer {
         handleGovernanceProperty(classResource, classData.getSharingMethod(), "sharing-method");
         handleGovernanceProperty(classResource, classData.getAcquisitionMethod(), "acquisition-method");
         handleGovernanceProperty(classResource, classData.getContentType(), "content-type");
+    }
+
+    private void addPropertyDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
+        handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(propertyResource, propertyData.getContentType(), "content-type");
     }
 
     private void addPropertyPPDFData(Resource propertyResource, PropertyData propertyData) {
