@@ -482,17 +482,17 @@ public class JsonExporter {
     }
 
     private void addGovernanceProperties(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
-        addGovernancePropertyWithFallback(concept, pojemObj, namespace,
+        addGovernancePropertyArrayWithFallback(concept, pojemObj, namespace,
                 "Způsob sdílení údajů", ZPUSOB_SDILENI, "způsob-sdílení-údajů");
 
-        addGovernancePropertyWithFallback(concept, pojemObj, namespace,
+        addGovernancePropertySingleWithFallback(concept, pojemObj, namespace,
                 ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
 
-        addGovernancePropertyWithFallback(concept, pojemObj, namespace,
+        addGovernancePropertySingleWithFallback(concept, pojemObj, namespace,
                 TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
     }
 
-    private void addGovernancePropertyWithFallback(Resource concept, JSONObject pojemObj, String namespace,
+    private void addGovernancePropertyArrayWithFallback(Resource concept, JSONObject pojemObj, String namespace,
                                                    String excelConstant, String originalConstant, String jsonFieldName) throws JSONException {
 
         Property excelProperty = ontModel.getProperty(namespace + excelConstant);
@@ -525,6 +525,39 @@ public class JsonExporter {
         }
     }
 
+    private void addGovernancePropertySingleWithFallback(Resource concept, JSONObject pojemObj, String namespace,
+                                                   String excelConstant, String originalConstant, String jsonFieldName) throws JSONException {
+
+        Property excelProperty = ontModel.getProperty(namespace + excelConstant);
+        if (concept.hasProperty(excelProperty)) {
+            addGovernancePropertySingle(concept, excelProperty, jsonFieldName, pojemObj);
+            return;
+        }
+
+        Property excelDefaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + excelConstant);
+        if (concept.hasProperty(excelDefaultProperty)) {
+            addGovernancePropertySingle(concept, excelDefaultProperty, jsonFieldName, pojemObj);
+            return;
+        }
+
+        Property originalProperty = ontModel.getProperty(namespace + originalConstant);
+        if (concept.hasProperty(originalProperty)) {
+            addGovernancePropertySingle(concept, originalProperty, jsonFieldName, pojemObj);
+            return;
+        }
+
+        Property originalDefaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + originalConstant);
+        if (concept.hasProperty(originalDefaultProperty)) {
+            addGovernancePropertySingle(concept, originalDefaultProperty, jsonFieldName, pojemObj);
+            return;
+        }
+
+        Property hyphenatedProperty = ontModel.getProperty(namespace + jsonFieldName);
+        if (concept.hasProperty(hyphenatedProperty)) {
+            addGovernancePropertySingle(concept, hyphenatedProperty, jsonFieldName, pojemObj);
+        }
+    }
+
     private void addGovernancePropertyArray(Resource concept, Property property, String jsonFieldName,
                                             JSONObject pojemObj) throws JSONException {
         List<String> allValues = extractGovernancePropertyValues(concept, property);
@@ -532,6 +565,17 @@ public class JsonExporter {
         if (!allValues.isEmpty()) {
             JSONArray propArray = createJsonArray(allValues);
             pojemObj.put(jsonFieldName, propArray);
+        }
+    }
+
+    private void addGovernancePropertySingle(Resource concept, Property property, String jsonFieldName,
+                                            JSONObject pojemObj) throws JSONException {
+        Statement stmt = concept.getProperty(property);
+        if (stmt != null) {
+            String value = extractStatementValue(stmt);
+            if (value != null && !value.trim().isEmpty()) {
+                pojemObj.put(jsonFieldName, value);
+            }
         }
     }
 

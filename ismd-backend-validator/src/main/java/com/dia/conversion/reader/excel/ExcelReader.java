@@ -307,6 +307,13 @@ public class ExcelReader {
                 .withColumn(IDENTIFIKATOR, PropertyData::setIdentifier)
                 .withColumn(DATOVY_TYP, PropertyData::setDataType)
                 .withColumn(JE_PPDF, PropertyData::setSharedInPPDF)
+                .withColumn(AGENDA, PropertyData::setAgendaCode)
+                .withColumn(AIS, PropertyData::setAgendaSystemCode)
+                .withColumn(JE_VEREJNY, PropertyData::setIsPublic)
+                .withColumn(USTANOVENI_DOKLADAJICI_NEVEREJNOST, PropertyData::setPrivacyProvision)
+                .withColumn(ZPUSOB_SDILENI_UDEJE, PropertyData::setSharingMethod)
+                .withColumn(ZPUSOB_ZISKANI_UDEJE, PropertyData::setAcquisitionMethod)
+                .withColumn(TYP_OBSAHU_UDAJE, PropertyData::setContentType)
                 .build();
 
         mappingRegistry.registerMapping(VLASTNOSTI, propertyMapping);

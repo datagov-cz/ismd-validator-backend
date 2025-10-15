@@ -184,7 +184,6 @@ public class ArchiReader {
 
             String elementType = elementProperties.getOrDefault(TYP, "").trim();
 
-            // Skip elements that are property types to avoid dual classification
             if (isPropertyType(elementType)) {
                 log.debug("Skipping '{}' from class extraction - it's a property type (type: '{}')", name, elementType);
                 continue;
@@ -341,6 +340,23 @@ public class ArchiReader {
         propertyData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
         propertyData.setDataType(properties.get(DATOVY_TYP));
         propertyData.setSharedInPPDF(properties.get(JE_PPDF));
+        propertyData.setAgendaCode(properties.get(AGENDA));
+        propertyData.setAgendaSystemCode(properties.get(AIS));
+
+        String isPublicValue = properties.get(JE_VEREJNY);
+        String privacyProvision = properties.get(USTANOVENI_NEVEREJNOST);
+
+        isPublicValue = UtilityMethods.cleanBooleanValue(isPublicValue);
+        privacyProvision = UtilityMethods.cleanProvisionValue(privacyProvision);
+
+        propertyData.setIsPublic(isPublicValue);
+        propertyData.setPrivacyProvision(privacyProvision);
+
+        validatePublicityConsistency(name, isPublicValue, privacyProvision);
+
+        propertyData.setSharingMethod(properties.get(ZPUSOB_SDILENI));
+        propertyData.setAcquisitionMethod(properties.get(ZPUSOB_ZISKANI));
+        propertyData.setContentType(properties.get(TYP_OBSAHU));
 
         return propertyData;
     }
