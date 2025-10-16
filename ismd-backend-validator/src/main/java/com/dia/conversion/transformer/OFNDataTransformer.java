@@ -846,13 +846,8 @@ public class OFNDataTransformer {
         Resource digitalDocument = ontModel.createResource(documentUri);
 
         Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
-
-        if (UtilityMethods.isValidUrl(trimmedUrl)) {
-            digitalDocument.addProperty(schemaUrlProperty, ontModel.createResource(trimmedUrl));
-            log.debug("Added schema:url as URI to digital document: {}", trimmedUrl);
-        } else {
-            log.debug("Skipped {}, invalid URL value: {}", propertyName, trimmedUrl);
-        }
+        digitalDocument.addProperty(schemaUrlProperty, ontModel.createResource(trimmedUrl));
+        log.debug("Added schema:url as URI to digital document: {}", trimmedUrl);
 
         Property nonLegislativeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
         resource.addProperty(nonLegislativeProperty, digitalDocument);
