@@ -1303,8 +1303,8 @@ public class OFNDataTransformer {
     private void handleClassNonPublicData(Resource classResource, ClassData classData, String privacyProvision) {
         Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
         classResource.addProperty(dataClassificationProp, "non-public");
-
-        log.debug("Added non-public data annotation for class: {}", classData.getName());
+        classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
+        log.debug("Added non-public data annotation and RDF type for class: {}", classData.getName());
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
             validateAndAddClassPrivacyProvision(classResource, classData, privacyProvision);
@@ -1323,8 +1323,8 @@ public class OFNDataTransformer {
                 } else {
                     Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
                     classResource.addProperty(dataClassificationProp, "public");
-
-                    log.debug("Added public data annotation for class: {}", classData.getName());
+                    classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    log.debug("Added public data annotation and RDF type for class: {}", classData.getName());
                 }
             } else {
                 handleClassNonPublicData(classResource, classData, privacyProvision);
