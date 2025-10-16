@@ -34,6 +34,7 @@ import static com.dia.constants.ExcelConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 import static com.dia.constants.ExportConstants.Json.*;
+import static com.dia.conversion.transformer.ConceptFilterUtil.isConceptFiltered;
 
 @Component
 @Slf4j
@@ -43,7 +44,7 @@ public class OFNDataTransformer {
     private OntModel ontModel;
     private final URIGenerator uriGenerator;
     private static final Map<String, String> CZECH_TO_XSD_MAPPING = createDataTypeMapping();
-    
+
     private Map<String, Resource> allClassResourcesForHierarchies;
 
     private static Map<String, String> createDataTypeMapping() {
@@ -72,6 +73,13 @@ public class OFNDataTransformer {
                 throw new ConversionException("Invalid ontology data");
             }
 
+            ConceptFilterUtil.initializeConceptFilter();
+            ConceptFilterUtil.FilterStatistics filterStatistics = new ConceptFilterUtil.FilterStatistics();
+            Map<String, String> nameToIdentifierMap = ConceptFilterUtil.buildNameToIdentifierMap(ontologyData);
+            // TODO
+            ConceptFilterUtil.buildFilteredConceptSet(ontologyData, filterStatistics);
+
+
             Set<String> requiredBaseClasses = analyzeRequiredBaseClasses(ontologyData);
             Set<String> requiredProperties = analyzeRequiredProperties(ontologyData);
 
@@ -95,15 +103,19 @@ public class OFNDataTransformer {
 
             createOntologyResourceWithTemporal(ontologyData.getVocabularyMetadata(), localResourceMap);
 
-            transformClasses(ontologyData.getClasses(), localClassResources, localResourceMap);
-            transformProperties(ontologyData.getProperties(), localPropertyResources, localResourceMap);
-            transformRelationships(ontologyData.getRelationships(), localRelationshipResources, localResourceMap);
-            transformHierarchies(ontologyData.getHierarchies(), localClassResources, localPropertyResources, localResourceMap);
+            transformClasses(ontologyData.getClasses(), localClassResources, localResourceMap, nameToIdentifierMap, filterStatistics);
+            transformProperties(ontologyData.getProperties(), localPropertyResources, localResourceMap, nameToIdentifierMap, filterStatistics);
+            transformRelationships(ontologyData.getRelationships(), localRelationshipResources, localResourceMap, nameToIdentifierMap, filterStatistics);
+            transformHierarchies(ontologyData.getHierarchies(), localClassResources, localPropertyResources, localResourceMap, nameToIdentifierMap, filterStatistics);
 
             Map<String, String> modelProperties = createModelProperties(ontologyData.getVocabularyMetadata());
 
             log.info("Transformation completed successfully. Created {} classes, {} properties, {} relationships",
                     localClassResources.size(), localPropertyResources.size(), localRelationshipResources.size());
+
+            if (ConceptFilterUtil.conceptFilterPattern != null) {
+                filterStatistics.logStatistics();
+            }
 
             return new TransformationResult(
                     ontModel,
@@ -362,7 +374,8 @@ public class OFNDataTransformer {
     }
 
     private void transformClasses(List<ClassData> classes, Map<String, Resource> localClassResources,
-                                  Map<String, Resource> localResourceMap) {
+                                  Map<String, Resource> localResourceMap, Map<String, String> nameToIdentifierMap,
+                                  ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Transforming {} classes", classes.size());
 
         Map<String, Resource> allClassResources = new HashMap<>();
@@ -374,11 +387,27 @@ public class OFNDataTransformer {
             }
 
             String identifier = classData.getIdentifier();
+
+            if (ConceptFilterUtil.shouldFilterConcept(identifier)) {
+                log.info("FILTERED: Class '{}' with identifier '{}' matches filter regex",
+                        classData.getName(), identifier);
+                filterStatistics.filteredClasses++;
+                continue;
+            }
+
             String classURI = uriGenerator.generateConceptURI(classData.getName(), identifier);
             log.debug("Processing class '{}' with identifier='{}' -> URI={}",
                 classData.getName(), identifier, classURI);
 
             try {
+                if (classData.getSuperClass() != null &&
+                        isConceptFiltered(classData.getSuperClass(), nameToIdentifierMap)) {
+                    log.info("OMITTED: superClass '{}' for class '{}' (superClass is filtered)",
+                            classData.getSuperClass(), classData.getName());
+                    classData.setSuperClass(null);
+                    filterStatistics.omittedSuperClasses++;
+                }
+
                 Resource classResource = createClassResource(classData, localResourceMap);
 
                 allClassResources.put(classData.getName(), classResource);
@@ -388,7 +417,6 @@ public class OFNDataTransformer {
                     localResourceMap.put(classData.getName(), classResource);
                     log.debug("Created local class: {} -> {}", classData.getName(), classResource.getURI());
                 } else {
-                    // Also add external concepts to localResourceMap so they can be referenced
                     localResourceMap.put(classData.getName(), classResource);
                     log.info("Created external concept (for relationships only): '{}' with identifier='{}' -> URI={}",
                         classData.getName(), identifier, classURI);
@@ -432,9 +460,34 @@ public class OFNDataTransformer {
     }
 
     private void transformProperties(List<PropertyData> properties, Map<String, Resource> localPropertyResources,
-                                     Map<String, Resource> localResourceMap) {
+                                     Map<String, Resource> localResourceMap, Map<String, String> nameToIdentifierMap,
+                                     ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
+            if (ConceptFilterUtil.shouldFilterConcept(propertyData.getIdentifier())) {
+                log.info("FILTERED: Property '{}' with identifier '{}' matches filter regex",
+                        propertyData.getName(), propertyData.getIdentifier());
+                filterStatistics.filteredProperties++;
+                continue;
+            }
+
+            if (propertyData.getDomain() != null &&
+                    isConceptFiltered(propertyData.getDomain(), nameToIdentifierMap)) {
+                log.info("FILTERED: Property '{}' because its domain '{}' is filtered",
+                        propertyData.getName(), propertyData.getDomain());
+                filterStatistics.filteredProperties++;
+                filterStatistics.omittedDomains++;
+                continue;
+            }
+
+            if (propertyData.getSuperProperty() != null &&
+                    isConceptFiltered(propertyData.getSuperProperty(), nameToIdentifierMap)) {
+                log.info("OMITTED: superProperty '{}' for property '{}' (superProperty is filtered)",
+                        propertyData.getSuperProperty(), propertyData.getName());
+                propertyData.setSuperProperty(null);
+                filterStatistics.omittedSuperProperties++;
+            }
+
             try {
                 Resource propertyResource = createPropertyResource(propertyData, localResourceMap);
                 localPropertyResources.put(propertyData.getName(), propertyResource);
@@ -510,9 +563,43 @@ public class OFNDataTransformer {
     }
 
     private void transformRelationships(List<RelationshipData> relationships, Map<String, Resource> localRelationshipResources,
-                                        Map<String, Resource> localResourceMap) {
+                                        Map<String, Resource> localResourceMap,  Map<String, String> nameToIdentifierMap,
+                                        ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Transforming {} relationships", relationships.size());
         for (RelationshipData relationshipData : relationships) {
+            if (ConceptFilterUtil.shouldFilterConcept(relationshipData.getIdentifier())) {
+                log.info("FILTERED: Relationship '{}' with identifier '{}' matches filter regex",
+                        relationshipData.getName(), relationshipData.getIdentifier());
+                filterStatistics.filteredRelationships++;
+                continue;
+            }
+
+            if (relationshipData.getDomain() != null &&
+                    isConceptFiltered(relationshipData.getDomain(), nameToIdentifierMap)) {
+                log.info("FILTERED: Relationship '{}' because its domain '{}' is filtered",
+                        relationshipData.getName(), relationshipData.getDomain());
+                filterStatistics.filteredRelationships++;
+                filterStatistics.omittedDomains++;
+                continue;
+            }
+
+            if (relationshipData.getRange() != null &&
+                    isConceptFiltered(relationshipData.getRange(), nameToIdentifierMap)) {
+                log.info("FILTERED: Relationship '{}' because its range '{}' is filtered",
+                        relationshipData.getName(), relationshipData.getRange());
+                filterStatistics.filteredRelationships++;
+                filterStatistics.omittedRanges++;
+                continue;
+            }
+
+            if (relationshipData.getSuperRelation() != null &&
+                    isConceptFiltered(relationshipData.getSuperRelation(), nameToIdentifierMap)) {
+                log.info("OMITTED: superRelation '{}' for relationship '{}' (superRelation is filtered)",
+                        relationshipData.getSuperRelation(), relationshipData.getName());
+                relationshipData.setSuperRelation(null);
+                filterStatistics.omittedSuperRelations++;
+            }
+
             try {
                 Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap);
                 localRelationshipResources.put(relationshipData.getName(), relationshipResource);
@@ -582,7 +669,8 @@ public class OFNDataTransformer {
     }
 
     private void transformHierarchies(List<HierarchyData> hierarchies, Map<String, Resource> localClassResources,
-                                      Map<String, Resource> localPropertyResources, Map<String, Resource> localResourceMap) {
+                                      Map<String, Resource> localPropertyResources, Map<String, Resource> localResourceMap,
+                                      Map<String, String> nameToIdentifierMap, ConceptFilterUtil.FilterStatistics filterStats) {
         log.debug("Transforming {} hierarchical relationships", hierarchies.size());
 
         if (hierarchies.isEmpty()) {
@@ -598,6 +686,22 @@ public class OFNDataTransformer {
         for (HierarchyData hierarchyData : hierarchies) {
             if (!hierarchyData.hasValidData()) {
                 log.warn("Skipping invalid hierarchy: {}", hierarchyData);
+                skippedHierarchies++;
+                continue;
+            }
+
+            if (isConceptFiltered(hierarchyData.getSubClass(), nameToIdentifierMap)) {
+                log.info("FILTERED: Hierarchy '{}' IS-A '{}' because subClass is filtered",
+                        hierarchyData.getSubClass(), hierarchyData.getSuperClass());
+                filterStats.filteredHierarchies++;
+                skippedHierarchies++;
+                continue;
+            }
+
+            if (isConceptFiltered(hierarchyData.getSuperClass(), nameToIdentifierMap)) {
+                log.info("FILTERED: Hierarchy '{}' IS-A '{}' because superClass is filtered",
+                        hierarchyData.getSubClass(), hierarchyData.getSuperClass());
+                filterStats.filteredHierarchies++;
                 skippedHierarchies++;
                 continue;
             }
@@ -885,6 +989,12 @@ public class OFNDataTransformer {
         if (!UtilityMethods.isValidIRI(equivalentConcept)) {
             log.warn("Skipping invalid equivalent concept for {} '{}': '{}' is not a valid IRI",
                     entityType, resource.getLocalName(), equivalentConcept);
+            return;
+        }
+
+        if (ConceptFilterUtil.shouldFilterConcept(equivalentConcept)) {
+            log.info("OMITTED: equivalentConcept '{}' for {} '{}' (equivalentConcept is filtered)",
+                    equivalentConcept, entityType, resource.getLocalName());
             return;
         }
 
