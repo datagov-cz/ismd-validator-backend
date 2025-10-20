@@ -280,6 +280,7 @@ public class EnterpriseArchitectReader {
         classData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         classData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
         classData.setId(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
+        classData.setSharedInPPDF(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_SDILEN_V_PPDF"));
         classData.setAgendaCode(getTagValueByPattern(extensionElement, "AGENDA"));
         classData.setAgendaSystemCode(getTagValueByPattern(extensionElement, "AGENDOVY_INFORMACNI_SYSTEM"));
 
@@ -602,7 +603,13 @@ public class EnterpriseArchitectReader {
         relationshipData.setAlternativeName(getTagValueByPattern(connector, "ALTERNATIVNI_NAZEV"));
         relationshipData.setEquivalentConcept(getTagValueByPattern(connector, "EKVIVALENTNI_POJEM"));
         relationshipData.setIdentifier(getTagValueByPattern(connector, "IDENTIFIKATOR"));
-
+        relationshipData.setSharedInPPDF(getBooleanTagValueByPattern(connector, "JE_POJEM_SDILEN_V_PPDF"));
+        relationshipData.setAgendaCode(getTagValueByPattern(connector, "AGENDA"));
+        relationshipData.setAgendaSystemCode(getTagValueByPattern(connector, "AGENDOVY_INFORMACNI_SYSTEM"));
+        relationshipData.setIsPublic(getBooleanTagValueByPattern(connector, "JE_POJEM_VEREJNY"));
+        relationshipData.setPrivacyProvision(getTagValueByPattern(connector, "USTANOVENI_DOKLADAJICI_NEVEREJNOST"));
+        relationshipData.setSharingMethod(getTagValueByPattern(connector, "ZPUSOB_SDILENI_UDAJE"));
+        relationshipData.setAcquisitionMethod(getTagValueByPattern(connector, "ZPUSOB_ZISKANI_UDAJE"));
 
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);

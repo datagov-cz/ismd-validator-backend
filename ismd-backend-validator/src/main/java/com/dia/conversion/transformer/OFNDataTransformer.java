@@ -562,6 +562,11 @@ public class OFNDataTransformer {
             log.debug("Processing equivalent concept for relationship {}: '{}'", relationshipData.getName(), relationshipData.getEquivalentConcept());
             addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), "relationship");
         }
+
+        addRelationshipPPDFData(relationshipResource, relationshipData);
+        addRelationshipAgenda(relationshipResource, relationshipData);
+        addRelationshipAgendaInformationSystem(relationshipResource, relationshipData);
+        addRelationshipDataGovernanceMetadata(relationshipResource, relationshipData);
     }
 
     private void addRelationshipSuperPropertyRelationship(Resource relationshipResource, RelationshipData relationshipData) {
@@ -1361,5 +1366,69 @@ public class OFNDataTransformer {
             log.debug("Privacy provision does not contain ELI pattern for class '{}': '{}' - skipping",
                     classData.getName(), trimmedProvision);
         }
+    }
+
+    private void addRelationshipPPDFData(Resource relationshipResource, RelationshipData relationshipData) {
+        if (relationshipData.getSharedInPPDF() != null && !relationshipData.getSharedInPPDF().trim().isEmpty()) {
+            String value = relationshipData.getSharedInPPDF();
+            Property ppdfProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + JE_PPDF);
+
+            if (UtilityMethods.isBooleanValue(value)) {
+                Boolean boolValue = UtilityMethods.normalizeCzechBoolean(value);
+                DataTypeConverter.addTypedProperty(relationshipResource, ppdfProperty,
+                        boolValue.toString(), null, ontModel);
+                log.debug("Added normalized PPDF boolean for relationship: {} -> {}", value, boolValue);
+            } else {
+                log.warn("Unrecognized boolean value for PPDF relationship property: '{}'", value);
+                DataTypeConverter.addTypedProperty(relationshipResource, ppdfProperty, value, null, ontModel);
+            }
+        }
+    }
+
+    private void addRelationshipAgenda(Resource relationshipResource, RelationshipData relationshipData) {
+        if (relationshipData.getAgendaCode() != null && !relationshipData.getAgendaCode().trim().isEmpty()) {
+            String agendaCode = relationshipData.getAgendaCode().trim();
+
+            if (UtilityMethods.isValidAgendaValue(agendaCode)) {
+                String transformedAgenda = UtilityMethods.transformAgendaValue(agendaCode);
+                Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AGENDA);
+
+                if (DataTypeConverter.isUri(transformedAgenda)) {
+                    relationshipResource.addProperty(agendaProperty, ontModel.createResource(transformedAgenda));
+                    log.debug("Added valid agenda as URI for relationship: {} -> {}", agendaCode, transformedAgenda);
+                } else {
+                    DataTypeConverter.addTypedProperty(relationshipResource, agendaProperty, transformedAgenda, null, ontModel);
+                    log.debug("Added valid agenda as literal for relationship: {} -> {}", agendaCode, transformedAgenda);
+                }
+            } else {
+                log.warn("Invalid agenda code '{}' for relationship '{}' - skipping", agendaCode, relationshipData.getName());
+            }
+        }
+    }
+
+    private void addRelationshipAgendaInformationSystem(Resource relationshipResource, RelationshipData relationshipData) {
+        if (relationshipData.getAgendaSystemCode() != null && !relationshipData.getAgendaSystemCode().trim().isEmpty()) {
+            String aisCode = relationshipData.getAgendaSystemCode().trim();
+
+            if (UtilityMethods.isValidAISValue(aisCode)) {
+                String transformedAIS = UtilityMethods.transformAISValue(aisCode);
+                Property aisProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AIS);
+
+                if (DataTypeConverter.isUri(transformedAIS)) {
+                    relationshipResource.addProperty(aisProperty, ontModel.createResource(transformedAIS));
+                    log.debug("Added valid AIS as URI for relationship: {} -> {}", aisCode, transformedAIS);
+                } else {
+                    DataTypeConverter.addTypedProperty(relationshipResource, aisProperty, transformedAIS, null, ontModel);
+                    log.debug("Added valid AIS as literal for relationship: {} -> {}", aisCode, transformedAIS);
+                }
+            } else {
+                log.warn("Invalid AIS code '{}' for relationship '{}' - skipping", aisCode, relationshipData.getName());
+            }
+        }
+    }
+
+    private void addRelationshipDataGovernanceMetadata(Resource relationshipResource, RelationshipData relationshipData) {
+        handleGovernanceProperty(relationshipResource, relationshipData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(relationshipResource, relationshipData.getAcquisitionMethod(), "acquisition-method");
     }
 }

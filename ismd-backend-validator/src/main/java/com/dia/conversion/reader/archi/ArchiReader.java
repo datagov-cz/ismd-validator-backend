@@ -231,6 +231,7 @@ public class ArchiReader {
         classData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         classData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
         classData.setEquivalentConcept(properties.get(EKVIVALENTNI_POJEM));
+        classData.setSharedInPPDF(properties.get(JE_PPDF));
         classData.setAgendaCode(properties.get(AGENDA));
         classData.setAgendaSystemCode(properties.get(AIS));
 
@@ -562,6 +563,23 @@ public class ArchiReader {
         relationshipData.setSource(properties.get(ZDROJ));
         relationshipData.setRelatedSource(properties.get(SOUVISEJICI_ZDROJ));
         relationshipData.setAlternativeName(properties.get(ALTERNATIVNI_NAZEV));
+        relationshipData.setSharedInPPDF(properties.get(JE_PPDF));
+        relationshipData.setAgendaCode(properties.get(AGENDA));
+        relationshipData.setAgendaSystemCode(properties.get(AIS));
+
+        String isPublicValue = properties.get(JE_VEREJNY);
+        String privacyProvision = properties.get(USTANOVENI_NEVEREJNOST);
+
+        isPublicValue = UtilityMethods.cleanBooleanValue(isPublicValue);
+        privacyProvision = UtilityMethods.cleanProvisionValue(privacyProvision);
+
+        relationshipData.setIsPublic(isPublicValue);
+        relationshipData.setPrivacyProvision(privacyProvision);
+
+        validatePublicityConsistency(name, isPublicValue, privacyProvision);
+
+        relationshipData.setSharingMethod(properties.get(ZPUSOB_SDILENI));
+        relationshipData.setAcquisitionMethod(properties.get(ZPUSOB_ZISKANI));
 
         log.debug("Created relationship data: {} ({} -> {}, type: {})",
                 name, sourceName, targetName, type);
