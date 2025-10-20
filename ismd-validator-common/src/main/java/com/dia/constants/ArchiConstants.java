@@ -8,7 +8,7 @@ public class ArchiConstants {
     public static final String OFN_NAMESPACE = "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/";
     public static final String ARCHI_NS = "http://www.opengroup.org/xsd/archimate/3.0/";
     public static final String XSD = "http://www.w3.org/2001/XMLSchema#";
-    public static final String CONTEXT = "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld";
+    public static final String CONTEXT = "https://ofn.gov.cz/slovníky/draft2/kompletní/kontext.jsonld";
     public static final String IDENT = "identifier";
     public static final String CAS_NS = "https://slovník.gov.cz/generický/čas/pojem/";
     public static final String SLOVNIKY_NS = "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/";

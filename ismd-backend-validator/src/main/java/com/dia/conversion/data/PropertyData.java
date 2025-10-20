@@ -20,4 +20,12 @@ public class PropertyData {
     private String equivalentConcept;
     private String dataType;
     private String sharedInPPDF;
+
+    private String agendaCode;
+    private String agendaSystemCode;
+    private String isPublic;
+    private String privacyProvision;
+    private String sharingMethod;
+    private String acquisitionMethod;
+    private String contentType;
 }

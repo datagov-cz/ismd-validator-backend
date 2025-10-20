@@ -488,6 +488,8 @@ public class OFNDataTransformer {
         addPropertyPPDFData(propertyResource, propertyData);
 
         addRangeInformation(propertyResource, propertyData);
+
+        addPropertyDataGovernanceMetadata(propertyResource, propertyData);
     }
 
     private void addPropertySuperPropertyRelationship(Resource propertyResource, PropertyData propertyData) {
@@ -1114,7 +1116,7 @@ public class OFNDataTransformer {
             return;
         }
 
-        List<String> allowedValues = List.of("veřejně přístupné", "poskytované na žádost", "nesdílené", "základních registrů", "jiných agend", "vlastní", "provozní", "identifikační", "evidenční", "statistické");
+        List<String> allowedValues = List.of("veřejně přístupné", "poskytované na žádost", "nesdílené", "zpřístupňované pro výkon agendy", "základních registrů", "jiných agend", "vlastní", "provozní", "identifikační", "evidenční", "statistické");
         if (!allowedValues.contains(value.toLowerCase())) {
             log.debug("Skipping unsupported governance property value '{}' for resource: {}", propertyType, resource.getLocalName());
             return;
@@ -1261,6 +1263,12 @@ public class OFNDataTransformer {
         handleGovernanceProperty(classResource, classData.getContentType(), "content-type");
     }
 
+    private void addPropertyDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
+        handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(propertyResource, propertyData.getContentType(), "content-type");
+    }
+
     private void addPropertyPPDFData(Resource propertyResource, PropertyData propertyData) {
         if (propertyData.getSharedInPPDF() != null && !propertyData.getSharedInPPDF().trim().isEmpty()) {
             String value = propertyData.getSharedInPPDF();
@@ -1295,8 +1303,8 @@ public class OFNDataTransformer {
     private void handleClassNonPublicData(Resource classResource, ClassData classData, String privacyProvision) {
         Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
         classResource.addProperty(dataClassificationProp, "non-public");
-
-        log.debug("Added non-public data annotation for class: {}", classData.getName());
+        classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
+        log.debug("Added non-public data annotation and RDF type for class: {}", classData.getName());
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
             validateAndAddClassPrivacyProvision(classResource, classData, privacyProvision);
@@ -1315,8 +1323,8 @@ public class OFNDataTransformer {
                 } else {
                     Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
                     classResource.addProperty(dataClassificationProp, "public");
-
-                    log.debug("Added public data annotation for class: {}", classData.getName());
+                    classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    log.debug("Added public data annotation and RDF type for class: {}", classData.getName());
                 }
             } else {
                 handleClassNonPublicData(classResource, classData, privacyProvision);
