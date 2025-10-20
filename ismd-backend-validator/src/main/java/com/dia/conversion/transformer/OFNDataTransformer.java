@@ -407,7 +407,7 @@ public class OFNDataTransformer {
                     filterStatistics.omittedSuperClasses++;
                 }
 
-                Resource classResource = createClassResource(classData, localResourceMap);
+                Resource classResource = createClassResource(classData, localResourceMap, filterStatistics);
 
                 allClassResources.put(classData.getName(), classResource);
 
@@ -428,7 +428,7 @@ public class OFNDataTransformer {
         this.allClassResourcesForHierarchies = allClassResources;
     }
 
-    private Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap) {
+    private Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap, ConceptFilterUtil.FilterStatistics filterStatistics) {
         String classURI = uriGenerator.generateConceptURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
@@ -437,7 +437,7 @@ public class OFNDataTransformer {
 
         if (belongsToCurrentVocabulary(classURI)) {
             addResourceMetadata(classResource, ResourceMetadata.from(classData));
-            addClassSpecificMetadata(classResource, classData);
+            addClassSpecificMetadata(classResource, classData, filterStatistics);
             addSchemeRelationship(classResource, localResourceMap);
             log.debug("Added full metadata for local class: {}", classURI);
         } else {
@@ -488,7 +488,7 @@ public class OFNDataTransformer {
             }
 
             try {
-                Resource propertyResource = createPropertyResource(propertyData, localResourceMap);
+                Resource propertyResource = createPropertyResource(propertyData, localResourceMap, filterStatistics);
                 localPropertyResources.put(propertyData.getName(), propertyResource);
                 localResourceMap.put(propertyData.getName(), propertyResource);
                 log.debug("Created property: {} -> {}", propertyData.getName(), propertyResource.getURI());
@@ -498,7 +498,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap) {
+    private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap, ConceptFilterUtil.FilterStatistics filterStatistics) {
         String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
 
         OntProperty propertyResource;
@@ -513,14 +513,14 @@ public class OFNDataTransformer {
 
         if (belongsToCurrentVocabulary(propertyURI)) {
             addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
-            addPropertySpecificMetadata(propertyResource, propertyData, localResourceMap);
+            addPropertySpecificMetadata(propertyResource, propertyData, localResourceMap, filterStatistics);
             addPropertySuperPropertyRelationship(propertyResource, propertyData);
         }
 
         return propertyResource;
     }
 
-    private void addPropertySpecificMetadata(Resource propertyResource, PropertyData propertyData, Map<String, Resource> localResourceMap) {
+    private void addPropertySpecificMetadata(Resource propertyResource, PropertyData propertyData, Map<String, Resource> localResourceMap, ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Adding property-specific metadata for: {}", propertyData.getName());
 
         if (propertyData.getAlternativeName() != null && !propertyData.getAlternativeName().trim().isEmpty()) {
@@ -530,7 +530,7 @@ public class OFNDataTransformer {
 
         if (propertyData.getEquivalentConcept() != null && !propertyData.getEquivalentConcept().trim().isEmpty()) {
             log.debug("Processing equivalent concept for property {}: '{}'", propertyData.getName(), propertyData.getEquivalentConcept());
-            addEquivalentConcept(propertyResource, propertyData.getEquivalentConcept(), "property");
+            addEquivalentConcept(propertyResource, propertyData.getEquivalentConcept(), "property", filterStatistics);
         }
 
         if (propertyData.getDomain() != null && !propertyData.getDomain().trim().isEmpty()) {
@@ -600,7 +600,7 @@ public class OFNDataTransformer {
             }
 
             try {
-                Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap);
+                Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap, filterStatistics);
                 localRelationshipResources.put(relationshipData.getName(), relationshipResource);
                 localResourceMap.put(relationshipData.getName(), relationshipResource);
                 log.debug("Created relationship: {} -> {}", relationshipData.getName(), relationshipResource.getURI());
@@ -610,7 +610,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap) {
+    private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap, ConceptFilterUtil.FilterStatistics filterStatistics) {
         String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(),
                 relationshipData.getIdentifier());
 
@@ -623,7 +623,7 @@ public class OFNDataTransformer {
 
         if (belongsToCurrentVocabulary(relationshipURI)) {
             addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData));
-            addRelationshipSpecificMetadata(relationshipResource, relationshipData);
+            addRelationshipSpecificMetadata(relationshipResource, relationshipData, filterStatistics);
             addRelationshipSuperPropertyRelationship(relationshipResource, relationshipData);
             log.debug("Added full metadata for local relationship: {}", relationshipURI);
         } else {
@@ -634,7 +634,7 @@ public class OFNDataTransformer {
         return relationshipResource;
     }
 
-    private void addRelationshipSpecificMetadata(Resource relationshipResource, RelationshipData relationshipData) {
+    private void addRelationshipSpecificMetadata(Resource relationshipResource, RelationshipData relationshipData, ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Adding relationship-specific metadata for: {}", relationshipData.getName());
 
         if (relationshipData.getAlternativeName() != null && !relationshipData.getAlternativeName().trim().isEmpty()) {
@@ -646,7 +646,7 @@ public class OFNDataTransformer {
 
         if (relationshipData.getEquivalentConcept() != null && !relationshipData.getEquivalentConcept().trim().isEmpty()) {
             log.debug("Processing equivalent concept for relationship {}: '{}'", relationshipData.getName(), relationshipData.getEquivalentConcept());
-            addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), "relationship");
+            addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), "relationship", filterStatistics);
         }
     }
 
@@ -963,9 +963,9 @@ public class OFNDataTransformer {
         log.debug("Added {} as digital document with schema:url: {}", propertyName, trimmedUrl);
     }
 
-    private void addClassSpecificMetadata(Resource classResource, ClassData classData) {
+    private void addClassSpecificMetadata(Resource classResource, ClassData classData, ConceptFilterUtil.FilterStatistics filterStatistics) {
         addAlternativeName(classResource, classData);
-        addEquivalentConcept(classResource, classData);
+        addEquivalentConcept(classResource, classData, filterStatistics);
         addAgenda(classResource, classData);
         addAgendaInformationSystem(classResource, classData);
         addClassDataGovernanceMetadata(classResource, classData);
@@ -977,10 +977,10 @@ public class OFNDataTransformer {
         }
     }
 
-    private void addEquivalentConcept(Resource classResource, ClassData classData) {
+    private void addEquivalentConcept(Resource classResource, ClassData classData, ConceptFilterUtil.FilterStatistics filterStatistics) {
         if (classData.getEquivalentConcept() != null && !classData.getEquivalentConcept().trim().isEmpty()) {
             log.debug("Processing equivalent concept for class {}: '{}'", classData.getName(), classData.getEquivalentConcept());
-            addEquivalentConcept(classResource, classData.getEquivalentConcept(), "class");
+            addEquivalentConcept(classResource, classData.getEquivalentConcept(), "class", filterStatistics);
         }
     }
 
