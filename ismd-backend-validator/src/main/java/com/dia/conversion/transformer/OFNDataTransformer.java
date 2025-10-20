@@ -163,30 +163,12 @@ public class OFNDataTransformer {
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
         if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
-            log.info("Namespace check failed - conceptURI='{}', effectiveNamespace='{}'", 
-                conceptURI, uriGenerator.getEffectiveNamespace());
             return false;
         }
 
-        String effectiveNamespace = uriGenerator.getEffectiveNamespace();
-        
-        StringBuilder vocabularyNamespace = new StringBuilder(effectiveNamespace);
-        if (vocabularyNamespace.toString().endsWith("/")) {
-            vocabularyNamespace.setLength(vocabularyNamespace.length() - 1);
-        }
-        
-        if (uriGenerator.getVocabularyName() != null && !uriGenerator.getVocabularyName().trim().isEmpty()) {
-            String sanitizedVocabName = com.dia.utility.UtilityMethods.sanitizeForIRI(uriGenerator.getVocabularyName());
-            vocabularyNamespace.append("/").append(sanitizedVocabName);
-        }
-        vocabularyNamespace.append("/pojem/");
-        
-        String vocabularySpecificNamespace = vocabularyNamespace.toString();
-        boolean belongs = conceptURI.startsWith(vocabularySpecificNamespace);
-        
-        log.info("Namespace check for '{}': belongs={} (startsWith check: '{}' starts with vocabulary-specific namespace '{}')",
-                conceptURI, belongs, conceptURI, vocabularySpecificNamespace);
-        
+        boolean belongs = conceptURI.startsWith(uriGenerator.getEffectiveNamespace());
+        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
+                conceptURI, belongs, uriGenerator.getEffectiveNamespace());
         return belongs;
     }
 
@@ -382,31 +364,33 @@ public class OFNDataTransformer {
     private void transformClasses(List<ClassData> classes, Map<String, Resource> localClassResources,
                                   Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} classes", classes.size());
-        
+
         Map<String, Resource> allClassResources = new HashMap<>();
-        
+
         for (ClassData classData : classes) {
             if (!classData.hasValidData()) {
                 log.warn("Skipping invalid class: {}", classData.getName());
                 continue;
             }
-            
+
             String identifier = classData.getIdentifier();
             String classURI = uriGenerator.generateConceptURI(classData.getName(), identifier);
-            log.debug("Processing class '{}' with identifier='{}' -> URI={}", 
+            log.debug("Processing class '{}' with identifier='{}' -> URI={}",
                 classData.getName(), identifier, classURI);
-            
+
             try {
                 Resource classResource = createClassResource(classData, localResourceMap);
-                
+
                 allClassResources.put(classData.getName(), classResource);
-                
+
                 if (belongsToCurrentVocabulary(classURI)) {
                     localClassResources.put(classData.getName(), classResource);
                     localResourceMap.put(classData.getName(), classResource);
                     log.debug("Created local class: {} -> {}", classData.getName(), classResource.getURI());
                 } else {
-                    log.info("Created external concept (for relationships only): '{}' with identifier='{}' -> URI={}", 
+                    // Also add external concepts to localResourceMap so they can be referenced
+                    localResourceMap.put(classData.getName(), classResource);
+                    log.info("Created external concept (for relationships only): '{}' with identifier='{}' -> URI={}",
                         classData.getName(), identifier, classURI);
                 }
             } catch (Exception e) {
@@ -451,15 +435,8 @@ public class OFNDataTransformer {
                                      Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
-            String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
-            if (!belongsToCurrentVocabulary(propertyURI)) {
-                log.debug("Skipping external property (will be referenced in relationships): {} -> {}", 
-                    propertyData.getName(), propertyURI);
-                continue;
-            }
-            
             try {
-                Resource propertyResource = createPropertyResource(propertyData);
+                Resource propertyResource = createPropertyResource(propertyData, localResourceMap);
                 localPropertyResources.put(propertyData.getName(), propertyResource);
                 localResourceMap.put(propertyData.getName(), propertyResource);
                 log.debug("Created property: {} -> {}", propertyData.getName(), propertyResource.getURI());
@@ -469,7 +446,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createPropertyResource(PropertyData propertyData) {
+    private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap) {
         String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
 
         OntProperty propertyResource;
@@ -484,14 +461,14 @@ public class OFNDataTransformer {
 
         if (belongsToCurrentVocabulary(propertyURI)) {
             addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
-            addPropertySpecificMetadata(propertyResource, propertyData);
+            addPropertySpecificMetadata(propertyResource, propertyData, localResourceMap);
             addPropertySuperPropertyRelationship(propertyResource, propertyData);
         }
 
         return propertyResource;
     }
 
-    private void addPropertySpecificMetadata(Resource propertyResource, PropertyData propertyData) {
+    private void addPropertySpecificMetadata(Resource propertyResource, PropertyData propertyData, Map<String, Resource> localResourceMap) {
         log.debug("Adding property-specific metadata for: {}", propertyData.getName());
 
         if (propertyData.getAlternativeName() != null && !propertyData.getAlternativeName().trim().isEmpty()) {
@@ -505,12 +482,14 @@ public class OFNDataTransformer {
         }
 
         if (propertyData.getDomain() != null && !propertyData.getDomain().trim().isEmpty()) {
-            addResourceReference(propertyResource, RDFS.domain, propertyData.getDomain());
+            addResourceReference(propertyResource, RDFS.domain, propertyData.getDomain(), localResourceMap);
         }
 
         addPropertyPPDFData(propertyResource, propertyData);
 
         addRangeInformation(propertyResource, propertyData);
+
+        addPropertyDataGovernanceMetadata(propertyResource, propertyData);
     }
 
     private void addPropertySuperPropertyRelationship(Resource propertyResource, PropertyData propertyData) {
@@ -534,15 +513,8 @@ public class OFNDataTransformer {
                                         Map<String, Resource> localResourceMap) {
         log.debug("Transforming {} relationships", relationships.size());
         for (RelationshipData relationshipData : relationships) {
-            String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(), relationshipData.getIdentifier());
-            if (!belongsToCurrentVocabulary(relationshipURI)) {
-                log.debug("Skipping external relationship (will be referenced in relationships): {} -> {}", 
-                    relationshipData.getName(), relationshipURI);
-                continue;
-            }
-            
             try {
-                Resource relationshipResource = createRelationshipResource(relationshipData);
+                Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap);
                 localRelationshipResources.put(relationshipData.getName(), relationshipResource);
                 localResourceMap.put(relationshipData.getName(), relationshipResource);
                 log.debug("Created relationship: {} -> {}", relationshipData.getName(), relationshipResource.getURI());
@@ -552,7 +524,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createRelationshipResource(RelationshipData relationshipData) {
+    private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap) {
         String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(),
                 relationshipData.getIdentifier());
 
@@ -572,7 +544,7 @@ public class OFNDataTransformer {
             log.debug("Skipped full metadata for external relationship (different namespace): {}", relationshipURI);
         }
 
-        addDomainRangeRelationships(relationshipResource, relationshipData);
+        addDomainRangeRelationships(relationshipResource, relationshipData, localResourceMap);
         return relationshipResource;
     }
 
@@ -783,7 +755,7 @@ public class OFNDataTransformer {
 
     private void addResourceMetadata(Resource resource, ResourceMetadata metadata) {
         if (metadata.name() != null && !metadata.name().trim().isEmpty()) {
-            DataTypeConverter.addTypedProperty(resource, RDFS.label, metadata.name(), DEFAULT_LANG, ontModel);
+            DataTypeConverter.addTypedProperty(resource, SKOS.prefLabel, metadata.name(), DEFAULT_LANG, ontModel);
         }
 
         if (metadata.description() != null && !metadata.description().trim().isEmpty()) {
@@ -1027,10 +999,18 @@ public class OFNDataTransformer {
         String trimmedDataType = dataType.trim();
         log.debug("Processing data type for property '{}': '{}'", propertyData.getName(), trimmedDataType);
 
-        checkIfXsdType(trimmedDataType, rangeProperty, propertyResource);
-        checkIfFullXsdUri(trimmedDataType, rangeProperty, propertyResource);
-        checkIfValidUri(trimmedDataType, rangeProperty, propertyResource);
-        checkCzechDataType(trimmedDataType, rangeProperty, propertyResource);
+        if (checkIfXsdType(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
+        if (checkIfFullXsdUri(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
+        if (checkIfValidUri(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
+        if (checkCzechDataType(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
 
         String detectedType = tryDetectDataTypeFromValue(trimmedDataType);
         if (detectedType != null) {
@@ -1043,54 +1023,64 @@ public class OFNDataTransformer {
         log.debug("Unrecognized data type '{}' - using rdfs:Literal as fallback", trimmedDataType);
     }
 
-    private void checkIfXsdType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+    private boolean checkIfXsdType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         if (trimmedDataType.startsWith("xsd:")) {
             String localName = trimmedDataType.substring(4);
             if (DataTypeConverter.isValidXSDType(localName)) {
                 String xsdType = XSD_NS + localName;
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
                 log.debug("Added valid XSD range type: {}", xsdType);
+                return true;
             } else {
                 log.warn("Invalid XSD type '{}' - falling back to rdfs:Literal", trimmedDataType);
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+                return true;
             }
         }
+        return false;
     }
 
-    private void checkIfFullXsdUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+    private boolean checkIfFullXsdUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         if (trimmedDataType.startsWith(XSD_NS)) {
             String localName = trimmedDataType.substring(XSD_NS.length());
             if (DataTypeConverter.isValidXSDType(localName)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(trimmedDataType));
                 log.debug("Added valid full XSD URI range type: {}", trimmedDataType);
+                return true;
             } else {
                 log.warn("Invalid XSD URI '{}' - falling back to rdfs:Literal", trimmedDataType);
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+                return true;
             }
         }
+        return false;
     }
 
-    private void checkIfValidUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+    private boolean checkIfValidUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         if (DataTypeConverter.isUri(trimmedDataType)) {
             propertyResource.addProperty(rangeProperty, ontModel.createResource(trimmedDataType));
             log.debug("Added URI range type: {}", trimmedDataType);
+            return true;
         }
+        return false;
     }
 
-    private void checkCzechDataType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+    private boolean checkCzechDataType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         String mappedXsdType = CZECH_TO_XSD_MAPPING.get(trimmedDataType);
         if (mappedXsdType != null) {
             propertyResource.addProperty(rangeProperty, ontModel.createResource(mappedXsdType));
             log.debug("Mapped Czech data type '{}' to XSD type: {}", trimmedDataType, mappedXsdType);
+            return true;
         }
 
         for (Map.Entry<String, String> entry : CZECH_TO_XSD_MAPPING.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(trimmedDataType)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(entry.getValue()));
                 log.debug("Mapped Czech data type '{}' (case-insensitive) to XSD type: {}", trimmedDataType, entry.getValue());
-                return;
+                return true;
             }
         }
+        return false;
     }
 
     private String tryDetectDataTypeFromValue(String value) {
@@ -1126,7 +1116,7 @@ public class OFNDataTransformer {
             return;
         }
 
-        List<String> allowedValues = List.of("veřejně přístupné", "poskytované na žádost", "nesdílené", "základních registrů", "jiných agend", "vlastní", "provozní", "identifikační", "evidenční", "statistické");
+        List<String> allowedValues = List.of("veřejně přístupné", "poskytované na žádost", "nesdílené", "zpřístupňované pro výkon agendy", "základních registrů", "jiných agend", "vlastní", "provozní", "identifikační", "evidenční", "statistické");
         if (!allowedValues.contains(value.toLowerCase())) {
             log.debug("Skipping unsupported governance property value '{}' for resource: {}", propertyType, resource.getLocalName());
             return;
@@ -1200,25 +1190,34 @@ public class OFNDataTransformer {
         };
     }
 
-    private void addDomainRangeRelationships(Resource relationshipResource, RelationshipData relationshipData) {
+    private void addDomainRangeRelationships(Resource relationshipResource, RelationshipData relationshipData, Map<String, Resource> localResourceMap) {
         if (relationshipData.getDomain() != null && !relationshipData.getDomain().trim().isEmpty()) {
-            addResourceReference(relationshipResource, RDFS.domain, relationshipData.getDomain());
+            addResourceReference(relationshipResource, RDFS.domain, relationshipData.getDomain(), localResourceMap);
         }
 
         if (relationshipData.getRange() != null && !relationshipData.getRange().trim().isEmpty()) {
-            addResourceReference(relationshipResource, RDFS.range, relationshipData.getRange());
+            addResourceReference(relationshipResource, RDFS.range, relationshipData.getRange(), localResourceMap);
         }
     }
 
-    private void addResourceReference(Resource subject, Property property, String referenceName) {
+    private void addResourceReference(Resource subject, Property property, String referenceName, Map<String, Resource> resourceMap) {
         if (DataTypeConverter.isUri(referenceName)) {
             subject.addProperty(property, ontModel.createResource(referenceName));
             log.debug("Added URI resource reference: {} -> {}", property.getLocalName(), referenceName);
         } else {
             if (property.equals(RDFS.domain) || property.equals(RDFS.range)) {
-                String conceptUri = uriGenerator.generateConceptURI(referenceName, null);
-                subject.addProperty(property, ontModel.createResource(conceptUri));
-                log.debug("Added generated URI reference for domain/range: {} -> {}", property.getLocalName(), conceptUri);
+                Resource existingResource = resourceMap.get(referenceName);
+
+                if (existingResource != null) {
+                    subject.addProperty(property, existingResource);
+                    log.debug("Added mapped resource reference for domain/range: {} -> {} (from resourceMap)",
+                        property.getLocalName(), existingResource.getURI());
+                } else {
+                    String conceptUri = uriGenerator.generateConceptURI(referenceName, null);
+                    subject.addProperty(property, ontModel.createResource(conceptUri));
+                    log.debug("Added generated URI reference for domain/range: {} -> {} (generated, not in resourceMap)",
+                        property.getLocalName(), conceptUri);
+                }
             } else {
                 DataTypeConverter.addTypedProperty(subject, property, referenceName, null, ontModel);
                 log.debug("Added typed literal reference: {} -> {}", property.getLocalName(), referenceName);
@@ -1264,6 +1263,12 @@ public class OFNDataTransformer {
         handleGovernanceProperty(classResource, classData.getContentType(), "content-type");
     }
 
+    private void addPropertyDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
+        handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(propertyResource, propertyData.getContentType(), "content-type");
+    }
+
     private void addPropertyPPDFData(Resource propertyResource, PropertyData propertyData) {
         if (propertyData.getSharedInPPDF() != null && !propertyData.getSharedInPPDF().trim().isEmpty()) {
             String value = propertyData.getSharedInPPDF();
@@ -1298,8 +1303,8 @@ public class OFNDataTransformer {
     private void handleClassNonPublicData(Resource classResource, ClassData classData, String privacyProvision) {
         Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
         classResource.addProperty(dataClassificationProp, "non-public");
-
-        log.debug("Added non-public data annotation for class: {}", classData.getName());
+        classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
+        log.debug("Added non-public data annotation and RDF type for class: {}", classData.getName());
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
             validateAndAddClassPrivacyProvision(classResource, classData, privacyProvision);
@@ -1318,8 +1323,8 @@ public class OFNDataTransformer {
                 } else {
                     Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
                     classResource.addProperty(dataClassificationProp, "public");
-
-                    log.debug("Added public data annotation for class: {}", classData.getName());
+                    classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    log.debug("Added public data annotation and RDF type for class: {}", classData.getName());
                 }
             } else {
                 handleClassNonPublicData(classResource, classData, privacyProvision);

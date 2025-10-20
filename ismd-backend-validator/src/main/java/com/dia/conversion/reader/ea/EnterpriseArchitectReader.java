@@ -313,6 +313,15 @@ public class EnterpriseArchitectReader {
         propertyData.setDataType(getTagValueByPattern(extensionElement, "DATOVY_TYP"));
         propertyData.setSharedInPPDF(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_SDILEN_V_PPDF"));
 
+        propertyData.setAgendaCode(getTagValueByPattern(extensionElement, "AGENDA"));
+        propertyData.setAgendaSystemCode(getTagValueByPattern(extensionElement, "AGENDOVY_INFORMACNI_SYSTEM"));
+
+        propertyData.setIsPublic(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_VEREJNY"));
+        propertyData.setPrivacyProvision(getTagValueByPattern(extensionElement, "USTANOVENI_DOKLADAJICI_NEVEREJNOST"));
+        propertyData.setSharingMethod(getTagValueByPattern(extensionElement, "ZPUSOB_SDILENI_UDAJE"));
+        propertyData.setAcquisitionMethod(getTagValueByPattern(extensionElement, "ZPUSOB_ZISKANI_UDAJE"));
+        propertyData.setContentType(getTagValueByPattern(extensionElement, "TYP_OBSAHU_UDAJE"));
+
         propertyData.setDomain("Subjekt nebo objekt práva");
 
         return propertyData;
