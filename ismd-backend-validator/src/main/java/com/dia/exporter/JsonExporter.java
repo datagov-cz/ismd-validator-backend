@@ -23,8 +23,10 @@ import org.slf4j.MDC;
 
 import java.util.*;
 
+import static com.dia.constants.ArchiConstants.NAZEV;
 import static com.dia.constants.ArchiConstants.POPIS;
 import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.ArchiConstants.TYP;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 import static com.dia.constants.ExcelConstants.TYP_OBSAHU_UDAJE;
 import static com.dia.constants.ExcelConstants.ZPUSOB_ZISKANI_UDEJE;
@@ -461,21 +463,48 @@ public class JsonExporter {
             Statement propStmt = propIter.next();
             if (propStmt.getObject().isResource()) {
                 Resource digitalDoc = propStmt.getObject().asResource();
+                JSONObject docObj = new JSONObject();
+
+                // TODO fix
+                Property typProperty = ontModel.createProperty(effectiveNamespace + TYP);
+                Statement typStmt = digitalDoc.getProperty(typProperty);
+                if (typStmt != null && typStmt.getObject().isLiteral()) {
+                    String typValue = typStmt.getString();
+                    if (typValue != null && !typValue.trim().isEmpty()) {
+                        docObj.put("typ", typValue);
+                    }
+                }
+
+                Property nazevProperty = ontModel.createProperty("http://purl.org/dc/terms/title");
+                Statement nazevStmt = digitalDoc.getProperty(nazevProperty);
+                if (nazevStmt != null && nazevStmt.getObject().isLiteral()) {
+                    String nazevValue = nazevStmt.getString();
+                    if (nazevValue != null && !nazevValue.trim().isEmpty()) {
+                        docObj.put("název", nazevValue);
+                    }
+                }
+
+                Property popisProperty = ontModel.createProperty(effectiveNamespace + POPIS);
+                Statement popisStmt = digitalDoc.getProperty(popisProperty);
+                if (popisStmt != null && popisStmt.getObject().isLiteral()) {
+                    String popisValue = popisStmt.getString();
+                    if (popisValue != null && !popisValue.trim().isEmpty()) {
+                        docObj.put("popis", popisValue);
+                    }
+                }
 
                 Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
                 Statement urlStmt = digitalDoc.getProperty(schemaUrlProperty);
-
                 if (urlStmt != null) {
-                    JSONObject docObj = new JSONObject();
                     if (urlStmt.getObject().isResource()) {
                         docObj.put("url", urlStmt.getObject().asResource().getURI());
                     } else if (urlStmt.getObject().isLiteral()) {
                         docObj.put("url", urlStmt.getString());
                     }
+                }
 
-                    if (docObj.has("url")) {
-                        sourceArray.put(docObj);
-                    }
+                if (docObj.length() > 0) {
+                    sourceArray.put(docObj);
                 }
             }
         }

@@ -228,7 +228,9 @@ public class TurtleExporter {
                 return false;
             }
 
-            if ((uri.startsWith("https://slovník.gov.cz/generický") ||
+            if (uri.equals("https://slovník.gov.cz/generický/digitální-objeky/pojem/digitální-objekt")) {
+                return false;
+            } else if ((uri.startsWith("https://slovník.gov.cz/generický") ||
                     uri.startsWith("https://slovník.gov.cz/")) &&
                     !uri.contains("/pojem/") &&
                     !uri.contains("/slovník")) {
@@ -740,6 +742,7 @@ public class TurtleExporter {
                 SOUVISEJICI_NELEGISLATIVNI_ZDROJ
         };
 
+        // TODO fix
         for (String propName : nonLegislativeProperties) {
             Property customProp = transformedModel.createProperty(effectiveNamespace + propName);
             Property defaultProp = transformedModel.createProperty(DEFAULT_NS + propName);
