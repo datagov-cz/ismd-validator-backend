@@ -610,6 +610,7 @@ public class EnterpriseArchitectReader {
         relationshipData.setPrivacyProvision(getTagValueByPattern(connector, "USTANOVENI_DOKLADAJICI_NEVEREJNOST"));
         relationshipData.setSharingMethod(getTagValueByPattern(connector, "ZPUSOB_SDILENI_UDAJE"));
         relationshipData.setAcquisitionMethod(getTagValueByPattern(connector, "ZPUSOB_ZISKANI_UDAJE"));
+        relationshipData.setContentType(getTagValueByPattern(connector, "TYP_OBSAHU_UDAJE"));
 
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);

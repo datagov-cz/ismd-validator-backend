@@ -23,6 +23,7 @@ public class RelationshipData {
     private String privacyProvision;
     private String sharingMethod;
     private String acquisitionMethod;
+    private String contentType;
 
     // Excel only
     private String superRelation;

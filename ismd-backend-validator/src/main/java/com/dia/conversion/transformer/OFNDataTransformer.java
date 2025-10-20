@@ -1395,5 +1395,6 @@ public class OFNDataTransformer {
     private void addRelationshipDataGovernanceMetadata(Resource relationshipResource, RelationshipData relationshipData) {
         handleGovernanceProperty(relationshipResource, relationshipData.getSharingMethod(), "sharing-method");
         handleGovernanceProperty(relationshipResource, relationshipData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(relationshipResource, relationshipData.getContentType(), "content-type");
     }
 }

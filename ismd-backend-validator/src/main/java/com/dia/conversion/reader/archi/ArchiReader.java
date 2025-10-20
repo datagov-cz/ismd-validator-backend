@@ -580,6 +580,7 @@ public class ArchiReader {
 
         relationshipData.setSharingMethod(properties.get(ZPUSOB_SDILENI));
         relationshipData.setAcquisitionMethod(properties.get(ZPUSOB_ZISKANI));
+        relationshipData.setContentType(properties.get(TYP_OBSAHU));
 
         log.debug("Created relationship data: {} ({} -> {}, type: {})",
                 name, sourceName, targetName, type);
