@@ -582,6 +582,10 @@ public class SSPReader {
             classData.setType("Objekt práva");
         }
 
+        // PPDF field - not available in SPARQL endpoint
+        // TODO implement
+        classData.setSharedInPPDF(null);
+
         return classData;
     }
 
@@ -621,7 +625,7 @@ public class SSPReader {
         }
 
         if (domainRange != null) {
-            log.info("PROCESSING DOMAIN/RANGE: {} -> domainRange.domain={}, domainRange.range={}", 
+            log.info("PROCESSING DOMAIN/RANGE: {} -> domainRange.domain={}, domainRange.range={}",
                     conceptIRI, domainRange.getDomain(), domainRange.getRange());
             if (domainRange.getDomain() != null) {
                 String extractedDomain = UtilityMethods.extractNameFromIRI(domainRange.getDomain());
@@ -636,6 +640,16 @@ public class SSPReader {
         } else {
             log.info("NO DOMAIN/RANGE INFO: {} -> domainRange is null", conceptIRI);
         }
+
+        // Governance and PPDF fields - not available in SPARQL endpoint
+        // TODO implement
+        relationshipData.setSharedInPPDF(null);
+        relationshipData.setAgendaCode(null);
+        relationshipData.setAgendaSystemCode(null);
+        relationshipData.setIsPublic(null);
+        relationshipData.setPrivacyProvision(null);
+        relationshipData.setSharingMethod(null);
+        relationshipData.setAcquisitionMethod(null);
 
         return relationshipData;
     }
