@@ -5,14 +5,16 @@ import com.dia.conversion.data.OntologyData;
 import com.dia.conversion.data.PropertyData;
 import com.dia.conversion.data.RelationshipData;
 import com.dia.utility.DataTypeConverter;
-import lombok.experimental.UtilityClass;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
 import java.util.*;
 import java.util.regex.Pattern;
 
-@UtilityClass
+@Component
 @Slf4j
 public class ConceptFilterUtil {
 
@@ -22,9 +24,10 @@ public class ConceptFilterUtil {
     @Value("${concept.filter.regex:}")
     private String conceptFilterRegex;
 
-    public Pattern conceptFilterPattern;
+    @Getter
+    private Pattern conceptFilterPattern;
 
-    public class FilterStatistics {
+    public static class FilterStatistics {
         int filteredClasses = 0;
         int filteredProperties = 0;
         int filteredRelationships = 0;
@@ -57,6 +60,7 @@ public class ConceptFilterUtil {
         }
     }
 
+    @PostConstruct
     public void initializeConceptFilter() {
         if (!conceptFilterEnabled) {
             conceptFilterPattern = null;
