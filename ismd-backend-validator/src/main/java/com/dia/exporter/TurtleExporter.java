@@ -45,6 +45,7 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put("a104", "https://slovník.gov.cz/agendový/104/pojem/");
         STANDARD_PREFIXES.put("slovníky", "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/");
         STANDARD_PREFIXES.put("čas", CAS_NS);
+        STANDARD_PREFIXES.put("schema:url", "http://schema.org/url");
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
@@ -199,6 +200,10 @@ public class TurtleExporter {
     }
 
     private boolean isBaseSchemaResource(String uri) {
+        if (uri == null) {
+            return false;
+        }
+
         if (uri.startsWith("http://www.w3.org/2001/XMLSchema#")) {
             return true;
         }
@@ -228,7 +233,7 @@ public class TurtleExporter {
                 return false;
             }
 
-            if (uri.equals("https://slovník.gov.cz/generický/digitální-objeky/pojem/digitální-objekt")) {
+            if (uri.equals("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt")) {
                 return false;
             } else if ((uri.startsWith("https://slovník.gov.cz/generický") ||
                     uri.startsWith("https://slovník.gov.cz/")) &&

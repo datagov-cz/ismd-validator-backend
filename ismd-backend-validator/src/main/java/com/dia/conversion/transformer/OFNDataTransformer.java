@@ -31,7 +31,6 @@ import static com.dia.constants.ArchiConstants.AIS;
 import static com.dia.constants.ArchiConstants.JE_PPDF;
 import static com.dia.constants.ArchiConstants.NAZEV;
 import static com.dia.constants.ArchiConstants.SLOVNIK;
-import static com.dia.constants.ArchiConstants.TYP;
 import static com.dia.constants.DataTypeConstants.*;
 import static com.dia.constants.ExcelConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
@@ -845,13 +844,9 @@ public class OFNDataTransformer {
     private void handleNonEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
         String propertyName = isDefining ? DEFINUJICI_NELEGISLATIVNI_ZDROJ : SOUVISEJICI_NELEGISLATIVNI_ZDROJ;
 
-        Resource digitalDocument = ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt");
+        Resource digitalDocument = ontModel.createResource();
 
-        // TODO verify
         digitalDocument.addProperty(RDF.type, ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt"));
-
-        Property typProperty = ontModel.createProperty("http://purl.org/dc/terms/type");
-        digitalDocument.addProperty(typProperty, "Digitální objekt", DEFAULT_LANG);
 
         if (UtilityMethods.isValidUrl(trimmedUrl)) {
             Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");

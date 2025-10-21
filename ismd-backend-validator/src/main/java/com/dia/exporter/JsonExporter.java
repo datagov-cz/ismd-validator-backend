@@ -465,14 +465,8 @@ public class JsonExporter {
                 Resource digitalDoc = propStmt.getObject().asResource();
                 JSONObject docObj = new JSONObject();
 
-                // TODO fix
-                Property typProperty = ontModel.createProperty(effectiveNamespace + TYP);
-                Statement typStmt = digitalDoc.getProperty(typProperty);
-                if (typStmt != null && typStmt.getObject().isLiteral()) {
-                    String typValue = typStmt.getString();
-                    if (typValue != null && !typValue.trim().isEmpty()) {
-                        docObj.put("typ", typValue);
-                    }
+                if (digitalDoc.hasProperty(RDF.type, ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt"))) {
+                    docObj.put("typ", "Digitální objekt");
                 }
 
                 Property nazevProperty = ontModel.createProperty("http://purl.org/dc/terms/title");
@@ -481,15 +475,6 @@ public class JsonExporter {
                     String nazevValue = nazevStmt.getString();
                     if (nazevValue != null && !nazevValue.trim().isEmpty()) {
                         docObj.put("název", nazevValue);
-                    }
-                }
-
-                Property popisProperty = ontModel.createProperty(effectiveNamespace + POPIS);
-                Statement popisStmt = digitalDoc.getProperty(popisProperty);
-                if (popisStmt != null && popisStmt.getObject().isLiteral()) {
-                    String popisValue = popisStmt.getString();
-                    if (popisValue != null && !popisValue.trim().isEmpty()) {
-                        docObj.put("popis", popisValue);
                     }
                 }
 
