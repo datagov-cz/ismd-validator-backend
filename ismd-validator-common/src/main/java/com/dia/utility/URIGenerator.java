@@ -4,9 +4,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.dia.constants.ArchiConstants.DEFAULT_NS;
-import static com.dia.constants.ValidationConstants.GLOBAL_SHACL_BASE_URI;
-import static com.dia.constants.ValidationConstants.LOCAL_SHACL_BASE_URI;
+import static com.dia.constants.VocabularyConstants.DEFAULT_NS;
+import static com.dia.constants.VocabularyConstants.GLOBAL_SHACL_BASE_URI;
+import static com.dia.constants.VocabularyConstants.LOCAL_SHACL_BASE_URI;
 
 /**
  * URI Generator helper class

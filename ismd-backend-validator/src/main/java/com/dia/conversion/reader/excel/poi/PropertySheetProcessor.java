@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.dia.constants.ExcelConstants.VLASTNOSTI;
+import static com.dia.constants.FormatConstants.Excel.VLASTNOSTI;
 
 /**
  * PropertySheetProcessor - Handles the Vlastnosti sheet.

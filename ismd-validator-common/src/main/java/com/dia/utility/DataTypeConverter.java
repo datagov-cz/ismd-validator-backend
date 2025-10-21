@@ -16,7 +16,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.VocabularyConstants.*;
 @Slf4j
 public class DataTypeConverter {
 

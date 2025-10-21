@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static com.dia.constants.ExcelConstants.*;
+import static com.dia.constants.FormatConstants.Excel.*;
 
 /**
  * ExcelReader - Reads and pareses ontology data from Excel files

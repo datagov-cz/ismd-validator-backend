@@ -19,7 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**

@@ -10,7 +10,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 
-import static com.dia.constants.ExcelConstants.SLOVNIK;
+import static com.dia.constants.FormatConstants.Excel.SLOVNIK;
 
 /**
  * VocabularySheetProcessor - Handles key-value pair format sheets

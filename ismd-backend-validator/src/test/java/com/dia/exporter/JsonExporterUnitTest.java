@@ -24,13 +24,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dia.constants.ArchiConstants.*;
-import static com.dia.constants.ArchiConstants.EKVIVALENTNI_POJEM;
-import static com.dia.constants.ArchiConstants.JE_PPDF;
-import static com.dia.constants.ArchiConstants.POPIS;
-import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
-import static com.dia.constants.ExcelConstants.*;
-import static com.dia.constants.ExportConstants.Json.*;
+import com.dia.constants.ExportConstants;
+import com.dia.constants.FormatConstants;
+import com.dia.constants.VocabularyConstants;
+import static com.dia.constants.VocabularyConstants.*;
+import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -305,7 +303,7 @@ class JsonExporterUnitTest {
                     break;
                 }
             }
-            assertTrue(hasBaseType, "All concepts should have base type " + POJEM_JSON_LD);
+            assertTrue(hasBaseType, "All concepts should have base type " + ExportConstants.Json.POJEM_JSON_LD);
         }
     }
 
@@ -343,8 +341,8 @@ class JsonExporterUnitTest {
         JsonNode pojmyArray = rootNode.get("pojmy");
         JsonNode concept = pojmyArray.get(0);
 
-        assertTrue(concept.has(EKVIVALENTNI_POJEM), "Should have equivalent concept");
-        JsonNode exactMatch = concept.get(EKVIVALENTNI_POJEM);
+        assertTrue(concept.has(VocabularyConstants.EKVIVALENTNI_POJEM), "Should have equivalent concept");
+        JsonNode exactMatch = concept.get(VocabularyConstants.EKVIVALENTNI_POJEM);
         assertTrue(exactMatch.isArray(), "Exact match should be array");
 
         JsonNode firstMatch = exactMatch.get(0);
@@ -625,14 +623,14 @@ class JsonExporterUnitTest {
         concept.addProperty(SKOS.prefLabel, "Governance Concept", "cs");
 
         // Add governance properties
-        Property sharingProp = ontModel.createProperty(effectiveNamespace + ZPUSOB_SDILENI_UDEJE);
+        Property sharingProp = ontModel.createProperty(effectiveNamespace + FormatConstants.Excel.ZPUSOB_SDILENI_UDEJE);
         concept.addProperty(sharingProp, "Public sharing");
         concept.addProperty(sharingProp, "Restricted sharing");
 
-        Property acquisitionProp = ontModel.createProperty(effectiveNamespace + ZPUSOB_ZISKANI_UDEJE);
+        Property acquisitionProp = ontModel.createProperty(effectiveNamespace + FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE);
         concept.addProperty(acquisitionProp, "Manual entry");
 
-        Property contentTypeProp = ontModel.createProperty(effectiveNamespace + TYP_OBSAHU_UDAJE);
+        Property contentTypeProp = ontModel.createProperty(effectiveNamespace + FormatConstants.Excel.TYP_OBSAHU_UDAJE);
         concept.addProperty(contentTypeProp, "Structured data");
 
         resourceMap.put("governance-concept-id", concept);
@@ -666,7 +664,7 @@ class JsonExporterUnitTest {
         concept.addProperty(SKOS.prefLabel, "Multi Value Concept", "cs");
 
         // Add property with semicolon-separated values
-        Property sharingProp = ontModel.createProperty(effectiveNamespace + ZPUSOB_SDILENI_UDEJE);
+        Property sharingProp = ontModel.createProperty(effectiveNamespace + FormatConstants.Excel.ZPUSOB_SDILENI_UDEJE);
         concept.addProperty(sharingProp, "Method1;Method2;Method3");
 
         resourceMap.put("multi-value-concept-id", concept);
