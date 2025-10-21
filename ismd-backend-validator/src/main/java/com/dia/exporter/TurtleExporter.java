@@ -45,7 +45,7 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put("a104", "https://slovník.gov.cz/agendový/104/pojem/");
         STANDARD_PREFIXES.put("slovníky", "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/");
         STANDARD_PREFIXES.put("čas", CAS_NS);
-        STANDARD_PREFIXES.put("schema:url", "http://schema.org/url");
+        STANDARD_PREFIXES.put("schema", "http://schema.org/");
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
