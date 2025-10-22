@@ -557,6 +557,11 @@ public class OFNDataTransformer {
             log.debug("Processing equivalent concept for relationship {}: '{}'", relationshipData.getName(), relationshipData.getEquivalentConcept());
             addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), "relationship");
         }
+
+        addRelationshipPPDFData(relationshipResource, relationshipData);
+        addRelationshipAgenda(relationshipResource, relationshipData);
+        addRelationshipAgendaInformationSystem(relationshipResource, relationshipData);
+        addRelationshipDataGovernanceMetadata(relationshipResource, relationshipData);
     }
 
     private void addRelationshipSuperPropertyRelationship(Resource relationshipResource, RelationshipData relationshipData) {
@@ -890,43 +895,51 @@ public class OFNDataTransformer {
     }
 
     private void addAgenda(Resource classResource, ClassData classData) {
-        if (classData.getAgendaCode() != null && !classData.getAgendaCode().trim().isEmpty()) {
-            String agendaCode = classData.getAgendaCode().trim();
+        addAgenda(classResource, classData.getAgendaCode(), "class", classData.getName());
+    }
 
-            if (UtilityMethods.isValidAgendaValue(agendaCode)) {
-                String transformedAgenda = UtilityMethods.transformAgendaValue(agendaCode);
+    private void addAgenda(Resource resource, String agendaCode, String entityType, String entityName) {
+        if (agendaCode != null && !agendaCode.trim().isEmpty()) {
+            String trimmedCode = agendaCode.trim();
+
+            if (UtilityMethods.isValidAgendaValue(trimmedCode)) {
+                String transformedAgenda = UtilityMethods.transformAgendaValue(trimmedCode);
                 Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AGENDA);
 
                 if (DataTypeConverter.isUri(transformedAgenda)) {
-                    classResource.addProperty(agendaProperty, ontModel.createResource(transformedAgenda));
-                    log.debug("Added valid agenda as URI: {} -> {}", agendaCode, transformedAgenda);
+                    resource.addProperty(agendaProperty, ontModel.createResource(transformedAgenda));
+                    log.debug("Added valid agenda as URI for {}: {} -> {}", entityType, trimmedCode, transformedAgenda);
                 } else {
-                    DataTypeConverter.addTypedProperty(classResource, agendaProperty, transformedAgenda, null, ontModel);
-                    log.debug("Added valid agenda as literal: {} -> {}", agendaCode, transformedAgenda);
+                    DataTypeConverter.addTypedProperty(resource, agendaProperty, transformedAgenda, null, ontModel);
+                    log.debug("Added valid agenda as literal for {}: {} -> {}", entityType, trimmedCode, transformedAgenda);
                 }
             } else {
-                log.warn("Invalid agenda code '{}' for class '{}' - skipping", agendaCode, classData.getName());
+                log.warn("Invalid agenda code '{}' for {} '{}' - skipping", trimmedCode, entityType, entityName);
             }
         }
     }
 
     private void addAgendaInformationSystem(Resource classResource, ClassData classData) {
-        if (classData.getAgendaSystemCode() != null && !classData.getAgendaSystemCode().trim().isEmpty()) {
-            String aisCode = classData.getAgendaSystemCode().trim();
+        addAgendaInformationSystem(classResource, classData.getAgendaSystemCode(), "class", classData.getName());
+    }
 
-            if (UtilityMethods.isValidAISValue(aisCode)) {
-                String transformedAIS = UtilityMethods.transformAISValue(aisCode);
+    private void addAgendaInformationSystem(Resource resource, String aisCode, String entityType, String entityName) {
+        if (aisCode != null && !aisCode.trim().isEmpty()) {
+            String trimmedCode = aisCode.trim();
+
+            if (UtilityMethods.isValidAISValue(trimmedCode)) {
+                String transformedAIS = UtilityMethods.transformAISValue(trimmedCode);
                 Property aisProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AIS);
 
                 if (DataTypeConverter.isUri(transformedAIS)) {
-                    classResource.addProperty(aisProperty, ontModel.createResource(transformedAIS));
-                    log.debug("Added valid AIS as URI: {} -> {}", aisCode, transformedAIS);
+                    resource.addProperty(aisProperty, ontModel.createResource(transformedAIS));
+                    log.debug("Added valid AIS as URI for {}: {} -> {}", entityType, trimmedCode, transformedAIS);
                 } else {
-                    DataTypeConverter.addTypedProperty(classResource, aisProperty, transformedAIS, null, ontModel);
-                    log.debug("Added valid AIS as literal: {} -> {}", aisCode, transformedAIS);
+                    DataTypeConverter.addTypedProperty(resource, aisProperty, transformedAIS, null, ontModel);
+                    log.debug("Added valid AIS as literal for {}: {} -> {}", entityType, trimmedCode, transformedAIS);
                 }
             } else {
-                log.warn("Invalid AIS code '{}' for class '{}' - skipping", aisCode, classData.getName());
+                log.warn("Invalid AIS code '{}' for {} '{}' - skipping", trimmedCode, entityType, entityName);
             }
         }
     }
@@ -1265,18 +1278,22 @@ public class OFNDataTransformer {
     }
 
     private void addPropertyPPDFData(Resource propertyResource, PropertyData propertyData) {
-        if (propertyData.getSharedInPPDF() != null && !propertyData.getSharedInPPDF().trim().isEmpty()) {
-            String value = propertyData.getSharedInPPDF();
+        addPPDFData(propertyResource, propertyData.getSharedInPPDF(), "property");
+    }
+
+    private void addPPDFData(Resource resource, String sharedInPPDF, String entityType) {
+        if (sharedInPPDF != null && !sharedInPPDF.trim().isEmpty()) {
+            String value = sharedInPPDF;
             Property ppdfProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + JE_PPDF);
 
             if (UtilityMethods.isBooleanValue(value)) {
                 Boolean boolValue = UtilityMethods.normalizeCzechBoolean(value);
-                DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty,
+                DataTypeConverter.addTypedProperty(resource, ppdfProperty,
                         boolValue.toString(), null, ontModel);
-                log.debug("Added normalized PPDF boolean: {} -> {}", value, boolValue);
+                log.debug("Added normalized PPDF boolean for {}: {} -> {}", entityType, value, boolValue);
             } else {
-                log.warn("Unrecognized boolean value for PPDF property: '{}'", value);
-                DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty, value, null, ontModel);
+                log.warn("Unrecognized boolean value for PPDF {} property: '{}'", entityType, value);
+                DataTypeConverter.addTypedProperty(resource, ppdfProperty, value, null, ontModel);
             }
         }
     }
@@ -1356,5 +1373,23 @@ public class OFNDataTransformer {
             log.debug("Privacy provision does not contain ELI pattern for class '{}': '{}' - skipping",
                     classData.getName(), trimmedProvision);
         }
+    }
+
+    private void addRelationshipPPDFData(Resource relationshipResource, RelationshipData relationshipData) {
+        addPPDFData(relationshipResource, relationshipData.getSharedInPPDF(), "relationship");
+    }
+
+    private void addRelationshipAgenda(Resource relationshipResource, RelationshipData relationshipData) {
+        addAgenda(relationshipResource, relationshipData.getAgendaCode(), "relationship", relationshipData.getName());
+    }
+
+    private void addRelationshipAgendaInformationSystem(Resource relationshipResource, RelationshipData relationshipData) {
+        addAgendaInformationSystem(relationshipResource, relationshipData.getAgendaSystemCode(), "relationship", relationshipData.getName());
+    }
+
+    private void addRelationshipDataGovernanceMetadata(Resource relationshipResource, RelationshipData relationshipData) {
+        handleGovernanceProperty(relationshipResource, relationshipData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(relationshipResource, relationshipData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(relationshipResource, relationshipData.getContentType(), "content-type");
     }
 }
