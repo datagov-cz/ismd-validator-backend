@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
-import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
+import static com.dia.constants.VocabularyConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 

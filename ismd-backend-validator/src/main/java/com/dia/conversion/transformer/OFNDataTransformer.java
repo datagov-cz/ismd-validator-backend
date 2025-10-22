@@ -1,6 +1,5 @@
 package com.dia.conversion.transformer;
 
-import com.dia.constants.ArchiConstants;
 import com.dia.conversion.data.*;
 import com.dia.conversion.transformer.metadata.ResourceMetadata;
 import com.dia.exceptions.ConversionException;
@@ -16,6 +15,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntProperty;
+import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.*;
@@ -24,16 +24,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-import static com.dia.constants.ArchiConstants.*;
-import static com.dia.constants.ArchiConstants.AGENDA;
-import static com.dia.constants.ArchiConstants.AIS;
-import static com.dia.constants.ArchiConstants.JE_PPDF;
-import static com.dia.constants.ArchiConstants.SLOVNIK;
-import static com.dia.constants.DataTypeConstants.*;
-import static com.dia.constants.ExcelConstants.*;
+import com.dia.constants.DataTypeConstants;
+import com.dia.constants.FormatConstants;
+import com.dia.constants.ExportConstants;
+import static com.dia.constants.VocabularyConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
-import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
-import static com.dia.constants.ExportConstants.Json.*;
+import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 
 @Deprecated
 @Component
@@ -43,26 +39,28 @@ public class OFNDataTransformer {
 
     private OntModel ontModel;
     private final URIGenerator uriGenerator;
+    private final ConceptFilterUtil conceptFilterUtil;
     private static final Map<String, String> CZECH_TO_XSD_MAPPING = createDataTypeMapping();
-    
+
     private Map<String, Resource> allClassResourcesForHierarchies;
 
     private static Map<String, String> createDataTypeMapping() {
         Map<String, String> mapping = new HashMap<>();
-        mapping.put("Ano či ne", XSD_BOOLEAN);
-        mapping.put("Datum", XSD_DATE);
-        mapping.put("Čas", XSD_TIME);
-        mapping.put("Datum a čas", XSD_DATETIME_STAMP);
-        mapping.put("Celé číslo", XSD_INTEGER);
-        mapping.put("Desetinné číslo", XSD_DOUBLE);
-        mapping.put("URI, IRI, URL", XSD_ANY_URI);
-        mapping.put("Řetězec", XSD_STRING);
-        mapping.put("Text", RDFS_LITERAL);
+        mapping.put("Ano či ne", DataTypeConstants.XSD_BOOLEAN);
+        mapping.put("Datum", DataTypeConstants.XSD_DATE);
+        mapping.put("Čas", DataTypeConstants.XSD_TIME);
+        mapping.put("Datum a čas", DataTypeConstants.XSD_DATETIME_STAMP);
+        mapping.put("Celé číslo", DataTypeConstants.XSD_INTEGER);
+        mapping.put("Desetinné číslo", DataTypeConstants.XSD_DOUBLE);
+        mapping.put("URI, IRI, URL", DataTypeConstants.XSD_ANY_URI);
+        mapping.put("Řetězec", DataTypeConstants.XSD_STRING);
+        mapping.put("Text", DataTypeConstants.RDFS_LITERAL);
         return Collections.unmodifiableMap(mapping);
     }
 
-    public OFNDataTransformer() {
+    public OFNDataTransformer(ConceptFilterUtil conceptFilterUtil) {
         this.uriGenerator = new URIGenerator();
+        this.conceptFilterUtil = conceptFilterUtil;
     }
 
     public TransformationResult transform(OntologyData ontologyData) throws ConversionException {
@@ -72,6 +70,11 @@ public class OFNDataTransformer {
             if (ontologyData == null || ontologyData.getVocabularyMetadata() == null) {
                 throw new ConversionException("Invalid ontology data");
             }
+
+            ConceptFilterUtil.FilterStatistics filterStatistics = new ConceptFilterUtil.FilterStatistics();
+            Map<String, String> nameToIdentifierMap = conceptFilterUtil.buildNameToIdentifierMap(ontologyData);
+            conceptFilterUtil.buildFilteredConceptSet(ontologyData, filterStatistics);
+
 
             Set<String> requiredBaseClasses = analyzeRequiredBaseClasses(ontologyData);
             Set<String> requiredProperties = analyzeRequiredProperties(ontologyData);
@@ -96,15 +99,19 @@ public class OFNDataTransformer {
 
             createOntologyResourceWithTemporal(ontologyData.getVocabularyMetadata(), localResourceMap);
 
-            transformClasses(ontologyData.getClasses(), localClassResources, localResourceMap);
-            transformProperties(ontologyData.getProperties(), localPropertyResources, localResourceMap);
-            transformRelationships(ontologyData.getRelationships(), localRelationshipResources, localResourceMap);
-            transformHierarchies(ontologyData.getHierarchies(), localClassResources, localPropertyResources, localResourceMap);
+            transformClasses(ontologyData.getClasses(), localClassResources, localResourceMap, nameToIdentifierMap, filterStatistics);
+            transformProperties(ontologyData.getProperties(), localPropertyResources, localResourceMap, nameToIdentifierMap, filterStatistics);
+            transformRelationships(ontologyData.getRelationships(), localRelationshipResources, localResourceMap, nameToIdentifierMap, filterStatistics);
+            transformHierarchies(ontologyData.getHierarchies(), localClassResources, localPropertyResources, localResourceMap, nameToIdentifierMap, filterStatistics);
 
             Map<String, String> modelProperties = createModelProperties(ontologyData.getVocabularyMetadata());
 
             log.info("Transformation completed successfully. Created {} classes, {} properties, {} relationships",
                     localClassResources.size(), localPropertyResources.size(), localRelationshipResources.size());
+
+            if (conceptFilterUtil.getConceptFilterPattern() != null) {
+                filterStatistics.logStatistics();
+            }
 
             return new TransformationResult(
                     ontModel,
@@ -351,10 +358,10 @@ public class OFNDataTransformer {
     private Map<String, String> createModelProperties(VocabularyMetadata metadata) {
         Map<String, String> properties = new HashMap<>();
         if (metadata.getName() != null) {
-            properties.put(ArchiConstants.NAZEV, metadata.getName());
+            properties.put(NAZEV, metadata.getName());
         }
         if (metadata.getDescription() != null) {
-            properties.put(ArchiConstants.POPIS, metadata.getDescription());
+            properties.put(POPIS, metadata.getDescription());
         }
         if (metadata.getNamespace() != null) {
             properties.put(LOKALNI_KATALOG, metadata.getNamespace());
@@ -363,7 +370,8 @@ public class OFNDataTransformer {
     }
 
     private void transformClasses(List<ClassData> classes, Map<String, Resource> localClassResources,
-                                  Map<String, Resource> localResourceMap) {
+                                  Map<String, Resource> localResourceMap, Map<String, String> nameToIdentifierMap,
+                                  ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Transforming {} classes", classes.size());
 
         Map<String, Resource> allClassResources = new HashMap<>();
@@ -375,12 +383,28 @@ public class OFNDataTransformer {
             }
 
             String identifier = classData.getIdentifier();
+
+            if (conceptFilterUtil.shouldFilterConcept(identifier)) {
+                log.info("FILTERED: Class '{}' with identifier '{}' matches filter regex",
+                        classData.getName(), identifier);
+                filterStatistics.filteredClasses++;
+                continue;
+            }
+
             String classURI = uriGenerator.generateConceptURI(classData.getName(), identifier);
             log.debug("Processing class '{}' with identifier='{}' -> URI={}",
                 classData.getName(), identifier, classURI);
 
             try {
-                Resource classResource = createClassResource(classData, localResourceMap);
+                if (classData.getSuperClass() != null &&
+                        conceptFilterUtil.isConceptFiltered(classData.getSuperClass(), nameToIdentifierMap)) {
+                    log.info("OMITTED: superClass '{}' for class '{}' (superClass is filtered)",
+                            classData.getSuperClass(), classData.getName());
+                    classData.setSuperClass(null);
+                    filterStatistics.omittedSuperClasses++;
+                }
+
+                Resource classResource = createClassResource(classData, localResourceMap, filterStatistics);
 
                 allClassResources.put(classData.getName(), classResource);
 
@@ -389,7 +413,6 @@ public class OFNDataTransformer {
                     localResourceMap.put(classData.getName(), classResource);
                     log.debug("Created local class: {} -> {}", classData.getName(), classResource.getURI());
                 } else {
-                    // Also add external concepts to localResourceMap so they can be referenced
                     localResourceMap.put(classData.getName(), classResource);
                     log.info("Created external concept (for relationships only): '{}' with identifier='{}' -> URI={}",
                         classData.getName(), identifier, classURI);
@@ -402,7 +425,7 @@ public class OFNDataTransformer {
         this.allClassResourcesForHierarchies = allClassResources;
     }
 
-    private Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap) {
+    private Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap, ConceptFilterUtil.FilterStatistics filterStatistics) {
         String classURI = uriGenerator.generateConceptURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
@@ -411,7 +434,7 @@ public class OFNDataTransformer {
 
         if (belongsToCurrentVocabulary(classURI)) {
             addResourceMetadata(classResource, ResourceMetadata.from(classData));
-            addClassSpecificMetadata(classResource, classData);
+            addClassSpecificMetadata(classResource, classData, filterStatistics);
             addSchemeRelationship(classResource, localResourceMap);
             log.debug("Added full metadata for local class: {}", classURI);
         } else {
@@ -433,11 +456,36 @@ public class OFNDataTransformer {
     }
 
     private void transformProperties(List<PropertyData> properties, Map<String, Resource> localPropertyResources,
-                                     Map<String, Resource> localResourceMap) {
+                                     Map<String, Resource> localResourceMap, Map<String, String> nameToIdentifierMap,
+                                     ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
+            if (conceptFilterUtil.shouldFilterConcept(propertyData.getIdentifier())) {
+                log.info("FILTERED: Property '{}' with identifier '{}' matches filter regex",
+                        propertyData.getName(), propertyData.getIdentifier());
+                filterStatistics.filteredProperties++;
+                continue;
+            }
+
+            if (propertyData.getDomain() != null &&
+                    conceptFilterUtil.isConceptFiltered(propertyData.getDomain(), nameToIdentifierMap)) {
+                log.info("FILTERED: Property '{}' because its domain '{}' is filtered",
+                        propertyData.getName(), propertyData.getDomain());
+                filterStatistics.filteredProperties++;
+                filterStatistics.omittedDomains++;
+                continue;
+            }
+
+            if (propertyData.getSuperProperty() != null &&
+                    conceptFilterUtil.isConceptFiltered(propertyData.getSuperProperty(), nameToIdentifierMap)) {
+                log.info("OMITTED: superProperty '{}' for property '{}' (superProperty is filtered)",
+                        propertyData.getSuperProperty(), propertyData.getName());
+                propertyData.setSuperProperty(null);
+                filterStatistics.omittedSuperProperties++;
+            }
+
             try {
-                Resource propertyResource = createPropertyResource(propertyData, localResourceMap);
+                Resource propertyResource = createPropertyResource(propertyData, localResourceMap, filterStatistics);
                 localPropertyResources.put(propertyData.getName(), propertyResource);
                 localResourceMap.put(propertyData.getName(), propertyResource);
                 log.debug("Created property: {} -> {}", propertyData.getName(), propertyResource.getURI());
@@ -447,7 +495,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap) {
+    private Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap, ConceptFilterUtil.FilterStatistics filterStatistics) {
         String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
 
         OntProperty propertyResource;
@@ -462,14 +510,14 @@ public class OFNDataTransformer {
 
         if (belongsToCurrentVocabulary(propertyURI)) {
             addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
-            addPropertySpecificMetadata(propertyResource, propertyData, localResourceMap);
+            addPropertySpecificMetadata(propertyResource, propertyData, localResourceMap, filterStatistics);
             addPropertySuperPropertyRelationship(propertyResource, propertyData);
         }
 
         return propertyResource;
     }
 
-    private void addPropertySpecificMetadata(Resource propertyResource, PropertyData propertyData, Map<String, Resource> localResourceMap) {
+    private void addPropertySpecificMetadata(Resource propertyResource, PropertyData propertyData, Map<String, Resource> localResourceMap, ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Adding property-specific metadata for: {}", propertyData.getName());
 
         if (propertyData.getAlternativeName() != null && !propertyData.getAlternativeName().trim().isEmpty()) {
@@ -479,7 +527,7 @@ public class OFNDataTransformer {
 
         if (propertyData.getEquivalentConcept() != null && !propertyData.getEquivalentConcept().trim().isEmpty()) {
             log.debug("Processing equivalent concept for property {}: '{}'", propertyData.getName(), propertyData.getEquivalentConcept());
-            addEquivalentConcept(propertyResource, propertyData.getEquivalentConcept(), "property");
+            addEquivalentConcept(propertyResource, propertyData.getEquivalentConcept(), "property", filterStatistics);
         }
 
         if (propertyData.getDomain() != null && !propertyData.getDomain().trim().isEmpty()) {
@@ -511,11 +559,45 @@ public class OFNDataTransformer {
     }
 
     private void transformRelationships(List<RelationshipData> relationships, Map<String, Resource> localRelationshipResources,
-                                        Map<String, Resource> localResourceMap) {
+                                        Map<String, Resource> localResourceMap,  Map<String, String> nameToIdentifierMap,
+                                        ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Transforming {} relationships", relationships.size());
         for (RelationshipData relationshipData : relationships) {
+            if (conceptFilterUtil.shouldFilterConcept(relationshipData.getIdentifier())) {
+                log.info("FILTERED: Relationship '{}' with identifier '{}' matches filter regex",
+                        relationshipData.getName(), relationshipData.getIdentifier());
+                filterStatistics.filteredRelationships++;
+                continue;
+            }
+
+            if (relationshipData.getDomain() != null &&
+                    conceptFilterUtil.isConceptFiltered(relationshipData.getDomain(), nameToIdentifierMap)) {
+                log.info("FILTERED: Relationship '{}' because its domain '{}' is filtered",
+                        relationshipData.getName(), relationshipData.getDomain());
+                filterStatistics.filteredRelationships++;
+                filterStatistics.omittedDomains++;
+                continue;
+            }
+
+            if (relationshipData.getRange() != null &&
+                    conceptFilterUtil.isConceptFiltered(relationshipData.getRange(), nameToIdentifierMap)) {
+                log.info("FILTERED: Relationship '{}' because its range '{}' is filtered",
+                        relationshipData.getName(), relationshipData.getRange());
+                filterStatistics.filteredRelationships++;
+                filterStatistics.omittedRanges++;
+                continue;
+            }
+
+            if (relationshipData.getSuperRelation() != null &&
+                    conceptFilterUtil.isConceptFiltered(relationshipData.getSuperRelation(), nameToIdentifierMap)) {
+                log.info("OMITTED: superRelation '{}' for relationship '{}' (superRelation is filtered)",
+                        relationshipData.getSuperRelation(), relationshipData.getName());
+                relationshipData.setSuperRelation(null);
+                filterStatistics.omittedSuperRelations++;
+            }
+
             try {
-                Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap);
+                Resource relationshipResource = createRelationshipResource(relationshipData, localResourceMap, filterStatistics);
                 localRelationshipResources.put(relationshipData.getName(), relationshipResource);
                 localResourceMap.put(relationshipData.getName(), relationshipResource);
                 log.debug("Created relationship: {} -> {}", relationshipData.getName(), relationshipResource.getURI());
@@ -525,7 +607,7 @@ public class OFNDataTransformer {
         }
     }
 
-    private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap) {
+    private Resource createRelationshipResource(RelationshipData relationshipData, Map<String, Resource> localResourceMap, ConceptFilterUtil.FilterStatistics filterStatistics) {
         String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(),
                 relationshipData.getIdentifier());
 
@@ -538,7 +620,7 @@ public class OFNDataTransformer {
 
         if (belongsToCurrentVocabulary(relationshipURI)) {
             addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData));
-            addRelationshipSpecificMetadata(relationshipResource, relationshipData);
+            addRelationshipSpecificMetadata(relationshipResource, relationshipData, filterStatistics);
             addRelationshipSuperPropertyRelationship(relationshipResource, relationshipData);
             log.debug("Added full metadata for local relationship: {}", relationshipURI);
         } else {
@@ -549,7 +631,7 @@ public class OFNDataTransformer {
         return relationshipResource;
     }
 
-    private void addRelationshipSpecificMetadata(Resource relationshipResource, RelationshipData relationshipData) {
+    private void addRelationshipSpecificMetadata(Resource relationshipResource, RelationshipData relationshipData, ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Adding relationship-specific metadata for: {}", relationshipData.getName());
 
         if (relationshipData.getAlternativeName() != null && !relationshipData.getAlternativeName().trim().isEmpty()) {
@@ -561,8 +643,13 @@ public class OFNDataTransformer {
 
         if (relationshipData.getEquivalentConcept() != null && !relationshipData.getEquivalentConcept().trim().isEmpty()) {
             log.debug("Processing equivalent concept for relationship {}: '{}'", relationshipData.getName(), relationshipData.getEquivalentConcept());
-            addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), "relationship");
+            addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), "relationship", filterStatistics);
         }
+
+        addRelationshipPPDFData(relationshipResource, relationshipData);
+        addRelationshipAgenda(relationshipResource, relationshipData);
+        addRelationshipAgendaInformationSystem(relationshipResource, relationshipData);
+        addRelationshipDataGovernanceMetadata(relationshipResource, relationshipData);
     }
 
     private void addRelationshipSuperPropertyRelationship(Resource relationshipResource, RelationshipData relationshipData) {
@@ -583,7 +670,8 @@ public class OFNDataTransformer {
     }
 
     private void transformHierarchies(List<HierarchyData> hierarchies, Map<String, Resource> localClassResources,
-                                      Map<String, Resource> localPropertyResources, Map<String, Resource> localResourceMap) {
+                                      Map<String, Resource> localPropertyResources, Map<String, Resource> localResourceMap,
+                                      Map<String, String> nameToIdentifierMap, ConceptFilterUtil.FilterStatistics filterStats) {
         log.debug("Transforming {} hierarchical relationships", hierarchies.size());
 
         if (hierarchies.isEmpty()) {
@@ -599,6 +687,22 @@ public class OFNDataTransformer {
         for (HierarchyData hierarchyData : hierarchies) {
             if (!hierarchyData.hasValidData()) {
                 log.warn("Skipping invalid hierarchy: {}", hierarchyData);
+                skippedHierarchies++;
+                continue;
+            }
+
+            if (conceptFilterUtil.isConceptFiltered(hierarchyData.getSubClass(), nameToIdentifierMap)) {
+                log.info("FILTERED: Hierarchy '{}' IS-A '{}' because subClass is filtered",
+                        hierarchyData.getSubClass(), hierarchyData.getSuperClass());
+                filterStats.filteredHierarchies++;
+                skippedHierarchies++;
+                continue;
+            }
+
+            if (conceptFilterUtil.isConceptFiltered(hierarchyData.getSuperClass(), nameToIdentifierMap)) {
+                log.info("FILTERED: Hierarchy '{}' IS-A '{}' because superClass is filtered",
+                        hierarchyData.getSubClass(), hierarchyData.getSuperClass());
+                filterStats.filteredHierarchies++;
                 skippedHierarchies++;
                 continue;
             }
@@ -843,27 +947,30 @@ public class OFNDataTransformer {
     private void handleNonEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
         String propertyName = isDefining ? DEFINUJICI_NELEGISLATIVNI_ZDROJ : SOUVISEJICI_NELEGISLATIVNI_ZDROJ;
 
-        String documentUri = uriGenerator.getEffectiveNamespace() + "digitální-dokument-" + trimmedUrl;
-        Resource digitalDocument = ontModel.createResource(documentUri);
+        Resource digitalDocument = ontModel.createResource();
 
-        Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
+        digitalDocument.addProperty(RDF.type, ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt"));
 
         if (UtilityMethods.isValidUrl(trimmedUrl)) {
-            digitalDocument.addProperty(schemaUrlProperty, ontModel.createResource(trimmedUrl));
-            log.debug("Added schema:url as URI to digital document: {}", trimmedUrl);
+            Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
+            Literal urlLiteral = ontModel.createTypedLiteral(trimmedUrl, "http://www.w3.org/2001/XMLSchema#anyURI");
+            digitalDocument.addProperty(schemaUrlProperty, urlLiteral);
+            log.debug("Added digital document with schema:url (xsd:anyURI): {}", trimmedUrl);
         } else {
-            log.debug("Skipped {}, invalid URL value: {}", propertyName, trimmedUrl);
+            Property dctermsTitle = ontModel.createProperty("http://purl.org/dc/terms/title");
+            digitalDocument.addProperty(dctermsTitle, trimmedUrl, DEFAULT_LANG);
+            log.debug("Added digital document with dcterms:title (@cs): {}", trimmedUrl);
         }
 
         Property nonLegislativeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
         resource.addProperty(nonLegislativeProperty, digitalDocument);
 
-        log.debug("Added {} as digital document with schema:url: {}", propertyName, trimmedUrl);
+        log.debug("Added as digital document: {}", propertyName);
     }
 
-    private void addClassSpecificMetadata(Resource classResource, ClassData classData) {
+    private void addClassSpecificMetadata(Resource classResource, ClassData classData, ConceptFilterUtil.FilterStatistics filterStatistics) {
         addAlternativeName(classResource, classData);
-        addEquivalentConcept(classResource, classData);
+        addEquivalentConcept(classResource, classData, filterStatistics);
         addAgenda(classResource, classData);
         addAgendaInformationSystem(classResource, classData);
         addClassDataGovernanceMetadata(classResource, classData);
@@ -875,17 +982,24 @@ public class OFNDataTransformer {
         }
     }
 
-    private void addEquivalentConcept(Resource classResource, ClassData classData) {
+    private void addEquivalentConcept(Resource classResource, ClassData classData, ConceptFilterUtil.FilterStatistics filterStatistics) {
         if (classData.getEquivalentConcept() != null && !classData.getEquivalentConcept().trim().isEmpty()) {
             log.debug("Processing equivalent concept for class {}: '{}'", classData.getName(), classData.getEquivalentConcept());
-            addEquivalentConcept(classResource, classData.getEquivalentConcept(), "class");
+            addEquivalentConcept(classResource, classData.getEquivalentConcept(), "class", filterStatistics);
         }
     }
 
-    private void addEquivalentConcept(Resource resource, String equivalentConcept, String entityType) {
+    private void addEquivalentConcept(Resource resource, String equivalentConcept, String entityType, ConceptFilterUtil.FilterStatistics filterStatistics) {
         if (!UtilityMethods.isValidIRI(equivalentConcept)) {
             log.warn("Skipping invalid equivalent concept for {} '{}': '{}' is not a valid IRI",
                     entityType, resource.getLocalName(), equivalentConcept);
+            return;
+        }
+
+        if (conceptFilterUtil.shouldFilterConcept(equivalentConcept)) {
+            log.info("OMITTED: equivalentConcept '{}' for {} '{}' (equivalentConcept is filtered)",
+                    equivalentConcept, entityType, resource.getLocalName());
+            filterStatistics.omittedEquivalentConcepts++;
             return;
         }
 
@@ -896,43 +1010,51 @@ public class OFNDataTransformer {
     }
 
     private void addAgenda(Resource classResource, ClassData classData) {
-        if (classData.getAgendaCode() != null && !classData.getAgendaCode().trim().isEmpty()) {
-            String agendaCode = classData.getAgendaCode().trim();
+        addAgenda(classResource, classData.getAgendaCode(), "class", classData.getName());
+    }
 
-            if (UtilityMethods.isValidAgendaValue(agendaCode)) {
-                String transformedAgenda = UtilityMethods.transformAgendaValue(agendaCode);
+    private void addAgenda(Resource resource, String agendaCode, String entityType, String entityName) {
+        if (agendaCode != null && !agendaCode.trim().isEmpty()) {
+            String trimmedCode = agendaCode.trim();
+
+            if (UtilityMethods.isValidAgendaValue(trimmedCode)) {
+                String transformedAgenda = UtilityMethods.transformAgendaValue(trimmedCode);
                 Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AGENDA);
 
                 if (DataTypeConverter.isUri(transformedAgenda)) {
-                    classResource.addProperty(agendaProperty, ontModel.createResource(transformedAgenda));
-                    log.debug("Added valid agenda as URI: {} -> {}", agendaCode, transformedAgenda);
+                    resource.addProperty(agendaProperty, ontModel.createResource(transformedAgenda));
+                    log.debug("Added valid agenda as URI for {}: {} -> {}", entityType, trimmedCode, transformedAgenda);
                 } else {
-                    DataTypeConverter.addTypedProperty(classResource, agendaProperty, transformedAgenda, null, ontModel);
-                    log.debug("Added valid agenda as literal: {} -> {}", agendaCode, transformedAgenda);
+                    DataTypeConverter.addTypedProperty(resource, agendaProperty, transformedAgenda, null, ontModel);
+                    log.debug("Added valid agenda as literal for {}: {} -> {}", entityType, trimmedCode, transformedAgenda);
                 }
             } else {
-                log.warn("Invalid agenda code '{}' for class '{}' - skipping", agendaCode, classData.getName());
+                log.warn("Invalid agenda code '{}' for {} '{}' - skipping", trimmedCode, entityType, entityName);
             }
         }
     }
 
     private void addAgendaInformationSystem(Resource classResource, ClassData classData) {
-        if (classData.getAgendaSystemCode() != null && !classData.getAgendaSystemCode().trim().isEmpty()) {
-            String aisCode = classData.getAgendaSystemCode().trim();
+        addAgendaInformationSystem(classResource, classData.getAgendaSystemCode(), "class", classData.getName());
+    }
 
-            if (UtilityMethods.isValidAISValue(aisCode)) {
-                String transformedAIS = UtilityMethods.transformAISValue(aisCode);
+    private void addAgendaInformationSystem(Resource resource, String aisCode, String entityType, String entityName) {
+        if (aisCode != null && !aisCode.trim().isEmpty()) {
+            String trimmedCode = aisCode.trim();
+
+            if (UtilityMethods.isValidAISValue(trimmedCode)) {
+                String transformedAIS = UtilityMethods.transformAISValue(trimmedCode);
                 Property aisProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AIS);
 
                 if (DataTypeConverter.isUri(transformedAIS)) {
-                    classResource.addProperty(aisProperty, ontModel.createResource(transformedAIS));
-                    log.debug("Added valid AIS as URI: {} -> {}", aisCode, transformedAIS);
+                    resource.addProperty(aisProperty, ontModel.createResource(transformedAIS));
+                    log.debug("Added valid AIS as URI for {}: {} -> {}", entityType, trimmedCode, transformedAIS);
                 } else {
-                    DataTypeConverter.addTypedProperty(classResource, aisProperty, transformedAIS, null, ontModel);
-                    log.debug("Added valid AIS as literal: {} -> {}", aisCode, transformedAIS);
+                    DataTypeConverter.addTypedProperty(resource, aisProperty, transformedAIS, null, ontModel);
+                    log.debug("Added valid AIS as literal for {}: {} -> {}", entityType, trimmedCode, transformedAIS);
                 }
             } else {
-                log.warn("Invalid AIS code '{}' for class '{}' - skipping", aisCode, classData.getName());
+                log.warn("Invalid AIS code '{}' for {} '{}' - skipping", trimmedCode, entityType, entityName);
             }
         }
     }
@@ -976,14 +1098,14 @@ public class OFNDataTransformer {
         }
 
         try {
-            var literal = ontModel.createLiteral(value, com.dia.constants.ExportConstants.Common.DEFAULT_LANG);
+            var literal = ontModel.createLiteral(value, DEFAULT_LANG);
             resource.addProperty(property, literal);
 
-            log.debug("Added rdf:langString literal: '{}' with language '{}'", value, com.dia.constants.ExportConstants.Common.DEFAULT_LANG);
+            log.debug("Added rdf:langString literal: '{}' with language '{}'", value, DEFAULT_LANG);
         } catch (Exception e) {
             log.warn("Failed to create rdf:langString literal for value '{}': {}. Using regular language-tagged literal instead.",
                     value, e.getMessage());
-            resource.addProperty(property, value, com.dia.constants.ExportConstants.Common.DEFAULT_LANG);
+            resource.addProperty(property, value, DEFAULT_LANG);
         }
     }
 
@@ -992,7 +1114,7 @@ public class OFNDataTransformer {
         Property rangeProperty = RDFS.range;
 
         if (dataType == null || dataType.trim().isEmpty()) {
-            propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+            propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
             log.debug("Added default rdfs:Literal range type for property without data type specification");
             return;
         }
@@ -1020,7 +1142,7 @@ public class OFNDataTransformer {
             return;
         }
 
-        propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+        propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
         log.debug("Unrecognized data type '{}' - using rdfs:Literal as fallback", trimmedDataType);
     }
 
@@ -1028,13 +1150,13 @@ public class OFNDataTransformer {
         if (trimmedDataType.startsWith("xsd:")) {
             String localName = trimmedDataType.substring(4);
             if (DataTypeConverter.isValidXSDType(localName)) {
-                String xsdType = XSD_NS + localName;
+                String xsdType = ExportConstants.Json.XSD_NS + localName;
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
                 log.debug("Added valid XSD range type: {}", xsdType);
                 return true;
             } else {
                 log.warn("Invalid XSD type '{}' - falling back to rdfs:Literal", trimmedDataType);
-                propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+                propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
                 return true;
             }
         }
@@ -1042,15 +1164,15 @@ public class OFNDataTransformer {
     }
 
     private boolean checkIfFullXsdUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
-        if (trimmedDataType.startsWith(XSD_NS)) {
-            String localName = trimmedDataType.substring(XSD_NS.length());
+        if (trimmedDataType.startsWith(ExportConstants.Json.XSD_NS)) {
+            String localName = trimmedDataType.substring(ExportConstants.Json.XSD_NS.length());
             if (DataTypeConverter.isValidXSDType(localName)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(trimmedDataType));
                 log.debug("Added valid full XSD URI range type: {}", trimmedDataType);
                 return true;
             } else {
                 log.warn("Invalid XSD URI '{}' - falling back to rdfs:Literal", trimmedDataType);
-                propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+                propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
                 return true;
             }
         }
@@ -1086,25 +1208,25 @@ public class OFNDataTransformer {
 
     private String tryDetectDataTypeFromValue(String value) {
         if (DataTypeConverter.isBooleanValue(value)) {
-            return XSD_BOOLEAN;
+            return DataTypeConstants.XSD_BOOLEAN;
         }
         if (DataTypeConverter.isInteger(value)) {
-            return XSD_INTEGER;
+            return DataTypeConstants.XSD_INTEGER;
         }
         if (DataTypeConverter.isDouble(value)) {
-            return XSD_DOUBLE;
+            return DataTypeConstants.XSD_DOUBLE;
         }
         if (DataTypeConverter.isDate(value)) {
-            return XSD_DATE;
+            return DataTypeConstants.XSD_DATE;
         }
         if (DataTypeConverter.isTime(value)) {
-            return XSD_TIME;
+            return DataTypeConstants.XSD_TIME;
         }
         if (DataTypeConverter.isDateTime(value)) {
-            return XSD_DATETIME_STAMP;
+            return DataTypeConstants.XSD_DATETIME_STAMP;
         }
         if (DataTypeConverter.isDateTimeStamp(value)) {
-            return XSD_DATETIME_STAMP;
+            return DataTypeConstants.XSD_DATETIME_STAMP;
         }
 
         return null;
@@ -1131,9 +1253,9 @@ public class OFNDataTransformer {
 
     private String getGovernancePropertyConstant(String propertyType) {
         return switch (propertyType) {
-            case "sharing-method" -> getConstantValue(ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údajů");
-            case "acquisition-method" -> getConstantValue(ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
-            case "content-type" -> getConstantValue(TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
+            case "sharing-method" -> getConstantValue(FormatConstants.Excel.ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údajů");
+            case "acquisition-method" -> getConstantValue(FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
+            case "content-type" -> getConstantValue(FormatConstants.Excel.TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
             default -> {
                 log.warn("Unknown governance property type: {}", propertyType);
                 yield null;
@@ -1246,7 +1368,7 @@ public class OFNDataTransformer {
     }
 
     private boolean isDatatype(String value) {
-        if (value.startsWith("xsd:") || value.startsWith(XSD_NS)) {
+        if (value.startsWith("xsd:") || value.startsWith(ExportConstants.Json.XSD_NS)) {
             return false;
         }
 
@@ -1271,18 +1393,22 @@ public class OFNDataTransformer {
     }
 
     private void addPropertyPPDFData(Resource propertyResource, PropertyData propertyData) {
-        if (propertyData.getSharedInPPDF() != null && !propertyData.getSharedInPPDF().trim().isEmpty()) {
-            String value = propertyData.getSharedInPPDF();
+        addPPDFData(propertyResource, propertyData.getSharedInPPDF(), "property");
+    }
+
+    private void addPPDFData(Resource resource, String sharedInPPDF, String entityType) {
+        if (sharedInPPDF != null && !sharedInPPDF.trim().isEmpty()) {
+            String value = sharedInPPDF;
             Property ppdfProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + JE_PPDF);
 
             if (UtilityMethods.isBooleanValue(value)) {
                 Boolean boolValue = UtilityMethods.normalizeCzechBoolean(value);
-                DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty,
+                DataTypeConverter.addTypedProperty(resource, ppdfProperty,
                         boolValue.toString(), null, ontModel);
-                log.debug("Added normalized PPDF boolean: {} -> {}", value, boolValue);
+                log.debug("Added normalized PPDF boolean for {}: {} -> {}", entityType, value, boolValue);
             } else {
-                log.warn("Unrecognized boolean value for PPDF property: '{}'", value);
-                DataTypeConverter.addTypedProperty(propertyResource, ppdfProperty, value, null, ontModel);
+                log.warn("Unrecognized boolean value for PPDF {} property: '{}'", entityType, value);
+                DataTypeConverter.addTypedProperty(resource, ppdfProperty, value, null, ontModel);
             }
         }
     }
@@ -1362,5 +1488,23 @@ public class OFNDataTransformer {
             log.debug("Privacy provision does not contain ELI pattern for class '{}': '{}' - skipping",
                     classData.getName(), trimmedProvision);
         }
+    }
+
+    private void addRelationshipPPDFData(Resource relationshipResource, RelationshipData relationshipData) {
+        addPPDFData(relationshipResource, relationshipData.getSharedInPPDF(), "relationship");
+    }
+
+    private void addRelationshipAgenda(Resource relationshipResource, RelationshipData relationshipData) {
+        addAgenda(relationshipResource, relationshipData.getAgendaCode(), "relationship", relationshipData.getName());
+    }
+
+    private void addRelationshipAgendaInformationSystem(Resource relationshipResource, RelationshipData relationshipData) {
+        addAgendaInformationSystem(relationshipResource, relationshipData.getAgendaSystemCode(), "relationship", relationshipData.getName());
+    }
+
+    private void addRelationshipDataGovernanceMetadata(Resource relationshipResource, RelationshipData relationshipData) {
+        handleGovernanceProperty(relationshipResource, relationshipData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(relationshipResource, relationshipData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(relationshipResource, relationshipData.getContentType(), "content-type");
     }
 }

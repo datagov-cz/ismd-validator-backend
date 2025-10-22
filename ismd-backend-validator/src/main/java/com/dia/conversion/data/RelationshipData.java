@@ -14,8 +14,17 @@ public class RelationshipData {
     private String description;
     private String definition;
     private String source;
-
     private String relatedSource;
+
+    private String sharedInPPDF;
+    private String agendaCode;
+    private String agendaSystemCode;
+    private String isPublic;
+    private String privacyProvision;
+    private String sharingMethod;
+    private String acquisitionMethod;
+    private String contentType;
+
     // Excel only
     private String superRelation;
     private String alternativeName;

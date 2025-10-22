@@ -29,7 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 

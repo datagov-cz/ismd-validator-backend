@@ -1,5 +1,6 @@
 package com.dia.constants;
 
+@Deprecated
 public class ConverterControllerConstants {
     public static final String ARCHI_3_HEADER = "http://www.opengroup.org/xsd/archimate/3.0/";
     public static final String ARCHIMATE_HEADER = "http://www.opengroup.org/xsd/archimate";

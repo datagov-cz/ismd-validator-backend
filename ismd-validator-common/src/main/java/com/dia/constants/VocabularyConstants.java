@@ -2,17 +2,30 @@ package com.dia.constants;
 
 import java.util.Set;
 
-public class ArchiConstants {
+/**
+ * Consolidated vocabulary constants for OFN and related vocabularies.
+ * Merges constants from: ArchiConstants, OFNJsonConstants, SSPConstants, ValidationConstants.
+ */
+public class VocabularyConstants {
+
     // =============== CORE NAMESPACES ===============
     public static final String DEFAULT_NS = "https://slovník.gov.cz/";
+    public static final String SGOV_NAMESPACE = DEFAULT_NS; // Alias for SSP compatibility
     public static final String OFN_NAMESPACE = "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/";
+    public static final String SLOVNIKY_NS = OFN_NAMESPACE; // Alias - same as OFN_NAMESPACE
     public static final String ARCHI_NS = "http://www.opengroup.org/xsd/archimate/3.0/";
     public static final String XSD = "http://www.w3.org/2001/XMLSchema#";
-    public static final String CONTEXT = "https://ofn.gov.cz/slovníky/draft2/kompletní/kontext.jsonld";
-    public static final String IDENT = "identifier";
+    public static final String DCT_NS = "http://purl.org/dc/terms/";
+    public static final String SKOS_NS = "http://www.w3.org/2004/02/skos/core#";
     public static final String CAS_NS = "https://slovník.gov.cz/generický/čas/pojem/";
-    public static final String SLOVNIKY_NS = "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/";
+    public static final String CONTEXT = "https://ofn.gov.cz/slovníky/draft2/kompletní/kontext.jsonld";
+    public static final String CONTEXT_JSONLD = "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld";
     public static final String SCHEMA_URL = "http://schema.org/url";
+    public static final String IDENT = "identifier";
+
+    // =============== VALIDATION NAMESPACES ===============
+    public static final String LOCAL_SHACL_BASE_URI = "https://slovník.gov.cz/shacl/lokální/";
+    public static final String GLOBAL_SHACL_BASE_URI = "https://slovník.gov.cz/shacl/globální/";
 
     // =============== CORE VOCABULARY TERMS ===============
     public static final String POJEM = "pojem";
@@ -52,6 +65,17 @@ public class ArchiConstants {
     public static final String SOUVISEJICI_USTANOVENI = "související-ustanovení-právního-předpisu";
     public static final String DEFINUJICI_NELEGISLATIVNI_ZDROJ = "definující-nelegislativní-zdroj";
     public static final String SOUVISEJICI_NELEGISLATIVNI_ZDROJ = "související-nelegislativní-zdroj";
+    public static final String DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU = DEFINUJICI_USTANOVENI; // Alias
+    public static final String SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU = SOUVISEJICI_USTANOVENI; // Alias
+
+    // =============== STRUCTURAL PROPERTIES ===============
+    public static final String LOKALNI_KATALOG = "adresa-lokálního-katalogu-dat-ve-kterém-bude-slovník-registrován";
+    public static final String LOKALNI_KATALOG_SHORT = "lokální-katalog"; // Short form from OFNJsonConstants
+    public static final String DEFINICNI_OBOR = "definiční-obor";
+    public static final String OBOR_HODNOT = "obor-hodnot";
+    public static final String NADRAZENA_TRIDA = "nadřazená-třída";
+    public static final String NADRAZENY_VZTAH = "nadřazený-vztah";
+    public static final String NADRAZENA_VLASTNOST = "nadřazená-vlastnost";
 
     // =============== DATA GOVERNANCE PROPERTIES ===============
     public static final String AIS = "agendový-informační-systém";
@@ -60,14 +84,15 @@ public class ArchiConstants {
     public static final String JE_PPDF = "je-sdílen-v-ppdf";
     public static final String JE_VEREJNY = "je-pojem-veřejný";
     public static final String USTANOVENI_NEVEREJNOST = "ustanovení-dokládající-neveřejnost-údaje";
-    public static final String LOKALNI_KATALOG = "adresa-lokálního-katalogu-dat-ve-kterém-bude-slovník-registrován";
-    public static final String DEFINICNI_OBOR = "definiční-obor";
-    public static final String OBOR_HODNOT = "obor-hodnot";
-    public static final String NADRAZENA_TRIDA = "nadřazená-třída";
     public static final String SUPP = "související-ustanovení-právního-předpisu";
     public static final String ZPUSOB_SDILENI = "má-způsob-sdílení-údajů";
     public static final String ZPUSOB_ZISKANI = "má-kategorii-údajů";
     public static final String TYP_OBSAHU = "má-typ-obsahu-údajů";
+
+    // Alternate forms from OFNJsonConstants
+    public static final String ZPUSOB_SDILENI_ALT = "způsob-sdílení-údajů";
+    public static final String ZPUSOB_ZISKANI_ALT = "způsob-získání-údajů";
+    public static final String TYP_OBSAHU_ALT = "typ-obsahu-údajů";
 
     // =============== LONG FORM PROPERTIES ===============
     public static final String JE_PPDF_LONG = "je-sdílen-v-propojeném-datovém-fondu";
@@ -81,7 +106,35 @@ public class ArchiConstants {
     public static final String LEGISLATIVNI_111_NVU = "legislativní/sbírka/111/2009/pojem/neveřejný-údaj";
     public static final String VS_POJEM = "veřejný-sektor/pojem/";
 
-    private ArchiConstants() {
+    // =============== JSON-LD TYPE MAPPINGS ===============
+    public static final String POJEM_JSON_LD = "Pojem";
+    public static final String TRIDA_JSON_LD = "Třída";
+    public static final String VZTAH_JSON_LD = "Vztah";
+    public static final String VLASTNOST_JSON_LD = "Vlastnost";
+    public static final String TSP_JSON_LD = "Typ subjektu práva";
+    public static final String TOP_JSON_LD = "Typ objektu práva";
+    public static final String VEREJNY_UDAJ_JSON_LD = "Veřejný údaj";
+    public static final String NEVEREJNY_UDAJ_JSON_LD = "Neveřejný údaj";
+
+    // =============== JSON STRUCTURE CONSTANTS ===============
+    public static final String JSON_CONTEXT = "@context";
+    public static final String JSON_IRI = "iri";
+    public static final String JSON_TYP = "typ";
+    public static final String JSON_POJMY = "pojmy";
+    public static final String TYPE_SLOVNIK = "Slovník";
+    public static final String TYPE_TEZAURUS = "Tezaurus";
+    public static final String TYPE_KM = "Konceptuální model";
+
+    // =============== FIELD ORDERING FOR JSON OUTPUT ===============
+    public static final String[] CONCEPT_FIELD_ORDER = {
+            "iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice",
+            "ekvivalentní pojem", DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU, SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU,
+            DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+            "definiční-obor", "obor-hodnot", "nadřazený-vztah", "nadřazená-vlastnost",
+            "nadřazená-třída", "způsob-sdílení-údajů", "způsob-získání-údajů", "typ-obsahu-údajů"
+    };
+
+    private VocabularyConstants() {
     }
 
     /**
@@ -102,7 +155,7 @@ public class ArchiConstants {
         };
 
         public static final String[] STRUCTURAL = {
-                DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENA_TRIDA
+                DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENA_TRIDA, NADRAZENY_VZTAH, NADRAZENA_VLASTNOST
         };
 
         public static final String[] VOCABULARY_TYPES = {

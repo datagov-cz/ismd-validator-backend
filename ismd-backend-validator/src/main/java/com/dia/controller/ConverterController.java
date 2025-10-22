@@ -43,7 +43,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static com.dia.constants.ConverterControllerConstants.*;
+import static com.dia.constants.FormatConstants.Converter.*;
 import static com.dia.enums.FileFormat.*;
 
 @RestController

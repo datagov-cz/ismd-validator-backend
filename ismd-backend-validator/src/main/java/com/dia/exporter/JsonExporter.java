@@ -1,6 +1,5 @@
 package com.dia.exporter;
 
-import com.dia.constants.ArchiConstants;
 import com.dia.exceptions.JsonExportException;
 import com.dia.utility.UtilityMethods;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,13 +22,12 @@ import org.slf4j.MDC;
 
 import java.util.*;
 
-import static com.dia.constants.ArchiConstants.POPIS;
-import static com.dia.constants.ArchiConstants.*;
-import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
-import static com.dia.constants.ExcelConstants.TYP_OBSAHU_UDAJE;
-import static com.dia.constants.ExcelConstants.ZPUSOB_ZISKANI_UDEJE;
-import static com.dia.constants.ExportConstants.Json;
-import static com.dia.constants.ExportConstants.Json.*;
+import com.dia.constants.ExportConstants;
+import com.dia.constants.VocabularyConstants;
+import static com.dia.constants.VocabularyConstants.*;
+import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
+import static com.dia.constants.FormatConstants.Excel.TYP_OBSAHU_UDAJE;
+import static com.dia.constants.FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE;
 
 @Slf4j
 public class JsonExporter {
@@ -63,7 +61,7 @@ public class JsonExporter {
 
             log.debug("Creating concepts array: requestId={}", requestId);
             JSONArray conceptsArray = createConceptsArray();
-            unorderedRoot.put(Json.POJMY, conceptsArray);
+            unorderedRoot.put(ExportConstants.Json.POJMY, conceptsArray);
 
             log.debug("Formatting and ordering JSON: requestId={}", requestId);
             return formatJsonWithOrderedFields(unorderedRoot);
@@ -71,17 +69,17 @@ public class JsonExporter {
     }
 
     private void addModelMetadata(JSONObject root) throws JSONException {
-        root.put(Json.CONTEXT, ArchiConstants.CONTEXT);
-        root.put(Json.IRI, getOntologyIRI());
-        root.put(Json.TYP, addJSONtypes());
+        root.put(ExportConstants.Json.CONTEXT, CONTEXT);
+        root.put(ExportConstants.Json.IRI, getOntologyIRI());
+        root.put(ExportConstants.Json.TYP, addJSONtypes());
 
         if (modelName != null && !modelName.isEmpty()) {
-            addMultilingualModelProperty(root, Json.NAZEV, modelName);
+            addMultilingualModelProperty(root, ExportConstants.Json.NAZEV, modelName);
         }
 
         String description = modelProperties.getOrDefault(POPIS, "");
         if (description != null && !description.isEmpty()) {
-            addMultilingualModelProperty(root, Json.POPIS, description);
+            addMultilingualModelProperty(root, ExportConstants.Json.POPIS, description);
         }
 
         addTemporalMetadata(root);
@@ -214,12 +212,12 @@ public class JsonExporter {
     private Map<String, Object> createOrderedModelMap(Map<String, Object> originalMap) {
         Map<String, Object> orderedMap = new LinkedHashMap<>();
 
-        addFieldIfExists(originalMap, orderedMap, Json.CONTEXT);
-        addFieldIfExists(originalMap, orderedMap, Json.IRI);
-        addFieldIfExists(originalMap, orderedMap, Json.TYP);
+        addFieldIfExists(originalMap, orderedMap, ExportConstants.Json.CONTEXT);
+        addFieldIfExists(originalMap, orderedMap, ExportConstants.Json.IRI);
+        addFieldIfExists(originalMap, orderedMap, ExportConstants.Json.TYP);
 
-        addFieldWithDefault(originalMap, orderedMap, Json.NAZEV, createEmptyMultilingualField());
-        addFieldWithDefault(originalMap, orderedMap, Json.POPIS, createEmptyMultilingualField());
+        addFieldWithDefault(originalMap, orderedMap, ExportConstants.Json.NAZEV, createEmptyMultilingualField());
+        addFieldWithDefault(originalMap, orderedMap, ExportConstants.Json.POPIS, createEmptyMultilingualField());
 
         addFieldIfExists(originalMap, orderedMap, OKAMZIK_VYTVORENI);
         addFieldIfExists(originalMap, orderedMap, OKAMZIK_POSLEDNI_ZMENY);
@@ -228,8 +226,8 @@ public class JsonExporter {
     }
 
     private void processConceptsArray(Map<String, Object> originalMap, Map<String, Object> orderedMap) {
-        if (originalMap.containsKey(Json.POJMY)) {
-            Object pojmyObj = originalMap.get(Json.POJMY);
+        if (originalMap.containsKey(ExportConstants.Json.POJMY)) {
+            Object pojmyObj = originalMap.get(ExportConstants.Json.POJMY);
 
             if (pojmyObj instanceof List<?> rawList) {
                 List<Map<String, Object>> orderedPojmyList = new ArrayList<>();
@@ -244,13 +242,13 @@ public class JsonExporter {
                     }
                 }
 
-                orderedMap.put(Json.POJMY, orderedPojmyList);
+                orderedMap.put(ExportConstants.Json.POJMY, orderedPojmyList);
             } else {
                 log.warn("Expected pojmy to be a List but was: {}", pojmyObj.getClass().getName());
-                orderedMap.put(Json.POJMY, new ArrayList<>());
+                orderedMap.put(ExportConstants.Json.POJMY, new ArrayList<>());
             }
         } else {
-            orderedMap.put(Json.POJMY, new ArrayList<>());
+            orderedMap.put(ExportConstants.Json.POJMY, new ArrayList<>());
         }
     }
 
@@ -337,9 +335,9 @@ public class JsonExporter {
 
     private JSONArray addJSONtypes() {
         JSONArray typArray = new JSONArray();
-        typArray.put(Json.TYPE_SLOVNIK);
-        typArray.put(Json.TYPE_TEZAURUS);
-        typArray.put(Json.TYPE_KM);
+        typArray.put(ExportConstants.Json.TYPE_SLOVNIK);
+        typArray.put(ExportConstants.Json.TYPE_TEZAURUS);
+        typArray.put(ExportConstants.Json.TYPE_KM);
         return typArray;
     }
 
@@ -368,7 +366,7 @@ public class JsonExporter {
         pojemObj.put("iri", concept.getURI());
         pojemObj.put("typ", getConceptTypes(concept));
 
-        addMultilingualProperty(concept, SKOS.prefLabel, Json.NAZEV, pojemObj);
+        addMultilingualProperty(concept, SKOS.prefLabel, ExportConstants.Json.NAZEV, pojemObj);
 
         addAlternativeNamesFromStandardProperty(concept, pojemObj);
 
@@ -417,7 +415,7 @@ public class JsonExporter {
     private void addSourcePropertyFromEitherNamespace(Resource concept, JSONObject pojemObj, String namespace,
                                                       String propertyName, String jsonFieldName) throws JSONException {
         Property customProperty = ontModel.getProperty(namespace + propertyName);
-        Property defaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + propertyName);
+        Property defaultProperty = ontModel.getProperty(DEFAULT_NS + propertyName);
 
         if (concept.hasProperty(customProperty)) {
             addResourceArrayProperty(concept, customProperty, jsonFieldName, pojemObj);
@@ -429,7 +427,7 @@ public class JsonExporter {
     private void addNonLegislativeSourceProperty(Resource concept, JSONObject pojemObj, String namespace,
                                                  String propertyName, String jsonFieldName) throws JSONException {
         Property customProperty = ontModel.getProperty(namespace + propertyName);
-        Property defaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + propertyName);
+        Property defaultProperty = ontModel.getProperty(DEFAULT_NS + propertyName);
 
         Property sourceProperty = null;
         if (concept.hasProperty(customProperty)) {
@@ -461,21 +459,33 @@ public class JsonExporter {
             Statement propStmt = propIter.next();
             if (propStmt.getObject().isResource()) {
                 Resource digitalDoc = propStmt.getObject().asResource();
+                JSONObject docObj = new JSONObject();
+
+                if (digitalDoc.hasProperty(RDF.type, ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt"))) {
+                    docObj.put("typ", "Digitální objekt");
+                }
+
+                Property nazevProperty = ontModel.createProperty("http://purl.org/dc/terms/title");
+                Statement nazevStmt = digitalDoc.getProperty(nazevProperty);
+                if (nazevStmt != null && nazevStmt.getObject().isLiteral()) {
+                    String nazevValue = nazevStmt.getString();
+                    if (nazevValue != null && !nazevValue.trim().isEmpty()) {
+                        docObj.put("název", nazevValue);
+                    }
+                }
 
                 Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
                 Statement urlStmt = digitalDoc.getProperty(schemaUrlProperty);
-
                 if (urlStmt != null) {
-                    JSONObject docObj = new JSONObject();
                     if (urlStmt.getObject().isResource()) {
                         docObj.put("url", urlStmt.getObject().asResource().getURI());
                     } else if (urlStmt.getObject().isLiteral()) {
                         docObj.put("url", urlStmt.getString());
                     }
+                }
 
-                    if (docObj.has("url")) {
-                        sourceArray.put(docObj);
-                    }
+                if (docObj.length() > 0) {
+                    sourceArray.put(docObj);
                 }
             }
         }
@@ -501,7 +511,7 @@ public class JsonExporter {
             return;
         }
 
-        Property excelDefaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + excelConstant);
+        Property excelDefaultProperty = ontModel.getProperty(DEFAULT_NS + excelConstant);
         if (concept.hasProperty(excelDefaultProperty)) {
             addGovernancePropertyArray(concept, excelDefaultProperty, jsonFieldName, pojemObj);
             return;
@@ -513,7 +523,7 @@ public class JsonExporter {
             return;
         }
 
-        Property originalDefaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + originalConstant);
+        Property originalDefaultProperty = ontModel.getProperty(DEFAULT_NS + originalConstant);
         if (concept.hasProperty(originalDefaultProperty)) {
             addGovernancePropertyArray(concept, originalDefaultProperty, jsonFieldName, pojemObj);
             return;
@@ -534,7 +544,7 @@ public class JsonExporter {
             return;
         }
 
-        Property excelDefaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + excelConstant);
+        Property excelDefaultProperty = ontModel.getProperty(DEFAULT_NS + excelConstant);
         if (concept.hasProperty(excelDefaultProperty)) {
             addGovernancePropertySingle(concept, excelDefaultProperty, jsonFieldName, pojemObj);
             return;
@@ -546,7 +556,7 @@ public class JsonExporter {
             return;
         }
 
-        Property originalDefaultProperty = ontModel.getProperty(ArchiConstants.DEFAULT_NS + originalConstant);
+        Property originalDefaultProperty = ontModel.getProperty(DEFAULT_NS + originalConstant);
         if (concept.hasProperty(originalDefaultProperty)) {
             addGovernancePropertySingle(concept, originalDefaultProperty, jsonFieldName, pojemObj);
             return;
@@ -633,12 +643,12 @@ public class JsonExporter {
     private void addResourceArrayPropertyFromEitherNamespace(Resource concept,
                                                              JSONObject pojemObj,
                                                              String namespace) throws JSONException {
-        Property suppDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + ArchiConstants.USTANOVENI_NEVEREJNOST);
-        Property suppCustom = ontModel.getProperty(namespace + ArchiConstants.USTANOVENI_NEVEREJNOST);
+        Property suppDefault = ontModel.getProperty(DEFAULT_NS + VocabularyConstants.USTANOVENI_NEVEREJNOST);
+        Property suppCustom = ontModel.getProperty(namespace + VocabularyConstants.USTANOVENI_NEVEREJNOST);
         if (concept.hasProperty(suppDefault)) {
-            addResourceArrayProperty(concept, suppDefault, ArchiConstants.USTANOVENI_NEVEREJNOST, pojemObj);
+            addResourceArrayProperty(concept, suppDefault, VocabularyConstants.USTANOVENI_NEVEREJNOST, pojemObj);
         } else if (concept.hasProperty(suppCustom)) {
-            addResourceArrayProperty(concept, suppCustom, ArchiConstants.USTANOVENI_NEVEREJNOST, pojemObj);
+            addResourceArrayProperty(concept, suppCustom, VocabularyConstants.USTANOVENI_NEVEREJNOST, pojemObj);
         }
     }
 
@@ -682,8 +692,8 @@ public class JsonExporter {
         if (rangeStmt != null && rangeStmt.getObject().isResource()) {
             String rangeUri = rangeStmt.getObject().asResource().getURI();
 
-            if (rangeUri.startsWith(ArchiConstants.XSD)) {
-                pojemObj.put(OBOR_HODNOT, "xsd:" + rangeUri.substring(ArchiConstants.XSD.length()));
+            if (rangeUri.startsWith(XSD)) {
+                pojemObj.put(OBOR_HODNOT, "xsd:" + rangeUri.substring(XSD.length()));
             } else {
                 pojemObj.put(OBOR_HODNOT, rangeUri);
             }
@@ -732,7 +742,7 @@ public class JsonExporter {
     }
 
     private void addAlternativeNamesFromStandardProperty(Resource concept, JSONObject pojemObj) throws JSONException {
-        Property anPropDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + ALTERNATIVNI_NAZEV);
+        Property anPropDefault = ontModel.getProperty(DEFAULT_NS + ALTERNATIVNI_NAZEV);
         Property anPropCustom = ontModel.getProperty(effectiveNamespace + ALTERNATIVNI_NAZEV);
 
         StmtIterator stmtIter = concept.listProperties(anPropDefault);
@@ -780,11 +790,11 @@ public class JsonExporter {
 
     private void addSingleResourcePropertyFromEitherNamespace(Resource concept, JSONObject pojemObj,
                                                               String namespace, String labelDefO) throws JSONException {
-        Property domainDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + labelDefO);
+        Property domainDefault = ontModel.getProperty(DEFAULT_NS + labelDefO);
         Property domainCustom = ontModel.getProperty(namespace + labelDefO);
 
         if (concept.hasProperty(domainDefault)) {
-            addResourceProperty(concept, ArchiConstants.DEFAULT_NS + labelDefO, labelDefO, pojemObj);
+            addResourceProperty(concept, DEFAULT_NS + labelDefO, labelDefO, pojemObj);
         } else if (concept.hasProperty(domainCustom)) {
             addResourceProperty(concept, namespace + labelDefO, labelDefO, pojemObj);
         }
@@ -792,7 +802,7 @@ public class JsonExporter {
 
     private void addRppMetadataWithBothNamespaces(Resource concept, JSONObject pojemObj,
                                                   String namespace) throws JSONException {
-        Property ppdfDefault = ontModel.getProperty(ArchiConstants.DEFAULT_NS + JE_PPDF);
+        Property ppdfDefault = ontModel.getProperty(DEFAULT_NS + JE_PPDF);
         Property ppdfCustom = ontModel.getProperty(namespace + JE_PPDF);
 
         Statement stmt = concept.getProperty(ppdfDefault);
@@ -814,16 +824,16 @@ public class JsonExporter {
 
     private JSONArray getConceptTypes(Resource concept) {
         JSONArray types = new JSONArray();
-        types.put(POJEM_JSON_LD);
+        types.put(ExportConstants.Json.POJEM_JSON_LD);
 
         String[][] typeMapping = {
-                {TRIDA, TRIDA_JSON_LD},
-                {VZTAH, VZTAH_JSON_LD},
-                {VLASTNOST, VLASTNOST_JSON_LD},
-                {TSP, TSP_JSON_LD},
-                {TOP, TOP_JSON_LD},
-                {VEREJNY_UDAJ, VEREJNY_UDAJ_JSON_LD},
-                {NEVEREJNY_UDAJ, NEVEREJNY_UDAJ_JSON_LD}
+                {TRIDA, ExportConstants.Json.TRIDA_JSON_LD},
+                {VZTAH, ExportConstants.Json.VZTAH_JSON_LD},
+                {VLASTNOST, ExportConstants.Json.VLASTNOST_JSON_LD},
+                {TSP, ExportConstants.Json.TSP_JSON_LD},
+                {TOP, ExportConstants.Json.TOP_JSON_LD},
+                {VEREJNY_UDAJ, ExportConstants.Json.VEREJNY_UDAJ_JSON_LD},
+                {NEVEREJNY_UDAJ, ExportConstants.Json.NEVEREJNY_UDAJ_JSON_LD}
         };
 
         for (String[] mapping : typeMapping) {
