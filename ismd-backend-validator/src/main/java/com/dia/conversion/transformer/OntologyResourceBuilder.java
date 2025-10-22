@@ -17,6 +17,7 @@ import org.apache.jena.vocabulary.*;
 import java.util.*;
 
 import static com.dia.constants.VocabularyConstants.*;
+import static com.dia.constants.ExportConstants.Common.DEFAULT_LANG;
 
 /**
  * Handles creation and metadata addition for ontology resources.
@@ -38,6 +39,9 @@ public class OntologyResourceBuilder {
 
     private Map<String, Resource> allClassResourcesForHierarchies;
 
+    private static final String CLASS = "class";
+    private static final String RELATIONSHIP = "relationship";
+
     public OntologyResourceBuilder(OntModel ontModel, URIGenerator uriGenerator,
                                     DataGovernanceProcessor governanceProcessor,
                                     ConceptFilterUtil conceptFilterUtil) {
@@ -47,7 +51,7 @@ public class OntologyResourceBuilder {
         this.conceptFilterUtil = conceptFilterUtil;
     }
 
-    public Resource createOntologyResourceWithTemporal(VocabularyMetadata metadata, Map<String, Resource> localResourceMap) {
+    public void createOntologyResourceWithTemporal(VocabularyMetadata metadata, Map<String, Resource> localResourceMap) {
         String ontologyIRI = uriGenerator.generateVocabularyURI(metadata.getName(), null);
         log.debug("Creating ontology resource with temporal support and IRI: {}", ontologyIRI);
 
@@ -73,8 +77,6 @@ public class OntologyResourceBuilder {
             localResourceMap.put("ontology", ontologyResource);
             log.debug("Ontology resource with temporal support created successfully: {}", ontologyIRI);
         }
-
-        return ontologyResource;
     }
 
     private void addTemporalMetadata(Resource vocabularyResource, VocabularyMetadata metadata) {
@@ -137,52 +139,78 @@ public class OntologyResourceBuilder {
         Map<String, Resource> allClassResources = new HashMap<>();
 
         for (ClassData classData : classes) {
-            if (!classData.hasValidData()) {
-                log.warn("Skipping invalid class: {}", classData.getName());
+            if (shouldSkipClass(classData, filterStatistics)) {
                 continue;
             }
-
-            String identifier = classData.getIdentifier();
-
-            if (conceptFilterUtil.shouldFilterConcept(identifier)) {
-                log.info("FILTERED: Class '{}' with identifier '{}' matches filter regex",
-                        classData.getName(), identifier);
-                filterStatistics.filteredClasses++;
-                continue;
-            }
-
-            String classURI = uriGenerator.generateConceptURI(classData.getName(), identifier);
-            log.debug("Processing class '{}' with identifier='{}' -> URI={}",
-                    classData.getName(), identifier, classURI);
 
             try {
-                if (classData.getSuperClass() != null &&
-                        conceptFilterUtil.isConceptFiltered(classData.getSuperClass(), nameToIdentifierMap)) {
-                    log.info("OMITTED: superClass '{}' for class '{}' (superClass is filtered)",
-                            classData.getSuperClass(), classData.getName());
-                    classData.setSuperClass(null);
-                    filterStatistics.omittedSuperClasses++;
-                }
-
-                Resource classResource = createClassResource(classData, localResourceMap, filterStatistics);
-
+                Resource classResource = processValidClass(classData, localClassResources, localResourceMap,
+                        nameToIdentifierMap, filterStatistics);
                 allClassResources.put(classData.getName(), classResource);
-
-                if (belongsToCurrentVocabulary(classURI)) {
-                    localClassResources.put(classData.getName(), classResource);
-                    localResourceMap.put(classData.getName(), classResource);
-                    log.debug("Created local class: {} -> {}", classData.getName(), classResource.getURI());
-                } else {
-                    localResourceMap.put(classData.getName(), classResource);
-                    log.info("Created external concept (for relationships only): '{}' with identifier='{}' -> URI={}",
-                            classData.getName(), identifier, classURI);
-                }
             } catch (Exception e) {
                 log.error("Failed to create class: {}", classData.getName(), e);
             }
         }
 
         this.allClassResourcesForHierarchies = allClassResources;
+    }
+
+    private boolean shouldSkipClass(ClassData classData, ConceptFilterUtil.FilterStatistics filterStatistics) {
+        if (!classData.hasValidData()) {
+            log.warn("Skipping invalid class: {}", classData.getName());
+            return true;
+        }
+
+        String identifier = classData.getIdentifier();
+        if (conceptFilterUtil.shouldFilterConcept(identifier)) {
+            log.info("FILTERED: Class '{}' with identifier '{}' matches filter regex",
+                    classData.getName(), identifier);
+            filterStatistics.filteredClasses++;
+            return true;
+        }
+
+        return false;
+    }
+
+    private Resource processValidClass(ClassData classData, Map<String, Resource> localClassResources,
+                                       Map<String, Resource> localResourceMap, Map<String, String> nameToIdentifierMap,
+                                       ConceptFilterUtil.FilterStatistics filterStatistics) {
+        String identifier = classData.getIdentifier();
+        String classURI = uriGenerator.generateConceptURI(classData.getName(), identifier);
+        log.debug("Processing class '{}' with identifier='{}' -> URI={}",
+                classData.getName(), identifier, classURI);
+
+        filterSuperClassIfNeeded(classData, nameToIdentifierMap, filterStatistics);
+
+        Resource classResource = createClassResource(classData, localResourceMap, filterStatistics);
+        registerClassResource(classData, classResource, classURI, localClassResources, localResourceMap, identifier);
+
+        return classResource;
+    }
+
+    private void filterSuperClassIfNeeded(ClassData classData, Map<String, String> nameToIdentifierMap,
+                                          ConceptFilterUtil.FilterStatistics filterStatistics) {
+        if (classData.getSuperClass() != null &&
+                conceptFilterUtil.isConceptFiltered(classData.getSuperClass(), nameToIdentifierMap)) {
+            log.info("OMITTED: superClass '{}' for class '{}' (superClass is filtered)",
+                    classData.getSuperClass(), classData.getName());
+            classData.setSuperClass(null);
+            filterStatistics.omittedSuperClasses++;
+        }
+    }
+
+    private void registerClassResource(ClassData classData, Resource classResource, String classURI,
+                                       Map<String, Resource> localClassResources,
+                                       Map<String, Resource> localResourceMap, String identifier) {
+        if (belongsToCurrentVocabulary(classURI)) {
+            localClassResources.put(classData.getName(), classResource);
+            localResourceMap.put(classData.getName(), classResource);
+            log.debug("Created local class: {} -> {}", classData.getName(), classResource.getURI());
+        } else {
+            localResourceMap.put(classData.getName(), classResource);
+            log.info("Created external concept (for relationships only): '{}' with identifier='{}' -> URI={}",
+                    classData.getName(), identifier, classURI);
+        }
     }
 
     public Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap,
@@ -195,7 +223,7 @@ public class OntologyResourceBuilder {
 
         if (belongsToCurrentVocabulary(classURI)) {
             addResourceMetadata(classResource, ResourceMetadata.from(classData));
-            addClassSpecificMetadata(classResource, classData, localResourceMap, filterStatistics);
+            addClassSpecificMetadata(classResource, classData, filterStatistics);
             addSchemeRelationship(classResource, localResourceMap);
             log.debug("Added full metadata for local class: {}", classURI);
         } else {
@@ -217,7 +245,6 @@ public class OntologyResourceBuilder {
     }
 
     private void addClassSpecificMetadata(Resource classResource, ClassData classData,
-                                          Map<String, Resource> localResourceMap,
                                           ConceptFilterUtil.FilterStatistics filterStatistics) {
         addAlternativeName(classResource, classData);
         addEquivalentConcept(classResource, classData, filterStatistics);
@@ -236,16 +263,16 @@ public class OntologyResourceBuilder {
                                       ConceptFilterUtil.FilterStatistics filterStatistics) {
         if (classData.getEquivalentConcept() != null && !classData.getEquivalentConcept().trim().isEmpty()) {
             log.debug("Processing equivalent concept for class {}: '{}'", classData.getName(), classData.getEquivalentConcept());
-            addEquivalentConcept(classResource, classData.getEquivalentConcept(), "class", filterStatistics);
+            addEquivalentConcept(classResource, classData.getEquivalentConcept(), CLASS, filterStatistics);
         }
     }
 
     private void addAgenda(Resource classResource, ClassData classData) {
-        governanceProcessor.addAgenda(classResource, classData.getAgendaCode(), "class", classData.getName());
+        governanceProcessor.addAgenda(classResource, classData.getAgendaCode(), CLASS, classData.getName());
     }
 
     private void addAgendaInformationSystem(Resource classResource, ClassData classData) {
-        governanceProcessor.addAgendaInformationSystem(classResource, classData.getAgendaSystemCode(), "class", classData.getName());
+        governanceProcessor.addAgendaInformationSystem(classResource, classData.getAgendaSystemCode(), CLASS, classData.getName());
     }
 
     public void transformProperties(List<PropertyData> properties, Map<String, Resource> localPropertyResources,
@@ -253,19 +280,23 @@ public class OntologyResourceBuilder {
                                     ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Transforming {} properties", properties.size());
         for (PropertyData propertyData : properties) {
+            boolean shouldSkip = false;
+
             if (conceptFilterUtil.shouldFilterConcept(propertyData.getIdentifier())) {
                 log.info("FILTERED: Property '{}' with identifier '{}' matches filter regex",
                         propertyData.getName(), propertyData.getIdentifier());
                 filterStatistics.filteredProperties++;
-                continue;
-            }
-
-            if (propertyData.getDomain() != null &&
+                shouldSkip = true;
+            } else if (propertyData.getDomain() != null &&
                     conceptFilterUtil.isConceptFiltered(propertyData.getDomain(), nameToIdentifierMap)) {
                 log.info("FILTERED: Property '{}' because its domain '{}' is filtered",
                         propertyData.getName(), propertyData.getDomain());
                 filterStatistics.filteredProperties++;
                 filterStatistics.omittedDomains++;
+                shouldSkip = true;
+            }
+
+            if (shouldSkip) {
                 continue;
             }
 
@@ -390,28 +421,30 @@ public class OntologyResourceBuilder {
                                        ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Transforming {} relationships", relationships.size());
         for (RelationshipData relationshipData : relationships) {
+            boolean shouldSkip = false;
+
             if (conceptFilterUtil.shouldFilterConcept(relationshipData.getIdentifier())) {
                 log.info("FILTERED: Relationship '{}' with identifier '{}' matches filter regex",
                         relationshipData.getName(), relationshipData.getIdentifier());
                 filterStatistics.filteredRelationships++;
-                continue;
-            }
-
-            if (relationshipData.getDomain() != null &&
+                shouldSkip = true;
+            } else if (relationshipData.getDomain() != null &&
                     conceptFilterUtil.isConceptFiltered(relationshipData.getDomain(), nameToIdentifierMap)) {
                 log.info("FILTERED: Relationship '{}' because its domain '{}' is filtered",
                         relationshipData.getName(), relationshipData.getDomain());
                 filterStatistics.filteredRelationships++;
                 filterStatistics.omittedDomains++;
-                continue;
-            }
-
-            if (relationshipData.getRange() != null &&
+                shouldSkip = true;
+            } else if (relationshipData.getRange() != null &&
                     conceptFilterUtil.isConceptFiltered(relationshipData.getRange(), nameToIdentifierMap)) {
                 log.info("FILTERED: Relationship '{}' because its range '{}' is filtered",
                         relationshipData.getName(), relationshipData.getRange());
                 filterStatistics.filteredRelationships++;
                 filterStatistics.omittedRanges++;
+                shouldSkip = true;
+            }
+
+            if (shouldSkip) {
                 continue;
             }
 
@@ -472,12 +505,12 @@ public class OntologyResourceBuilder {
 
         if (relationshipData.getEquivalentConcept() != null && !relationshipData.getEquivalentConcept().trim().isEmpty()) {
             log.debug("Processing equivalent concept for relationship {}: '{}'", relationshipData.getName(), relationshipData.getEquivalentConcept());
-            addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), "relationship", filterStatistics);
+            addEquivalentConcept(relationshipResource, relationshipData.getEquivalentConcept(), RELATIONSHIP, filterStatistics);
         }
 
         governanceProcessor.addRelationshipPPDFData(relationshipResource, relationshipData);
-        governanceProcessor.addAgenda(relationshipResource, relationshipData.getAgendaCode(), "relationship", relationshipData.getName());
-        governanceProcessor.addAgendaInformationSystem(relationshipResource, relationshipData.getAgendaSystemCode(), "relationship", relationshipData.getName());
+        governanceProcessor.addAgenda(relationshipResource, relationshipData.getAgendaCode(), RELATIONSHIP, relationshipData.getName());
+        governanceProcessor.addAgendaInformationSystem(relationshipResource, relationshipData.getAgendaSystemCode(), RELATIONSHIP, relationshipData.getName());
         governanceProcessor.addRelationshipDataGovernanceMetadata(relationshipResource, relationshipData);
     }
 
@@ -526,25 +559,27 @@ public class OntologyResourceBuilder {
         int skippedHierarchies = 0;
 
         for (HierarchyData hierarchyData : hierarchies) {
+            boolean shouldSkip = false;
+
             if (!hierarchyData.hasValidData()) {
                 log.warn("Skipping invalid hierarchy: {}", hierarchyData);
                 skippedHierarchies++;
-                continue;
-            }
-
-            if (conceptFilterUtil.isConceptFiltered(hierarchyData.getSubClass(), nameToIdentifierMap)) {
+                shouldSkip = true;
+            } else if (conceptFilterUtil.isConceptFiltered(hierarchyData.getSubClass(), nameToIdentifierMap)) {
                 log.info("FILTERED: Hierarchy '{}' IS-A '{}' because subClass is filtered",
                         hierarchyData.getSubClass(), hierarchyData.getSuperClass());
                 filterStats.filteredHierarchies++;
                 skippedHierarchies++;
-                continue;
-            }
-
-            if (conceptFilterUtil.isConceptFiltered(hierarchyData.getSuperClass(), nameToIdentifierMap)) {
+                shouldSkip = true;
+            } else if (conceptFilterUtil.isConceptFiltered(hierarchyData.getSuperClass(), nameToIdentifierMap)) {
                 log.info("FILTERED: Hierarchy '{}' IS-A '{}' because superClass is filtered",
                         hierarchyData.getSubClass(), hierarchyData.getSuperClass());
                 filterStats.filteredHierarchies++;
                 skippedHierarchies++;
+                shouldSkip = true;
+            }
+
+            if (shouldSkip) {
                 continue;
             }
 
@@ -700,6 +735,11 @@ public class OntologyResourceBuilder {
     }
 
     private void addResourceMetadata(Resource resource, ResourceMetadata metadata) {
+        addTypedProperties(resource, metadata);
+        addSourceMetadata(resource, metadata);
+    }
+
+    private void addTypedProperties(Resource resource, ResourceMetadata metadata) {
         if (metadata.name() != null && !metadata.name().trim().isEmpty()) {
             DataTypeConverter.addTypedProperty(resource, SKOS.prefLabel, metadata.name(), DEFAULT_LANG, ontModel);
         }
@@ -712,7 +752,9 @@ public class OntologyResourceBuilder {
         if (metadata.definition() != null && !metadata.definition().trim().isEmpty()) {
             DataTypeConverter.addTypedProperty(resource, SKOS.definition, metadata.definition(), DEFAULT_LANG, ontModel);
         }
+    }
 
+    private void addSourceMetadata(Resource resource, ResourceMetadata metadata) {
         if (metadata.source() != null && !metadata.source().trim().isEmpty()) {
             governanceProcessor.processSourceField(resource, metadata.source(), true);
         }
@@ -871,12 +913,11 @@ public class OntologyResourceBuilder {
                 String xsdType = ExportConstants.Json.XSD_NS + localName;
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
                 log.debug("Added valid XSD range type: {}", xsdType);
-                return true;
             } else {
                 log.warn("Invalid XSD type '{}' - falling back to rdfs:Literal", trimmedDataType);
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
-                return true;
             }
+            return true;
         }
         return false;
     }
@@ -952,17 +993,17 @@ public class OntologyResourceBuilder {
     }
 
     private static Map<String, String> createDataTypeMapping() {
-        Map<String, String> mapping = new HashMap<>();
-        mapping.put("Ano či ne", DataTypeConstants.XSD_BOOLEAN);
-        mapping.put("Datum", DataTypeConstants.XSD_DATE);
-        mapping.put("Čas", DataTypeConstants.XSD_TIME);
-        mapping.put("Datum a čas", DataTypeConstants.XSD_DATETIME_STAMP);
-        mapping.put("Celé číslo", DataTypeConstants.XSD_INTEGER);
-        mapping.put("Desetinné číslo", DataTypeConstants.XSD_DOUBLE);
-        mapping.put("URI, IRI, URL", DataTypeConstants.XSD_ANY_URI);
-        mapping.put("Řetězec", DataTypeConstants.XSD_STRING);
-        mapping.put("Text", DataTypeConstants.RDFS_LITERAL);
-        return Collections.unmodifiableMap(mapping);
+        return Map.of(
+                "Ano či ne", DataTypeConstants.XSD_BOOLEAN,
+                "Datum", DataTypeConstants.XSD_DATE,
+                "Čas", DataTypeConstants.XSD_TIME,
+                "Datum a čas", DataTypeConstants.XSD_DATETIME_STAMP,
+                "Celé číslo", DataTypeConstants.XSD_INTEGER,
+                "Desetinné číslo", DataTypeConstants.XSD_DOUBLE,
+                "URI, IRI, URL", DataTypeConstants.XSD_ANY_URI,
+                "Řetězec", DataTypeConstants.XSD_STRING,
+                "Text", DataTypeConstants.RDFS_LITERAL
+        );
     }
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {

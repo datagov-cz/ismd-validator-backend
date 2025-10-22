@@ -23,14 +23,14 @@ import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 
 /**
  * Main orchestrator for OFN ontology transformation.
- *
+ * <p>
  * This class coordinates the transformation workflow:
  * 1. Analyzes input data to determine required base classes and properties
  * 2. Creates dynamic OFN base model with required components
  * 3. Delegates resource creation to OntologyResourceBuilder
  * 4. Delegates governance processing to DataGovernanceProcessor
  * 5. Exports results to JSON or Turtle formats
- *
+ * <p>
  * Responsibilities:
  * - High-level workflow orchestration
  * - Model initialization and namespace setup

@@ -17,6 +17,7 @@ import org.apache.jena.vocabulary.RDF;
 import java.util.List;
 
 import static com.dia.constants.VocabularyConstants.*;
+import static com.dia.constants.ExportConstants.Common.DEFAULT_LANG;
 
 /**
  * Handles data governance metadata processing for ontology resources.
@@ -34,6 +35,10 @@ public class DataGovernanceProcessor {
     private final OntModel ontModel;
     private final URIGenerator uriGenerator;
 
+    private static final String CONTENT_TYPE = "content-type";
+    private static final String ACQUISITION_METHOD = "acquisition-method";
+    private static final String SHARING_METHOD = "sharing-method";
+
     public DataGovernanceProcessor(OntModel ontModel, URIGenerator uriGenerator) {
         this.ontModel = ontModel;
         this.uriGenerator = uriGenerator;
@@ -41,9 +46,9 @@ public class DataGovernanceProcessor {
 
     public void addClassDataGovernanceMetadata(Resource classResource, ClassData classData) {
         addClassPublicOrNonPublicData(classResource, classData);
-        handleGovernanceProperty(classResource, classData.getSharingMethod(), "sharing-method");
-        handleGovernanceProperty(classResource, classData.getAcquisitionMethod(), "acquisition-method");
-        handleGovernanceProperty(classResource, classData.getContentType(), "content-type");
+        handleGovernanceProperty(classResource, classData.getSharingMethod(), SHARING_METHOD);
+        handleGovernanceProperty(classResource, classData.getAcquisitionMethod(), ACQUISITION_METHOD);
+        handleGovernanceProperty(classResource, classData.getContentType(), CONTENT_TYPE);
     }
 
     private void addClassPublicOrNonPublicData(Resource classResource, ClassData classData) {
@@ -124,16 +129,16 @@ public class DataGovernanceProcessor {
     }
 
     public void addPropertyDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
-        handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), "sharing-method");
-        handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), "acquisition-method");
-        handleGovernanceProperty(propertyResource, propertyData.getContentType(), "content-type");
+        handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), SHARING_METHOD);
+        handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), ACQUISITION_METHOD);
+        handleGovernanceProperty(propertyResource, propertyData.getContentType(), CONTENT_TYPE);
     }
 
 
     public void addRelationshipDataGovernanceMetadata(Resource relationshipResource, RelationshipData relationshipData) {
-        handleGovernanceProperty(relationshipResource, relationshipData.getSharingMethod(), "sharing-method");
-        handleGovernanceProperty(relationshipResource, relationshipData.getAcquisitionMethod(), "acquisition-method");
-        handleGovernanceProperty(relationshipResource, relationshipData.getContentType(), "content-type");
+        handleGovernanceProperty(relationshipResource, relationshipData.getSharingMethod(), SHARING_METHOD);
+        handleGovernanceProperty(relationshipResource, relationshipData.getAcquisitionMethod(), ACQUISITION_METHOD);
+        handleGovernanceProperty(relationshipResource, relationshipData.getContentType(), CONTENT_TYPE);
     }
 
     public void addPropertyPPDFData(Resource propertyResource, PropertyData propertyData) {
@@ -222,9 +227,9 @@ public class DataGovernanceProcessor {
 
     private String getGovernancePropertyConstant(String propertyType) {
         return switch (propertyType) {
-            case "sharing-method" -> getConstantValue(FormatConstants.Excel.ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údajů");
-            case "acquisition-method" -> getConstantValue(FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
-            case "content-type" -> getConstantValue(FormatConstants.Excel.TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
+            case SHARING_METHOD -> getConstantValue(FormatConstants.Excel.ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údajů");
+            case ACQUISITION_METHOD -> getConstantValue(FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
+            case CONTENT_TYPE -> getConstantValue(FormatConstants.Excel.TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
             default -> {
                 log.warn("Unknown governance property type: {}", propertyType);
                 yield null;
