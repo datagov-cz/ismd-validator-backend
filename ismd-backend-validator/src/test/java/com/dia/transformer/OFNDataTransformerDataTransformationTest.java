@@ -1,6 +1,7 @@
 package com.dia.transformer;
 
 import com.dia.conversion.data.*;
+import com.dia.conversion.transformer.ConceptFilterUtil;
 import com.dia.conversion.transformer.OFNDataTransformer;
 import com.dia.exceptions.ConversionException;
 import org.apache.jena.ontology.OntModel;
@@ -12,6 +13,7 @@ import org.apache.jena.vocabulary.SKOS;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 
@@ -19,6 +21,8 @@ import java.util.List;
 
 import static com.dia.constants.DataTypeConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.mockito.quality.Strictness.LENIENT;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,9 +32,14 @@ class OFNDataTransformerDataTransformationTest {
     private OFNDataTransformer transformer;
     private VocabularyMetadata baseMetadata;
 
+    @Mock
+    private ConceptFilterUtil conceptFilterUtil;
+
     @BeforeEach
     void setUp() {
-        transformer = new OFNDataTransformer();
+        when(conceptFilterUtil.buildNameToIdentifierMap(any())).thenReturn(new java.util.HashMap<>());
+        when(conceptFilterUtil.buildFilteredConceptSet(any(), any())).thenReturn(new java.util.HashSet<>());
+        transformer = new OFNDataTransformer(conceptFilterUtil);
 
         baseMetadata = new VocabularyMetadata();
         baseMetadata.setName("Test Vocabulary");
