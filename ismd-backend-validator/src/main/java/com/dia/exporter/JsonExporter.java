@@ -459,21 +459,33 @@ public class JsonExporter {
             Statement propStmt = propIter.next();
             if (propStmt.getObject().isResource()) {
                 Resource digitalDoc = propStmt.getObject().asResource();
+                JSONObject docObj = new JSONObject();
+
+                if (digitalDoc.hasProperty(RDF.type, ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt"))) {
+                    docObj.put("typ", "Digitální objekt");
+                }
+
+                Property nazevProperty = ontModel.createProperty("http://purl.org/dc/terms/title");
+                Statement nazevStmt = digitalDoc.getProperty(nazevProperty);
+                if (nazevStmt != null && nazevStmt.getObject().isLiteral()) {
+                    String nazevValue = nazevStmt.getString();
+                    if (nazevValue != null && !nazevValue.trim().isEmpty()) {
+                        docObj.put("název", nazevValue);
+                    }
+                }
 
                 Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
                 Statement urlStmt = digitalDoc.getProperty(schemaUrlProperty);
-
                 if (urlStmt != null) {
-                    JSONObject docObj = new JSONObject();
                     if (urlStmt.getObject().isResource()) {
                         docObj.put("url", urlStmt.getObject().asResource().getURI());
                     } else if (urlStmt.getObject().isLiteral()) {
                         docObj.put("url", urlStmt.getString());
                     }
+                }
 
-                    if (docObj.has("url")) {
-                        sourceArray.put(docObj);
-                    }
+                if (docObj.length() > 0) {
+                    sourceArray.put(docObj);
                 }
             }
         }
