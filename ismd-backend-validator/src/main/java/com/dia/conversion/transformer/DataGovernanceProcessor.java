@@ -1,0 +1,371 @@
+package com.dia.conversion.transformer;
+
+import com.dia.conversion.data.ClassData;
+import com.dia.conversion.data.PropertyData;
+import com.dia.conversion.data.RelationshipData;
+import com.dia.constants.FormatConstants;
+import com.dia.utility.DataTypeConverter;
+import com.dia.utility.URIGenerator;
+import com.dia.utility.UtilityMethods;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.jena.ontology.OntModel;
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.RDF;
+
+import java.util.List;
+
+import static com.dia.constants.VocabularyConstants.*;
+
+/**
+ * Handles data governance metadata processing for ontology resources.
+ * This includes:
+ * - Public/private data classification
+ * - PPDF metadata
+ * - Agenda and AIS codes
+ * - Privacy provisions
+ * - Source field processing (legislative and non-legislative)
+ * - Governance properties (sharing method, acquisition method, content type)
+ */
+@Slf4j
+public class DataGovernanceProcessor {
+
+    private final OntModel ontModel;
+    private final URIGenerator uriGenerator;
+
+    public DataGovernanceProcessor(OntModel ontModel, URIGenerator uriGenerator) {
+        this.ontModel = ontModel;
+        this.uriGenerator = uriGenerator;
+    }
+
+    public void addClassDataGovernanceMetadata(Resource classResource, ClassData classData) {
+        addClassPublicOrNonPublicData(classResource, classData);
+        handleGovernanceProperty(classResource, classData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(classResource, classData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(classResource, classData.getContentType(), "content-type");
+    }
+
+    private void addClassPublicOrNonPublicData(Resource classResource, ClassData classData) {
+        String isPublicValue = classData.getIsPublic();
+        String privacyProvision = classData.getPrivacyProvision();
+
+        if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+            handleClassNonPublicData(classResource, classData, privacyProvision);
+            return;
+        }
+
+        if (isPublicValue != null && !isPublicValue.trim().isEmpty()) {
+            handleClassPublicData(classResource, classData, isPublicValue, privacyProvision);
+        }
+    }
+
+    private void handleClassNonPublicData(Resource classResource, ClassData classData, String privacyProvision) {
+        Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
+        classResource.addProperty(dataClassificationProp, "non-public");
+        classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
+        log.debug("Added non-public data annotation and RDF type for class: {}", classData.getName());
+
+        if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+            validateAndAddClassPrivacyProvision(classResource, classData, privacyProvision);
+        }
+    }
+
+    private void handleClassPublicData(Resource classResource, ClassData classData, String isPublicValue, String privacyProvision) {
+        if (UtilityMethods.isBooleanValue(isPublicValue)) {
+            Boolean isPublic = UtilityMethods.normalizeCzechBoolean(isPublicValue);
+
+            if (Boolean.TRUE.equals(isPublic)) {
+                if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+                    log.warn("Class '{}' marked as public but has privacy provision '{}' - treating as non-public",
+                            classData.getName(), privacyProvision);
+                    handleClassNonPublicData(classResource, classData, privacyProvision);
+                } else {
+                    Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
+                    classResource.addProperty(dataClassificationProp, "public");
+                    classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    log.debug("Added public data annotation and RDF type for class: {}", classData.getName());
+                }
+            } else {
+                handleClassNonPublicData(classResource, classData, privacyProvision);
+            }
+        } else {
+            log.warn("Unrecognized boolean value for public class property: '{}' for class '{}'",
+                    isPublicValue, classData.getName());
+        }
+    }
+
+    private void validateAndAddClassPrivacyProvision(Resource classResource, ClassData classData, String provision) {
+        String trimmedProvision = provision.trim();
+
+        if (UtilityMethods.containsEliPattern(trimmedProvision)) {
+            String eliPart = UtilityMethods.extractEliPart(trimmedProvision);
+            if (eliPart != null) {
+                String transformedProvision = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+                Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
+
+                if (DataTypeConverter.isUri(transformedProvision)) {
+                    classResource.addProperty(provisionProperty, ontModel.createResource(transformedProvision));
+                    log.debug("Added privacy provision as URI for class '{}': {} -> {}",
+                            classData.getName(), trimmedProvision, transformedProvision);
+                } else {
+                    DataTypeConverter.addTypedProperty(classResource, provisionProperty, transformedProvision, null, ontModel);
+                    log.debug("Added privacy provision as literal for class '{}': {} -> {}",
+                            classData.getName(), trimmedProvision, transformedProvision);
+                }
+            } else {
+                log.warn("Failed to extract ELI part from privacy provision for class '{}': '{}'",
+                        classData.getName(), trimmedProvision);
+            }
+        } else {
+            log.debug("Privacy provision does not contain ELI pattern for class '{}': '{}' - skipping",
+                    classData.getName(), trimmedProvision);
+        }
+    }
+
+    public void addPropertyDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
+        handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(propertyResource, propertyData.getContentType(), "content-type");
+    }
+
+
+    public void addRelationshipDataGovernanceMetadata(Resource relationshipResource, RelationshipData relationshipData) {
+        handleGovernanceProperty(relationshipResource, relationshipData.getSharingMethod(), "sharing-method");
+        handleGovernanceProperty(relationshipResource, relationshipData.getAcquisitionMethod(), "acquisition-method");
+        handleGovernanceProperty(relationshipResource, relationshipData.getContentType(), "content-type");
+    }
+
+    public void addPropertyPPDFData(Resource propertyResource, PropertyData propertyData) {
+        addPPDFData(propertyResource, propertyData.getSharedInPPDF(), "property");
+    }
+
+    public void addRelationshipPPDFData(Resource relationshipResource, RelationshipData relationshipData) {
+        addPPDFData(relationshipResource, relationshipData.getSharedInPPDF(), "relationship");
+    }
+
+    private void addPPDFData(Resource resource, String sharedInPPDF, String entityType) {
+        if (sharedInPPDF != null && !sharedInPPDF.trim().isEmpty()) {
+            Property ppdfProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + JE_PPDF);
+
+            if (UtilityMethods.isBooleanValue(sharedInPPDF)) {
+                Boolean boolValue = UtilityMethods.normalizeCzechBoolean(sharedInPPDF);
+                DataTypeConverter.addTypedProperty(resource, ppdfProperty,
+                        boolValue.toString(), null, ontModel);
+                log.debug("Added normalized PPDF boolean for {}: {} -> {}", entityType, sharedInPPDF, boolValue);
+            } else {
+                log.warn("Unrecognized boolean value for PPDF {} property: '{}'", entityType, sharedInPPDF);
+                DataTypeConverter.addTypedProperty(resource, ppdfProperty, sharedInPPDF, null, ontModel);
+            }
+        }
+    }
+
+    public void addAgenda(Resource resource, String agendaCode, String entityType, String entityName) {
+        if (agendaCode != null && !agendaCode.trim().isEmpty()) {
+            String trimmedCode = agendaCode.trim();
+
+            if (UtilityMethods.isValidAgendaValue(trimmedCode)) {
+                String transformedAgenda = UtilityMethods.transformAgendaValue(trimmedCode);
+                Property agendaProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AGENDA);
+
+                if (DataTypeConverter.isUri(transformedAgenda)) {
+                    resource.addProperty(agendaProperty, ontModel.createResource(transformedAgenda));
+                    log.debug("Added valid agenda as URI for {}: {} -> {}", entityType, trimmedCode, transformedAgenda);
+                } else {
+                    DataTypeConverter.addTypedProperty(resource, agendaProperty, transformedAgenda, null, ontModel);
+                    log.debug("Added valid agenda as literal for {}: {} -> {}", entityType, trimmedCode, transformedAgenda);
+                }
+            } else {
+                log.warn("Invalid agenda code '{}' for {} '{}' - skipping", trimmedCode, entityType, entityName);
+            }
+        }
+    }
+
+    public void addAgendaInformationSystem(Resource resource, String aisCode, String entityType, String entityName) {
+        if (aisCode != null && !aisCode.trim().isEmpty()) {
+            String trimmedCode = aisCode.trim();
+
+            if (UtilityMethods.isValidAISValue(trimmedCode)) {
+                String transformedAIS = UtilityMethods.transformAISValue(trimmedCode);
+                Property aisProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + AIS);
+
+                if (DataTypeConverter.isUri(transformedAIS)) {
+                    resource.addProperty(aisProperty, ontModel.createResource(transformedAIS));
+                    log.debug("Added valid AIS as URI for {}: {} -> {}", entityType, trimmedCode, transformedAIS);
+                } else {
+                    DataTypeConverter.addTypedProperty(resource, aisProperty, transformedAIS, null, ontModel);
+                    log.debug("Added valid AIS as literal for {}: {} -> {}", entityType, trimmedCode, transformedAIS);
+                }
+            } else {
+                log.warn("Invalid AIS code '{}' for {} '{}' - skipping", trimmedCode, entityType, entityName);
+            }
+        }
+    }
+
+    private void handleGovernanceProperty(Resource resource, String value, String propertyType) {
+        if (value == null || value.trim().isEmpty()) {
+            log.debug("Skipping empty governance property '{}' for resource: {}", propertyType, resource.getLocalName());
+            return;
+        }
+
+        List<String> allowedValues = List.of("veřejně přístupné", "poskytované na žádost", "nesdílené", "zpřístupňované pro výkon agendy", "základních registrů", "jiných agend", "vlastní", "provozní", "identifikační", "evidenční", "statistické");
+        if (!allowedValues.contains(value.toLowerCase())) {
+            log.debug("Skipping unsupported governance property value '{}' for resource: {}", propertyType, resource.getLocalName());
+            return;
+        }
+
+        String propertyConstant = getGovernancePropertyConstant(propertyType);
+
+        log.debug("Using constant '{}' for governance property type '{}'", propertyConstant, propertyType);
+        addGovernanceProperty(resource, value, propertyConstant);
+    }
+
+    private String getGovernancePropertyConstant(String propertyType) {
+        return switch (propertyType) {
+            case "sharing-method" -> getConstantValue(FormatConstants.Excel.ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údajů");
+            case "acquisition-method" -> getConstantValue(FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
+            case "content-type" -> getConstantValue(FormatConstants.Excel.TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
+            default -> {
+                log.warn("Unknown governance property type: {}", propertyType);
+                yield null;
+            }
+        };
+    }
+
+    private String getConstantValue(String optionOne, String optionTwo, String defaultValue) {
+        if (optionOne != null && !optionOne.trim().isEmpty()) {
+            return UtilityMethods.sanitizeForIRI(optionOne);
+        } else if (optionTwo != null && !optionTwo.trim().isEmpty()) {
+            return optionTwo;
+        } else {
+            return defaultValue;
+        }
+    }
+
+    private void addGovernanceProperty(Resource resource, String value, String propertyName) {
+        if (value == null || value.trim().isEmpty()) {
+            return;
+        }
+
+        String trimmedValue = value.trim();
+        Property property = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+
+        String governanceIRI = transformToGovernanceIRI(propertyName, trimmedValue);
+
+        if (governanceIRI != null) {
+            resource.addProperty(property, ontModel.createResource(governanceIRI));
+            log.debug("Added governance property {} as governance IRI: {} -> {}", propertyName, trimmedValue, governanceIRI);
+        } else if (DataTypeConverter.isUri(trimmedValue)) {
+            resource.addProperty(property, ontModel.createResource(trimmedValue));
+            log.debug("Added governance property {} as URI: {}", propertyName, trimmedValue);
+        } else {
+            DataTypeConverter.addTypedProperty(resource, property, trimmedValue, null, ontModel);
+            log.debug("Added governance property {} as typed literal: {}", propertyName, trimmedValue);
+        }
+    }
+
+    private String transformToGovernanceIRI(String propertyName, String value) {
+        if (propertyName == null || value == null) {
+            return null;
+        }
+
+        String sanitizedValue = UtilityMethods.sanitizeForIRI(value);
+
+        return switch (propertyName) {
+            case "typ-obsahu-údajů" ->
+                    "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/" + sanitizedValue;
+            case "způsob-sdílení-údajů" ->
+                    "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/" + sanitizedValue;
+            case "způsob-získání-údajů" ->
+                    "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/" + sanitizedValue;
+            default -> null;
+        };
+    }
+
+    public void processSourceField(Resource resource, String sourceUrls, boolean isDefining) {
+        if (sourceUrls == null || sourceUrls.trim().isEmpty()) {
+            log.debug("Skipping empty source field for resource: {}", resource.getLocalName());
+            return;
+        }
+
+        String trimmedUrls = sourceUrls.trim();
+        log.debug("Processing source field for resource {}: '{}'", resource.getLocalName(),
+                trimmedUrls.length() > 100 ? trimmedUrls.substring(0, 100) + "..." : trimmedUrls);
+
+        if (trimmedUrls.contains(";")) {
+            String[] urls = trimmedUrls.split(";");
+            log.debug("Found {} sources separated by semicolons for resource: {}", urls.length, resource.getLocalName());
+
+            for (int i = 0; i < urls.length; i++) {
+                String url = urls[i].trim();
+                if (!url.isEmpty()) {
+                    log.debug("Processing source part {}/{}: '{}'", i+1, urls.length, url);
+                    processSingleSource(resource, url, isDefining);
+                }
+            }
+        } else {
+            processSingleSource(resource, trimmedUrls, isDefining);
+        }
+    }
+
+    private void processSingleSource(Resource resource, String url, boolean isDefining) {
+        if (url == null || url.trim().isEmpty()) {
+            return;
+        }
+
+        String trimmedUrl = url.trim();
+        log.debug("Processing single source for resource {}: '{}'", resource.getLocalName(), trimmedUrl);
+
+        if (UtilityMethods.containsEliPattern(trimmedUrl)) {
+            handleEliPart(trimmedUrl, resource, isDefining);
+            log.debug("Processed as ELI (legislative) source: {}", trimmedUrl);
+        } else {
+            handleNonEliPart(trimmedUrl, resource, isDefining);
+            log.debug("Processed as non-ELI (non-legislative) source: {}", trimmedUrl);
+        }
+    }
+
+    private void handleEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
+        String eliPart = UtilityMethods.extractEliPart(trimmedUrl);
+        if (eliPart != null) {
+            String transformedUrl = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+            String propertyName = isDefining ? DEFINUJICI_USTANOVENI : SOUVISEJICI_USTANOVENI;
+
+            Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+
+            if (UtilityMethods.isValidUrl(transformedUrl)) {
+                resource.addProperty(provisionProperty, ontModel.createResource(transformedUrl));
+                log.debug("Added {} as URI: {} -> {}", propertyName, trimmedUrl, transformedUrl);
+            } else {
+                log.debug("Skipped {}, invalid URL value: {} -> {}", propertyName, trimmedUrl, transformedUrl);
+            }
+        } else {
+            log.warn("Failed to extract ELI part from URL: {}", trimmedUrl);
+            handleNonEliPart(trimmedUrl, resource, isDefining);
+        }
+    }
+
+    private void handleNonEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
+        String propertyName = isDefining ? DEFINUJICI_NELEGISLATIVNI_ZDROJ : SOUVISEJICI_NELEGISLATIVNI_ZDROJ;
+
+        Resource digitalDocument = ontModel.createResource();
+
+        digitalDocument.addProperty(RDF.type, ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt"));
+
+        if (UtilityMethods.isValidUrl(trimmedUrl)) {
+            Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
+            Literal urlLiteral = ontModel.createTypedLiteral(trimmedUrl, "http://www.w3.org/2001/XMLSchema#anyURI");
+            digitalDocument.addProperty(schemaUrlProperty, urlLiteral);
+            log.debug("Added digital document with schema:url (xsd:anyURI): {}", trimmedUrl);
+        } else {
+            Property dctermsTitle = ontModel.createProperty("http://purl.org/dc/terms/title");
+            digitalDocument.addProperty(dctermsTitle, trimmedUrl, DEFAULT_LANG);
+            log.debug("Added digital document with dcterms:title (@cs): {}", trimmedUrl);
+        }
+
+        Property nonLegislativeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+        resource.addProperty(nonLegislativeProperty, digitalDocument);
+
+        log.debug("Added as digital document: {}", propertyName);
+    }
+}

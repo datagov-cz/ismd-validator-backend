@@ -35,6 +35,7 @@ import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
 import static com.dia.constants.ExportConstants.Json.*;
 
+@Deprecated
 @Component
 @Slf4j
 @Getter
