@@ -1,9 +1,9 @@
 package com.dia.conversion.transformer;
 
-import com.dia.conversion.data.*;
-import com.dia.conversion.transformer.metadata.ResourceMetadata;
 import com.dia.constants.DataTypeConstants;
 import com.dia.constants.ExportConstants;
+import com.dia.conversion.data.*;
+import com.dia.conversion.transformer.metadata.ResourceMetadata;
 import com.dia.utility.DataTypeConverter;
 import com.dia.utility.URIGenerator;
 import com.dia.utility.UtilityMethods;
@@ -12,12 +12,15 @@ import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntProperty;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.vocabulary.*;
+import org.apache.jena.vocabulary.OWL2;
+import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.vocabulary.SKOS;
 
 import java.util.*;
 
-import static com.dia.constants.VocabularyConstants.*;
 import static com.dia.constants.ExportConstants.Common.DEFAULT_LANG;
+import static com.dia.constants.VocabularyConstants.*;
 
 /**
  * Handles creation and metadata addition for ontology resources.
@@ -32,19 +35,28 @@ import static com.dia.constants.ExportConstants.Common.DEFAULT_LANG;
 @Slf4j
 public class OntologyResourceBuilder {
 
+    private static final String CLASS = "class";
+    private static final String RELATIONSHIP = "relationship";
+    private static final Map<String, String> CZECH_TO_XSD_MAPPING = Map.of(
+            "Ano či ne", DataTypeConstants.XSD_BOOLEAN,
+            "Datum", DataTypeConstants.XSD_DATE,
+            "Čas", DataTypeConstants.XSD_TIME,
+            "Datum a čas", DataTypeConstants.XSD_DATETIME_STAMP,
+            "Celé číslo", DataTypeConstants.XSD_INTEGER,
+            "Desetinné číslo", DataTypeConstants.XSD_DOUBLE,
+            "URI, IRI, URL", DataTypeConstants.XSD_ANY_URI,
+            "Řetězec", DataTypeConstants.XSD_STRING,
+            "Text", DataTypeConstants.RDFS_LITERAL
+    );
     private final OntModel ontModel;
     private final URIGenerator uriGenerator;
     private final DataGovernanceProcessor governanceProcessor;
     private final ConceptFilterUtil conceptFilterUtil;
-
     private Map<String, Resource> allClassResourcesForHierarchies;
 
-    private static final String CLASS = "class";
-    private static final String RELATIONSHIP = "relationship";
-
     public OntologyResourceBuilder(OntModel ontModel, URIGenerator uriGenerator,
-                                    DataGovernanceProcessor governanceProcessor,
-                                    ConceptFilterUtil conceptFilterUtil) {
+                                   DataGovernanceProcessor governanceProcessor,
+                                   ConceptFilterUtil conceptFilterUtil) {
         this.ontModel = ontModel;
         this.uriGenerator = uriGenerator;
         this.governanceProcessor = governanceProcessor;
@@ -130,10 +142,9 @@ public class OntologyResourceBuilder {
         }
     }
 
-
     public void transformClasses(List<ClassData> classes, Map<String, Resource> localClassResources,
-                                  Map<String, Resource> localResourceMap, Map<String, String> nameToIdentifierMap,
-                                  ConceptFilterUtil.FilterStatistics filterStatistics) {
+                                 Map<String, Resource> localResourceMap, Map<String, String> nameToIdentifierMap,
+                                 ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Transforming {} classes", classes.size());
 
         Map<String, Resource> allClassResources = new HashMap<>();
@@ -368,18 +379,7 @@ public class OntologyResourceBuilder {
 
     private void addPropertySuperPropertyRelationship(Resource propertyResource, PropertyData propertyData) {
         if (propertyData.getSuperProperty() != null && !propertyData.getSuperProperty().trim().isEmpty()) {
-            String superProperty = propertyData.getSuperProperty().trim();
-
-            String superPropertyURI;
-            if (DataTypeConverter.isUri(superProperty)) {
-                superPropertyURI = superProperty;
-            } else {
-                superPropertyURI = uriGenerator.generateConceptURI(superProperty, null);
-            }
-
-            propertyResource.addProperty(RDFS.subPropertyOf, ontModel.createResource(superPropertyURI));
-
-            log.debug("Added subPropertyOf relationship: {} -> {}", propertyResource.getURI(), superPropertyURI);
+            addSubPropertyOf(propertyResource, propertyData.getSuperProperty().trim());
         }
     }
 
@@ -403,17 +403,11 @@ public class OntologyResourceBuilder {
     }
 
     private boolean isDatatype(String value) {
-        Map<String, String> czechToXSDMappings = createDataTypeMapping();
-
         if (value.startsWith("xsd:") || value.startsWith(ExportConstants.Json.XSD_NS)) {
             return false;
         }
 
-        if (czechToXSDMappings.containsKey(value)) {
-            return false;
-        }
-
-        return (!czechToXSDMappings.containsKey(value)) && !value.matches("(?i)(string|boolean|integer|double|date|time|datetime|uri|literal).*");
+        return !CZECH_TO_XSD_MAPPING.containsKey(value) && !value.matches("(?i)(string|boolean|integer|double|date|time|datetime|uri|literal).*");
     }
 
     public void transformRelationships(List<RelationshipData> relationships, Map<String, Resource> localRelationshipResources,
@@ -493,7 +487,7 @@ public class OntologyResourceBuilder {
     }
 
     private void addRelationshipSpecificMetadata(Resource relationshipResource, RelationshipData relationshipData,
-                                                  ConceptFilterUtil.FilterStatistics filterStatistics) {
+                                                 ConceptFilterUtil.FilterStatistics filterStatistics) {
         log.debug("Adding relationship-specific metadata for: {}", relationshipData.getName());
 
         if (relationshipData.getAlternativeName() != null && !relationshipData.getAlternativeName().trim().isEmpty()) {
@@ -516,19 +510,17 @@ public class OntologyResourceBuilder {
 
     private void addRelationshipSuperPropertyRelationship(Resource relationshipResource, RelationshipData relationshipData) {
         if (relationshipData.getSuperRelation() != null && !relationshipData.getSuperRelation().trim().isEmpty()) {
-            String superRelation = relationshipData.getSuperRelation().trim();
-
-            String superRelationURI;
-            if (DataTypeConverter.isUri(superRelation)) {
-                superRelationURI = superRelation;
-            } else {
-                superRelationURI = uriGenerator.generateConceptURI(superRelation, null);
-            }
-
-            relationshipResource.addProperty(RDFS.subPropertyOf, ontModel.createResource(superRelationURI));
-
-            log.debug("Added subPropertyOf relationship: {} -> {}", relationshipResource.getURI(), superRelationURI);
+            addSubPropertyOf(relationshipResource, relationshipData.getSuperRelation().trim());
         }
+    }
+
+    private void addSubPropertyOf(Resource resource, String superPropertyName) {
+        String superPropertyURI = DataTypeConverter.isUri(superPropertyName)
+                ? superPropertyName
+                : uriGenerator.generateConceptURI(superPropertyName, null);
+
+        resource.addProperty(RDFS.subPropertyOf, ontModel.createResource(superPropertyURI));
+        log.debug("Added subPropertyOf relationship: {} -> {}", resource.getURI(), superPropertyURI);
     }
 
     private void addDomainRangeRelationships(Resource relationshipResource, RelationshipData relationshipData,
@@ -541,7 +533,6 @@ public class OntologyResourceBuilder {
             addResourceReference(relationshipResource, RDFS.range, relationshipData.getRange(), localResourceMap);
         }
     }
-
 
     public void transformHierarchies(List<HierarchyData> hierarchies, Map<String, Resource> localClassResources,
                                      Map<String, Resource> localPropertyResources, Map<String, Resource> localResourceMap,
@@ -928,12 +919,11 @@ public class OntologyResourceBuilder {
             if (DataTypeConverter.isValidXSDType(localName)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(trimmedDataType));
                 log.debug("Added valid full XSD URI range type: {}", trimmedDataType);
-                return true;
             } else {
                 log.warn("Invalid XSD URI '{}' - falling back to rdfs:Literal", trimmedDataType);
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
-                return true;
             }
+            return true;
         }
         return false;
     }
@@ -948,15 +938,14 @@ public class OntologyResourceBuilder {
     }
 
     private boolean checkCzechDataType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
-        Map<String, String> czechToXSDMappings = createDataTypeMapping();
-        String mappedXsdType = czechToXSDMappings.get(trimmedDataType);
+        String mappedXsdType = CZECH_TO_XSD_MAPPING.get(trimmedDataType);
         if (mappedXsdType != null) {
             propertyResource.addProperty(rangeProperty, ontModel.createResource(mappedXsdType));
             log.debug("Mapped Czech data type '{}' to XSD type: {}", trimmedDataType, mappedXsdType);
             return true;
         }
 
-        for (Map.Entry<String, String> entry : czechToXSDMappings.entrySet()) {
+        for (Map.Entry<String, String> entry : CZECH_TO_XSD_MAPPING.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(trimmedDataType)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(entry.getValue()));
                 log.debug("Mapped Czech data type '{}' (case-insensitive) to XSD type: {}", trimmedDataType, entry.getValue());
@@ -990,20 +979,6 @@ public class OntologyResourceBuilder {
         }
 
         return null;
-    }
-
-    private static Map<String, String> createDataTypeMapping() {
-        return Map.of(
-                "Ano či ne", DataTypeConstants.XSD_BOOLEAN,
-                "Datum", DataTypeConstants.XSD_DATE,
-                "Čas", DataTypeConstants.XSD_TIME,
-                "Datum a čas", DataTypeConstants.XSD_DATETIME_STAMP,
-                "Celé číslo", DataTypeConstants.XSD_INTEGER,
-                "Desetinné číslo", DataTypeConstants.XSD_DOUBLE,
-                "URI, IRI, URL", DataTypeConstants.XSD_ANY_URI,
-                "Řetězec", DataTypeConstants.XSD_STRING,
-                "Text", DataTypeConstants.RDFS_LITERAL
-        );
     }
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
