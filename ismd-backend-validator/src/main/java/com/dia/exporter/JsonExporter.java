@@ -24,10 +24,17 @@ import java.util.*;
 
 import com.dia.constants.ExportConstants;
 import com.dia.constants.VocabularyConstants;
+
+import static com.dia.constants.ExportConstants.Json.POPIS;
+import static com.dia.constants.FormatConstants.Excel.*;
 import static com.dia.constants.VocabularyConstants.*;
 import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
-import static com.dia.constants.FormatConstants.Excel.TYP_OBSAHU_UDAJE;
-import static com.dia.constants.FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE;
+import static com.dia.constants.VocabularyConstants.AGENDA;
+import static com.dia.constants.VocabularyConstants.AIS;
+import static com.dia.constants.VocabularyConstants.DEFINICE;
+import static com.dia.constants.VocabularyConstants.EKVIVALENTNI_POJEM;
+import static com.dia.constants.VocabularyConstants.IDENTIFIKATOR;
+import static com.dia.constants.VocabularyConstants.JE_PPDF;
 
 @Slf4j
 public class JsonExporter {
@@ -79,7 +86,7 @@ public class JsonExporter {
 
         String description = modelProperties.getOrDefault(POPIS, "");
         if (description != null && !description.isEmpty()) {
-            addMultilingualModelProperty(root, ExportConstants.Json.POPIS, description);
+            addMultilingualModelProperty(root, POPIS, description);
         }
 
         addTemporalMetadata(root);
@@ -217,7 +224,7 @@ public class JsonExporter {
         addFieldIfExists(originalMap, orderedMap, ExportConstants.Json.TYP);
 
         addFieldWithDefault(originalMap, orderedMap, ExportConstants.Json.NAZEV, createEmptyMultilingualField());
-        addFieldWithDefault(originalMap, orderedMap, ExportConstants.Json.POPIS, createEmptyMultilingualField());
+        addFieldWithDefault(originalMap, orderedMap, POPIS, createEmptyMultilingualField());
 
         addFieldIfExists(originalMap, orderedMap, OKAMZIK_VYTVORENI);
         addFieldIfExists(originalMap, orderedMap, OKAMZIK_POSLEDNI_ZMENY);
@@ -286,15 +293,7 @@ public class JsonExporter {
     private Map<String, Object> orderPojemFields(Map<String, Object> pojemMap) {
         Map<String, Object> orderedPojem = new LinkedHashMap<>();
 
-        String[] orderedFields = {
-                JSON_IRI, TYP, NAZEV, ALTERNATIVNI_NAZEV, IDENTIFIKATOR, POPIS, DEFINICE, EKVIVALENTNI_POJEM,
-                DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI,
-                DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
-                DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENY_VZTAH, NADRAZENA_VLASTNOST, NADRAZENA_TRIDA,
-                ZPUSOB_SDILENI_ALT, ZPUSOB_ZISKANI_ALT, TYP_OBSAHU_ALT
-        };
-
-        for (String field : orderedFields) {
+        for (String field : CONCEPT_FIELD_ORDER) {
             addFieldIfExists(pojemMap, orderedPojem, field);
         }
 
@@ -363,8 +362,8 @@ public class JsonExporter {
     private JSONObject createConceptObject(Resource concept) throws JSONException {
         JSONObject pojemObj = new JSONObject();
 
-        pojemObj.put("iri", concept.getURI());
-        pojemObj.put("typ", getConceptTypes(concept));
+        pojemObj.put(JSON_IRI, concept.getURI());
+        pojemObj.put(ExportConstants.Json.TYP, getConceptTypes(concept));
 
         addMultilingualProperty(concept, SKOS.prefLabel, ExportConstants.Json.NAZEV, pojemObj);
 
@@ -484,7 +483,7 @@ public class JsonExporter {
     private void addDigitalObjectType(Resource digitalDoc, JSONObject docObj) {
         Resource digitalObjectType = ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt");
         if (digitalDoc.hasProperty(RDF.type, digitalObjectType)) {
-            docObj.put("typ", "Digitální objekt");
+            docObj.put(VocabularyConstants.TYP, "Digitální objekt");
         }
     }
 
@@ -498,12 +497,12 @@ public class JsonExporter {
 
         String nazevValue = nazevStmt.getString();
         if (nazevValue != null && !nazevValue.trim().isEmpty()) {
-            docObj.put("název", nazevValue);
+            docObj.put(ExportConstants.Json.NAZEV, nazevValue);
         }
     }
 
     private void addDocumentUrl(Resource digitalDoc, JSONObject docObj) {
-        Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
+        Property schemaUrlProperty = ontModel.createProperty(SCHEMA_URL);
         Statement urlStmt = digitalDoc.getProperty(schemaUrlProperty);
 
         if (urlStmt == null) {
@@ -522,21 +521,21 @@ public class JsonExporter {
         );
 
         addGovernancePropertySingleWithFallback(concept, pojemObj, namespace,
-                ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
+                ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, ZPUSOB_ZISKANI_ALT);
 
         addGovernancePropertySingleWithFallback(concept, pojemObj, namespace,
-                TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
+                TYP_OBSAHU_UDAJE, TYP_OBSAHU, TYP_OBSAHU_ALT);
     }
 
     private void addGovernancePropertyArrayWithFallback(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
 
-        Property excelProperty = ontModel.getProperty(namespace + "Způsob sdílení údajů");
+        Property excelProperty = ontModel.getProperty(namespace + ZPUSOB_SDILENI_UDEJE);
         if (concept.hasProperty(excelProperty)) {
             addGovernancePropertyArray(concept, excelProperty, pojemObj);
             return;
         }
 
-        Property excelDefaultProperty = ontModel.getProperty(DEFAULT_NS + "Způsob sdílení údajů");
+        Property excelDefaultProperty = ontModel.getProperty(DEFAULT_NS + ZPUSOB_SDILENI_UDEJE);
         if (concept.hasProperty(excelDefaultProperty)) {
             addGovernancePropertyArray(concept, excelDefaultProperty, pojemObj);
             return;
@@ -554,7 +553,7 @@ public class JsonExporter {
             return;
         }
 
-        Property hyphenatedProperty = ontModel.getProperty(namespace + "způsob-sdílení-údajů");
+        Property hyphenatedProperty = ontModel.getProperty(namespace + ZPUSOB_SDILENI_ALT);
         if (concept.hasProperty(hyphenatedProperty)) {
             addGovernancePropertyArray(concept, hyphenatedProperty, pojemObj);
         }
@@ -599,7 +598,7 @@ public class JsonExporter {
 
         if (!allValues.isEmpty()) {
             JSONArray propArray = createJsonArray(allValues);
-            pojemObj.put("způsob-sdílení-údajů", propArray);
+            pojemObj.put(ZPUSOB_SDILENI_ALT, propArray);
         }
     }
 
