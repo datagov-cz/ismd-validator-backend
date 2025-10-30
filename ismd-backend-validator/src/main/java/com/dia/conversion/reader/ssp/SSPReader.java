@@ -621,7 +621,7 @@ public class SSPReader {
         }
 
         if (domainRange != null) {
-            log.info("PROCESSING DOMAIN/RANGE: {} -> domainRange.domain={}, domainRange.range={}", 
+            log.info("PROCESSING DOMAIN/RANGE: {} -> domainRange.domain={}, domainRange.range={}",
                     conceptIRI, domainRange.getDomain(), domainRange.getRange());
             if (domainRange.getDomain() != null) {
                 String extractedDomain = UtilityMethods.extractNameFromIRI(domainRange.getDomain());
