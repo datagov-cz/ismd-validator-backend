@@ -6,7 +6,6 @@ import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.reader.ssp.SSPReader;
-import com.dia.conversion.transformer.OFNDataTransformer;
 import com.dia.conversion.data.TransformationResult;
 import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.enums.FileFormat;
@@ -27,8 +26,6 @@ import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 @Slf4j
 public class ConverterEngine {
 
-    @Deprecated
-    private final OFNDataTransformer ofnDataTransformer;
     private final OFNDataTransformerNew ofnDataTransformerNew;
     private final ArchiReader archiReader;
     private final EnterpriseArchitectReader eaReader;
@@ -138,7 +135,7 @@ public class ConverterEngine {
 
         try {
             long startTime = System.currentTimeMillis();
-            TransformationResult result = ofnDataTransformer.transform(ontologyData);
+            TransformationResult result = ofnDataTransformerNew.transform(ontologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("Archi model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
@@ -183,7 +180,7 @@ public class ConverterEngine {
 
         try {
             long startTime = System.currentTimeMillis();
-            TransformationResult result = ofnDataTransformer.transform(ontologyData);
+            TransformationResult result = ofnDataTransformerNew.transform(ontologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("Excel model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
