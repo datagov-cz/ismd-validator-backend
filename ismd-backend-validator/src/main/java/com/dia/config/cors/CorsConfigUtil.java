@@ -68,9 +68,9 @@ public class CorsConfigUtil {
         // Get allowed origins from environment variable
         String corsAllowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
         if (corsAllowedOrigins != null && !corsAllowedOrigins.isEmpty()) {
-            // Add the specific allowed origin from environment variable
+            // Split comma-separated origins to support multiple origins
             System.out.println("CORS allowed origins set from environment: " + corsAllowedOrigins);
-            config.setAllowedOrigins(List.of(corsAllowedOrigins));
+            config.setAllowedOrigins(List.of(corsAllowedOrigins.split(",")));
         }
         
         // Always include development patterns for local environment
