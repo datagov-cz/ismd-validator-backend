@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntProperty;
+import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.*;
@@ -28,6 +29,7 @@ import static com.dia.constants.ArchiConstants.*;
 import static com.dia.constants.ArchiConstants.AGENDA;
 import static com.dia.constants.ArchiConstants.AIS;
 import static com.dia.constants.ArchiConstants.JE_PPDF;
+import static com.dia.constants.ArchiConstants.NAZEV;
 import static com.dia.constants.ArchiConstants.SLOVNIK;
 import static com.dia.constants.DataTypeConstants.*;
 import static com.dia.constants.ExcelConstants.*;
@@ -361,7 +363,7 @@ public class OFNDataTransformer {
     private Map<String, String> createModelProperties(VocabularyMetadata metadata) {
         Map<String, String> properties = new HashMap<>();
         if (metadata.getName() != null) {
-            properties.put(ArchiConstants.NAZEV, metadata.getName());
+            properties.put(NAZEV, metadata.getName());
         }
         if (metadata.getDescription() != null) {
             properties.put(ArchiConstants.POPIS, metadata.getDescription());
@@ -950,22 +952,25 @@ public class OFNDataTransformer {
     private void handleNonEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
         String propertyName = isDefining ? DEFINUJICI_NELEGISLATIVNI_ZDROJ : SOUVISEJICI_NELEGISLATIVNI_ZDROJ;
 
-        String documentUri = uriGenerator.getEffectiveNamespace() + "digitální-dokument-" + trimmedUrl;
-        Resource digitalDocument = ontModel.createResource(documentUri);
+        Resource digitalDocument = ontModel.createResource();
 
-        Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
+        digitalDocument.addProperty(RDF.type, ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt"));
 
         if (UtilityMethods.isValidUrl(trimmedUrl)) {
-            digitalDocument.addProperty(schemaUrlProperty, ontModel.createResource(trimmedUrl));
-            log.debug("Added schema:url as URI to digital document: {}", trimmedUrl);
+            Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
+            Literal urlLiteral = ontModel.createTypedLiteral(trimmedUrl, "http://www.w3.org/2001/XMLSchema#anyURI");
+            digitalDocument.addProperty(schemaUrlProperty, urlLiteral);
+            log.debug("Added digital document with schema:url (xsd:anyURI): {}", trimmedUrl);
         } else {
-            log.debug("Skipped {}, invalid URL value: {}", propertyName, trimmedUrl);
+            Property dctermsTitle = ontModel.createProperty("http://purl.org/dc/terms/title");
+            digitalDocument.addProperty(dctermsTitle, trimmedUrl, DEFAULT_LANG);
+            log.debug("Added digital document with dcterms:title (@cs): {}", trimmedUrl);
         }
 
         Property nonLegislativeProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
         resource.addProperty(nonLegislativeProperty, digitalDocument);
 
-        log.debug("Added {} as digital document with schema:url: {}", propertyName, trimmedUrl);
+        log.debug("Added as digital document: {}", propertyName);
     }
 
     private void addClassSpecificMetadata(Resource classResource, ClassData classData, ConceptFilterUtil.FilterStatistics filterStatistics) {
