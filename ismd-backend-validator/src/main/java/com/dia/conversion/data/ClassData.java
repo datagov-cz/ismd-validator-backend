@@ -19,6 +19,7 @@ public class ClassData {
     private String alternativeName;
     private String equivalentConcept;
 
+    private String sharedInPPDF;
     private String agendaCode;
     private String agendaSystemCode;
     private String isPublic;
