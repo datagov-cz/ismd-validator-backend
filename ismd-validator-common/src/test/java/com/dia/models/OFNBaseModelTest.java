@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Nested;
 import java.lang.reflect.Method;
 import java.util.Set;
 
-import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.VocabularyConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class OFNBaseModelTest {

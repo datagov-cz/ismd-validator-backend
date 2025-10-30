@@ -1,5 +1,6 @@
 package com.dia.constants;
 
+@Deprecated
 public class EnterpriseArchitectConstants {
     // =============== STEREOTYPE CONSTANTS ===============
     public static final String STEREOTYPE_SLOVNIKY_PACKAGE = "slovnikyPackage";

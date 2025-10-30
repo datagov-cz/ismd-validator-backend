@@ -1,5 +1,6 @@
 package com.dia.constants;
 
+@Deprecated
 public class ExcelConstants {
     // =============== CORE VOCABULARY TYPES ===============
     public static final String SLOVNIK = "Slovník";

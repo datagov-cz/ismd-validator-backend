@@ -11,8 +11,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.dia.constants.ArchiConstants.*;
-import static com.dia.constants.SSPConstants.SGOV_NAMESPACE;
+import static com.dia.constants.VocabularyConstants.*;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 
 @UtilityClass

@@ -13,7 +13,7 @@ import org.apache.jena.vocabulary.RDFS;
 
 import java.util.Set;
 
-import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.VocabularyConstants.*;
 
 @Getter
 @Slf4j

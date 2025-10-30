@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.VocabularyConstants.*;
 
 @Slf4j
 public class RequiredPropertiesAnalyzer {

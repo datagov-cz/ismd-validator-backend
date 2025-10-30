@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.dia.constants.ExcelConstants.SUBJEKTY_OBJEKTY_PRAVA;
+import static com.dia.constants.FormatConstants.Excel.SUBJEKTY_OBJEKTY_PRAVA;
 
 /**
  * ClassSheetProcessor - Handles tabular sheets for Subjekty a objekty práva.

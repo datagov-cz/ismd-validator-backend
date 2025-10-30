@@ -16,10 +16,11 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static com.dia.constants.ArchiConstants.*;
+import static com.dia.constants.VocabularyConstants.*;
+import static com.dia.constants.VocabularyConstants.PropertySets.*;
 import static com.dia.constants.ExportConstants.Turtle.*;
 import static com.dia.constants.ExportConstants.Common.*;
-import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
+import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 
 @Slf4j
 public class TurtleExporter {

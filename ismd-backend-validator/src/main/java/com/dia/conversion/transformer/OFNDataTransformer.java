@@ -1,6 +1,5 @@
 package com.dia.conversion.transformer;
 
-import com.dia.constants.ArchiConstants;
 import com.dia.conversion.data.*;
 import com.dia.conversion.transformer.metadata.ResourceMetadata;
 import com.dia.exceptions.ConversionException;
@@ -25,17 +24,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-import static com.dia.constants.ArchiConstants.*;
-import static com.dia.constants.ArchiConstants.AGENDA;
-import static com.dia.constants.ArchiConstants.AIS;
-import static com.dia.constants.ArchiConstants.JE_PPDF;
-import static com.dia.constants.ArchiConstants.NAZEV;
-import static com.dia.constants.ArchiConstants.SLOVNIK;
-import static com.dia.constants.DataTypeConstants.*;
-import static com.dia.constants.ExcelConstants.*;
+import com.dia.constants.DataTypeConstants;
+import com.dia.constants.FormatConstants;
+import com.dia.constants.ExportConstants;
+import static com.dia.constants.VocabularyConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
-import static com.dia.constants.ConverterControllerConstants.LOG_REQUEST_ID;
-import static com.dia.constants.ExportConstants.Json.*;
+import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 
 @Component
 @Slf4j
@@ -51,15 +45,15 @@ public class OFNDataTransformer {
 
     private static Map<String, String> createDataTypeMapping() {
         Map<String, String> mapping = new HashMap<>();
-        mapping.put("Ano či ne", XSD_BOOLEAN);
-        mapping.put("Datum", XSD_DATE);
-        mapping.put("Čas", XSD_TIME);
-        mapping.put("Datum a čas", XSD_DATETIME_STAMP);
-        mapping.put("Celé číslo", XSD_INTEGER);
-        mapping.put("Desetinné číslo", XSD_DOUBLE);
-        mapping.put("URI, IRI, URL", XSD_ANY_URI);
-        mapping.put("Řetězec", XSD_STRING);
-        mapping.put("Text", RDFS_LITERAL);
+        mapping.put("Ano či ne", DataTypeConstants.XSD_BOOLEAN);
+        mapping.put("Datum", DataTypeConstants.XSD_DATE);
+        mapping.put("Čas", DataTypeConstants.XSD_TIME);
+        mapping.put("Datum a čas", DataTypeConstants.XSD_DATETIME_STAMP);
+        mapping.put("Celé číslo", DataTypeConstants.XSD_INTEGER);
+        mapping.put("Desetinné číslo", DataTypeConstants.XSD_DOUBLE);
+        mapping.put("URI, IRI, URL", DataTypeConstants.XSD_ANY_URI);
+        mapping.put("Řetězec", DataTypeConstants.XSD_STRING);
+        mapping.put("Text", DataTypeConstants.RDFS_LITERAL);
         return Collections.unmodifiableMap(mapping);
     }
 
@@ -366,7 +360,7 @@ public class OFNDataTransformer {
             properties.put(NAZEV, metadata.getName());
         }
         if (metadata.getDescription() != null) {
-            properties.put(ArchiConstants.POPIS, metadata.getDescription());
+            properties.put(POPIS, metadata.getDescription());
         }
         if (metadata.getNamespace() != null) {
             properties.put(LOKALNI_KATALOG, metadata.getNamespace());
@@ -1103,14 +1097,14 @@ public class OFNDataTransformer {
         }
 
         try {
-            var literal = ontModel.createLiteral(value, com.dia.constants.ExportConstants.Common.DEFAULT_LANG);
+            var literal = ontModel.createLiteral(value, DEFAULT_LANG);
             resource.addProperty(property, literal);
 
-            log.debug("Added rdf:langString literal: '{}' with language '{}'", value, com.dia.constants.ExportConstants.Common.DEFAULT_LANG);
+            log.debug("Added rdf:langString literal: '{}' with language '{}'", value, DEFAULT_LANG);
         } catch (Exception e) {
             log.warn("Failed to create rdf:langString literal for value '{}': {}. Using regular language-tagged literal instead.",
                     value, e.getMessage());
-            resource.addProperty(property, value, com.dia.constants.ExportConstants.Common.DEFAULT_LANG);
+            resource.addProperty(property, value, DEFAULT_LANG);
         }
     }
 
@@ -1119,7 +1113,7 @@ public class OFNDataTransformer {
         Property rangeProperty = RDFS.range;
 
         if (dataType == null || dataType.trim().isEmpty()) {
-            propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+            propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
             log.debug("Added default rdfs:Literal range type for property without data type specification");
             return;
         }
@@ -1147,7 +1141,7 @@ public class OFNDataTransformer {
             return;
         }
 
-        propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+        propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
         log.debug("Unrecognized data type '{}' - using rdfs:Literal as fallback", trimmedDataType);
     }
 
@@ -1155,13 +1149,13 @@ public class OFNDataTransformer {
         if (trimmedDataType.startsWith("xsd:")) {
             String localName = trimmedDataType.substring(4);
             if (DataTypeConverter.isValidXSDType(localName)) {
-                String xsdType = XSD_NS + localName;
+                String xsdType = ExportConstants.Json.XSD_NS + localName;
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(xsdType));
                 log.debug("Added valid XSD range type: {}", xsdType);
                 return true;
             } else {
                 log.warn("Invalid XSD type '{}' - falling back to rdfs:Literal", trimmedDataType);
-                propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+                propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
                 return true;
             }
         }
@@ -1169,15 +1163,15 @@ public class OFNDataTransformer {
     }
 
     private boolean checkIfFullXsdUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
-        if (trimmedDataType.startsWith(XSD_NS)) {
-            String localName = trimmedDataType.substring(XSD_NS.length());
+        if (trimmedDataType.startsWith(ExportConstants.Json.XSD_NS)) {
+            String localName = trimmedDataType.substring(ExportConstants.Json.XSD_NS.length());
             if (DataTypeConverter.isValidXSDType(localName)) {
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(trimmedDataType));
                 log.debug("Added valid full XSD URI range type: {}", trimmedDataType);
                 return true;
             } else {
                 log.warn("Invalid XSD URI '{}' - falling back to rdfs:Literal", trimmedDataType);
-                propertyResource.addProperty(rangeProperty, ontModel.createResource(RDFS_LITERAL));
+                propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
                 return true;
             }
         }
@@ -1213,25 +1207,25 @@ public class OFNDataTransformer {
 
     private String tryDetectDataTypeFromValue(String value) {
         if (DataTypeConverter.isBooleanValue(value)) {
-            return XSD_BOOLEAN;
+            return DataTypeConstants.XSD_BOOLEAN;
         }
         if (DataTypeConverter.isInteger(value)) {
-            return XSD_INTEGER;
+            return DataTypeConstants.XSD_INTEGER;
         }
         if (DataTypeConverter.isDouble(value)) {
-            return XSD_DOUBLE;
+            return DataTypeConstants.XSD_DOUBLE;
         }
         if (DataTypeConverter.isDate(value)) {
-            return XSD_DATE;
+            return DataTypeConstants.XSD_DATE;
         }
         if (DataTypeConverter.isTime(value)) {
-            return XSD_TIME;
+            return DataTypeConstants.XSD_TIME;
         }
         if (DataTypeConverter.isDateTime(value)) {
-            return XSD_DATETIME_STAMP;
+            return DataTypeConstants.XSD_DATETIME_STAMP;
         }
         if (DataTypeConverter.isDateTimeStamp(value)) {
-            return XSD_DATETIME_STAMP;
+            return DataTypeConstants.XSD_DATETIME_STAMP;
         }
 
         return null;
@@ -1258,9 +1252,9 @@ public class OFNDataTransformer {
 
     private String getGovernancePropertyConstant(String propertyType) {
         return switch (propertyType) {
-            case "sharing-method" -> getConstantValue(ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údajů");
-            case "acquisition-method" -> getConstantValue(ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
-            case "content-type" -> getConstantValue(TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
+            case "sharing-method" -> getConstantValue(FormatConstants.Excel.ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údajů");
+            case "acquisition-method" -> getConstantValue(FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
+            case "content-type" -> getConstantValue(FormatConstants.Excel.TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
             default -> {
                 log.warn("Unknown governance property type: {}", propertyType);
                 yield null;
@@ -1373,7 +1367,7 @@ public class OFNDataTransformer {
     }
 
     private boolean isDatatype(String value) {
-        if (value.startsWith("xsd:") || value.startsWith(XSD_NS)) {
+        if (value.startsWith("xsd:") || value.startsWith(ExportConstants.Json.XSD_NS)) {
             return false;
         }
 
