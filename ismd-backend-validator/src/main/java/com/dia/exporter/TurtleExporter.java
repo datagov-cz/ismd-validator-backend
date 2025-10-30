@@ -747,7 +747,6 @@ public class TurtleExporter {
                 SOUVISEJICI_NELEGISLATIVNI_ZDROJ
         };
 
-        // TODO fix
         for (String propName : nonLegislativeProperties) {
             Property customProp = transformedModel.createProperty(effectiveNamespace + propName);
             Property defaultProp = transformedModel.createProperty(DEFAULT_NS + propName);
