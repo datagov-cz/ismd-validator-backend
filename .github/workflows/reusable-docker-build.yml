@@ -111,6 +111,7 @@ jobs:
             --build-arg USE_LOCAL_COMMON="$USE_LOCAL_COMMON" \
             --build-arg GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
             --build-arg GITHUB_ACTOR="${{ github.actor }}" \
+            --build-arg GITHUB_REPOSITORY="${{ github.repository }}" \
             -t $IMAGE_TAG \
             -t $LATEST_TAG \
             .

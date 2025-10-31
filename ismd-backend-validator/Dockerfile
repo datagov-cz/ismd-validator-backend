@@ -20,6 +20,7 @@ ARG MODULE_VERSION=unknown
 ARG REVISION=0.0.1
 ARG GITHUB_TOKEN
 ARG GITHUB_ACTOR
+ARG GITHUB_REPOSITORY
 ARG USE_LOCAL_COMMON=true
 
 # Configure Maven to authenticate with GitHub Packages
@@ -32,6 +33,9 @@ RUN if [ "$USE_LOCAL_COMMON" = "false" ]; then \
       echo "<password>${GITHUB_TOKEN}</password>" >> ~/.m2/settings.xml && \
       echo '</server></servers></settings>' >> ~/.m2/settings.xml; \
     fi
+
+# Set GITHUB_REPOSITORY as environment variable for Maven
+ENV GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
 
 # Pre-install common library locally if present and USE_LOCAL_COMMON=true (dev builds)
 # Production builds will download from GitHub Packages instead
