@@ -7,8 +7,8 @@ on:
         description: 'Branch name (main or dev)'
         required: true
         type: string
-      module:
-        description: 'Module to build (common, validator, or empty for all)'
+      version:
+        description: 'Version to use (from Git tag), leave empty to auto-detect'
         required: false
         type: string
         default: ''
@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Fetch all history to get tags
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -47,72 +49,69 @@ jobs:
         id: version
         working-directory: ismd-backend-validator
         run: |
-          # Get the base version from Maven
-          if [ -z "${{ inputs.module }}" ] || [ "${{ inputs.module }}" = "root" ]; then
-            BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+          # If version provided via input, use it
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+            echo "Using provided version: $VERSION"
           else
-            BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+            # Get base version from latest Git tag (only tags matching v[0-9]*)
+            BASE_VERSION=$(git describe --tags --abbrev=0 --match "v[0-9]*" 2>/dev/null | sed 's/^v//' || echo "0.0.1")
+            
+            if [ "${{ inputs.branch }}" = "main" ]; then
+              # For main, use tag version as-is
+              VERSION="$BASE_VERSION"
+              echo "Using version from Git tag: $VERSION"
+            else
+              # For dev, use tag version + SHA (tracks latest release)
+              VERSION="${BASE_VERSION}-$(git rev-parse --short HEAD)"
+              echo "Using dev version: $VERSION (based on latest tag $BASE_VERSION)"
+            fi
           fi
           
-          # For dev branches, create a version with Git SHA
-          if [ "${{ inputs.branch }}" != "main" ]; then
-            GIT_SHA=$(git rev-parse --short HEAD)
-            VERSION="${BASE_VERSION}-${GIT_SHA}"
-          else
-            VERSION="${BASE_VERSION}"
-            GIT_SHA=""
-          fi
+          GIT_SHA=$(git rev-parse --short HEAD)
           
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
           echo "git_sha=$GIT_SHA" >> $GITHUB_OUTPUT
           
-          echo "Using version: $VERSION (base: $BASE_VERSION, git: $GIT_SHA)"
+          echo "Final version: $VERSION (commit: $GIT_SHA)"
 
-      - name: Build and push Docker images
+      - name: Build and push Docker image
         run: |
-          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          # Use the precomputed repository path
+          IMAGE_TAG="ghcr.io/${{ env.REPO_PATH }}:${{ steps.version.outputs.version }}"
+          LATEST_TAG="ghcr.io/${{ env.REPO_PATH }}:latest"
           
-          # Determine which modules to build
-          if [ -z "${{ inputs.module }}" ]; then
-            # Build only the validator module as common is just a library
-            MODULES=("validator")
-            MODULE_ARG="."  # Build everything
+          echo "Building validator with tags:"
+          echo "  - $IMAGE_TAG"
+          echo "  - $LATEST_TAG"
+          
+          # Determine if we should use local common library or GitHub Packages
+          if [ "${{ inputs.branch }}" = "main" ]; then
+            USE_LOCAL_COMMON="false"
+            echo "Production build: Will download common library from GitHub Packages"
           else
-            # Build specific module
-            MODULES=("${{ inputs.module }}")
-            MODULE_ARG="."
+            USE_LOCAL_COMMON="true"
+            echo "Dev build: Will use local common library"
           fi
           
-          # Build and push each module
-          for MODULE in "${MODULES[@]}"; do
-            echo "Building module: $MODULE"
-            
-            # Use the precomputed repository path
-            IMAGE_TAG="ghcr.io/${{ env.REPO_PATH }}:${{ steps.version.outputs.version }}"
-            LATEST_TAG="ghcr.io/${{ env.REPO_PATH }}:latest"
-            
-            echo "Building $MODULE with tags:"
-            echo "  - $IMAGE_TAG"
-            echo "  - $LATEST_TAG"
-            
-            # Build and push the image using Dockerfile in ismd-backend-validator with repo root as build context
-            docker build \
-              -f ismd-backend-validator/Dockerfile \
-              --target ${MODULE}-runtime \
-              --build-arg MODULE="${MODULE_ARG}" \
-              --build-arg MODULE_VERSION="${{ steps.version.outputs.version }}" \
-              --build-arg GIT_COMMIT="${{ steps.version.outputs.git_sha }}" \
-              -t $IMAGE_TAG \
-              ${LATEST_TAG:+-t $LATEST_TAG} \
-              .
-            
-            # Push the built image
-            docker push $IMAGE_TAG
-            
-            # Push both version and latest tags
-            docker push $LATEST_TAG
-            
-            echo "Successfully pushed $IMAGE_TAG"
-            echo "Successfully pushed $LATEST_TAG"
-          done
+          # Build and push the image using Dockerfile in ismd-backend-validator with repo root as build context
+          # Pass version to Maven via -Drevision build arg
+          docker build \
+            -f ismd-backend-validator/Dockerfile \
+            --target runtime \
+            --build-arg REVISION="${{ steps.version.outputs.version }}" \
+            --build-arg MODULE_VERSION="${{ steps.version.outputs.version }}" \
+            --build-arg GIT_COMMIT="${{ steps.version.outputs.git_sha }}" \
+            --build-arg USE_LOCAL_COMMON="$USE_LOCAL_COMMON" \
+            --build-arg GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+            --build-arg GITHUB_ACTOR="${{ github.actor }}" \
+            -t $IMAGE_TAG \
+            -t $LATEST_TAG \
+            .
+          
+          # Push the built images
+          docker push $IMAGE_TAG
+          docker push $LATEST_TAG
+          
+          echo "Successfully pushed $IMAGE_TAG"
+          echo "Successfully pushed $LATEST_TAG"
