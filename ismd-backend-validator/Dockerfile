@@ -24,7 +24,8 @@ ARG GITHUB_REPOSITORY
 ARG USE_LOCAL_COMMON=true
 
 # Configure Maven to authenticate with GitHub Packages
-RUN if [ "$USE_LOCAL_COMMON" = "false" ]; then \
+# Always needed because Maven verifies dependencies against remote repos
+RUN if [ -n "${GITHUB_TOKEN}" ] && [ -n "${GITHUB_ACTOR}" ]; then \
       echo "Configuring Maven for GitHub Packages..."; \
       mkdir -p ~/.m2 && \
       echo '<settings><servers><server>' > ~/.m2/settings.xml && \
@@ -32,6 +33,8 @@ RUN if [ "$USE_LOCAL_COMMON" = "false" ]; then \
       echo "<username>${GITHUB_ACTOR}</username>" >> ~/.m2/settings.xml && \
       echo "<password>${GITHUB_TOKEN}</password>" >> ~/.m2/settings.xml && \
       echo '</server></servers></settings>' >> ~/.m2/settings.xml; \
+    else \
+      echo "No GitHub credentials provided, skipping Maven auth setup"; \
     fi
 
 # Set GITHUB_REPOSITORY as environment variable for Maven
