@@ -46,13 +46,22 @@ jobs:
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "should_build=true" >> $GITHUB_OUTPUT
             
-            # Create and push the tag
+            # Create and push the tag (idempotent)
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag "v$VERSION"
-            git push origin "v$VERSION"
             
-            echo "Created and pushed tag v$VERSION"
+            TAG_NAME="v$VERSION"
+            if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+              echo "Tag $TAG_NAME already exists locally, skipping creation"
+            elif git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+              echo "Tag $TAG_NAME already exists remotely, fetching it"
+              git fetch origin "refs/tags/$TAG_NAME:refs/tags/$TAG_NAME"
+            else
+              echo "Creating new tag $TAG_NAME"
+              git tag "$TAG_NAME"
+              git push origin "$TAG_NAME"
+              echo "Created and pushed tag $TAG_NAME"
+            fi
           else
             echo "Not a release PR, skipping tag creation"
             echo "should_build=false" >> $GITHUB_OUTPUT
