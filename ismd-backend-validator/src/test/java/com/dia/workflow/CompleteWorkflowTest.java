@@ -18,6 +18,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * defined in TestConfiguration.
  */
 @SpringBootTest
+@ActiveProfiles("test")
 @Tag("workflow")
 @Tag("e2e")
 class CompleteWorkflowTest {

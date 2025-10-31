@@ -1,7 +1,7 @@
 package com.dia.isolation;
 
 import com.dia.conversion.data.*;
-import com.dia.conversion.transformer.OFNDataTransformer;
+import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.workflow.assertions.OFNAssertions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
@@ -20,12 +21,13 @@ import static org.junit.jupiter.api.Assertions.*;
  * Validates export logic with pre-built OntModel (not from full pipeline).
  */
 @SpringBootTest
+@ActiveProfiles("test")
 @Tag("isolation")
 @Tag("exporter")
 public class ExporterIsolationTest {
 
     @Autowired
-    private OFNDataTransformer transformer;
+    private OFNDataTransformerNew transformer;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

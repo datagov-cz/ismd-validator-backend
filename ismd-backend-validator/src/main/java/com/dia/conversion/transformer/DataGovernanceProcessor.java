@@ -66,8 +66,6 @@ public class DataGovernanceProcessor {
     }
 
     private void handleClassNonPublicData(Resource classResource, ClassData classData, String privacyProvision) {
-        Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
-        classResource.addProperty(dataClassificationProp, "non-public");
         classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
         log.debug("Added non-public data annotation and RDF type for class: {}", classData.getName());
 
@@ -86,8 +84,6 @@ public class DataGovernanceProcessor {
                             classData.getName(), privacyProvision);
                     handleClassNonPublicData(classResource, classData, privacyProvision);
                 } else {
-                    Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
-                    classResource.addProperty(dataClassificationProp, "public");
                     classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
                     log.debug("Added public data annotation and RDF type for class: {}", classData.getName());
                 }
@@ -129,16 +125,168 @@ public class DataGovernanceProcessor {
     }
 
     public void addPropertyDataGovernanceMetadata(Resource propertyResource, PropertyData propertyData) {
+        addPropertyPublicOrNonPublicData(propertyResource, propertyData);
         handleGovernanceProperty(propertyResource, propertyData.getSharingMethod(), SHARING_METHOD);
         handleGovernanceProperty(propertyResource, propertyData.getAcquisitionMethod(), ACQUISITION_METHOD);
         handleGovernanceProperty(propertyResource, propertyData.getContentType(), CONTENT_TYPE);
     }
 
+    private void addPropertyPublicOrNonPublicData(Resource propertyResource, PropertyData propertyData) {
+        String isPublicValue = propertyData.getIsPublic();
+        String privacyProvision = propertyData.getPrivacyProvision();
+
+        if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+            handlePropertyNonPublicData(propertyResource, propertyData, privacyProvision);
+            return;
+        }
+
+        if (isPublicValue != null && !isPublicValue.trim().isEmpty()) {
+            handlePropertyPublicData(propertyResource, propertyData, isPublicValue, privacyProvision);
+        }
+    }
+
+    private void handlePropertyNonPublicData(Resource propertyResource, PropertyData propertyData, String privacyProvision) {
+        propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
+        log.debug("Added non-public data annotation and RDF type for property: {}", propertyData.getName());
+
+        if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+            validateAndAddPropertyPrivacyProvision(propertyResource, propertyData, privacyProvision);
+        }
+    }
+
+    private void handlePropertyPublicData(Resource propertyResource, PropertyData propertyData, String isPublicValue, String privacyProvision) {
+        if (UtilityMethods.isBooleanValue(isPublicValue)) {
+            Boolean isPublic = UtilityMethods.normalizeCzechBoolean(isPublicValue);
+
+            if (Boolean.TRUE.equals(isPublic)) {
+                if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+                    log.warn("Property '{}' marked as public but has privacy provision '{}' - treating as non-public",
+                            propertyData.getName(), privacyProvision);
+                    handlePropertyNonPublicData(propertyResource, propertyData, privacyProvision);
+                } else {
+                    propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    log.debug("Added public data annotation and RDF type for property: {}", propertyData.getName());
+                }
+            } else {
+                handlePropertyNonPublicData(propertyResource, propertyData, privacyProvision);
+            }
+        } else {
+            log.warn("Unrecognized boolean value for public property property: '{}' for property '{}'",
+                    isPublicValue, propertyData.getName());
+        }
+    }
+
+    private void validateAndAddPropertyPrivacyProvision(Resource propertyResource, PropertyData propertyData, String provision) {
+        String trimmedProvision = provision.trim();
+
+        if (UtilityMethods.containsEliPattern(trimmedProvision)) {
+            String eliPart = UtilityMethods.extractEliPart(trimmedProvision);
+            if (eliPart != null) {
+                String transformedProvision = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+                Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
+
+                if (DataTypeConverter.isUri(transformedProvision)) {
+                    propertyResource.addProperty(provisionProperty, ontModel.createResource(transformedProvision));
+                    log.debug("Added privacy provision as URI for property '{}': {} -> {}",
+                            propertyData.getName(), trimmedProvision, transformedProvision);
+                } else {
+                    DataTypeConverter.addTypedProperty(propertyResource, provisionProperty, transformedProvision, null, ontModel);
+                    log.debug("Added privacy provision as literal for property '{}': {} -> {}",
+                            propertyData.getName(), trimmedProvision, transformedProvision);
+                }
+            } else {
+                log.warn("Failed to extract ELI part from privacy provision for property '{}': '{}'",
+                        propertyData.getName(), trimmedProvision);
+            }
+        } else {
+            log.debug("Privacy provision does not contain ELI pattern for property '{}': '{}' - skipping",
+                    propertyData.getName(), trimmedProvision);
+        }
+    }
+
 
     public void addRelationshipDataGovernanceMetadata(Resource relationshipResource, RelationshipData relationshipData) {
+        addRelationshipPublicOrNonPublicData(relationshipResource, relationshipData);
         handleGovernanceProperty(relationshipResource, relationshipData.getSharingMethod(), SHARING_METHOD);
         handleGovernanceProperty(relationshipResource, relationshipData.getAcquisitionMethod(), ACQUISITION_METHOD);
         handleGovernanceProperty(relationshipResource, relationshipData.getContentType(), CONTENT_TYPE);
+    }
+
+    private void addRelationshipPublicOrNonPublicData(Resource relationshipResource, RelationshipData relationshipData) {
+        String isPublicValue = relationshipData.getIsPublic();
+        String privacyProvision = relationshipData.getPrivacyProvision();
+
+        if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+            handleRelationshipNonPublicData(relationshipResource, relationshipData, privacyProvision);
+            return;
+        }
+
+        if (isPublicValue != null && !isPublicValue.trim().isEmpty()) {
+            handleRelationshipPublicData(relationshipResource, relationshipData, isPublicValue, privacyProvision);
+        }
+    }
+
+    private void handleRelationshipNonPublicData(Resource relationshipResource, RelationshipData relationshipData, String privacyProvision) {
+        Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
+        relationshipResource.addProperty(dataClassificationProp, "non-public");
+        relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
+        log.debug("Added non-public data annotation and RDF type for relationship: {}", relationshipData.getName());
+
+        if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+            validateAndAddRelationshipPrivacyProvision(relationshipResource, relationshipData, privacyProvision);
+        }
+    }
+
+    private void handleRelationshipPublicData(Resource relationshipResource, RelationshipData relationshipData, String isPublicValue, String privacyProvision) {
+        if (UtilityMethods.isBooleanValue(isPublicValue)) {
+            Boolean isPublic = UtilityMethods.normalizeCzechBoolean(isPublicValue);
+
+            if (Boolean.TRUE.equals(isPublic)) {
+                if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
+                    log.warn("Relationship '{}' marked as public but has privacy provision '{}' - treating as non-public",
+                            relationshipData.getName(), privacyProvision);
+                    handleRelationshipNonPublicData(relationshipResource, relationshipData, privacyProvision);
+                } else {
+                    Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
+                    relationshipResource.addProperty(dataClassificationProp, "public");
+                    relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    log.debug("Added public data annotation and RDF type for relationship: {}", relationshipData.getName());
+                }
+            } else {
+                handleRelationshipNonPublicData(relationshipResource, relationshipData, privacyProvision);
+            }
+        } else {
+            log.warn("Unrecognized boolean value for public relationship property: '{}' for relationship '{}'",
+                    isPublicValue, relationshipData.getName());
+        }
+    }
+
+    private void validateAndAddRelationshipPrivacyProvision(Resource relationshipResource, RelationshipData relationshipData, String provision) {
+        String trimmedProvision = provision.trim();
+
+        if (UtilityMethods.containsEliPattern(trimmedProvision)) {
+            String eliPart = UtilityMethods.extractEliPart(trimmedProvision);
+            if (eliPart != null) {
+                String transformedProvision = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+                Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
+
+                if (DataTypeConverter.isUri(transformedProvision)) {
+                    relationshipResource.addProperty(provisionProperty, ontModel.createResource(transformedProvision));
+                    log.debug("Added privacy provision as URI for relationship '{}': {} -> {}",
+                            relationshipData.getName(), trimmedProvision, transformedProvision);
+                } else {
+                    DataTypeConverter.addTypedProperty(relationshipResource, provisionProperty, transformedProvision, null, ontModel);
+                    log.debug("Added privacy provision as literal for relationship '{}': {} -> {}",
+                            relationshipData.getName(), trimmedProvision, transformedProvision);
+                }
+            } else {
+                log.warn("Failed to extract ELI part from privacy provision for relationship '{}': '{}'",
+                        relationshipData.getName(), trimmedProvision);
+            }
+        } else {
+            log.debug("Privacy provision does not contain ELI pattern for relationship '{}': '{}' - skipping",
+                    relationshipData.getName(), trimmedProvision);
+        }
     }
 
     public void addPropertyPPDFData(Resource propertyResource, PropertyData propertyData) {
@@ -277,11 +425,11 @@ public class DataGovernanceProcessor {
         String sanitizedValue = UtilityMethods.sanitizeForIRI(value);
 
         return switch (propertyName) {
-            case "typ-obsahu-údajů" ->
+            case "typ-obsahu-udaje" ->
                     "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/" + sanitizedValue;
-            case "způsob-sdílení-údajů" ->
+            case "zpusob-sdileni-udaje" ->
                     "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/" + sanitizedValue;
-            case "způsob-získání-údajů" ->
+            case "zpusob-ziskani-udaje" ->
                     "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/" + sanitizedValue;
             default -> null;
         };
