@@ -37,11 +37,10 @@ jobs:
             echo "skip-build=false" >> $GITHUB_OUTPUT
           fi
   
-  # Build validator module on every push (except version bump commits)
+  # Build validator on every push (except version bump commits)
   build-validator:
     needs: [run-tests, check-version-bump]
     if: needs.check-version-bump.outputs.skip-build != 'true'
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       branch: dev
-      module: validator

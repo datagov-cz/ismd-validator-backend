@@ -20,19 +20,59 @@ permissions:
   packages: write
 
 jobs:
+  # Create Git tag for the release
+  create-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.determine-version.outputs.version }}
+      should_build: ${{ steps.determine-version.outputs.should_build }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      
+      - name: Determine version and create tag
+        id: determine-version
+        run: |
+          # Check if this is a release PR merge by looking at the PR title
+          PR_TITLE="${{ github.event.head_commit.message }}"
+          
+          if [[ "$PR_TITLE" =~ Release\ v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+            echo "Detected release version: $VERSION"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            
+            # Create and push the tag
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "v$VERSION"
+            git push origin "v$VERSION"
+            
+            echo "Created and pushed tag v$VERSION"
+          else
+            echo "Not a release PR, skipping tag creation"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+  
   # Build Docker image for main branch
   build-validator:
+    needs: create-tag
+    if: needs.create-tag.outputs.should_build == 'true'
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       branch: main
-      module: validator
+      version: ${{ needs.create-tag.outputs.version }}
       
   # Sync dev with main after Docker build
   sync-dev:
-    needs: build-validator
+    needs: [create-tag, build-validator]
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -50,17 +90,32 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin git@github.com:${{ github.repository }}.git
       
-      - name: Recreate dev from main
+      - name: Merge main into dev
         run: |
-          # Get the current main branch
+          # Fetch latest branches
           git fetch origin main
+          git fetch origin dev
           
-          # Create a temporary branch from main
-          git checkout main
-          git checkout -b temp-dev
+          # Checkout dev
+          git checkout dev
           
-          # Force push this branch to dev
-          echo "Recreating dev from main..."
-          git push --force origin temp-dev:dev
+          # Get version that was just released
+          VERSION="${{ needs.create-tag.outputs.version }}"
+          echo "Merging release v$VERSION into dev..."
           
-          echo "Dev branch has been recreated from main"
+          # Merge main into dev (should be clean since release came from dev)
+          if git merge origin/main -m "Merge main into dev after release v$VERSION" --no-edit; then
+            echo "✅ Merge successful"
+          else
+            echo "⚠️ Merge conflicts detected. Manual resolution required."
+            echo "This is unexpected - release branch came from dev."
+            echo "Please check and resolve conflicts manually."
+            exit 1
+          fi
+          
+          # Push to dev
+          echo "Pushing merged dev branch..."
+          git push origin dev
+          
+          echo "✅ Dev branch synced with main after release v$VERSION"
+          echo "Note: Versions are managed via Git tags, no pom.xml changes needed"
