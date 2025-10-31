@@ -56,7 +56,7 @@ jobs:
         working-directory: ismd-validator-common
         run: |
           NEW_VERSION="${{ steps.version.outputs.version }}"
-          sed -i "s/<version>[^<]*<\/version>/<version>$NEW_VERSION<\/version>/" pom.xml
+          sed -i "0,/<version>/s/<version>[^<]*<\/version>/<version>$NEW_VERSION<\/version>/" pom.xml
           echo "Updated pom.xml to version $NEW_VERSION"
 
       - name: Configure Git
@@ -101,7 +101,7 @@ jobs:
         run: |
           CURRENT_VERSION="${{ steps.version.outputs.version }}"
           NEXT_VERSION=$(echo $CURRENT_VERSION | awk -F. -v OFS=. '{$NF++;print}')-SNAPSHOT
-          sed -i "s/<version>[^<]*<\/version>/<version>$NEXT_VERSION<\/version>/" pom.xml
+          sed -i "0,/<version>/s/<version>[^<]*<\/version>/<version>$NEXT_VERSION<\/version>/" pom.xml
           echo "Bumped pom.xml to next SNAPSHOT version: $NEXT_VERSION"
 
       - name: Commit SNAPSHOT version
