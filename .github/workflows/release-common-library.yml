@@ -82,8 +82,19 @@ jobs:
 
       - name: Create tag
         run: |
-          git tag "common-v${{ steps.version.outputs.version }}"
-          git push origin "common-v${{ steps.version.outputs.version }}"
+          TAG_NAME="common-v${{ steps.version.outputs.version }}"
+          
+          # Check if tag already exists locally or remotely
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists locally, skipping creation"
+          elif git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+            echo "Tag $TAG_NAME already exists remotely, fetching it"
+            git fetch origin "refs/tags/$TAG_NAME:refs/tags/$TAG_NAME"
+          else
+            echo "Creating new tag $TAG_NAME"
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
+          fi
 
       - name: Configure Maven settings for GitHub Packages
         run: |
