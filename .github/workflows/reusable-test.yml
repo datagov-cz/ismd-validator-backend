@@ -24,14 +24,35 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
+      - name: Configure Maven settings for GitHub Packages
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>${{ github.actor }}</username>
+                <password>${{ secrets.GITHUB_TOKEN }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
       - name: Install common library locally
         working-directory: ismd-backend-validator
         run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build with Maven
         working-directory: ismd-backend-validator
         run: ./mvnw clean package -DskipTests=true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests
         working-directory: ismd-backend-validator
         run: ./mvnw test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
