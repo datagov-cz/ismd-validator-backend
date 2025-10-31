@@ -69,13 +69,13 @@ jobs:
       
   # Sync dev with main after Docker build
   sync-dev:
-    needs: build-validator
+    needs: [create-tag, build-validator]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Get full history
       
