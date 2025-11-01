@@ -10,6 +10,7 @@ import com.dia.exporter.JsonExporter;
 import com.dia.exporter.TurtleExporter;
 import org.apache.jena.ontology.OntModel;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -28,6 +29,8 @@ import static org.mockito.quality.Strictness.LENIENT;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = LENIENT)
+@Deprecated(forRemoval = true)
+@Disabled
 class OFNDataTransformerErrorHandlingTest {
 
     private OFNDataTransformer transformer;

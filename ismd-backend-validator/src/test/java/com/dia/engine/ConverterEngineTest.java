@@ -11,7 +11,7 @@ import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.reader.ssp.SSPReader;
-import com.dia.conversion.transformer.OFNDataTransformer;
+import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
 import org.junit.jupiter.api.AfterEach;
@@ -49,7 +49,7 @@ class ConverterEngineTest {
     private SSPReader sspReader;
 
     @Mock
-    private OFNDataTransformer ofnDataTransformer;
+    private OFNDataTransformerNew ofnDataTransformer;
 
     @InjectMocks
     private ConverterEngine converterEngine;

@@ -127,11 +127,11 @@ public class VocabularyConstants {
 
     // =============== FIELD ORDERING FOR JSON OUTPUT ===============
     public static final String[] CONCEPT_FIELD_ORDER = {
-            "iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice",
-            "ekvivalentní pojem", DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU, SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU,
+            JSON_IRI, TYP, NAZEV, ALTERNATIVNI_NAZEV, IDENTIFIKATOR, POPIS, DEFINICE,
+            EKVIVALENTNI_POJEM, DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU, SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU,
             DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
-            "definiční-obor", "obor-hodnot", "nadřazený-vztah", "nadřazená-vlastnost",
-            "nadřazená-třída", "způsob-sdílení-údajů", "způsob-získání-údajů", "typ-obsahu-údajů"
+            DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENY_VZTAH, NADRAZENA_VLASTNOST,
+            NADRAZENA_TRIDA, ZPUSOB_SDILENI_ALT, ZPUSOB_ZISKANI_ALT, TYP_OBSAHU_ALT
     };
 
     private VocabularyConstants() {
