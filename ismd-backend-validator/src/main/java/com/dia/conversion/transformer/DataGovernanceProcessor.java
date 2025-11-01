@@ -38,6 +38,7 @@ public class DataGovernanceProcessor {
     private static final String CONTENT_TYPE = "content-type";
     private static final String ACQUISITION_METHOD = "acquisition-method";
     private static final String SHARING_METHOD = "sharing-method";
+    private static final String OPENDATA_ESEL = "https://opendata.eselpoint.cz/esel-esb/";
 
     public DataGovernanceProcessor(OntModel ontModel, URIGenerator uriGenerator) {
         this.ontModel = ontModel;
@@ -102,7 +103,7 @@ public class DataGovernanceProcessor {
         if (UtilityMethods.containsEliPattern(trimmedProvision)) {
             String eliPart = UtilityMethods.extractEliPart(trimmedProvision);
             if (eliPart != null) {
-                String transformedProvision = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+                String transformedProvision = OPENDATA_ESEL + eliPart;
                 Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
 
                 if (DataTypeConverter.isUri(transformedProvision)) {
@@ -182,7 +183,7 @@ public class DataGovernanceProcessor {
         if (UtilityMethods.containsEliPattern(trimmedProvision)) {
             String eliPart = UtilityMethods.extractEliPart(trimmedProvision);
             if (eliPart != null) {
-                String transformedProvision = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+                String transformedProvision = OPENDATA_ESEL + eliPart;
                 Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
 
                 if (DataTypeConverter.isUri(transformedProvision)) {
@@ -267,7 +268,7 @@ public class DataGovernanceProcessor {
         if (UtilityMethods.containsEliPattern(trimmedProvision)) {
             String eliPart = UtilityMethods.extractEliPart(trimmedProvision);
             if (eliPart != null) {
-                String transformedProvision = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+                String transformedProvision = OPENDATA_ESEL + eliPart;
                 Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + USTANOVENI_NEVEREJNOST);
 
                 if (DataTypeConverter.isUri(transformedProvision)) {
@@ -481,7 +482,7 @@ public class DataGovernanceProcessor {
     private void handleEliPart(String trimmedUrl, Resource resource, boolean isDefining) {
         String eliPart = UtilityMethods.extractEliPart(trimmedUrl);
         if (eliPart != null) {
-            String transformedUrl = "https://opendata.eselpoint.cz/esel-esb/" + eliPart;
+            String transformedUrl = OPENDATA_ESEL + eliPart;
             String propertyName = isDefining ? DEFINUJICI_USTANOVENI : SOUVISEJICI_USTANOVENI;
 
             Property provisionProperty = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
