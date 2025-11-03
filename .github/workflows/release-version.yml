@@ -16,6 +16,9 @@ permissions:
 jobs:
   create-release-pr:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       main_version: ${{ steps.main-version.outputs.version }}
       new_version: ${{ steps.new-version.outputs.version }}

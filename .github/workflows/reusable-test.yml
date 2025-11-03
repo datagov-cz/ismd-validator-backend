@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -20,7 +23,7 @@ jobs:
           java-version: '17'
           server-id: github
           server-username: GITHUB_ACTOR
-          server-password: ${{ secrets.GITHUB_TOKEN }}
+          server-password: GITHUB_TOKEN
 
       - name: Cache Maven packages
         uses: actions/cache@v4
@@ -30,44 +33,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Configure Maven settings for GitHub Packages
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<EOF
-          <settings>
-            <servers>
-              <server>
-                <id>github</id>
-                <username>${{ github.actor }}</username>
-                <password>${{ secrets.GITHUB_TOKEN }}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
-
       - name: Install common library locally
         working-directory: ismd-backend-validator
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build with Maven
         working-directory: ismd-backend-validator
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./mvnw clean package -DskipTests=true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests
         working-directory: ismd-backend-validator
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./mvnw test
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
