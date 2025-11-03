@@ -82,6 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -99,32 +100,41 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin git@github.com:${{ github.repository }}.git
       
-      - name: Merge main into dev
+      - name: Create sync PR from main to dev
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Fetch latest branches
           git fetch origin main
           git fetch origin dev
           
-          # Checkout dev
-          git checkout dev
-          
           # Get version that was just released
           VERSION="${{ needs.create-tag.outputs.version }}"
-          echo "Merging release v$VERSION into dev..."
+          SYNC_BRANCH="sync-main-to-dev-v${VERSION}"
           
-          # Merge main into dev (should be clean since release came from dev)
-          if git merge origin/main -m "Merge main into dev after release v$VERSION" --no-edit; then
-            echo "✅ Merge successful"
+          echo "Creating sync branch $SYNC_BRANCH from main..."
+          git checkout -b $SYNC_BRANCH origin/main
+          git push origin $SYNC_BRANCH
+          
+          # Check if PR already exists
+          PR_EXISTS=$(gh pr list --head $SYNC_BRANCH --base dev --json number --jq 'length')
+          
+          if [ "$PR_EXISTS" = "0" ]; then
+            echo "Creating PR to sync main into dev..."
+            gh pr create \
+              --title "Sync main to dev after release v$VERSION" \
+              --body "# Sync Main → Dev after Release v$VERSION
+              
+              This PR syncs main back into dev after the v$VERSION release.
+              
+              - If there are no conflicts, this can be merged automatically
+              - If conflicts exist, they need to be resolved manually
+              
+              **This is an automated sync PR created by the release workflow.**" \
+              --base dev \
+              --head $SYNC_BRANCH
+            
+            echo "✅ Created sync PR from main to dev"
           else
-            echo "⚠️ Merge conflicts detected. Manual resolution required."
-            echo "This is unexpected - release branch came from dev."
-            echo "Please check and resolve conflicts manually."
-            exit 1
+            echo "Sync PR already exists, skipping creation"
           fi
-          
-          # Push to dev
-          echo "Pushing merged dev branch..."
-          git push origin dev
-          
-          echo "✅ Dev branch synced with main after release v$VERSION"
-          echo "Note: Versions are managed via Git tags, no pom.xml changes needed"
