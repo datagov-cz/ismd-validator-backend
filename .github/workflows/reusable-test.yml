@@ -19,7 +19,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           server-id: github
-          server-username: GITHUB_ACTOR
+          server-username: ${{ github.actor }}
           server-password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Maven packages
