@@ -13,6 +13,10 @@ on:
         type: string
         default: ''
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   docker-build:
     runs-on: ubuntu-latest

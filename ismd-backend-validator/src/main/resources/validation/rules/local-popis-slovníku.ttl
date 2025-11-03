@@ -1,0 +1,26 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+# Warning rule: Vocabulary should have description
+<https://slovník.gov.cz/shacl/lokální/popis-slovníku>
+    a sh:NodeShape ;
+    sh:targetClass skos:ConceptScheme ;
+    sh:name "Popis slovníku"@cs ;
+    sh:description "Ensures that each vocabulary/concept scheme has a description" ;
+    sh:message "Slovník nemá vyplněný popis"@cs ;
+    sh:severity sh:Warning ;
+
+    # Should have at least one description property
+    sh:or (
+        # Has dct:description
+        [ sh:path dct:description ; sh:minCount 1 ]
+
+        # Has rdfs:comment (backup option)
+        [ sh:path rdfs:comment ; sh:minCount 1 ]
+
+        # Has dc:description (backup option)
+        [ sh:path dc:description ; sh:minCount 1 ]
+    ) .
