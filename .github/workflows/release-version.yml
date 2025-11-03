@@ -16,6 +16,9 @@ permissions:
 jobs:
   create-release-pr:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       main_version: ${{ steps.main-version.outputs.version }}
       new_version: ${{ steps.new-version.outputs.version }}
@@ -32,8 +35,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           server-id: github
-          server-username: ${{ github.actor }}
-          server-password: ${{ secrets.GITHUB_TOKEN }}
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
 
       - name: Fetch main branch
         run: git fetch origin main:main

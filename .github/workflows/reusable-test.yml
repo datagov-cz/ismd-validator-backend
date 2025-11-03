@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -19,8 +22,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           server-id: github
-          server-username: ${{ github.actor }}
-          server-password: ${{ secrets.GITHUB_TOKEN }}
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
 
       - name: Cache Maven packages
         uses: actions/cache@v4
@@ -32,21 +35,12 @@ jobs:
 
       - name: Install common library locally
         working-directory: ismd-backend-validator
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
 
       - name: Build with Maven
         working-directory: ismd-backend-validator
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./mvnw clean package -DskipTests=true
 
       - name: Run tests
         working-directory: ismd-backend-validator
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./mvnw test
