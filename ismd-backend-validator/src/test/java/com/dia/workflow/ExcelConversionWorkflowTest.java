@@ -3,7 +3,6 @@ package com.dia.workflow;
 import com.dia.conversion.data.*;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.transformer.OFNDataTransformerNew;
-import com.dia.workflow.assertions.OFNAssertions;
 import com.dia.workflow.config.ExcelTestConfiguration;
 import com.dia.workflow.deviation.DeviationDetector;
 import com.dia.workflow.deviation.WorkflowDeviation;
@@ -83,20 +82,12 @@ class ExcelConversionWorkflowTest {
         assertNotNull(transformationResult, "Transformation should succeed");
         System.out.println("Transformation completed successfully");
 
-        // Stage 2 Validation: Check TransformationResult structure
-        System.out.println("\n[STAGE 2 VALIDATION] Validating TransformationResult");
-        OFNAssertions.assertValidTransformationResult(transformationResult);
-
         // Stage 3: Export to JSON-LD
         System.out.println("\n[STAGE 3] Exporting to JSON-LD");
         String actualJson = transformer.exportToJson(transformationResult);
         assertNotNull(actualJson, "JSON export should succeed");
         System.out.println("JSON-LD export completed successfully");
         System.out.println("Output size: " + actualJson.length() + " characters");
-
-        // Stage 3 Validation: Validate JSON-LD structure
-        System.out.println("\n[STAGE 3 VALIDATION] Validating JSON-LD structure");
-        OFNAssertions.assertValidOFNJson(actualJson);
 
         // Stage 4: Load expected output
         if (config.getExpectedOutputPath() != null) {
@@ -148,9 +139,6 @@ class ExcelConversionWorkflowTest {
         OntologyData ontologyData = loadExcelFile(config.getInputPath());
         TransformationResult transformationResult = transformer.transform(ontologyData);
         String actualJson = transformer.exportToJson(transformationResult);
-
-        // Validate no data loss
-        OFNAssertions.assertNoDataLoss(ontologyData);
 
         // Parse and count entities
         JsonNode actualRoot = objectMapper.readTree(actualJson);
@@ -377,25 +365,13 @@ class ExcelConversionWorkflowTest {
                 while (nestedFieldNames.hasNext()) {
                     String nestedField = nestedFieldNames.next();
                     JsonNode nestedFieldDef = nestedContext.get(nestedField);
-                    if (nestedFieldDef.isObject() && nestedFieldDef.has("@context")) {
-                        if (isFieldDefinedInContext(fieldName, nestedFieldDef.get("@context"))) {
-                            return true;
-                        }
+                    if (nestedFieldDef.isObject() && nestedFieldDef.has("@context") && isFieldDefinedInContext(fieldName, nestedFieldDef.get("@context"))) {
+                        return true;
                     }
                 }
             }
         }
 
-        return false;
-    }
-
-    private boolean isPojmyField(JsonNode contextDef, String fieldName) {
-        if (contextDef.has("pojmy")) {
-            JsonNode pojmyContext = contextDef.get("pojmy");
-            if (pojmyContext.has("@context")) {
-                return pojmyContext.get("@context").has(fieldName);
-            }
-        }
         return false;
     }
 

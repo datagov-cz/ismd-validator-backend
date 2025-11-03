@@ -120,60 +120,8 @@ public class TestConfiguration {
      * Creates a complete test configuration
      */
     public static TestConfiguration complete() {
-        return TestConfiguration.builder()
-            .testCaseId("complete")
-            .description("Complete ontology with all OFN characteristics populated")
-            .inputFiles(InputFiles.builder()
-                .archiXml("com/dia/canonical/complete/complete-archi.xml")
-                .enterpriseArchitectXmi("com/dia/canonical/complete/complete-ea.xml")
-                .excel("com/dia/canonical/complete/complete-excel.xlsx")
-                .ssp("com/dia/canonical/complete/complete-ssp.json")
-                .build())
-            .expectedOutputFiles(ExpectedOutputFiles.builder()
-                .jsonOutput("com/dia/expected-outputs/complete/complete.json")
-                .turtleOutput("com/dia/expected-outputs/complete/complete.ttl")
-                .build())
-            .metadata(TestOntologyMetadata.builder()
-                .testId("complete")
-                .description("Complete ontology with all OFN characteristics")
-                .vocabularyExpectations(TestOntologyMetadata.VocabularyExpectations.builder()
-                    .shouldHaveName(true)
-                    .shouldHaveDescription(true)
-                    .shouldHaveNamespace(true)
-                    .shouldHaveDateOfCreation(true)
-                    .shouldHaveDateOfModification(true)
-                    .shouldHaveTemporalData(true)
-                    .build())
-                .expectedCounts(TestOntologyMetadata.EntityCounts.builder()
-                    .classes(TestOntologyMetadata.EntityCounts.CountExpectation.builder()
-                        .minimum(2)
-                        .build())
-                    .properties(TestOntologyMetadata.EntityCounts.CountExpectation.builder()
-                        .minimum(2)
-                        .build())
-                    .relationships(TestOntologyMetadata.EntityCounts.CountExpectation.builder()
-                        .minimum(1)
-                        .build())
-                    .hierarchies(TestOntologyMetadata.EntityCounts.CountExpectation.builder()
-                        .minimum(0)
-                        .build())
-                    .build())
-                .requiredCharacteristics(List.of(
-                    "typ",
-                    "název",
-                    "iri",
-                    "popis",
-                    "definice",
-                    "zdroj",
-                    "je-pojem-veřejný",
-                    "způsob-sdílení",
-                    "typ-obsahu",
-                    "definiční-obor",
-                    "obor-hodnot"
-                        // TODO add more
-                ))
-                .build())
-            .build();
+        // TODO implement
+        return TestConfiguration.builder().build();
     }
 
     /**

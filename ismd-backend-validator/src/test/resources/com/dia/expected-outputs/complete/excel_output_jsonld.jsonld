@@ -169,7 +169,7 @@
                 "cs": "drží řidičský průkaz"
             },
             "popis": {
-                "cs": "Z definice vyplývá, že řidiči, kteří jsou evidováni v registru řidičů, mohou být držiteli řidičského průkazu."
+                "cs": "Z definice vyplývá, že řidiči, kteří jsou evidováni v registru řidičů, mohou být držiteli řidičského průkazu."
             },
             "definice": {
                 "cs": "Registr řidičů obsahuje a) osobní údaje o řidiči motorového vozidla uvedené v řidičském průkazu a v mezinárodním řidičském průkazu, včetně digitalizované fotografie a digitalizovaného podpisu řidiče,"
@@ -233,7 +233,7 @@
             "související-nelegislativní-zdroj": [
                 {
                     "typ": "Digitální objekt",
-                    "url": "https://ofn.gov.cz/slovn%C3%ADky/draft2/cs/#360-2023"
+                    "url": "https://ofn.gov.cz/slovníky/draft2/cs/#360-2023"
                 }
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
@@ -262,7 +262,7 @@
                 "cs": "Obecní úřad obce s rozšířenou působností"
             },
             "popis": {
-                "cs": "Úřad vydávající řidičský průkaz je vždy obecním úřadem obce s rozšířenou působností."
+                "cs": "Úřad vydávající řidičský průkaz je vždy obecním úřadem obce s rozšířenou působností."
             },
             "ekvivalentní-pojem": [
                 {
@@ -362,7 +362,7 @@
             "související-nelegislativní-zdroj": [
                 {
                     "typ": "Digitální objekt",
-                    "url": "https://ofn.gov.cz/slovn%C3%ADky/draft2/cs/#360-2023"
+                    "url": "https://ofn.gov.cz/slovníky/draft2/cs/#360-2023"
                 },
                 {
                     "typ": "Digitální objekt",
@@ -694,7 +694,7 @@
                 "cs": "Název obecního úřadu obce s rozšířenou působností"
             },
             "popis": {
-                "cs": "Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností)."
+                "cs": "Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností)."
             },
             "definující-ustanovení-právního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i"

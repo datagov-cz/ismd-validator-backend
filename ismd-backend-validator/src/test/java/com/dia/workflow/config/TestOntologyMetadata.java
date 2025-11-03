@@ -3,7 +3,6 @@ package com.dia.workflow.config;
 import lombok.Data;
 import lombok.Builder;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Metadata descriptor for test ontologies.
@@ -63,15 +62,6 @@ public class TestOntologyMetadata {
             private Integer minimum;
             private Integer maximum;
             private Integer exact;
-
-            public boolean matches(int actual) {
-                if (exact != null) {
-                    return actual == exact;
-                }
-                boolean meetsMinimum = minimum == null || actual >= minimum;
-                boolean meetsMaximum = maximum == null || actual <= maximum;
-                return meetsMinimum && meetsMaximum;
-            }
         }
     }
 }

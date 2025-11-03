@@ -1,9 +1,6 @@
 package com.dia.workflow.deviation;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * Represents a deviation between expected and actual workflow output.
@@ -40,11 +37,7 @@ public class WorkflowDeviation {
      */
     private Object actualValue;
 
-    /**
-     * Severity level
-     */
-    private Severity severity;
-
+    @Getter
     public enum DeviationType {
         MISSING_FIELD("Missing Field"),
         EXTRA_FIELD("Extra Field"),
@@ -59,23 +52,11 @@ public class WorkflowDeviation {
         DeviationType(String displayName) {
             this.displayName = displayName;
         }
-
-        public String getDisplayName() {
-            return displayName;
-        }
-    }
-
-    public enum Severity {
-        CRITICAL,  // Must be fixed - breaks functionality
-        HIGH,      // Should be fixed - incorrect output
-        MEDIUM,    // Should be investigated - potential issue
-        LOW        // Nice to fix - cosmetic or minor
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("[").append(severity).append("] ");
         sb.append(type.getDisplayName()).append(" at ").append(location);
         sb.append("\n  ").append(message);
 

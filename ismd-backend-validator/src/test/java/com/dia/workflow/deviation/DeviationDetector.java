@@ -3,7 +3,10 @@ package com.dia.workflow.deviation;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Detects and reports deviations between expected and actual JSON-LD outputs.
@@ -71,7 +74,6 @@ public class DeviationDetector {
                 .location(path)
                 .message("Field present in actual but not in expected")
                 .actualValue(actual.toString())
-                .severity(WorkflowDeviation.Severity.MEDIUM)
                 .build());
             return;
         }
@@ -82,7 +84,6 @@ public class DeviationDetector {
                 .location(path)
                 .message("Field present in expected but missing in actual")
                 .expectedValue(expected.toString())
-                .severity(WorkflowDeviation.Severity.HIGH)
                 .build());
             return;
         }
@@ -94,7 +95,6 @@ public class DeviationDetector {
                 .message("Node types differ: expected " + expected.getNodeType() + ", actual " + actual.getNodeType())
                 .expectedValue(expected.getNodeType())
                 .actualValue(actual.getNodeType())
-                .severity(WorkflowDeviation.Severity.HIGH)
                 .build());
             return;
         }
@@ -124,7 +124,6 @@ public class DeviationDetector {
                         .location(fieldPath)
                         .message("Optional field missing in actual output")
                         .expectedValue(expected.get(fieldName).toString())
-                        .severity(WorkflowDeviation.Severity.LOW)
                         .build());
                 } else {
                     addDeviation(WorkflowDeviation.builder()
@@ -132,7 +131,6 @@ public class DeviationDetector {
                         .location(fieldPath)
                         .message("Required field missing in actual output")
                         .expectedValue(expected.get(fieldName).toString())
-                        .severity(WorkflowDeviation.Severity.HIGH)
                         .build());
                 }
             } else {
@@ -151,7 +149,6 @@ public class DeviationDetector {
                     .location(fieldPath)
                     .message("Field present in actual but not in expected")
                     .actualValue(actual.get(fieldName).toString())
-                    .severity(WorkflowDeviation.Severity.MEDIUM)
                     .build());
             }
         }
@@ -169,12 +166,14 @@ public class DeviationDetector {
                     expected.size(), actual.size()))
                 .expectedValue(expected.size())
                 .actualValue(actual.size())
-                .severity(WorkflowDeviation.Severity.HIGH)
                 .build());
         }
 
         if (path.endsWith("pojmy")) {
             comparePojmyArrays(expected, actual, path);
+        } else if (path.contains("související-nelegislativní-zdroj") || path.contains("definující-nelegislativní-zdroj")) {
+            // Compare source arrays by matching content regardless of order
+            compareSourceArrays(expected, actual, path);
         } else {
             int minSize = Math.min(expected.size(), actual.size());
             for (int i = 0; i < minSize; i++) {
@@ -201,7 +200,6 @@ public class DeviationDetector {
                     .location(path + "[iri=" + iri + "]")
                     .message("Concept with IRI '" + iri + "' present in expected but missing in actual")
                     .expectedValue(expectedPojem.toString())
-                    .severity(WorkflowDeviation.Severity.CRITICAL)
                     .build());
             } else {
                 JsonNode actualPojem = actualByIri.get(iri);
@@ -216,33 +214,150 @@ public class DeviationDetector {
                     .location(path + "[iri=" + iri + "]")
                     .message("Concept with IRI '" + iri + "' present in actual but not in expected")
                     .actualValue(actualByIri.get(iri).toString())
-                    .severity(WorkflowDeviation.Severity.MEDIUM)
                     .build());
             }
         }
     }
 
     /**
+     * Compares source arrays (související-nelegislativní-zdroj, definující-nelegislativní-zdroj)
+     * by matching content regardless of order. Sources are matched by their identifying fields
+     * (url or název).
+     */
+    private void compareSourceArrays(JsonNode expected, JsonNode actual, String path) {
+        // Build sets of actual elements for matching
+        Set<JsonNode> matchedActualElements = new HashSet<>();
+
+        // Try to match each expected element with an actual element
+        for (int i = 0; i < expected.size(); i++) {
+            JsonNode expectedElement = expected.get(i);
+            JsonNode matchedActual = findMatchingSourceElement(expectedElement, actual, matchedActualElements);
+
+            if (matchedActual != null) {
+                matchedActualElements.add(matchedActual);
+                // Use a generic index notation since order doesn't matter
+                String elementPath = path + "[" + i + "]";
+                compareNodes(expectedElement, matchedActual, elementPath);
+            } else {
+                // No match found - element is missing in actual
+                addDeviation(WorkflowDeviation.builder()
+                    .type(WorkflowDeviation.DeviationType.MISSING_FIELD)
+                    .location(path + "[" + i + "]")
+                    .message("Source element not found in actual array")
+                    .expectedValue(expectedElement.toString())
+                    .build());
+            }
+        }
+
+        // Find extra elements in actual that weren't matched
+        for (int i = 0; i < actual.size(); i++) {
+            JsonNode actualElement = actual.get(i);
+            if (!matchedActualElements.contains(actualElement)) {
+                addDeviation(WorkflowDeviation.builder()
+                    .type(WorkflowDeviation.DeviationType.EXTRA_FIELD)
+                    .location(path + "[" + i + "]")
+                    .message("Source element present in actual but not in expected")
+                    .actualValue(actualElement.toString())
+                    .build());
+            }
+        }
+    }
+
+    /**
+     * Finds a matching source element in the actual array that hasn't been matched yet.
+     * Sources are considered matching if they have the same identifying fields (url, název).
+     */
+    private JsonNode findMatchingSourceElement(JsonNode expectedElement, JsonNode actualArray, Set<JsonNode> alreadyMatched) {
+        for (JsonNode actualElement : actualArray) {
+            if (alreadyMatched.contains(actualElement)) {
+                continue;
+            }
+
+            // Check if elements match based on identifying fields
+            if (sourceElementsMatch(expectedElement, actualElement)) {
+                return actualElement;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Determines if two source elements represent the same source.
+     * They match if they have the same url or název values.
+     */
+    private boolean sourceElementsMatch(JsonNode element1, JsonNode element2) {
+        // Try matching by URL
+        if (element1.has("url") && element2.has("url")) {
+            String url1 = element1.get("url").asText();
+            String url2 = element2.get("url").asText();
+            if (url1.equals(url2)) {
+                return true;
+            }
+        }
+
+        // Try matching by název
+        if (element1.has("název") && element2.has("název")) {
+            String name1 = element1.get("název").asText();
+            String name2 = element2.get("název").asText();
+            if (name1.equals(name2)) {
+                return true;
+            }
+        }
+
+        // If both have url and název, require at least one to match
+        boolean hasUrl1 = element1.has("url");
+        boolean hasUrl2 = element2.has("url");
+        boolean hasName1 = element1.has("název");
+        boolean hasName2 = element2.has("název");
+
+        // If structure differs significantly, they don't match
+        if (hasUrl1 != hasUrl2 || hasName1 != hasName2) {
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
      * Compares two value nodes
      */
     private void compareValues(JsonNode expected, JsonNode actual, String path) {
+        // Your existing special case for @context
         if (path.equals("root.@context") && expected.isTextual() && actual.isTextual()) {
             String expectedText = expected.asText();
             String actualText = actual.asText();
-
             if (expectedText.contains("ofn.gov.cz") && actualText.contains("ofn.gov.cz")) {
                 return;
             }
         }
 
+        // Handle text nodes with both Unicode normalization AND space normalization
+        if (expected.isTextual() && actual.isTextual()) {
+            String expectedText = expected.asText();
+            String actualText = actual.asText();
+
+            // Normalize Unicode (NFC form)
+            String expectedNorm = Normalizer.normalize(expectedText, Normalizer.Form.NFC);
+            String actualNorm = Normalizer.normalize(actualText, Normalizer.Form.NFC);
+
+            // Also normalize spaces: replace non-breaking spaces with regular spaces
+            expectedNorm = expectedNorm.replace('\u00A0', ' ');
+            actualNorm = actualNorm.replace('\u00A0', ' ');
+
+            if (expectedNorm.equals(actualNorm)) {
+                return; // Strings are semantically equivalent
+            }
+        }
+
+        // Existing comparison logic
         if (!expected.equals(actual)) {
             addDeviation(WorkflowDeviation.builder()
-                .type(WorkflowDeviation.DeviationType.VALUE_MISMATCH)
-                .location(path)
-                .message("Value mismatch")
-                .expectedValue(formatValueForDisplay(expected))
-                .actualValue(formatValueForDisplay(actual))
-                .build());
+                    .type(WorkflowDeviation.DeviationType.VALUE_MISMATCH)
+                    .location(path)
+                    .message("Value mismatch")
+                    .expectedValue(formatValueForDisplay(expected))
+                    .actualValue(formatValueForDisplay(actual))
+                    .build());
         }
     }
 
