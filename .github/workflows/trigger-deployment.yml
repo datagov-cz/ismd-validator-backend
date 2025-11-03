@@ -167,7 +167,14 @@ jobs:
           ENV_LOWER=$(echo "$ENV_UPPER" | tr '[:upper:]' '[:lower:]')
           IMAGE_TAG='${{ needs.determine-params.outputs.image_tag }}'
           REPO_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
-          IMAGE="ghcr.io/${REPO_OWNER}/ismd-validator-backend-${ENV_LOWER}:${IMAGE_TAG}"
+          
+          # Only dev images have environment suffix, test/prod use base image name
+          if [ "$ENV_UPPER" = "DEV" ]; then
+            IMAGE="ghcr.io/${REPO_OWNER}/ismd-validator-backend-${ENV_LOWER}:${IMAGE_TAG}"
+          else
+            IMAGE="ghcr.io/${REPO_OWNER}/ismd-validator-backend:${IMAGE_TAG}"
+          fi
+          
           echo "Validating image: $IMAGE"
           if ! docker manifest inspect "$IMAGE" >/dev/null 2>&1; then
             echo "ERROR: Image manifest not found for $IMAGE" >&2
