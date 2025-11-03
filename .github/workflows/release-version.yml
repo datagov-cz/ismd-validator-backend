@@ -81,15 +81,34 @@ jobs:
           
           echo "Created release branch $BRANCH_NAME from dev (no file changes needed)"
 
+      - name: Configure Maven settings for GitHub Packages
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>${{ github.actor }}</username>
+                <password>${{ secrets.GITHUB_TOKEN }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
       - name: Install common library locally
         working-directory: ismd-backend-validator
         run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests
         working-directory: ismd-backend-validator
         run: |
           # Build and run tests to ensure the release is stable
           ./mvnw clean test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push release branch
         run: |
