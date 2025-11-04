@@ -320,6 +320,511 @@ class ExcelConversionWorkflowTest {
             // Note: This is a warning, not a failure, as some fields might be valid but not in our context
             System.out.println("\nNote: Some fields may be valid but not defined in the test context file");
         }
+
+        // Validate structure: comprehensive validation
+        System.out.println("\nValidating structure against context...");
+        List<String> structureViolations = new ArrayList<>();
+
+        // 1. Check @container: @set (arrays)
+        structureViolations.addAll(validateSetContainers(jsonRoot, contextDef));
+
+        // TODO verify
+        // 2. Check @container: @language (language maps)
+        //structureViolations.addAll(validateLanguageContainers(jsonRoot, contextDef));
+
+        // TODO remore @id from data governance
+        // 3. Check @type: @id (IRI/URI fields)
+        //structureViolations.addAll(validateIdTypes(jsonRoot, contextDef));
+
+        // 4. Check @type: xsd types (data types)
+        //structureViolations.addAll(validateDataTypes(jsonRoot, contextDef));
+
+        if (!structureViolations.isEmpty()) {
+            System.out.println("\n" + structureViolations.size() + " structure violation(s) detected:");
+            for (String violation : structureViolations) {
+                System.out.println("  - " + violation);
+            }
+            fail("JSON-LD structure validation failed: " + structureViolations.size() + " violation(s) found");
+        } else {
+            System.out.println("Structure validation passed - all checks successful");
+        }
+    }
+
+    /**
+     * Validates that the JSON structure matches the JSON-LD context requirements.
+     * Specifically checks that fields with @container: @set are arrays.
+     */
+    private List<String> validateStructure(JsonNode jsonNode, JsonNode contextDef) {
+        List<String> violations = new ArrayList<>();
+        Map<String, String> setContainerFields = new HashMap<>();
+
+        // Collect all fields that require @container: @set (should be arrays)
+        collectSetContainerFields(contextDef, setContainerFields, "");
+
+        // Validate the JSON structure
+        validateNodeStructure(jsonNode, setContainerFields, violations, "root");
+
+        return violations;
+    }
+
+    /**
+     * Recursively collects fields that have @container: @set from the context
+     */
+    private void collectSetContainerFields(JsonNode contextDef, Map<String, String> setFields, String prefix) {
+        if (contextDef == null || !contextDef.isObject()) {
+            return;
+        }
+
+        Iterator<Map.Entry<String, JsonNode>> fields = contextDef.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            String fieldName = entry.getKey();
+            JsonNode fieldDef = entry.getValue();
+
+            // Skip JSON-LD keywords
+            if (fieldName.startsWith("@")) {
+                continue;
+            }
+
+            // Check if this field has @container: @set
+            if (fieldDef.isObject()) {
+                if (fieldDef.has("@container")) {
+                    String containerType = fieldDef.get("@container").asText();
+                    if ("@set".equals(containerType)) {
+                        String fullPath = prefix.isEmpty() ? fieldName : prefix + "." + fieldName;
+                        setFields.put(fieldName, fullPath);
+                    }
+                }
+
+                // Recursively check nested contexts
+                if (fieldDef.has("@context")) {
+                    collectSetContainerFields(fieldDef.get("@context"), setFields, prefix);
+                }
+            }
+        }
+    }
+
+    /**
+     * Validates a JSON node to ensure fields with @container: @set are arrays
+     */
+    private void validateNodeStructure(JsonNode node, Map<String, String> setContainerFields,
+                                       List<String> violations, String path) {
+        if (node == null) {
+            return;
+        }
+
+        if (node.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                String fieldName = entry.getKey();
+                JsonNode fieldValue = entry.getValue();
+                String fieldPath = path + "." + fieldName;
+
+                // Check if this field should be an array according to the context
+                if (setContainerFields.containsKey(fieldName)) {
+                    if (!fieldValue.isArray() && !fieldValue.isNull()) {
+                        violations.add(String.format(
+                            "Field '%s' at %s should be an array (context defines @container: @set) but is %s",
+                            fieldName, fieldPath, fieldValue.getNodeType()
+                        ));
+                    }
+                }
+
+                // Recursively validate nested structures
+                validateNodeStructure(fieldValue, setContainerFields, violations, fieldPath);
+            }
+        } else if (node.isArray()) {
+            int index = 0;
+            for (JsonNode item : node) {
+                validateNodeStructure(item, setContainerFields, violations, path + "[" + index + "]");
+                index++;
+            }
+        }
+    }
+
+    // ========== Validation Methods ==========
+
+    /**
+     * Validates fields with @container: @set are arrays
+     */
+    private List<String> validateSetContainers(JsonNode jsonRoot, JsonNode contextDef) {
+        List<String> violations = new ArrayList<>();
+        Map<String, String> setContainerFields = new HashMap<>();
+        collectSetContainerFields(contextDef, setContainerFields, "");
+        validateNodeStructure(jsonRoot, setContainerFields, violations, "root");
+        System.out.println("  ✓ @container: @set validation (" + setContainerFields.size() + " fields checked)");
+        return violations;
+    }
+
+    /**
+     * Validates fields with @container: @language have language maps (objects with language codes)
+     */
+    private List<String> validateLanguageContainers(JsonNode jsonRoot, JsonNode contextDef) {
+        List<String> violations = new ArrayList<>();
+        Map<String, String> languageFields = new HashMap<>();
+        collectLanguageContainerFields(contextDef, languageFields, "");
+        validateLanguageMapStructure(jsonRoot, languageFields, violations, "root");
+        System.out.println("  ✓ @container: @language validation (" + languageFields.size() + " fields checked)");
+        return violations;
+    }
+
+    /**
+     * Validates fields with @type: @id contain valid IRIs/URIs
+     */
+    private List<String> validateIdTypes(JsonNode jsonRoot, JsonNode contextDef) {
+        List<String> violations = new ArrayList<>();
+        Map<String, String> idTypeFields = new HashMap<>();
+        collectIdTypeFields(contextDef, idTypeFields, "");
+        validateIdTypeValues(jsonRoot, idTypeFields, violations, "root");
+        System.out.println("  ✓ @type: @id validation (" + idTypeFields.size() + " fields checked)");
+        return violations;
+    }
+
+    /**
+     * Validates fields with @type: xsd:* have correct data types
+     */
+    private List<String> validateDataTypes(JsonNode jsonRoot, JsonNode contextDef) {
+        List<String> violations = new ArrayList<>();
+        Map<String, String> dataTypeFields = new HashMap<>();
+        collectDataTypeFields(contextDef, dataTypeFields, "");
+        validateDataTypeValues(jsonRoot, dataTypeFields, violations, "root");
+        System.out.println("  ✓ @type: xsd:* validation (" + dataTypeFields.size() + " fields checked)");
+        return violations;
+    }
+
+    /**
+     * Collects fields with @container: @language
+     */
+    private void collectLanguageContainerFields(JsonNode contextDef, Map<String, String> languageFields, String prefix) {
+        if (contextDef == null || !contextDef.isObject()) {
+            return;
+        }
+
+        Iterator<Map.Entry<String, JsonNode>> fields = contextDef.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            String fieldName = entry.getKey();
+            JsonNode fieldDef = entry.getValue();
+
+            if (fieldName.startsWith("@")) {
+                continue;
+            }
+
+            if (fieldDef.isObject()) {
+                if (fieldDef.has("@container") && "@language".equals(fieldDef.get("@container").asText())) {
+                    languageFields.put(fieldName, prefix.isEmpty() ? fieldName : prefix + "." + fieldName);
+                }
+                if (fieldDef.has("@context")) {
+                    collectLanguageContainerFields(fieldDef.get("@context"), languageFields, prefix);
+                }
+            }
+        }
+    }
+
+    /**
+     * Validates language map structures (should be objects with language codes as keys)
+     */
+    private void validateLanguageMapStructure(JsonNode node, Map<String, String> languageFields,
+                                              List<String> violations, String path) {
+        if (node == null) {
+            return;
+        }
+
+        if (node.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                String fieldName = entry.getKey();
+                JsonNode fieldValue = entry.getValue();
+                String fieldPath = path + "." + fieldName;
+
+                if (languageFields.containsKey(fieldName)) {
+                    if (!fieldValue.isObject() && !fieldValue.isNull()) {
+                        violations.add(String.format(
+                            "Field '%s' at %s should be a language map (object) but is %s",
+                            fieldName, fieldPath, fieldValue.getNodeType()
+                        ));
+                    } else if (fieldValue.isObject()) {
+                        // Validate that keys are language codes (at least 2 chars, lowercase)
+                        Iterator<String> langKeys = fieldValue.fieldNames();
+                        while (langKeys.hasNext()) {
+                            String langCode = langKeys.next();
+                            if (!langCode.matches("[a-z]{2,3}(-[A-Z]{2})?")) {
+                                violations.add(String.format(
+                                    "Field '%s' at %s has invalid language code '%s' (expected format: 'cs', 'en', 'en-US', etc.)",
+                                    fieldName, fieldPath, langCode
+                                ));
+                            }
+                        }
+                    }
+                }
+
+                validateLanguageMapStructure(fieldValue, languageFields, violations, fieldPath);
+            }
+        } else if (node.isArray()) {
+            int index = 0;
+            for (JsonNode item : node) {
+                validateLanguageMapStructure(item, languageFields, violations, path + "[" + index + "]");
+                index++;
+            }
+        }
+    }
+
+    /**
+     * Collects fields with @type: @id
+     */
+    private void collectIdTypeFields(JsonNode contextDef, Map<String, String> idFields, String prefix) {
+        if (contextDef == null || !contextDef.isObject()) {
+            return;
+        }
+
+        Iterator<Map.Entry<String, JsonNode>> fields = contextDef.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            String fieldName = entry.getKey();
+            JsonNode fieldDef = entry.getValue();
+
+            if (fieldName.startsWith("@") || "iri".equals(fieldName) || "typ".equals(fieldName)) {
+                continue;
+            }
+
+            if (fieldDef.isObject()) {
+                if (fieldDef.has("@type") && "@id".equals(fieldDef.get("@type").asText())) {
+                    idFields.put(fieldName, prefix.isEmpty() ? fieldName : prefix + "." + fieldName);
+                }
+                if (fieldDef.has("@context")) {
+                    collectIdTypeFields(fieldDef.get("@context"), idFields, prefix);
+                }
+            }
+        }
+    }
+
+    /**
+     * Validates that @type: @id fields contain valid URIs/IRIs
+     */
+    private void validateIdTypeValues(JsonNode node, Map<String, String> idFields,
+                                      List<String> violations, String path) {
+        if (node == null) {
+            return;
+        }
+
+        if (node.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                String fieldName = entry.getKey();
+                JsonNode fieldValue = entry.getValue();
+                String fieldPath = path + "." + fieldName;
+
+                if (idFields.containsKey(fieldName)) {
+                    validateIdValue(fieldName, fieldValue, fieldPath, violations);
+                }
+
+                validateIdTypeValues(fieldValue, idFields, violations, fieldPath);
+            }
+        } else if (node.isArray()) {
+            int index = 0;
+            for (JsonNode item : node) {
+                validateIdTypeValues(item, idFields, violations, path + "[" + index + "]");
+                index++;
+            }
+        }
+    }
+
+    /**
+     * Validates a single ID value (URI/IRI)
+     */
+    private void validateIdValue(String fieldName, JsonNode value, String path, List<String> violations) {
+        if (value.isNull()) {
+            return;
+        }
+
+        if (value.isArray()) {
+            int index = 0;
+            for (JsonNode item : value) {
+                if (item.isObject() && item.has("id")) {
+                    String idValue = item.get("id").asText();
+                    if (!isValidUri(idValue)) {
+                        violations.add(String.format(
+                            "Field '%s' at %s[%d].id has invalid URI/IRI: '%s'",
+                            fieldName, path, index, idValue
+                        ));
+                    }
+                } else if (item.isTextual()) {
+                    String idValue = item.asText();
+                    if (!isValidUri(idValue)) {
+                        violations.add(String.format(
+                            "Field '%s' at %s[%d] has invalid URI/IRI: '%s'",
+                            fieldName, path, index, idValue
+                        ));
+                    }
+                }
+                index++;
+            }
+        } else if (value.isTextual()) {
+            String idValue = value.asText();
+            if (!isValidUri(idValue)) {
+                violations.add(String.format(
+                    "Field '%s' at %s has invalid URI/IRI: '%s'",
+                    fieldName, path, idValue
+                ));
+            }
+        } else if (!value.isObject()) {
+            violations.add(String.format(
+                "Field '%s' at %s should be a URI/IRI (string or object with 'id') but is %s",
+                fieldName, path, value.getNodeType()
+            ));
+        }
+    }
+
+    /**
+     * Simple URI validation
+     */
+    private boolean isValidUri(String uri) {
+        if (uri == null || uri.trim().isEmpty()) {
+            return false;
+        }
+        // Must contain :// or start with known schemes
+        return uri.matches("^https?://.*") || uri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*:.*");
+    }
+
+    /**
+     * Collects fields with xsd data types
+     */
+    private void collectDataTypeFields(JsonNode contextDef, Map<String, String> dataTypeFields, String prefix) {
+        if (contextDef == null || !contextDef.isObject()) {
+            return;
+        }
+
+        Iterator<Map.Entry<String, JsonNode>> fields = contextDef.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            String fieldName = entry.getKey();
+            JsonNode fieldDef = entry.getValue();
+
+            if (fieldName.startsWith("@")) {
+                continue;
+            }
+
+            if (fieldDef.isObject()) {
+                if (fieldDef.has("@type")) {
+                    String typeValue = fieldDef.get("@type").asText();
+                    if (typeValue.startsWith("xsd:") || typeValue.contains("XMLSchema#")) {
+                        dataTypeFields.put(fieldName, typeValue);
+                    }
+                }
+                if (fieldDef.has("@context")) {
+                    collectDataTypeFields(fieldDef.get("@context"), dataTypeFields, prefix);
+                }
+            }
+        }
+    }
+
+    /**
+     * Validates xsd data type values
+     */
+    private void validateDataTypeValues(JsonNode node, Map<String, String> dataTypeFields,
+                                        List<String> violations, String path) {
+        if (node == null) {
+            return;
+        }
+
+        if (node.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                String fieldName = entry.getKey();
+                JsonNode fieldValue = entry.getValue();
+                String fieldPath = path + "." + fieldName;
+
+                if (dataTypeFields.containsKey(fieldName)) {
+                    String expectedType = dataTypeFields.get(fieldName);
+                    validateDataType(fieldName, fieldValue, expectedType, fieldPath, violations);
+                }
+
+                validateDataTypeValues(fieldValue, dataTypeFields, violations, fieldPath);
+            }
+        } else if (node.isArray()) {
+            int index = 0;
+            for (JsonNode item : node) {
+                validateDataTypeValues(item, dataTypeFields, violations, path + "[" + index + "]");
+                index++;
+            }
+        }
+    }
+
+    /**
+     * Validates a value against its expected xsd data type
+     */
+    private void validateDataType(String fieldName, JsonNode value, String expectedType, String path, List<String> violations) {
+        if (value.isNull()) {
+            return;
+        }
+
+        String xsdType = expectedType.contains(":") ? expectedType.split(":")[1] : expectedType;
+        if (xsdType.contains("#")) {
+            xsdType = xsdType.substring(xsdType.lastIndexOf("#") + 1);
+        }
+
+        switch (xsdType) {
+            case "boolean":
+                if (!value.isBoolean()) {
+                    violations.add(String.format(
+                        "Field '%s' at %s should be boolean but is %s",
+                        fieldName, path, value.getNodeType()
+                    ));
+                }
+                break;
+            case "integer", "int", "long":
+                if (!value.isIntegralNumber()) {
+                    violations.add(String.format(
+                        "Field '%s' at %s should be integer but is %s (value: %s)",
+                        fieldName, path, value.getNodeType(), value.asText()
+                    ));
+                }
+                break;
+            case "decimal", "double", "float":
+                if (!value.isNumber()) {
+                    violations.add(String.format(
+                        "Field '%s' at %s should be number but is %s",
+                        fieldName, path, value.getNodeType()
+                    ));
+                }
+                break;
+            case "date":
+                if (!value.isTextual() || !value.asText().matches("\\d{4}-\\d{2}-\\d{2}.*")) {
+                    violations.add(String.format(
+                        "Field '%s' at %s should be date (YYYY-MM-DD) but is '%s'",
+                        fieldName, path, value.asText()
+                    ));
+                }
+                break;
+            case "dateTime", "dateTimeStamp":
+                if (!value.isTextual() || !value.asText().matches("\\d{4}-\\d{2}-\\d{2}T.*")) {
+                    violations.add(String.format(
+                        "Field '%s' at %s should be dateTime (ISO 8601) but is '%s'",
+                        fieldName, path, value.asText()
+                    ));
+                }
+                break;
+            case "anyURI":
+                if (!value.isTextual() || !isValidUri(value.asText())) {
+                    violations.add(String.format(
+                        "Field '%s' at %s should be valid URI but is '%s'",
+                        fieldName, path, value.asText()
+                    ));
+                }
+                break;
+            case "string":
+                if (!value.isTextual()) {
+                    violations.add(String.format(
+                        "Field '%s' at %s should be string but is %s",
+                        fieldName, path, value.getNodeType()
+                    ));
+                }
+                break;
+        }
     }
 
     /**

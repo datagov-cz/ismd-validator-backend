@@ -3,10 +3,8 @@ package com.dia.workflow.deviation;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Detects and reports deviations between expected and actual JSON-LD outputs.
@@ -171,7 +169,7 @@ public class DeviationDetector {
 
         if (path.endsWith("pojmy")) {
             comparePojmyArrays(expected, actual, path);
-        } else if (path.contains("související-nelegislativní-zdroj") || path.contains("definující-nelegislativní-zdroj")) {
+        } else if (path.contains("související-nelegislativní-zdroj") || path.contains("definující-nelegislativní-zdroj") || path.contains("ekvivalentní-pojem")) {
             // Compare source arrays by matching content regardless of order
             compareSourceArrays(expected, actual, path);
         } else {
@@ -299,6 +297,15 @@ public class DeviationDetector {
         if (element1.has("název") && element2.has("název")) {
             String name1 = element1.get("název").asText();
             String name2 = element2.get("název").asText();
+            if (name1.equals(name2)) {
+                return true;
+            }
+        }
+
+        // Try matching by id
+        if (element1.has("id") && element2.has("id")) {
+            String name1 = element1.get("id").asText();
+            String name2 = element2.get("id").asText();
             if (name1.equals(name2)) {
                 return true;
             }
