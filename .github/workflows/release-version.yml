@@ -11,12 +11,15 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  packages: read
 
 jobs:
   create-release-pr:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
-      current_version: ${{ steps.current-version.outputs.version }}
       main_version: ${{ steps.main-version.outputs.version }}
       new_version: ${{ steps.new-version.outputs.version }}
     steps:
@@ -31,29 +34,26 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
 
       - name: Fetch main branch
         run: git fetch origin main:main
 
-      - name: Get current version in dev
-        id: current-version
-        working-directory: ismd-backend-validator
-        run: echo "version=$(./mvnw help:evaluate -DforceStdout -q -Dexpression=project.version)" >> $GITHUB_OUTPUT
-
-      - name: Get version in main
+      - name: Get latest tag from main
         id: main-version
-        working-directory: ismd-backend-validator
         run: |
-          # Get main branch version by directly parsing the output of git show
-          ARTIFACT_ID=$(./mvnw help:evaluate -DforceStdout -q -Dexpression=project.artifactId)
-          MAIN_VERSION=$(git show main:ismd-backend-validator/pom.xml | grep -A 10 "<artifactId>$ARTIFACT_ID</artifactId>" | grep '<version>' | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
+          # Get latest version tag on main branch (only tags matching v[0-9]*)
+          git fetch origin main --tags
+          MAIN_TAG=$(git describe --tags --abbrev=0 --match "v[0-9]*" origin/main 2>/dev/null || echo "v0.0.0")
+          MAIN_VERSION=${MAIN_TAG#v}  # Strip 'v' prefix
           echo "version=$MAIN_VERSION" >> $GITHUB_OUTPUT
-          echo "Main branch version: $MAIN_VERSION"
+          echo "Latest version on main: $MAIN_VERSION"
 
       - name: Determine new version
         id: new-version
         run: |
-          CURRENT_VERSION="${{ steps.current-version.outputs.version }}"
           MAIN_VERSION="${{ steps.main-version.outputs.version }}"
           
           # Check if user provided a version
@@ -62,18 +62,12 @@ jobs:
             NEW_VERSION="${{ github.event.inputs.version }}"
             echo "User provided version: $NEW_VERSION"
           else
-            # Check if version in dev already differs from main
-            if [ "$CURRENT_VERSION" != "$MAIN_VERSION" ]; then
-              # Version already changed in code, use as is
-              NEW_VERSION="$CURRENT_VERSION"
-              echo "Using existing version from code: $NEW_VERSION"
-            else
-              # Auto-increment patch version
-              NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. -v OFS=. '{$NF++;print}')
-              echo "Auto-incremented version: $NEW_VERSION"
-            fi
+            # Auto-increment patch version from main
+            NEW_VERSION=$(echo $MAIN_VERSION | awk -F. -v OFS=. '{$NF++;print}')
+            echo "Auto-incremented version: $NEW_VERSION"
           fi
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New release version will be: $NEW_VERSION"
 
       - name: Create release branch
         id: create-branch
@@ -84,42 +78,43 @@ jobs:
           # Make sure we're on dev branch
           git checkout dev
           
-          # Create a new branch from dev
+          # Create a new branch from dev (no pom.xml changes needed!)
           git checkout -b $BRANCH_NAME
           
-          # Check if the version needs to be updated
-          CURRENT_VERSION="${{ steps.current-version.outputs.version }}"
-          NEW_VERSION="${{ steps.new-version.outputs.version }}"
+          # Configure git for later steps
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
-            echo "Updating version from $CURRENT_VERSION to $NEW_VERSION"
-            # Update version in root POM and all modules
-            ismd-backend-validator/mvnw versions:set -DnewVersion="$NEW_VERSION" -DgenerateBackupPoms=false -DprocessAllModules=true
-          
-            # Configure git
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-            # Stage all POM files (root and modules)
-            git add ismd-validator-common/pom.xml ismd-backend-validator/pom.xml
-            git commit -m "Release v$NEW_VERSION"
-            echo "Version updated and committed"
-          else
-            echo "Version is already $CURRENT_VERSION, no update needed"
-            # Configure git anyway for later steps
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-          fi
+          echo "Created release branch $BRANCH_NAME from dev (no file changes needed)"
+
+      - name: Configure Maven settings for GitHub Packages
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>${{ github.actor }}</username>
+                <password>${{ secrets.GITHUB_TOKEN }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
 
       - name: Install common library locally
         working-directory: ismd-backend-validator
         run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests
         working-directory: ismd-backend-validator
         run: |
           # Build and run tests to ensure the release is stable
           ./mvnw clean test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push release branch
         run: |
@@ -140,13 +135,15 @@ jobs:
               --title "Release v${{ steps.new-version.outputs.version }}" \
               --body "# Release v${{ steps.new-version.outputs.version }}
           
-              This PR updates the version from v${{ steps.current-version.outputs.version }} to v${{ steps.new-version.outputs.version }} and merges changes from dev into main.
+              This PR merges changes from dev into main for release v${{ steps.new-version.outputs.version }}.
           
-              ## Changes included:
-              - Version bump to v${{ steps.new-version.outputs.version }}
-              - All changes from dev branch
+              ## What happens after merge:
+              1. Git tag \`v${{ steps.new-version.outputs.version }}\` will be created automatically
+              2. Docker images will be built with version \`${{ steps.new-version.outputs.version }}\`
+              3. Deployment to TEST environment will be triggered
+              4. Dev branch will be synced with main (clean merge, no file changes)
           
-              Once merged, this will trigger a Docker build with the new version." \
+              **Note:** Version is managed via Git tags, no pom.xml changes needed." \
               --base main \
               --head $BRANCH_NAME
           
@@ -159,13 +156,15 @@ jobs:
               --title "Release v${{ steps.new-version.outputs.version }}" \
               --body "# Release v${{ steps.new-version.outputs.version }}
           
-              This PR updates the version from v${{ steps.current-version.outputs.version }} to v${{ steps.new-version.outputs.version }} and merges changes from dev into main.
+              This PR merges changes from dev into main for release v${{ steps.new-version.outputs.version }}.
           
-              ## Changes included:
-              - Version bump to v${{ steps.new-version.outputs.version }}
-              - All changes from dev branch
+              ## What happens after merge:
+              1. Git tag \`v${{ steps.new-version.outputs.version }}\` will be created automatically
+              2. Docker images will be built with version \`${{ steps.new-version.outputs.version }}\`
+              3. Deployment to TEST environment will be triggered
+              4. Dev branch will be synced with main (clean merge, no file changes)
           
-              Once merged, this will trigger a Docker build with the new version.
+              **Note:** Version is managed via Git tags, no pom.xml changes needed.
           
               *Updated on $(date)*"
           
