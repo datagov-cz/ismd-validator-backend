@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("workflow")
 @Tag("excel")
 @Tag("turtle")
-@Tag("rdf")
+@Tag("deviation-detection")
 class ExcelConversionWorkflowTurtleTest {
 
     @Autowired
