@@ -31,6 +31,7 @@ import static com.dia.constants.VocabularyConstants.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 
+@Deprecated(forRemoval = true)
 @Component
 @Slf4j
 @Getter

@@ -24,10 +24,17 @@ import java.util.*;
 
 import com.dia.constants.ExportConstants;
 import com.dia.constants.VocabularyConstants;
+
+import static com.dia.constants.ExportConstants.Json.POPIS;
+import static com.dia.constants.FormatConstants.Excel.*;
 import static com.dia.constants.VocabularyConstants.*;
 import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
-import static com.dia.constants.FormatConstants.Excel.TYP_OBSAHU_UDAJE;
-import static com.dia.constants.FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE;
+import static com.dia.constants.VocabularyConstants.AGENDA;
+import static com.dia.constants.VocabularyConstants.AIS;
+import static com.dia.constants.VocabularyConstants.DEFINICE;
+import static com.dia.constants.VocabularyConstants.EKVIVALENTNI_POJEM;
+import static com.dia.constants.VocabularyConstants.IDENTIFIKATOR;
+import static com.dia.constants.VocabularyConstants.JE_PPDF;
 
 @Slf4j
 public class JsonExporter {
@@ -79,7 +86,7 @@ public class JsonExporter {
 
         String description = modelProperties.getOrDefault(POPIS, "");
         if (description != null && !description.isEmpty()) {
-            addMultilingualModelProperty(root, ExportConstants.Json.POPIS, description);
+            addMultilingualModelProperty(root, POPIS, description);
         }
 
         addTemporalMetadata(root);
@@ -217,7 +224,7 @@ public class JsonExporter {
         addFieldIfExists(originalMap, orderedMap, ExportConstants.Json.TYP);
 
         addFieldWithDefault(originalMap, orderedMap, ExportConstants.Json.NAZEV, createEmptyMultilingualField());
-        addFieldWithDefault(originalMap, orderedMap, ExportConstants.Json.POPIS, createEmptyMultilingualField());
+        addFieldWithDefault(originalMap, orderedMap, POPIS, createEmptyMultilingualField());
 
         addFieldIfExists(originalMap, orderedMap, OKAMZIK_VYTVORENI);
         addFieldIfExists(originalMap, orderedMap, OKAMZIK_POSLEDNI_ZMENY);
@@ -286,15 +293,7 @@ public class JsonExporter {
     private Map<String, Object> orderPojemFields(Map<String, Object> pojemMap) {
         Map<String, Object> orderedPojem = new LinkedHashMap<>();
 
-        String[] orderedFields = {
-                "iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice", "ekvivalentní pojem",
-                DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI,
-                DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
-                "definiční-obor", "obor-hodnot", "nadřazený-vztah", "nadřazená-vlastnost", "nadřazená-třída",
-                "způsob-sdílení-údajů", "způsob-získání-údajů", "typ-obsahu-údajů"
-        };
-
-        for (String field : orderedFields) {
+        for (String field : CONCEPT_FIELD_ORDER) {
             addFieldIfExists(pojemMap, orderedPojem, field);
         }
 
@@ -363,8 +362,8 @@ public class JsonExporter {
     private JSONObject createConceptObject(Resource concept) throws JSONException {
         JSONObject pojemObj = new JSONObject();
 
-        pojemObj.put("iri", concept.getURI());
-        pojemObj.put("typ", getConceptTypes(concept));
+        pojemObj.put(JSON_IRI, concept.getURI());
+        pojemObj.put(ExportConstants.Json.TYP, getConceptTypes(concept));
 
         addMultilingualProperty(concept, SKOS.prefLabel, ExportConstants.Json.NAZEV, pojemObj);
 
@@ -457,81 +456,106 @@ public class JsonExporter {
     private void addSourceProperty(StmtIterator propIter, JSONArray sourceArray) {
         while (propIter.hasNext()) {
             Statement propStmt = propIter.next();
-            if (propStmt.getObject().isResource()) {
-                Resource digitalDoc = propStmt.getObject().asResource();
-                JSONObject docObj = new JSONObject();
 
-                if (digitalDoc.hasProperty(RDF.type, ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt"))) {
-                    docObj.put("typ", "Digitální objekt");
-                }
+            if (!propStmt.getObject().isResource()) {
+                continue;
+            }
 
-                Property nazevProperty = ontModel.createProperty("http://purl.org/dc/terms/title");
-                Statement nazevStmt = digitalDoc.getProperty(nazevProperty);
-                if (nazevStmt != null && nazevStmt.getObject().isLiteral()) {
-                    String nazevValue = nazevStmt.getString();
-                    if (nazevValue != null && !nazevValue.trim().isEmpty()) {
-                        docObj.put("název", nazevValue);
-                    }
-                }
+            Resource digitalDoc = propStmt.getObject().asResource();
+            JSONObject docObj = createDigitalDocumentObject(digitalDoc);
 
-                Property schemaUrlProperty = ontModel.createProperty("http://schema.org/url");
-                Statement urlStmt = digitalDoc.getProperty(schemaUrlProperty);
-                if (urlStmt != null) {
-                    if (urlStmt.getObject().isResource()) {
-                        docObj.put("url", urlStmt.getObject().asResource().getURI());
-                    } else if (urlStmt.getObject().isLiteral()) {
-                        docObj.put("url", urlStmt.getString());
-                    }
-                }
-
-                if (docObj.length() > 0) {
-                    sourceArray.put(docObj);
-                }
+            if (docObj.length() > 0) {
+                sourceArray.put(docObj);
             }
         }
     }
 
-    private void addGovernanceProperties(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
-        addGovernancePropertyArrayWithFallback(concept, pojemObj, namespace,
-                "Způsob sdílení údajů", ZPUSOB_SDILENI, "způsob-sdílení-údajů");
+    private JSONObject createDigitalDocumentObject(Resource digitalDoc) {
+        JSONObject docObj = new JSONObject();
 
-        addGovernancePropertySingleWithFallback(concept, pojemObj, namespace,
-                ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
+        addDigitalObjectType(digitalDoc, docObj);
+        addDocumentTitle(digitalDoc, docObj);
+        addDocumentUrl(digitalDoc, docObj);
 
-        addGovernancePropertySingleWithFallback(concept, pojemObj, namespace,
-                TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
+        return docObj;
     }
 
-    private void addGovernancePropertyArrayWithFallback(Resource concept, JSONObject pojemObj, String namespace,
-                                                   String excelConstant, String originalConstant, String jsonFieldName) throws JSONException {
+    private void addDigitalObjectType(Resource digitalDoc, JSONObject docObj) {
+        Resource digitalObjectType = ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt");
+        if (digitalDoc.hasProperty(RDF.type, digitalObjectType)) {
+            docObj.put(VocabularyConstants.TYP, "Digitální objekt");
+        }
+    }
 
-        Property excelProperty = ontModel.getProperty(namespace + excelConstant);
+    private void addDocumentTitle(Resource digitalDoc, JSONObject docObj) {
+        Property nazevProperty = ontModel.createProperty("http://purl.org/dc/terms/title");
+        Statement nazevStmt = digitalDoc.getProperty(nazevProperty);
+
+        if (nazevStmt == null || !nazevStmt.getObject().isLiteral()) {
+            return;
+        }
+
+        String nazevValue = nazevStmt.getString();
+        if (nazevValue != null && !nazevValue.trim().isEmpty()) {
+            docObj.put(ExportConstants.Json.NAZEV, nazevValue);
+        }
+    }
+
+    private void addDocumentUrl(Resource digitalDoc, JSONObject docObj) {
+        Property schemaUrlProperty = ontModel.createProperty(SCHEMA_URL);
+        Statement urlStmt = digitalDoc.getProperty(schemaUrlProperty);
+
+        if (urlStmt == null) {
+            return;
+        }
+
+        if (urlStmt.getObject().isResource()) {
+            docObj.put("url", urlStmt.getObject().asResource().getURI());
+        } else if (urlStmt.getObject().isLiteral()) {
+            docObj.put("url", urlStmt.getString());
+        }
+    }
+
+    private void addGovernanceProperties(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+        addGovernancePropertyArrayWithFallback(concept, pojemObj, namespace
+        );
+
+        addGovernancePropertySingleWithFallback(concept, pojemObj, namespace,
+                ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, ZPUSOB_ZISKANI_ALT);
+
+        addGovernancePropertySingleWithFallback(concept, pojemObj, namespace,
+                TYP_OBSAHU_UDAJE, TYP_OBSAHU, TYP_OBSAHU_ALT);
+    }
+
+    private void addGovernancePropertyArrayWithFallback(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+
+        Property excelProperty = ontModel.getProperty(namespace + ZPUSOB_SDILENI_UDEJE);
         if (concept.hasProperty(excelProperty)) {
-            addGovernancePropertyArray(concept, excelProperty, jsonFieldName, pojemObj);
+            addGovernancePropertyArray(concept, excelProperty, pojemObj);
             return;
         }
 
-        Property excelDefaultProperty = ontModel.getProperty(DEFAULT_NS + excelConstant);
+        Property excelDefaultProperty = ontModel.getProperty(DEFAULT_NS + ZPUSOB_SDILENI_UDEJE);
         if (concept.hasProperty(excelDefaultProperty)) {
-            addGovernancePropertyArray(concept, excelDefaultProperty, jsonFieldName, pojemObj);
+            addGovernancePropertyArray(concept, excelDefaultProperty, pojemObj);
             return;
         }
 
-        Property originalProperty = ontModel.getProperty(namespace + originalConstant);
+        Property originalProperty = ontModel.getProperty(namespace + VocabularyConstants.ZPUSOB_SDILENI);
         if (concept.hasProperty(originalProperty)) {
-            addGovernancePropertyArray(concept, originalProperty, jsonFieldName, pojemObj);
+            addGovernancePropertyArray(concept, originalProperty, pojemObj);
             return;
         }
 
-        Property originalDefaultProperty = ontModel.getProperty(DEFAULT_NS + originalConstant);
+        Property originalDefaultProperty = ontModel.getProperty(DEFAULT_NS + VocabularyConstants.ZPUSOB_SDILENI);
         if (concept.hasProperty(originalDefaultProperty)) {
-            addGovernancePropertyArray(concept, originalDefaultProperty, jsonFieldName, pojemObj);
+            addGovernancePropertyArray(concept, originalDefaultProperty, pojemObj);
             return;
         }
 
-        Property hyphenatedProperty = ontModel.getProperty(namespace + jsonFieldName);
+        Property hyphenatedProperty = ontModel.getProperty(namespace + ZPUSOB_SDILENI_ALT);
         if (concept.hasProperty(hyphenatedProperty)) {
-            addGovernancePropertyArray(concept, hyphenatedProperty, jsonFieldName, pojemObj);
+            addGovernancePropertyArray(concept, hyphenatedProperty, pojemObj);
         }
     }
 
@@ -568,13 +592,13 @@ public class JsonExporter {
         }
     }
 
-    private void addGovernancePropertyArray(Resource concept, Property property, String jsonFieldName,
+    private void addGovernancePropertyArray(Resource concept, Property property,
                                             JSONObject pojemObj) throws JSONException {
         List<String> allValues = extractGovernancePropertyValues(concept, property);
 
         if (!allValues.isEmpty()) {
             JSONArray propArray = createJsonArray(allValues);
-            pojemObj.put(jsonFieldName, propArray);
+            pojemObj.put(ZPUSOB_SDILENI_ALT, propArray);
         }
     }
 
@@ -742,49 +766,64 @@ public class JsonExporter {
     }
 
     private void addAlternativeNamesFromStandardProperty(Resource concept, JSONObject pojemObj) throws JSONException {
-        Property anPropDefault = ontModel.getProperty(DEFAULT_NS + ALTERNATIVNI_NAZEV);
-        Property anPropCustom = ontModel.getProperty(effectiveNamespace + ALTERNATIVNI_NAZEV);
+        StmtIterator stmtIter = getAlternativeNamesIterator(concept);
 
-        StmtIterator stmtIter = concept.listProperties(anPropDefault);
         if (!stmtIter.hasNext()) {
+            return;
+        }
+
+        JSONObject altNamesObj = new JSONObject();
+        boolean hasNonEmptyValue = false;
+
+        while (stmtIter.hasNext()) {
+            Statement stmt = stmtIter.next();
+            String value = stmt.getString();
+
+            if (value == null || value.isEmpty()) {
+                continue;
+            }
+
+            String lang = getLanguageOrDefault(stmt);
+            addValueToAltNamesObject(altNamesObj, lang, value);
+            hasNonEmptyValue = true;
+        }
+
+        if (hasNonEmptyValue && altNamesObj.length() > 0) {
+            pojemObj.put(ALTERNATIVNI_NAZEV, altNamesObj);
+        }
+    }
+
+    private StmtIterator getAlternativeNamesIterator(Resource concept) {
+        Property anPropDefault = ontModel.getProperty(DEFAULT_NS + ALTERNATIVNI_NAZEV);
+        StmtIterator stmtIter = concept.listProperties(anPropDefault);
+
+        if (!stmtIter.hasNext()) {
+            Property anPropCustom = ontModel.getProperty(effectiveNamespace + ALTERNATIVNI_NAZEV);
             stmtIter = concept.listProperties(anPropCustom);
         }
 
-        if (stmtIter.hasNext()) {
-            JSONObject altNamesObj = new JSONObject();
-            boolean hasNonEmptyValue = false;
+        return stmtIter;
+    }
 
-            while (stmtIter.hasNext()) {
-                Statement stmt = stmtIter.next();
-                String value = stmt.getString();
-                if (value == null || value.isEmpty()) {
-                    continue;
-                }
+    private String getLanguageOrDefault(Statement stmt) {
+        String lang = stmt.getLanguage();
+        return (lang == null || lang.isEmpty()) ? "cs" : lang;
+    }
 
-                String lang = stmt.getLanguage();
-                if (lang == null || lang.isEmpty()) {
-                    lang = "cs";
-                }
+    private void addValueToAltNamesObject(JSONObject altNamesObj, String lang, String value) throws JSONException {
+        if (!altNamesObj.has(lang)) {
+            altNamesObj.put(lang, value);
+            return;
+        }
 
-                if (altNamesObj.has(lang)) {
-                    Object existingValue = altNamesObj.get(lang);
-                    if (existingValue instanceof JSONArray) {
-                        ((JSONArray) existingValue).put(value);
-                    } else {
-                        JSONArray langArray = new JSONArray();
-                        langArray.put(existingValue);
-                        langArray.put(value);
-                        altNamesObj.put(lang, langArray);
-                    }
-                } else {
-                    altNamesObj.put(lang, value);
-                }
-                hasNonEmptyValue = true;
-            }
-
-            if (hasNonEmptyValue && altNamesObj.length() > 0) {
-                pojemObj.put(ALTERNATIVNI_NAZEV, altNamesObj);
-            }
+        Object existingValue = altNamesObj.get(lang);
+        if (existingValue instanceof JSONArray jsonArray) {
+            jsonArray.put(value);
+        } else {
+            JSONArray langArray = new JSONArray();
+            langArray.put(existingValue);
+            langArray.put(value);
+            altNamesObj.put(lang, langArray);
         }
     }
 
