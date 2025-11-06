@@ -1,0 +1,157 @@
+name: Release Common Library
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0, 1.1.0; leave empty for auto-patch-increment)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release-library:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17 with Maven
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+      
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: '3.9.6'
+
+      - name: Determine new version
+        id: version
+        working-directory: ismd-validator-common
+        run: |
+          CURRENT_VERSION=$(grep '<version>' pom.xml | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
+          echo "Current version: $CURRENT_VERSION"
+          
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            NEW_VERSION="${{ github.event.inputs.version }}"
+            echo "User provided version: $NEW_VERSION"
+          else
+            # Strip -SNAPSHOT first, then use as release version
+            # (next SNAPSHOT version will be incremented after release)
+            NEW_VERSION=$(echo $CURRENT_VERSION | sed 's/-SNAPSHOT//')
+            echo "Release version (stripped SNAPSHOT): $NEW_VERSION"
+          fi
+          
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update version in pom.xml
+        working-directory: ismd-validator-common
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.version }}"
+          sed -i "0,/<version>/s/<version>[^<]*<\/version>/<version>$NEW_VERSION<\/version>/" pom.xml
+          echo "Updated pom.xml to version $NEW_VERSION"
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin git@github.com:${{ github.repository }}.git
+
+      - name: Commit version update
+        run: |
+          git add ismd-validator-common/pom.xml
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No version changes needed (already at ${{ steps.version.outputs.version }})"
+          else
+            git commit -m "Release common library v${{ steps.version.outputs.version }}"
+          fi
+
+      - name: Create tag
+        run: |
+          TAG_NAME="common-v${{ steps.version.outputs.version }}"
+          
+          # Check if tag already exists locally or remotely
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists locally, skipping creation"
+          elif git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+            echo "Tag $TAG_NAME already exists remotely, fetching it"
+            git fetch origin "refs/tags/$TAG_NAME:refs/tags/$TAG_NAME"
+          else
+            echo "Creating new tag $TAG_NAME"
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
+          fi
+
+      - name: Configure Maven settings for GitHub Packages
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>${{ github.actor }}</username>
+                <password>${{ secrets.GITHUB_TOKEN }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
+      - name: Build and publish to GitHub Packages
+        working-directory: ismd-validator-common
+        run: |
+          mvn --batch-mode deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump to next SNAPSHOT version
+        working-directory: ismd-validator-common
+        run: |
+          CURRENT_VERSION="${{ steps.version.outputs.version }}"
+          NEXT_VERSION=$(echo $CURRENT_VERSION | awk -F. -v OFS=. '{$NF++;print}')-SNAPSHOT
+          sed -i "0,/<version>/s/<version>[^<]*<\/version>/<version>$NEXT_VERSION<\/version>/" pom.xml
+          echo "Bumped pom.xml to next SNAPSHOT version: $NEXT_VERSION"
+
+      - name: Commit SNAPSHOT version
+        run: |
+          git add ismd-validator-common/pom.xml
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No SNAPSHOT version changes needed"
+          else
+            git commit -m "Bump common library to next SNAPSHOT version"
+            git push origin ${{ github.ref_name }}
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "common-v${{ steps.version.outputs.version }}" \
+            --title "Common Library v${{ steps.version.outputs.version }}" \
+            --notes "Release of ismd-validator-common library v${{ steps.version.outputs.version }}
+            
+            **Published to GitHub Packages**
+            
+            To use this version in your project:
+            \`\`\`xml
+            <dependency>
+              <groupId>com.dia</groupId>
+              <artifactId>ismd-validator-common</artifactId>
+              <version>${{ steps.version.outputs.version }}</version>
+            </dependency>
+            \`\`\`"
