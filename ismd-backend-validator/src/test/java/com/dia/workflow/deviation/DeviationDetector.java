@@ -171,7 +171,10 @@ public class DeviationDetector {
 
         if (path.endsWith("pojmy")) {
             comparePojmyArrays(expected, actual, path);
-        } else if (path.contains("související-nelegislativní-zdroj") || path.contains("definující-nelegislativní-zdroj") || path.contains("ekvivalentní-pojem")) {
+        } else if (path.contains("související-nelegislativní-zdroj") ||
+                path.contains("definující-nelegislativní-zdroj") ||
+                path.contains("ekvivalentní-pojem"))
+        {
             // Compare source arrays by matching content regardless of order
             compareSourceArrays(expected, actual, path);
         } else {

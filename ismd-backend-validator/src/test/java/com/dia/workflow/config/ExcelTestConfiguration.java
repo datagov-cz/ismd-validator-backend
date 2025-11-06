@@ -5,6 +5,9 @@ import lombok.Data;
 
 import java.util.List;
 
+import static com.dia.constants.ExportConstants.Json.IRI;
+import static com.dia.constants.VocabularyConstants.*;
+
 /**
  * Configuration for Excel conversion test cases.
  * Allows flexible configuration of test files, expected outputs, and validation rules.
@@ -74,27 +77,27 @@ public class ExcelTestConfiguration {
                 .hierarchies(3)
                 .build())
             .requiredCharacteristics(List.of(
-                "typ",
-                "název",
-                "iri",
-                "popis",
-                "definice",
-                "definiční-obor",
-                "obor-hodnot",
-                "definující-ustanovení-právního-předpisu",
-                "nadřazená-třída",
-                "způsob-sdílení-údaje",
-                "způsob-získání-údaje",
-                "typ-obsahu-údaje",
-                "je-sdílen-v-ppdf",
-                "ustanovení-dokládající-neveřejnost-údaje",
-                "agenda",
-                "agendový-informační-systém",
-                "ekvivalentní-pojem",
-                "alternativní-název",
-                "definující-nelegislativní-zdroj",
-                "související-nelegislativní-zdroj",
-                "nadřazená-vlastnost"
+                TYP,
+                NAZEV,
+                IRI,
+                POPIS,
+                DEFINICE,
+                DEFINICNI_OBOR,
+                OBOR_HODNOT,
+                DEFINUJICI_USTANOVENI,
+                NADRAZENA_TRIDA,
+                ZPUSOB_SDILENI_ALT,
+                ZPUSOB_ZISKANI_ALT,
+                TYP_OBSAHU_ALT,
+                JE_PPDF,
+                USTANOVENI_NEVEREJNOST,
+                AGENDA,
+                AIS,
+                EKVIVALENTNI_POJEM,
+                ALTERNATIVNI_NAZEV,
+                DEFINUJICI_NELEGISLATIVNI_ZDROJ,
+                SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+                    NADRAZENA_VLASTNOST
             ))
             .build();
     }
@@ -105,7 +108,6 @@ public class ExcelTestConfiguration {
     public static List<ExcelTestConfiguration> allConfigurations() {
         return List.of(
             completeExcel()
-            // Add more test configurations here as needed
         );
     }
 

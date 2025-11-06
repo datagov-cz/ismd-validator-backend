@@ -52,9 +52,6 @@ class ExcelConversionWorkflowJsonTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final DeviationDetector deviationDetector = new DeviationDetector();
 
-    /**
-     * Provides all Excel test configurations
-     */
     static Stream<ExcelTestConfiguration> testConfigurationProvider() {
         return ExcelTestConfiguration.allConfigurations().stream();
     }
@@ -70,7 +67,7 @@ class ExcelConversionWorkflowJsonTest {
         System.out.println("\n[STAGE 1] Loading Excel file: " + config.getInputPath());
         OntologyData ontologyData = loadExcelFile(config.getInputPath());
         assertNotNull(ontologyData, "Excel file should be successfully parsed");
-        System.out.println("✓ Excel file loaded successfully");
+        System.out.println("Excel file loaded successfully");
 
         // Stage 1 Validation: Check OntologyData structure
         System.out.println("\n[STAGE 1 VALIDATION] Validating parsed OntologyData");
@@ -127,9 +124,6 @@ class ExcelConversionWorkflowJsonTest {
         System.out.println("=".repeat(80) + "\n");
     }
 
-    /**
-     * Tests that Excel conversion preserves all data without loss
-     */
     @ParameterizedTest(name = "{0} - No Data Loss")
     @MethodSource("testConfigurationProvider")
     void excelConversionWorkflow_shouldPreserveAllData(ExcelTestConfiguration config) throws Exception {
@@ -172,9 +166,6 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Tests that specific characteristics are preserved correctly
-     */
     @ParameterizedTest(name = "{0} - Characteristics")
     @MethodSource("testConfigurationProvider")
     void excelConversionWorkflow_shouldPreserveCharacteristics(ExcelTestConfiguration config) throws Exception {
@@ -235,9 +226,9 @@ class ExcelConversionWorkflowJsonTest {
 
         if (data.getVocabularyMetadata() != null) {
             VocabularyMetadata vm = data.getVocabularyMetadata();
-            System.out.println("- Name: " + (vm.getName() != null ? vm.getName() : "null"));
-            System.out.println("- Namespace: " + (vm.getNamespace() != null ? vm.getNamespace() : "null"));
-            System.out.println("- Description: " + (vm.getDescription() != null ? "present" : "null"));
+            System.out.println("Name: " + (vm.getName() != null ? vm.getName() : "null"));
+            System.out.println("Namespace: " + (vm.getNamespace() != null ? vm.getNamespace() : "null"));
+            System.out.println("Description: " + (vm.getDescription() != null ? "present" : "null"));
         }
 
         int classCount = data.getClasses() != null ? data.getClasses().size() : 0;
@@ -246,10 +237,10 @@ class ExcelConversionWorkflowJsonTest {
         int hierarchyCount = data.getHierarchies() != null ? data.getHierarchies().size() : 0;
 
         System.out.println("Entity counts:");
-        System.out.println("- Classes: " + classCount);
-        System.out.println("- Properties: " + propertyCount);
-        System.out.println("- Relationships: " + relationshipCount);
-        System.out.println("- Hierarchies: " + hierarchyCount);
+        System.out.println("Classes: " + classCount);
+        System.out.println("Properties: " + propertyCount);
+        System.out.println("Relationships: " + relationshipCount);
+        System.out.println("Hierarchies: " + hierarchyCount);
 
         if (config.getExpectedCounts() != null) {
             ExcelTestConfiguration.EntityCounts expected = config.getExpectedCounts();
@@ -306,7 +297,7 @@ class ExcelConversionWorkflowJsonTest {
             }
         }
 
-        System.out.println("" + validatedFields.size() + " fields validated against context");
+        System.out.println(validatedFields.size() + " fields validated against context");
 
         if (!undefinedFields.isEmpty()) {
             System.out.println("\n" + undefinedFields.size() + " fields NOT defined in context:");
@@ -323,21 +314,18 @@ class ExcelConversionWorkflowJsonTest {
 
         // Validate structure: comprehensive validation
         System.out.println("\nValidating structure against context...");
-        List<String> structureViolations = new ArrayList<>();
 
         // 1. Check @container: @set (arrays)
-        structureViolations.addAll(validateSetContainers(jsonRoot, contextDef));
+        List<String> structureViolations = new ArrayList<>(validateSetContainers(jsonRoot, contextDef));
 
-        // TODO verify
         // 2. Check @container: @language (language maps)
-        //structureViolations.addAll(validateLanguageContainers(jsonRoot, contextDef));
+        structureViolations.addAll(validateLanguageContainers(jsonRoot, contextDef));
 
-        // TODO remore @id from data governance
         // 3. Check @type: @id (IRI/URI fields)
-        //structureViolations.addAll(validateIdTypes(jsonRoot, contextDef));
+        structureViolations.addAll(validateIdTypes(jsonRoot, contextDef));
 
         // 4. Check @type: xsd types (data types)
-        //structureViolations.addAll(validateDataTypes(jsonRoot, contextDef));
+        structureViolations.addAll(validateDataTypes(jsonRoot, contextDef));
 
         if (!structureViolations.isEmpty()) {
             System.out.println("\n" + structureViolations.size() + " structure violation(s) detected:");
@@ -350,34 +338,12 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Validates that the JSON structure matches the JSON-LD context requirements.
-     * Specifically checks that fields with @container: @set are arrays.
-     */
-    private List<String> validateStructure(JsonNode jsonNode, JsonNode contextDef) {
-        List<String> violations = new ArrayList<>();
-        Map<String, String> setContainerFields = new HashMap<>();
-
-        // Collect all fields that require @container: @set (should be arrays)
-        collectSetContainerFields(contextDef, setContainerFields, "");
-
-        // Validate the JSON structure
-        validateNodeStructure(jsonNode, setContainerFields, violations, "root");
-
-        return violations;
-    }
-
-    /**
-     * Recursively collects fields that have @container: @set from the context
-     */
     private void collectSetContainerFields(JsonNode contextDef, Map<String, String> setFields, String prefix) {
         if (contextDef == null || !contextDef.isObject()) {
             return;
         }
 
-        Iterator<Map.Entry<String, JsonNode>> fields = contextDef.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> entry = fields.next();
+        for (Map.Entry<String, JsonNode> entry : contextDef.properties()) {
             String fieldName = entry.getKey();
             JsonNode fieldDef = entry.getValue();
 
@@ -404,9 +370,6 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Validates a JSON node to ensure fields with @container: @set are arrays
-     */
     private void validateNodeStructure(JsonNode node, Map<String, String> setContainerFields,
                                        List<String> violations, String path) {
         if (node == null) {
@@ -414,20 +377,18 @@ class ExcelConversionWorkflowJsonTest {
         }
 
         if (node.isObject()) {
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
+            for (Map.Entry<String, JsonNode> entry : node.properties()) {
                 String fieldName = entry.getKey();
                 JsonNode fieldValue = entry.getValue();
                 String fieldPath = path + "." + fieldName;
 
                 // Check if this field should be an array according to the context
                 if (setContainerFields.containsKey(fieldName) && !fieldValue.isArray() && !fieldValue.isNull()) {
-                        violations.add(String.format(
+                    violations.add(String.format(
                             "Field '%s' at %s should be an array (context defines @container: @set) but is %s",
                             fieldName, fieldPath, fieldValue.getNodeType()
-                        ));
-                    }
+                    ));
+                }
 
 
                 // Recursively validate nested structures
@@ -444,65 +405,48 @@ class ExcelConversionWorkflowJsonTest {
 
     // ========== Validation Methods ==========
 
-    /**
-     * Validates fields with @container: @set are arrays
-     */
     private List<String> validateSetContainers(JsonNode jsonRoot, JsonNode contextDef) {
         List<String> violations = new ArrayList<>();
         Map<String, String> setContainerFields = new HashMap<>();
         collectSetContainerFields(contextDef, setContainerFields, "");
         validateNodeStructure(jsonRoot, setContainerFields, violations, "root");
-        System.out.println("  ✓ @container: @set validation (" + setContainerFields.size() + " fields checked)");
+        System.out.println("@container: @set validation (" + setContainerFields.size() + " fields checked)");
         return violations;
     }
 
-    /**
-     * Validates fields with @container: @language have language maps (objects with language codes)
-     */
     private List<String> validateLanguageContainers(JsonNode jsonRoot, JsonNode contextDef) {
         List<String> violations = new ArrayList<>();
         Map<String, String> languageFields = new HashMap<>();
         collectLanguageContainerFields(contextDef, languageFields, "");
         validateLanguageMapStructure(jsonRoot, languageFields, violations, "root");
-        System.out.println("  ✓ @container: @language validation (" + languageFields.size() + " fields checked)");
+        System.out.println("@container: @language validation (" + languageFields.size() + " fields checked)");
         return violations;
     }
 
-    /**
-     * Validates fields with @type: @id contain valid IRIs/URIs
-     */
     private List<String> validateIdTypes(JsonNode jsonRoot, JsonNode contextDef) {
         List<String> violations = new ArrayList<>();
         Map<String, String> idTypeFields = new HashMap<>();
         collectIdTypeFields(contextDef, idTypeFields, "");
         validateIdTypeValues(jsonRoot, idTypeFields, violations, "root");
-        System.out.println("  ✓ @type: @id validation (" + idTypeFields.size() + " fields checked)");
+        System.out.println("@type: @id validation (" + idTypeFields.size() + " fields checked)");
         return violations;
     }
 
-    /**
-     * Validates fields with @type: xsd:* have correct data types
-     */
     private List<String> validateDataTypes(JsonNode jsonRoot, JsonNode contextDef) {
         List<String> violations = new ArrayList<>();
         Map<String, String> dataTypeFields = new HashMap<>();
         collectDataTypeFields(contextDef, dataTypeFields, "");
         validateDataTypeValues(jsonRoot, dataTypeFields, violations, "root");
-        System.out.println("  ✓ @type: xsd:* validation (" + dataTypeFields.size() + " fields checked)");
+        System.out.println("@type: xsd:* validation (" + dataTypeFields.size() + " fields checked)");
         return violations;
     }
 
-    /**
-     * Collects fields with @container: @language
-     */
     private void collectLanguageContainerFields(JsonNode contextDef, Map<String, String> languageFields, String prefix) {
         if (contextDef == null || !contextDef.isObject()) {
             return;
         }
 
-        Iterator<Map.Entry<String, JsonNode>> fields = contextDef.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> entry = fields.next();
+        for (Map.Entry<String, JsonNode> entry : contextDef.properties()) {
             String fieldName = entry.getKey();
             JsonNode fieldDef = entry.getValue();
 
@@ -521,9 +465,6 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Validates language map structures (should be objects with language codes as keys)
-     */
     private void validateLanguageMapStructure(JsonNode node, Map<String, String> languageFields,
                                               List<String> violations, String path) {
         if (node == null) {
@@ -531,9 +472,7 @@ class ExcelConversionWorkflowJsonTest {
         }
 
         if (node.isObject()) {
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
+            for (Map.Entry<String, JsonNode> entry : node.properties()) {
                 String fieldName = entry.getKey();
                 JsonNode fieldValue = entry.getValue();
                 String fieldPath = path + "." + fieldName;
@@ -541,8 +480,8 @@ class ExcelConversionWorkflowJsonTest {
                 if (languageFields.containsKey(fieldName)) {
                     if (!fieldValue.isObject() && !fieldValue.isNull()) {
                         violations.add(String.format(
-                            "Field '%s' at %s should be a language map (object) but is %s",
-                            fieldName, fieldPath, fieldValue.getNodeType()
+                                "Field '%s' at %s should be a language map (object) but is %s",
+                                fieldName, fieldPath, fieldValue.getNodeType()
                         ));
                     } else if (fieldValue.isObject()) {
                         // Validate that keys are language codes (at least 2 chars, lowercase)
@@ -551,8 +490,8 @@ class ExcelConversionWorkflowJsonTest {
                             String langCode = langKeys.next();
                             if (!langCode.matches("[a-z]{2,3}(-[A-Z]{2})?")) {
                                 violations.add(String.format(
-                                    "Field '%s' at %s has invalid language code '%s' (expected format: 'cs', 'en', 'en-US', etc.)",
-                                    fieldName, fieldPath, langCode
+                                        "Field '%s' at %s has invalid language code '%s' (expected format: 'cs', 'en', 'en-US', etc.)",
+                                        fieldName, fieldPath, langCode
                                 ));
                             }
                         }
@@ -570,17 +509,12 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Collects fields with @type: @id
-     */
     private void collectIdTypeFields(JsonNode contextDef, Map<String, String> idFields, String prefix) {
         if (contextDef == null || !contextDef.isObject()) {
             return;
         }
 
-        Iterator<Map.Entry<String, JsonNode>> fields = contextDef.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> entry = fields.next();
+        for (Map.Entry<String, JsonNode> entry : contextDef.properties()) {
             String fieldName = entry.getKey();
             JsonNode fieldDef = entry.getValue();
 
@@ -599,9 +533,6 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Validates that @type: @id fields contain valid URIs/IRIs
-     */
     private void validateIdTypeValues(JsonNode node, Map<String, String> idFields,
                                       List<String> violations, String path) {
         if (node == null) {
@@ -609,9 +540,7 @@ class ExcelConversionWorkflowJsonTest {
         }
 
         if (node.isObject()) {
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
+            for (Map.Entry<String, JsonNode> entry : node.properties()) {
                 String fieldName = entry.getKey();
                 JsonNode fieldValue = entry.getValue();
                 String fieldPath = path + "." + fieldName;
@@ -631,9 +560,6 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Validates a single ID value (URI/IRI)
-     */
     private void validateIdValue(String fieldName, JsonNode value, String path, List<String> violations) {
         if (value.isNull()) {
             return;
@@ -644,7 +570,7 @@ class ExcelConversionWorkflowJsonTest {
             for (JsonNode item : value) {
                 if (item.isObject() && item.has("id")) {
                     String idValue = item.get("id").asText();
-                    if (!isValidUri(idValue)) {
+                    if (isValidUri(idValue)) {
                         violations.add(String.format(
                             "Field '%s' at %s[%d].id has invalid URI/IRI: '%s'",
                             fieldName, path, index, idValue
@@ -652,7 +578,7 @@ class ExcelConversionWorkflowJsonTest {
                     }
                 } else if (item.isTextual()) {
                     String idValue = item.asText();
-                    if (!isValidUri(idValue)) {
+                    if (isValidUri(idValue)) {
                         violations.add(String.format(
                             "Field '%s' at %s[%d] has invalid URI/IRI: '%s'",
                             fieldName, path, index, idValue
@@ -663,7 +589,7 @@ class ExcelConversionWorkflowJsonTest {
             }
         } else if (value.isTextual()) {
             String idValue = value.asText();
-            if (!isValidUri(idValue)) {
+            if (isValidUri(idValue)) {
                 violations.add(String.format(
                     "Field '%s' at %s has invalid URI/IRI: '%s'",
                     fieldName, path, idValue
@@ -677,28 +603,20 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Simple URI validation
-     */
     private boolean isValidUri(String uri) {
         if (uri == null || uri.trim().isEmpty()) {
-            return false;
+            return true;
         }
         // Must contain :// or start with known schemes
-        return uri.matches("^https?://.*") || uri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*:.*");
+        return !uri.matches("^https?://.*") && !uri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*:.*");
     }
 
-    /**
-     * Collects fields with xsd data types
-     */
     private void collectDataTypeFields(JsonNode contextDef, Map<String, String> dataTypeFields, String prefix) {
         if (contextDef == null || !contextDef.isObject()) {
             return;
         }
 
-        Iterator<Map.Entry<String, JsonNode>> fields = contextDef.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> entry = fields.next();
+        for (Map.Entry<String, JsonNode> entry : contextDef.properties()) {
             String fieldName = entry.getKey();
             JsonNode fieldDef = entry.getValue();
 
@@ -720,9 +638,6 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Validates xsd data type values
-     */
     private void validateDataTypeValues(JsonNode node, Map<String, String> dataTypeFields,
                                         List<String> violations, String path) {
         if (node == null) {
@@ -730,9 +645,7 @@ class ExcelConversionWorkflowJsonTest {
         }
 
         if (node.isObject()) {
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
+            for (Map.Entry<String, JsonNode> entry : node.properties()) {
                 String fieldName = entry.getKey();
                 JsonNode fieldValue = entry.getValue();
                 String fieldPath = path + "." + fieldName;
@@ -753,9 +666,6 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Validates a value against its expected xsd data type
-     */
     private void validateDataType(String fieldName, JsonNode value, String expectedType, String path, List<String> violations) {
         if (value.isNull()) {
             return;
@@ -808,7 +718,7 @@ class ExcelConversionWorkflowJsonTest {
                 }
                 break;
             case "anyURI":
-                if (!value.isTextual() || !isValidUri(value.asText())) {
+                if (!value.isTextual() || isValidUri(value.asText())) {
                     violations.add(String.format(
                         "Field '%s' at %s should be valid URI but is '%s'",
                         fieldName, path, value.asText()
@@ -826,9 +736,6 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Recursively collects all field names from a JSON tree
-     */
     private void collectAllFields(JsonNode node, Set<String> fields) {
         if (node.isObject()) {
             Iterator<String> fieldNames = node.fieldNames();
@@ -844,9 +751,6 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Checks if a field is defined in the context (recursively checks nested contexts)
-     */
     private boolean isFieldDefinedInContext(String fieldName, JsonNode contextDef) {
         // Direct definition in context
         if (contextDef.has(fieldName)) {
@@ -895,7 +799,7 @@ class ExcelConversionWorkflowJsonTest {
             return true;
         }
         if (node.isObject()) {
-            var fields = node.fields();
+            var fields = node.properties().iterator();
             while (fields.hasNext()) {
                 var entry = fields.next();
                 if (searchForField(entry.getValue(), fieldName)) {
@@ -926,9 +830,6 @@ class ExcelConversionWorkflowJsonTest {
         return sb.toString();
     }
 
-    /**
-     * Finds and logs which concepts from OntologyData are missing from the JSON output
-     */
     private void findMissingConcepts(OntologyData ontologyData, JsonNode actualRoot) {
         System.out.println("\nAnalyzing missing concepts...\n");
 
@@ -988,9 +889,9 @@ class ExcelConversionWorkflowJsonTest {
 
                 String normalizedName = propertyName.trim().toLowerCase();
                 if (!outputNames.contains(normalizedName)) {
-                    System.out.println("  ✗ MISSING: " + propertyName);
-                    System.out.println("      Domain: " + propertyData.getDomain());
-                    System.out.println("      DataType: " + propertyData.getDataType());
+                    System.out.println("MISSING: " + propertyName);
+                    System.out.println("Domain: " + propertyData.getDomain());
+                    System.out.println("DataType: " + propertyData.getDataType());
                     missingProperties++;
                     missingPropertyNames.add(propertyName);
                 }
@@ -1064,9 +965,6 @@ class ExcelConversionWorkflowJsonTest {
         System.out.println();
     }
 
-    /**
-     * Finds and logs which concepts are missing specific characteristics
-     */
     private void findConceptsWithMissingCharacteristics(JsonNode actualRoot, List<String> missingCharacteristics) {
         if (!actualRoot.has("pojmy")) {
             return;
@@ -1106,24 +1004,16 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    /**
-     * Checks if a concept node has a specific characteristic
-     */
     private boolean hasCharacteristic(JsonNode pojem, String characteristic) {
         return searchForFieldInNode(pojem, characteristic);
     }
 
-    /**
-     * Searches for a field within a specific node (non-recursive version for concept-level search)
-     */
     private boolean searchForFieldInNode(JsonNode node, String fieldName) {
         if (node.has(fieldName)) {
             return true;
         }
         if (node.isObject()) {
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
+            for (Map.Entry<String, JsonNode> entry : node.properties()) {
                 if (entry.getValue().isObject() && entry.getValue().has(fieldName)) {
                     return true;
                 }

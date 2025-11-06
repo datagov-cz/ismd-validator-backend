@@ -55,9 +55,6 @@ class ExcelConversionWorkflowTurtleTest {
     @Autowired
     private OFNDataTransformerNew transformer;
 
-    /**
-     * Provides all Excel test configurations
-     */
     static Stream<ExcelTestConfiguration> testConfigurationProvider() {
         return ExcelTestConfiguration.allConfigurations().stream();
     }
@@ -143,9 +140,6 @@ class ExcelConversionWorkflowTurtleTest {
         System.out.println("=".repeat(80) + "\n");
     }
 
-    /**
-     * Tests that Excel conversion preserves all data in Turtle output
-     */
     @ParameterizedTest(name = "{0} - TTL Data Preservation")
     @MethodSource("testConfigurationProvider")
     void excelConversionWorkflow_turtleShouldPreserveAllData(ExcelTestConfiguration config) throws Exception {
@@ -195,9 +189,6 @@ class ExcelConversionWorkflowTurtleTest {
         System.out.println("All " + expectedEntityCount + " entities preserved in TTL output");
     }
 
-    /**
-     * Tests that TTL output contains required RDF vocabulary elements
-     */
     @ParameterizedTest(name = "{0} - TTL RDF Vocabulary")
     @MethodSource("testConfigurationProvider")
     void excelConversionWorkflow_turtleShouldUseCorrectRdfVocabulary(ExcelTestConfiguration config) throws Exception {
@@ -250,9 +241,6 @@ class ExcelConversionWorkflowTurtleTest {
         }
     }
 
-    /**
-     * Parses a Turtle/RDF string into a Jena Model
-     */
     private Model parseRdfModel(String rdfContent, String description) {
         try {
             Model model = ModelFactory.createDefaultModel();
@@ -265,9 +253,6 @@ class ExcelConversionWorkflowTurtleTest {
         }
     }
 
-    /**
-     * Validates basic Turtle structure (namespaces, triples, etc.)
-     */
     private void validateTurtleStructure(Model model) {
         // Check that model is not empty
         assertFalse(model.isEmpty(), "RDF model should contain at least one triple");
@@ -296,9 +281,6 @@ class ExcelConversionWorkflowTurtleTest {
         assertTrue(hasRdf, "Model should use RDF vocabulary");
     }
 
-    /**
-     * Compares two RDF models semantically using graph isomorphism
-     */
     private void compareRdfModels(Model expectedModel, Model actualModel, ExcelTestConfiguration config) {
         long expectedSize = expectedModel.size();
         long actualSize = actualModel.size();
@@ -373,9 +355,6 @@ class ExcelConversionWorkflowTurtleTest {
         }
     }
 
-    /**
-     * Validates entity counts in the RDF model
-     */
     private void validateEntityCounts(Model model, ExcelTestConfiguration.EntityCounts expectedCounts) {
         // Count OWL/SKOS classes (deduplicated)
         Set<Resource> classResources = new HashSet<>();
@@ -438,9 +417,6 @@ class ExcelConversionWorkflowTurtleTest {
         }
     }
 
-    /**
-     * Analyzes class count mismatch by listing all actual classes
-     */
     private void analyzeClassMismatch(Model model, Set<Resource> actualClasses, Integer expectedCount) {
         System.out.println("\nDetailed class analysis (expected: " + expectedCount + ", found: " + actualClasses.size() + "):");
 
@@ -473,9 +449,6 @@ class ExcelConversionWorkflowTurtleTest {
         }
     }
 
-    /**
-     * Analyzes property count mismatch by listing all actual properties
-     */
     private void analyzePropertyMismatch(Model model, Set<Resource> actualProperties, Integer expectedCount) {
         System.out.println("\nDetailed property analysis (expected: " + expectedCount + ", found: " + actualProperties.size() + "):");
 
@@ -503,9 +476,6 @@ class ExcelConversionWorkflowTurtleTest {
         }
     }
 
-    /**
-     * Analyzes the types of statements that are missing or extra
-     */
     private void analyzeStatementTypes(Model missing, Model extra) {
         System.out.println("\nAnalyzing statement types:");
 
@@ -534,9 +504,6 @@ class ExcelConversionWorkflowTurtleTest {
         }
     }
 
-    /**
-     * Formats an RDF statement for display
-     */
     private String formatStatement(org.apache.jena.rdf.model.Statement stmt) {
         String subject = stmt.getSubject().toString();
         String predicate = stmt.getPredicate().toString();
@@ -550,9 +517,6 @@ class ExcelConversionWorkflowTurtleTest {
         return String.format("%s → %s → %s", subject, predicate, object);
     }
 
-    /**
-     * Shortens URIs for display
-     */
     private String shortenUri(String uri) {
         if (uri.startsWith("https://")) {
             int lastSlash = uri.lastIndexOf('/');
@@ -565,9 +529,6 @@ class ExcelConversionWorkflowTurtleTest {
         return uri;
     }
 
-    /**
-     * Validates that the model has meaningful content related to the input ontology
-     */
     private void validateMeaningfulContent(Model model, OntologyData ontologyData) {
         // Check for ontology definition
         boolean hasOntology = model.contains(null, RDF.type, OWL.Ontology)
@@ -632,9 +593,6 @@ class ExcelConversionWorkflowTurtleTest {
         System.out.println("Model contains meaningful content");
     }
 
-    /**
-     * Finds all concept resources in the model (classes, properties, relationships)
-     */
     private Set<Resource> findConceptResources(Model model) {
         Set<Resource> concepts = new HashSet<>();
 
@@ -669,9 +627,6 @@ class ExcelConversionWorkflowTurtleTest {
         return 0;
     }
 
-    /**
-     * Finds and reports entities missing in Turtle output
-     */
     private void findMissingEntitiesInTurtle(OntologyData ontologyData, Model actualModel, Set<Resource> conceptResources) {
         System.out.println("\nAnalyzing missing entities in TTL output...");
 
@@ -773,9 +728,6 @@ class ExcelConversionWorkflowTurtleTest {
         System.out.println("Total missing: " + (missingClasses + missingProperties + missingRelationships));
     }
 
-    /**
-     * Validates vocabulary usage in the model
-     */
     private void validateVocabularyUsage(Model model, List<String> validationErrors) {
         // Check for proper namespace usage
         Map<String, String> prefixes = model.getNsPrefixMap();
@@ -844,9 +796,6 @@ class ExcelConversionWorkflowTurtleTest {
         }
     }
 
-    /**
-     * Validates type declarations in the model
-     */
     private void validateTypeDeclarations(Model model, List<String> validationErrors) {
         // Find all subjects with rdf:type
         Set<Resource> typedResources = new HashSet<>();
@@ -865,9 +814,6 @@ class ExcelConversionWorkflowTurtleTest {
         }
     }
 
-    /**
-     * Validates property usage in the model
-     */
     private void validatePropertyUsage(Model model, List<String> validationErrors) {
         // Check for domain/range declarations
         boolean hasDomain = model.contains(null, RDFS.domain, (Resource) null);
