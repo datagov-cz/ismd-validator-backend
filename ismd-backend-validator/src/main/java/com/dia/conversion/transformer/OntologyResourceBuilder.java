@@ -385,29 +385,27 @@ public class OntologyResourceBuilder {
 
     private boolean isObjectProperty(PropertyData propertyData) {
         String dataType = propertyData.getDataType();
-        String domain = propertyData.getDomain();
 
-        if (domain != null && !domain.trim().isEmpty()) {
-            String trimmedDomain = domain.trim();
-            if (isDatatype(trimmedDomain)) {
-                return true;
-            }
-        }
-
-        if (dataType != null && !dataType.trim().isEmpty()) {
-            String trimmedDataType = dataType.trim();
-            return isDatatype(trimmedDataType);
-        }
-
-        return false;
-    }
-
-    private boolean isDatatype(String value) {
-        if (value.startsWith("xsd:") || value.startsWith(ExportConstants.Json.XSD_NS)) {
+        if (dataType == null || dataType.trim().isEmpty()) {
             return false;
         }
 
-        return !CZECH_TO_XSD_MAPPING.containsKey(value) && !value.matches("(?i)(string|boolean|integer|double|date|time|datetime|uri|literal).*");
+        String trimmedDataType = dataType.trim();
+
+        return !isLiteralDatatype(trimmedDataType);
+    }
+
+    private boolean isLiteralDatatype(String value) {
+        if (value.startsWith("xsd:") || value.startsWith(ExportConstants.Json.XSD_NS)) {
+            return true;
+        }
+
+        if (CZECH_TO_XSD_MAPPING.containsKey(value)) {
+            return true;
+        }
+
+        return value.contains("rdfs:Literal") || value.contains("rdf-schema#Literal") ||
+                value.toLowerCase().contains("literal");
     }
 
     public void transformRelationships(List<RelationshipData> relationships, Map<String, Resource> localRelationshipResources,

@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("workflow")
 @Tag("excel")
 @Tag("deviation-detection")
-class ExcelConversionWorkflowTest {
+class ExcelConversionWorkflowJsonTest {
 
     @Autowired
     private ExcelReader excelReader;
@@ -422,14 +422,13 @@ class ExcelConversionWorkflowTest {
                 String fieldPath = path + "." + fieldName;
 
                 // Check if this field should be an array according to the context
-                if (setContainerFields.containsKey(fieldName)) {
-                    if (!fieldValue.isArray() && !fieldValue.isNull()) {
+                if (setContainerFields.containsKey(fieldName) && !fieldValue.isArray() && !fieldValue.isNull()) {
                         violations.add(String.format(
                             "Field '%s' at %s should be an array (context defines @container: @set) but is %s",
                             fieldName, fieldPath, fieldValue.getNodeType()
                         ));
                     }
-                }
+
 
                 // Recursively validate nested structures
                 validateNodeStructure(fieldValue, setContainerFields, violations, fieldPath);
