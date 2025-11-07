@@ -1,6 +1,7 @@
 package com.dia.workflow;
 
 import com.dia.conversion.data.*;
+import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.workflow.config.ExcelTestConfiguration;
@@ -24,13 +25,14 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Comprehensive Excel conversion workflow test with deviation detection and isolation.
+ * Comprehensive Excel and EA conversion workflow test with deviation detection and isolation.
  * <p>
- * This test validates the complete Excel → OntologyData → TransformationResult → JSON-LD pipeline
+ * This test validates the complete Excel/EA → OntologyData → TransformationResult → JSON-LD pipeline
  * and can isolate exactly where deviations from expected output occur.
  * <p>
  * Features:
  * - Configurable with different test files via ExcelTestConfiguration
+ * - Supports both Excel (.xlsx) and EA (.xml) input files
  * - Stage-by-stage workflow validation
  * - Detailed deviation detection and reporting
  * - JSON-LD context verification
@@ -40,11 +42,15 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 @Tag("workflow")
 @Tag("excel")
+@Tag("ea")
 @Tag("deviation-detection")
 class ExcelConversionWorkflowJsonTest {
 
     @Autowired
     private ExcelReader excelReader;
+
+    @Autowired
+    private EnterpriseArchitectReader eaReader;
 
     @Autowired
     private OFNDataTransformerNew transformer;
@@ -60,14 +66,14 @@ class ExcelConversionWorkflowJsonTest {
     @MethodSource("testConfigurationProvider")
     void excelConversionWorkflow_shouldProduceExpectedOutput(ExcelTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
-        System.out.println("EXCEL CONVERSION WORKFLOW TEST: " + config.getTestId());
+        System.out.println("CONVERSION WORKFLOW TEST: " + config.getTestId());
         System.out.println("=".repeat(80));
 
-        // Stage 1: Load Excel file
-        System.out.println("\n[STAGE 1] Loading Excel file: " + config.getInputPath());
-        OntologyData ontologyData = loadExcelFile(config.getInputPath());
-        assertNotNull(ontologyData, "Excel file should be successfully parsed");
-        System.out.println("Excel file loaded successfully");
+        // Stage 1: Load input file (Excel or EA)
+        System.out.println("\n[STAGE 1] Loading input file: " + config.getInputPath());
+        OntologyData ontologyData = loadFile(config.getInputPath());
+        assertNotNull(ontologyData, "Input file should be successfully parsed");
+        System.out.println("Input file loaded successfully");
 
         // Stage 1 Validation: Check OntologyData structure
         System.out.println("\n[STAGE 1 VALIDATION] Validating parsed OntologyData");
@@ -130,7 +136,7 @@ class ExcelConversionWorkflowJsonTest {
         System.out.println("\n[DATA PRESERVATION TEST] " + config.getTestId());
 
         // Execute workflow
-        OntologyData ontologyData = loadExcelFile(config.getInputPath());
+        OntologyData ontologyData = loadFile(config.getInputPath());
         TransformationResult transformationResult = transformer.transform(ontologyData);
         String actualJson = transformer.exportToJson(transformationResult);
 
@@ -176,7 +182,7 @@ class ExcelConversionWorkflowJsonTest {
         System.out.println("\n[CHARACTERISTICS TEST] " + config.getTestId());
 
         // Execute workflow
-        OntologyData ontologyData = loadExcelFile(config.getInputPath());
+        OntologyData ontologyData = loadFile(config.getInputPath());
         TransformationResult transformationResult = transformer.transform(ontologyData);
         String actualJson = transformer.exportToJson(transformationResult);
 
@@ -208,9 +214,17 @@ class ExcelConversionWorkflowJsonTest {
 
     // ========== Helper Methods ==========
 
-    private OntologyData loadExcelFile(String path) throws Exception {
+    private OntologyData loadFile(String path) throws Exception {
         try (InputStream is = new ClassPathResource(path).getInputStream()) {
-            return excelReader.readOntologyFromExcel(is);
+            // Determine file type by extension
+            if (path.endsWith(".xlsx")) {
+                return excelReader.readOntologyFromExcel(is);
+            } else if (path.endsWith(".xml")) {
+                byte[] xmlBytes = is.readAllBytes();
+                return eaReader.readXmiFromBytes(xmlBytes);
+            } else {
+                throw new IllegalArgumentException("Unsupported file format: " + path);
+            }
         }
     }
 
