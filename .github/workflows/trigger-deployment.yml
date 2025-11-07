@@ -53,7 +53,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          ref: dev
+          fetch-depth: 0  # Fetch all history including tags
       
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -75,16 +75,49 @@ jobs:
             if [ -n "${{ github.event.inputs.version }}" ]; then
               IMAGE_TAG="${{ github.event.inputs.version }}"
             else
-              # Otherwise get version from module POM via Maven
-              chmod +x mvnw || true
-              BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
-              IMAGE_TAG="$BASE_VERSION"
-            fi
-
-            # For manual DEV, append short SHA only when no explicit version was provided
-            if [ "$ENVIRONMENT" = "DEV" ] && [ -z "${{ github.event.inputs.version }}" ]; then
-              SHORT_SHA=${GITHUB_SHA:0:7}
-              IMAGE_TAG="${IMAGE_TAG}-${SHORT_SHA}"
+              # Query GitHub Packages API for the latest available image tag
+              REPO_OWNER='${{ github.repository_owner }}'
+              
+              # Determine package name based on environment
+              if [ "$ENVIRONMENT" = "DEV" ]; then
+                PACKAGE_NAME="ismd-validator-backend-dev"
+              else
+                PACKAGE_NAME="ismd-validator-backend"
+              fi
+              
+              echo "Querying GitHub Packages API for latest image in ${PACKAGE_NAME}..."
+              
+              # Get all versions from GitHub Packages API, extract tags, filter and sort
+              LATEST_TAG=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/orgs/${REPO_OWNER}/packages/container/${PACKAGE_NAME}/versions?per_page=100" 2>/dev/null | \
+                jq -r '.[].metadata.container.tags[]?' 2>/dev/null | \
+                grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9-]+)?$' | \
+                sort -V | tail -1)
+              
+              if [ -n "$LATEST_TAG" ]; then
+                IMAGE_TAG="$LATEST_TAG"
+                echo "Using latest available image from registry: $IMAGE_TAG"
+              else
+                # Fallback: construct version from Git tag
+                echo "Could not fetch tags from registry, falling back to Git tag"
+                TAG=$(git describe --tags --abbrev=0 --match "v[0-9]*" 2>/dev/null || echo "")
+                if [ -z "$TAG" ]; then
+                  BASE_VERSION="0.0.1"
+                  echo "No tags found, using default version: $BASE_VERSION"
+                else
+                  BASE_VERSION=$(echo "$TAG" | sed 's/^v//')
+                  echo "Found tag: $TAG, using version: $BASE_VERSION"
+                fi
+                IMAGE_TAG="$BASE_VERSION"
+                
+                # For manual DEV, append short SHA
+                if [ "$ENVIRONMENT" = "DEV" ]; then
+                  SHORT_SHA=${GITHUB_SHA:0:7}
+                  IMAGE_TAG="${IMAGE_TAG}-${SHORT_SHA}"
+                fi
+              fi
             fi
           else
             # For automated triggers, determine environment from branch
@@ -94,9 +127,15 @@ jobs:
               ENVIRONMENT="DEV"
             fi
             
-            # Get version from module POM via Maven
-            chmod +x mvnw || true
-            BASE_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+            # Get version from latest Git tag (same as build workflow)
+            TAG=$(git describe --tags --abbrev=0 --match "v[0-9]*" 2>/dev/null || echo "")
+            if [ -z "$TAG" ]; then
+              BASE_VERSION="0.0.1"
+              echo "No tags found, using default version: $BASE_VERSION"
+            else
+              BASE_VERSION=$(echo "$TAG" | sed 's/^v//')
+              echo "Found tag: $TAG, using version: $BASE_VERSION"
+            fi
             IMAGE_TAG="$BASE_VERSION"
             
             # For dev branch, append the short SHA
@@ -167,7 +206,14 @@ jobs:
           ENV_LOWER=$(echo "$ENV_UPPER" | tr '[:upper:]' '[:lower:]')
           IMAGE_TAG='${{ needs.determine-params.outputs.image_tag }}'
           REPO_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
-          IMAGE="ghcr.io/${REPO_OWNER}/ismd-validator-backend-${ENV_LOWER}:${IMAGE_TAG}"
+          
+          # Only dev images have environment suffix, test/prod use base image name
+          if [ "$ENV_UPPER" = "DEV" ]; then
+            IMAGE="ghcr.io/${REPO_OWNER}/ismd-validator-backend-${ENV_LOWER}:${IMAGE_TAG}"
+          else
+            IMAGE="ghcr.io/${REPO_OWNER}/ismd-validator-backend:${IMAGE_TAG}"
+          fi
+          
           echo "Validating image: $IMAGE"
           if ! docker manifest inspect "$IMAGE" >/dev/null 2>&1; then
             echo "ERROR: Image manifest not found for $IMAGE" >&2
@@ -217,7 +263,7 @@ jobs:
           log-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       
       - name: Trigger Infrastructure Deployment
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.INFRA_REPO_TOKEN }}
           repository: ${{ env.INFRA_REPO }}
@@ -277,7 +323,7 @@ jobs:
           description: "Preparing to deploy"
       
       - name: Trigger Infrastructure Deployment
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.INFRA_REPO_TOKEN }}
           repository: ${{ env.INFRA_REPO }}
@@ -336,7 +382,7 @@ jobs:
           description: "Preparing to deploy"
       
       - name: Trigger Infrastructure Deployment
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.INFRA_REPO_TOKEN }}
           repository: ${{ env.INFRA_REPO }}
