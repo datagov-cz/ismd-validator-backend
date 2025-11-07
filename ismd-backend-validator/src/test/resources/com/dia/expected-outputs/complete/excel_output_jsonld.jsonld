@@ -227,7 +227,9 @@
             "definující-nelegislativní-zdroj": [
                 {
                     "typ": "Digitální objekt",
-                    "název": "Směrnice EU"
+                    "název": {
+                        "cs": "Směrnice EU"
+                    }
                 }
             ],
             "související-nelegislativní-zdroj": [
@@ -266,7 +268,10 @@
             },
             "ekvivalentní-pojem": [
                 {
-                    "id": "https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce-s-rozšířenou-působností;https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce"
+                    "id": "https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce-s-rozšířenou-působností"
+                },
+                {
+                    "id": "https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce"
                 }
             ],
             "definující-ustanovení-právního-předpisu": [
@@ -366,7 +371,9 @@
                 },
                 {
                     "typ": "Digitální objekt",
-                    "název": "Směrnice EU"
+                    "název": {
+                        "cs": "Směrnice EU"
+                    }
                 }
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",

@@ -3,10 +3,10 @@ package com.dia.workflow.deviation;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.*;
-import java.util.stream.Collectors;
+
+import static com.dia.constants.VocabularyConstants.*;
 
 /**
  * Detects and reports deviations between expected and actual JSON-LD outputs.
@@ -171,7 +171,10 @@ public class DeviationDetector {
 
         if (path.endsWith("pojmy")) {
             comparePojmyArrays(expected, actual, path);
-        } else if (path.contains("související-nelegislativní-zdroj") || path.contains("definující-nelegislativní-zdroj")) {
+        } else if (path.contains("související-nelegislativní-zdroj") ||
+                path.contains("definující-nelegislativní-zdroj") ||
+                path.contains("ekvivalentní-pojem"))
+        {
             // Compare source arrays by matching content regardless of order
             compareSourceArrays(expected, actual, path);
         } else {
@@ -220,9 +223,9 @@ public class DeviationDetector {
     }
 
     /**
-     * Compares source arrays (související-nelegislativní-zdroj, definující-nelegislativní-zdroj)
+     * Compares source arrays (související-nelegislativní-zdroj, definující-nelegislativní-zdroj, ekvivalentní-pojem)
      * by matching content regardless of order. Sources are matched by their identifying fields
-     * (url or název).
+     * (url, název, id).
      */
     private void compareSourceArrays(JsonNode expected, JsonNode actual, String path) {
         // Build sets of actual elements for matching
@@ -265,7 +268,7 @@ public class DeviationDetector {
 
     /**
      * Finds a matching source element in the actual array that hasn't been matched yet.
-     * Sources are considered matching if they have the same identifying fields (url, název).
+     * Sources are considered matching if they have the same identifying fields (url, název, id).
      */
     private JsonNode findMatchingSourceElement(JsonNode expectedElement, JsonNode actualArray, Set<JsonNode> alreadyMatched) {
         for (JsonNode actualElement : actualArray) {
@@ -283,7 +286,7 @@ public class DeviationDetector {
 
     /**
      * Determines if two source elements represent the same source.
-     * They match if they have the same url or název values.
+     * They match if they have the same url, název or id values.
      */
     private boolean sourceElementsMatch(JsonNode element1, JsonNode element2) {
         // Try matching by URL
@@ -304,17 +307,14 @@ public class DeviationDetector {
             }
         }
 
-        // If both have url and název, require at least one to match
-        boolean hasUrl1 = element1.has("url");
-        boolean hasUrl2 = element2.has("url");
-        boolean hasName1 = element1.has("název");
-        boolean hasName2 = element2.has("název");
-
-        // If structure differs significantly, they don't match
-        if (hasUrl1 != hasUrl2 || hasName1 != hasName2) {
-            return false;
+        // Try matching by id
+        if (element1.has("id") && element2.has("id")) {
+            String name1 = element1.get("id").asText();
+            String name2 = element2.get("id").asText();
+            return name1.equals(name2);
         }
 
+        // If structure differs significantly, they don't match
         return false;
     }
 
@@ -380,18 +380,19 @@ public class DeviationDetector {
      */
     private boolean isOptionalField(String fieldName) {
         Set<String> optionalFields = Set.of(
-            "alternativní-název",
-            "popis",
-            "definice",
-            "definující-nelegislativní-zdroj",
-            "související-nelegislativní-zdroj",
-            "ekvivalentní-pojem",
+            ALTERNATIVNI_NAZEV,
+            POPIS,
+            DEFINICE,
+            DEFINUJICI_NELEGISLATIVNI_ZDROJ,
+            SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+            EKVIVALENTNI_POJEM,
             "nadřazený-pojem",
-            "nadřazená-třída",
-            "nadřazená-vlastnost",
-            "agenda",
-            "agendový-informační-systém",
-            "je-sdílen-v-ppdf"
+            NADRAZENA_TRIDA,
+            NADRAZENA_VLASTNOST,
+            NADRAZENY_VZTAH,
+            AGENDA,
+            AIS,
+            JE_PPDF
         );
         return optionalFields.contains(fieldName);
     }

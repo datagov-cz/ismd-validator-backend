@@ -21,7 +21,7 @@
         <!-- Version from Git tag, overridden at build time (this default is not used) -->
         <revision>0.0.1</revision>
         <!-- Common library version - update explicitly when upgrading -->
-        <ismd-validator-common.version>1.0.0</ismd-validator-common.version>
+        <ismd-validator-common.version>1.0.1-SNAPSHOT</ismd-validator-common.version>
     </properties>
 
     <dependencies>

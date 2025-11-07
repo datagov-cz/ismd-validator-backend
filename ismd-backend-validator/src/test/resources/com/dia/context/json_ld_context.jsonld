@@ -1,3 +1,4 @@
+"//comment": "This version of json-ld context from https://ofn.gov.cz/slovníky/draft2/kompletní/kontext.jsonld purposefully lacks způsoby-sdílení-údaje, způsoby-získání-údaje, and typ-obsahu-údaje, as they're incorrectly defined compared to OFN Slovník definitions"
 {
   "@context": {
     "@version": 1.1,
@@ -159,19 +160,6 @@
         "je-sdílen-v-ppdf": {
           "@id": "a104:je-sdílen-v-propojeném-datovém-fondu",
           "@type": "xsd:boolean"
-        },
-        "způsob-získání-údaje": {
-          "@id": "slovníky:má-způsob-získání-údaje",
-          "@type": "@id"
-        },
-        "typ-obsahu-údaje": {
-          "@id": "slovníky:má-typ-obsahu-údaje",
-          "@type": "@id"
-        },
-        "způsoby-sdílení-údaje": {
-          "@id": "slovníky:má-způsob-sdílení-údaje",
-          "@type": "@id",
-          "@container": "@set"
         },
         "agenda": {
           "@id": "a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy",
