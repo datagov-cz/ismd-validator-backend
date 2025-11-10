@@ -279,7 +279,7 @@ public class EnterpriseArchitectReader {
 
         classData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         classData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
-        classData.setId(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
+        classData.setIdentifier(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
         classData.setSharedInPPDF(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_SDILEN_V_PPDF"));
         classData.setAgendaCode(getTagValueByPattern(extensionElement, "AGENDA"));
         classData.setAgendaSystemCode(getTagValueByPattern(extensionElement, "AGENDOVY_INFORMACNI_SYSTEM"));
