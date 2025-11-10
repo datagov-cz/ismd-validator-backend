@@ -14,7 +14,7 @@ import static com.dia.constants.VocabularyConstants.*;
  */
 @Data
 @Builder
-public class ExcelTestConfiguration {
+public class WorkflowTestConfiguration {
 
     /**
      * Unique identifier for this test case
@@ -63,8 +63,8 @@ public class ExcelTestConfiguration {
     /**
      * Creates test configuration for the complete test Excel file
      */
-    public static ExcelTestConfiguration completeExcel() {
-        return ExcelTestConfiguration.builder()
+    public static WorkflowTestConfiguration completeExcel() {
+        return WorkflowTestConfiguration.builder()
             .testId("complete-excel")
             .description("Complete Excel ontology test with all characteristics")
             .inputPath("com/dia/canonical/complete/testExcelProject.xlsx")
@@ -109,8 +109,8 @@ public class ExcelTestConfiguration {
      * - NADRAZENA_VLASTNOST (nadřazená-vlastnost) - extraction logic not implemented
      * These characteristics are present in the EA XML but not extracted by EnterpriseArchitectReader
      */
-    public static ExcelTestConfiguration completeEA() {
-        return ExcelTestConfiguration.builder()
+    public static WorkflowTestConfiguration completeEA() {
+        return WorkflowTestConfiguration.builder()
             .testId("complete-ea")
             .description("Complete EA (Enterprise Architect) ontology test with JSON output")
             .inputPath("com/dia/canonical/complete/testEAInput.xml")
@@ -135,15 +135,15 @@ public class ExcelTestConfiguration {
                 ZPUSOB_SDILENI_ALT,
                 ZPUSOB_ZISKANI_ALT,
                 TYP_OBSAHU_ALT,
-                // JE_PPDF - not currently extracted from EA XML
+                JE_PPDF, // Testing if this is extracted from EA XML
                 USTANOVENI_NEVEREJNOST,
                 AGENDA,
                 AIS,
                 EKVIVALENTNI_POJEM,
                 ALTERNATIVNI_NAZEV,
                 DEFINUJICI_NELEGISLATIVNI_ZDROJ,
-                SOUVISEJICI_NELEGISLATIVNI_ZDROJ
-                // NADRAZENA_VLASTNOST - not currently extracted from EA XML
+                SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+                NADRAZENA_VLASTNOST // Testing if this is extracted from EA XML
             ))
             .build();
     }
@@ -151,7 +151,7 @@ public class ExcelTestConfiguration {
     /**
      * Returns all available Excel test configurations
      */
-    public static List<ExcelTestConfiguration> allConfigurations() {
+    public static List<WorkflowTestConfiguration> allConfigurations() {
         return List.of(
             completeExcel(),
             completeEA()

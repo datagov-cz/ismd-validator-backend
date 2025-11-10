@@ -4,7 +4,7 @@ import com.dia.conversion.data.*;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.transformer.OFNDataTransformerNew;
-import com.dia.workflow.config.ExcelTestConfiguration;
+import com.dia.workflow.config.WorkflowTestConfiguration;
 import com.dia.workflow.deviation.DeviationDetector;
 import com.dia.workflow.deviation.WorkflowDeviation;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("excel")
 @Tag("ea")
 @Tag("deviation-detection")
-class ExcelConversionWorkflowJsonTest {
+class ConversionWorkflowJsonTest {
 
     @Autowired
     private ExcelReader excelReader;
@@ -58,13 +58,13 @@ class ExcelConversionWorkflowJsonTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final DeviationDetector deviationDetector = new DeviationDetector();
 
-    static Stream<ExcelTestConfiguration> testConfigurationProvider() {
-        return ExcelTestConfiguration.allConfigurations().stream();
+    static Stream<WorkflowTestConfiguration> testConfigurationProvider() {
+        return WorkflowTestConfiguration.allConfigurations().stream();
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_shouldProduceExpectedOutput(ExcelTestConfiguration config) throws Exception {
+    void excelConversionWorkflow_shouldProduceExpectedOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("CONVERSION WORKFLOW TEST: " + config.getTestId());
         System.out.println("=".repeat(80));
@@ -132,7 +132,7 @@ class ExcelConversionWorkflowJsonTest {
 
     @ParameterizedTest(name = "{0} - No Data Loss")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_shouldPreserveAllData(ExcelTestConfiguration config) throws Exception {
+    void excelConversionWorkflow_shouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[DATA PRESERVATION TEST] " + config.getTestId());
 
         // Execute workflow
@@ -174,7 +174,7 @@ class ExcelConversionWorkflowJsonTest {
 
     @ParameterizedTest(name = "{0} - Characteristics")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_shouldPreserveCharacteristics(ExcelTestConfiguration config) throws Exception {
+    void excelConversionWorkflow_shouldPreserveCharacteristics(WorkflowTestConfiguration config) throws Exception {
         if (config.getRequiredCharacteristics() == null || config.getRequiredCharacteristics().isEmpty()) {
             return;
         }
@@ -234,7 +234,7 @@ class ExcelConversionWorkflowJsonTest {
         }
     }
 
-    private void validateOntologyData(OntologyData data, ExcelTestConfiguration config) {
+    private void validateOntologyData(OntologyData data, WorkflowTestConfiguration config) {
         System.out.println("VocabularyMetadata: " +
             (data.getVocabularyMetadata() != null ? "present" : "MISSING"));
 
@@ -257,7 +257,7 @@ class ExcelConversionWorkflowJsonTest {
         System.out.println("Hierarchies: " + hierarchyCount);
 
         if (config.getExpectedCounts() != null) {
-            ExcelTestConfiguration.EntityCounts expected = config.getExpectedCounts();
+            WorkflowTestConfiguration.EntityCounts expected = config.getExpectedCounts();
 
             if (expected.getClasses() != null) {
                 assertEquals((int) expected.getClasses(), classCount, "Expected " + expected.getClasses() + " classes but found " + classCount);
@@ -813,9 +813,7 @@ class ExcelConversionWorkflowJsonTest {
             return true;
         }
         if (node.isObject()) {
-            var fields = node.properties().iterator();
-            while (fields.hasNext()) {
-                var entry = fields.next();
+            for (Map.Entry<String, JsonNode> entry : node.properties()) {
                 if (searchForField(entry.getValue(), fieldName)) {
                     return true;
                 }

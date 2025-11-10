@@ -3,7 +3,7 @@ package com.dia.workflow;
 import com.dia.conversion.data.*;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.transformer.OFNDataTransformerNew;
-import com.dia.workflow.config.ExcelTestConfiguration;
+import com.dia.workflow.config.WorkflowTestConfiguration;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("excel")
 @Tag("turtle")
 @Tag("deviation-detection")
-class ExcelConversionWorkflowTurtleTest {
+class ConversionWorkflowTurtleTest {
 
     @Autowired
     private ExcelReader excelReader;
@@ -55,13 +55,13 @@ class ExcelConversionWorkflowTurtleTest {
     @Autowired
     private OFNDataTransformerNew transformer;
 
-    static Stream<ExcelTestConfiguration> testConfigurationProvider() {
-        return ExcelTestConfiguration.allConfigurations().stream();
+    static Stream<WorkflowTestConfiguration> testConfigurationProvider() {
+        return WorkflowTestConfiguration.allConfigurations().stream();
     }
 
     @ParameterizedTest(name = "{0} - TTL Output")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_shouldProduceSemanticallySameTurtleOutput(ExcelTestConfiguration config) throws Exception {
+    void excelConversionWorkflow_shouldProduceSemanticallySameTurtleOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("EXCEL → TURTLE CONVERSION WORKFLOW TEST: " + config.getTestId());
         System.out.println("=".repeat(80));
@@ -142,7 +142,7 @@ class ExcelConversionWorkflowTurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL Data Preservation")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_turtleShouldPreserveAllData(ExcelTestConfiguration config) throws Exception {
+    void excelConversionWorkflow_turtleShouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[TTL DATA PRESERVATION TEST] " + config.getTestId());
 
         // Execute workflow
@@ -191,7 +191,7 @@ class ExcelConversionWorkflowTurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL RDF Vocabulary")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_turtleShouldUseCorrectRdfVocabulary(ExcelTestConfiguration config) throws Exception {
+    void excelConversionWorkflow_turtleShouldUseCorrectRdfVocabulary(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[TTL RDF VOCABULARY TEST] " + config.getTestId());
 
         // Execute workflow
@@ -281,7 +281,7 @@ class ExcelConversionWorkflowTurtleTest {
         assertTrue(hasRdf, "Model should use RDF vocabulary");
     }
 
-    private void compareRdfModels(Model expectedModel, Model actualModel, ExcelTestConfiguration config) {
+    private void compareRdfModels(Model expectedModel, Model actualModel, WorkflowTestConfiguration config) {
         long expectedSize = expectedModel.size();
         long actualSize = actualModel.size();
 
@@ -355,7 +355,7 @@ class ExcelConversionWorkflowTurtleTest {
         }
     }
 
-    private void validateEntityCounts(Model model, ExcelTestConfiguration.EntityCounts expectedCounts) {
+    private void validateEntityCounts(Model model, WorkflowTestConfiguration.EntityCounts expectedCounts) {
         // Count OWL/SKOS classes (deduplicated)
         Set<Resource> classResources = new HashSet<>();
         model.listSubjectsWithProperty(RDF.type, OWL.Class).forEachRemaining(classResources::add);

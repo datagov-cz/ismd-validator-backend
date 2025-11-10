@@ -138,7 +138,7 @@ public class EnterpriseArchitectReader {
             metadata.setDescription(getTagValueByPattern(extensionElement, "POPIS_SLOVNIKU"));
         }
 
-        String namespace = getTagValue(extensionElement, "namespace");
+        String namespace = getTagValueByPattern(extensionElement, "NAMESPACE");
         if (namespace == null || namespace.trim().isEmpty()) {
             String name = metadata.getName();
             if (name != null && !name.trim().isEmpty()) {
@@ -355,7 +355,7 @@ public class EnterpriseArchitectReader {
                     }
                     break;
                 case "Generalization":
-                    processGeneralizationConnector(document, connector, classMap);
+                    processGeneralizationConnector(document, connector, classMap, propertyMap);
                     break;
                 case "Aggregation":
                     processAggregationConnector(document, connector, propertyMap, classMap);
@@ -405,7 +405,9 @@ public class EnterpriseArchitectReader {
         return STEREOTYPE_TYP_VZTAHU.equals(stereotype);
     }
 
-    private void processGeneralizationConnector(Document document, Element connector, Map<String, ClassData> classMap) {
+    private void processGeneralizationConnector(Document document, Element connector,
+                                               Map<String, ClassData> classMap,
+                                               Map<String, PropertyData> propertyMap) {
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);
 
@@ -420,10 +422,18 @@ public class EnterpriseArchitectReader {
             String parentName = getElementName(document, parentId);
 
             if (childName != null && parentName != null) {
-                ClassData childClass = classMap.get(childName);
+                ClassData childClass = classMap != null ? classMap.get(childName) : null;
                 if (childClass != null) {
                     childClass.setSuperClass(parentName);
-                    log.debug("Established inheritance: {} extends {}", childName, parentName);
+                    log.debug("Established class inheritance: {} extends {}", childName, parentName);
+                } else if (propertyMap != null) {
+                    PropertyData childProperty = propertyMap.get(childName);
+                    if (childProperty != null) {
+                        childProperty.setSuperProperty(parentName);
+                        log.debug("Established property inheritance: {} extends {}", childName, parentName);
+                    } else {
+                        log.warn("Child element not found for inheritance: {}", childName);
+                    }
                 } else {
                     log.warn("Child class not found for inheritance: {}", childName);
                 }
