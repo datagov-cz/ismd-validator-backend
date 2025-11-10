@@ -103,11 +103,10 @@ public class WorkflowTestConfiguration {
     }
 
     /**
-     * Creates test configuration for the complete test EA file
-     * Note: EA conversion currently does not support:
-     * - JE_PPDF (je-sdílen-v-ppdf) - extraction logic exists but not working correctly
-     * - NADRAZENA_VLASTNOST (nadřazená-vlastnost) - extraction logic not implemented
-     * These characteristics are present in the EA XML but not extracted by EnterpriseArchitectReader
+     * Creates test configuration for the complete test EA file.
+     * All characteristics are now properly extracted from EA XML including:
+     * - JE_PPDF (je-sdílen-v-ppdf) - extracted from tags and transformed correctly
+     * - NADRAZENA_VLASTNOST (nadřazená-vlastnost) - extracted from Generalization connectors
      */
     public static WorkflowTestConfiguration completeEA() {
         return WorkflowTestConfiguration.builder()
