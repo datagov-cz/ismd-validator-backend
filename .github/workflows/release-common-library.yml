@@ -124,11 +124,15 @@ jobs:
           CURRENT_VERSION="${{ steps.version.outputs.version }}"
           NEXT_VERSION=$(echo $CURRENT_VERSION | awk -F. -v OFS=. '{$NF++;print}')-SNAPSHOT
           sed -i "0,/<version>/s/<version>[^<]*<\/version>/<version>$NEXT_VERSION<\/version>/" pom.xml
-          echo "Bumped pom.xml to next SNAPSHOT version: $NEXT_VERSION"
+          echo "Bumped common library pom.xml to next SNAPSHOT version: $NEXT_VERSION"
+          
+          # Also update the validator POM to use the new SNAPSHOT version
+          sed -i "s/<ismd-validator-common.version>.*<\/ismd-validator-common.version>/<ismd-validator-common.version>$NEXT_VERSION<\/ismd-validator-common.version>/" ../ismd-backend-validator/pom.xml
+          echo "Updated validator pom.xml to use common library version: $NEXT_VERSION"
 
       - name: Commit SNAPSHOT version
         run: |
-          git add ismd-validator-common/pom.xml
+          git add ismd-validator-common/pom.xml ismd-backend-validator/pom.xml
           # Only commit if there are changes
           if git diff --staged --quiet; then
             echo "No SNAPSHOT version changes needed"

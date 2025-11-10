@@ -297,7 +297,7 @@ public class ExcelReader {
         ColumnMapping<PropertyData> propertyMapping = ColumnMapping.<PropertyData>builder()
                 .withColumn(NAZEV, PropertyData::setName)
                 .withColumn(ALT_NAZEV, PropertyData::setAlternativeName)
-                .withColumn(SUBJEKTY_OBJEKTY_PRAVA, PropertyData::setDomain)
+                .withColumn(SUBJEKT_OBJEKT_PRAVA, PropertyData::setDomain)
                 .withColumn(POPIS, PropertyData::setDescription)
                 .withColumn(DEFINICE, PropertyData::setDefinition)
                 .withColumn(ZDROJ, PropertyData::setSource)
@@ -332,6 +332,14 @@ public class ExcelReader {
                 .withColumn(NADRAZENY_POJEM, RelationshipData::setSuperRelation)
                 .withColumn(EKVIVALENTNI_POJEM, RelationshipData::setEquivalentConcept)
                 .withColumn(IDENTIFIKATOR, RelationshipData::setIdentifier)
+                .withColumn(JE_PPDF, RelationshipData::setSharedInPPDF)
+                .withColumn(AGENDA, RelationshipData::setAgendaCode)
+                .withColumn(AIS, RelationshipData::setAgendaSystemCode)
+                .withColumn(JE_VEREJNY, RelationshipData::setIsPublic)
+                .withColumn(USTANOVENI_DOKLADAJICI_NEVEREJNOST, RelationshipData::setPrivacyProvision)
+                .withColumn(ZPUSOB_SDILENI_UDEJE, RelationshipData::setSharingMethod)
+                .withColumn(ZPUSOB_ZISKANI_UDEJE, RelationshipData::setAcquisitionMethod)
+                .withColumn(TYP_OBSAHU_UDAJE, RelationshipData::setContentType)
                 .build();
 
         mappingRegistry.registerMapping(VZTAHY, relationMapping);

@@ -497,7 +497,15 @@ public class JsonExporter {
 
         String nazevValue = nazevStmt.getString();
         if (nazevValue != null && !nazevValue.trim().isEmpty()) {
-            docObj.put(ExportConstants.Json.NAZEV, nazevValue);
+            // Create language map object to match JSON-LD context specification
+            JSONObject langMap = new JSONObject();
+            String lang = nazevStmt.getLanguage();
+            if (lang != null && !lang.isEmpty()) {
+                langMap.put(lang, nazevValue);
+            } else {
+                langMap.put("cs", nazevValue);
+            }
+            docObj.put(ExportConstants.Json.NAZEV, langMap);
         }
     }
 

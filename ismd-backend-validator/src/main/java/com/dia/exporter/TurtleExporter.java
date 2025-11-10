@@ -174,6 +174,10 @@ public class TurtleExporter {
                     filteredStatements++;
                     log.debug("Filtering out base schema definition: {}", stmt);
                     shouldSkip = true;
+                } else if (isExternalReferenceOnlyResource(subject)) {
+                    filteredStatements++;
+                    log.debug("Filtering out external reference-only resource: {}", subject.getURI());
+                    shouldSkip = true;
                 }
             }
 
@@ -188,6 +192,16 @@ public class TurtleExporter {
                 originalStatements, filteredStatements, originalStatements - filteredStatements);
 
         return newModel;
+    }
+
+    private boolean isExternalReferenceOnlyResource(Resource resource) {
+        if (resource == null || resource.getURI() == null) {
+            return false;
+        }
+
+        String uri = resource.getURI();
+
+        return !uri.startsWith(effectiveNamespace);
     }
 
     private boolean shouldFilterAsBaseSchema(String uri) {
