@@ -149,11 +149,8 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
 
         combinedResults.addAll(globalResults);
 
-        boolean isValid = localReport.isValid() && globalReport.isValid();
-
         ISMDValidationReport combinedReport = new ISMDValidationReport(
                 combinedResults,
-                isValid,
                 Instant.now()
         );
 
