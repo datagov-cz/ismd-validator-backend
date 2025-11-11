@@ -6,11 +6,10 @@ import com.dia.validation.ValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 
@@ -28,6 +27,32 @@ public class ValidatorController {
 
         ISMDValidationReport ismdReport = validationService.validateTtl(
                 request.getOntologyContent()
+        );
+
+        ValidationReportDto dto = new ValidationReportDto(ismdReport.results(), Instant.now());
+
+        return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping(value = "/validate-ttl-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ValidationReportDto> validateTtlFile(
+            @RequestParam("file") MultipartFile file) {
+
+        ISMDValidationReport ismdReport = validationService.validateTtlFile(file);
+
+        ValidationReportDto dto = new ValidationReportDto(ismdReport.results(), Instant.now());
+
+        return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/validate-rdf")
+    public ResponseEntity<ValidationReportDto> validateRdf(
+            @RequestBody ValidationRequestDto request,
+            @RequestParam(defaultValue = "TURTLE") String format) {
+
+        ISMDValidationReport ismdReport = validationService.validateRdf(
+                request.getOntologyContent(),
+                format
         );
 
         ValidationReportDto dto = new ValidationReportDto(ismdReport.results(), Instant.now());
