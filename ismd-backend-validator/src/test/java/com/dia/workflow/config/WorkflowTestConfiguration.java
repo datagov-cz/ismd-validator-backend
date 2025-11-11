@@ -71,7 +71,7 @@ public class WorkflowTestConfiguration {
             .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld.jsonld")
             .contextPath("com/dia/context/json_ld_context.jsonld")
             .expectedCounts(EntityCounts.builder()
-                .classes(7)
+                .classes(6)  // 7 total classes in OntologyData, but 1 (Adresa) is external reference without type declaration in TTL
                 .properties(30)
                 .relationships(4)
                 .hierarchies(3)
@@ -104,9 +104,6 @@ public class WorkflowTestConfiguration {
 
     /**
      * Creates test configuration for the complete test EA file.
-     * All characteristics are now properly extracted from EA XML including:
-     * - JE_PPDF (je-sdílen-v-ppdf) - extracted from tags and transformed correctly
-     * - NADRAZENA_VLASTNOST (nadřazená-vlastnost) - extracted from Generalization connectors
      */
     public static WorkflowTestConfiguration completeEA() {
         return WorkflowTestConfiguration.builder()
@@ -116,7 +113,7 @@ public class WorkflowTestConfiguration {
             .expectedOutputPath("com/dia/expected-outputs/complete/ea_output_jsonld.jsonld")
             .contextPath("com/dia/context/json_ld_context.jsonld")
             .expectedCounts(EntityCounts.builder()
-                .classes(7)
+                .classes(6)  // 7 total classes in OntologyData, but 1 (Adresa) is external reference without type declaration in TTL
                 .properties(30)
                 .relationships(4)
                 .hierarchies(2)
@@ -134,7 +131,7 @@ public class WorkflowTestConfiguration {
                 ZPUSOB_SDILENI_ALT,
                 ZPUSOB_ZISKANI_ALT,
                 TYP_OBSAHU_ALT,
-                JE_PPDF, // Testing if this is extracted from EA XML
+                JE_PPDF,
                 USTANOVENI_NEVEREJNOST,
                 AGENDA,
                 AIS,
@@ -142,7 +139,7 @@ public class WorkflowTestConfiguration {
                 ALTERNATIVNI_NAZEV,
                 DEFINUJICI_NELEGISLATIVNI_ZDROJ,
                 SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
-                NADRAZENA_VLASTNOST // Testing if this is extracted from EA XML
+                NADRAZENA_VLASTNOST
             ))
             .build();
     }

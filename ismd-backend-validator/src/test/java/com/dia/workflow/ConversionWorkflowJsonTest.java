@@ -216,7 +216,6 @@ class ConversionWorkflowJsonTest {
 
     private OntologyData loadFile(String path) throws Exception {
         try (InputStream is = new ClassPathResource(path).getInputStream()) {
-            // Determine file type by extension
             if (path.endsWith(".xlsx")) {
                 return excelReader.readOntologyFromExcel(is);
             } else if (path.endsWith(".xml")) {
@@ -322,7 +321,7 @@ class ConversionWorkflowJsonTest {
                 System.out.println("  ... and " + (undefinedFields.size() - 10) + " more");
             }
 
-            // Note: This is a warning, not a failure, as some fields might be valid but not in our context
+            // Note: This is a warning, not a failure, as some fields might be valid but not in the context
             System.out.println("\nNote: Some fields may be valid but not defined in the test context file");
         }
 

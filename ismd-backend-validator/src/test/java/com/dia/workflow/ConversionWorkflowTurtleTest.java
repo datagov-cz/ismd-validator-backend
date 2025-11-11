@@ -7,6 +7,7 @@ import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.workflow.config.WorkflowTestConfiguration;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
@@ -168,6 +169,20 @@ class ConversionWorkflowTurtleTest {
         int relationshipCount = countEntitiesOfType(ontologyData, RelationshipData.class);
         int expectedEntityCount = classCount + propertyCount + relationshipCount;
 
+        // Note: TurtleExporter includes external namespace concepts as references
+        // in the RDF model, so they are counted in the concept resources
+        String vocabularyNamespace = ontologyData.getVocabularyMetadata() != null
+            ? ontologyData.getVocabularyMetadata().getNamespace()
+            : null;
+
+        if (vocabularyNamespace != null) {
+            for (ClassData classData : ontologyData.getClasses()) {
+                if (shouldExcludeFromExpectedCount(classData.getIdentifier(), vocabularyNamespace)) {
+                    System.out.println("- External reference: " + classData.getName() + " (included in TTL for referential purposes)");
+                }
+            }
+        }
+
         System.out.println("Input entities:");
         System.out.println("Classes: " + classCount);
         System.out.println("Properties: " + propertyCount);
@@ -276,7 +291,7 @@ class ConversionWorkflowTurtleTest {
         Map<String, String> prefixes = model.getNsPrefixMap();
         System.out.println("Prefixes found: " + prefixes.keySet());
 
-        // Verify that we have at least some standard prefixes
+        // Verify standard prefixes
         assertFalse(prefixes.isEmpty(), "Model should have at least one namespace prefix defined");
 
         // Check for vocabulary presence
@@ -371,7 +386,7 @@ class ConversionWorkflowTurtleTest {
     }
 
     private void validateEntityCounts(Model model, WorkflowTestConfiguration.EntityCounts expectedCounts) {
-        // Count OWL/SKOS classes (deduplicated)
+        // Count OWL/SKOS classes
         Set<Resource> classResources = new HashSet<>();
         model.listSubjectsWithProperty(RDF.type, OWL.Class).forEachRemaining(classResources::add);
         model.listSubjectsWithProperty(RDF.type, RDFS.Class).forEachRemaining(classResources::add);
@@ -388,7 +403,7 @@ class ConversionWorkflowTurtleTest {
         long datatypePropertyCount = datatypePropertyResources.size();
         long totalPropertyCount = objectPropertyCount + datatypePropertyCount;
 
-        // Count all concepts (deduplicated)
+        // Count all concepts
         Set<Resource> allConcepts = findConceptResources(model);
 
         System.out.println("OWL/SKOS Classes (unique): " + classCount);
@@ -486,7 +501,7 @@ class ConversionWorkflowTurtleTest {
             if (model.contains(propResource, RDF.type, SKOS.Concept)) types.add("skos:Concept");
 
             if (types.size() > 1) {
-                System.out.println("    - " + shortenUri(propResource.getURI()) + " has types: " + types);
+                System.out.println(" - " + shortenUri(propResource.getURI()) + " has types: " + types);
             }
         }
     }
@@ -569,9 +584,22 @@ class ConversionWorkflowTurtleTest {
         assertTrue(hasLabels, "Model should contain labels for concepts");
 
         // Validate that concept count matches input ontology
+        // Note: TurtleExporter includes external namespace concepts as references
+        String vocabularyNamespace = ontologyData.getVocabularyMetadata() != null
+            ? ontologyData.getVocabularyMetadata().getNamespace()
+            : null;
+
         int expectedConceptCount = countEntitiesOfType(ontologyData, ClassData.class)
             + countEntitiesOfType(ontologyData, PropertyData.class)
             + countEntitiesOfType(ontologyData, RelationshipData.class);
+
+        if (vocabularyNamespace != null) {
+            for (ClassData classData : ontologyData.getClasses()) {
+                if (shouldExcludeFromExpectedCount(classData.getIdentifier(), vocabularyNamespace)) {
+                    System.out.println("- External reference: " + classData.getName() + " (IRI: " + classData.getIdentifier() + ")");
+                }
+            }
+        }
 
         System.out.println("Expected concepts from OntologyData: " + expectedConceptCount);
         System.out.println("Actual concepts in TTL model: " + concepts.size());
@@ -601,8 +629,12 @@ class ConversionWorkflowTurtleTest {
             }
         }
 
+        // Validate concept count
         if (expectedConceptCount != concepts.size()) {
-            System.out.println("Warning: Expected " + expectedConceptCount + " concepts but found " + concepts.size());
+            System.out.println("Note: Expected " + expectedConceptCount + " concepts but found " + concepts.size());
+            System.out.println("This may indicate an issue with TTL export or concept counting.");
+        } else {
+            System.out.println("Concept count matches expected (" + expectedConceptCount + " concepts)");
         }
 
         System.out.println("Model contains meaningful content");
@@ -656,19 +688,25 @@ class ConversionWorkflowTurtleTest {
         // Extract labels from concept resources
         Set<String> outputLabels = new HashSet<>();
         for (Resource resource : conceptResources) {
-            if (actualModel.contains(resource, SKOS.prefLabel, (String) null)) {
+            if (actualModel.contains(resource, SKOS.prefLabel, (RDFNode) null)) {
                 actualModel.listObjectsOfProperty(resource, SKOS.prefLabel)
                     .forEachRemaining(obj -> {
                         if (obj.isLiteral()) {
-                            outputLabels.add(obj.asLiteral().getString().toLowerCase().trim());
+                            String lexicalForm = obj.asLiteral().getLexicalForm();
+                            if (lexicalForm != null && !lexicalForm.trim().isEmpty()) {
+                                outputLabels.add(lexicalForm.toLowerCase().trim());
+                            }
                         }
                     });
             }
-            if (actualModel.contains(resource, RDFS.label, (String) null)) {
+            if (actualModel.contains(resource, RDFS.label, (RDFNode) null)) {
                 actualModel.listObjectsOfProperty(resource, RDFS.label)
                     .forEachRemaining(obj -> {
                         if (obj.isLiteral()) {
-                            outputLabels.add(obj.asLiteral().getString().toLowerCase().trim());
+                            String lexicalForm = obj.asLiteral().getLexicalForm();
+                            if (lexicalForm != null && !lexicalForm.trim().isEmpty()) {
+                                outputLabels.add(lexicalForm.toLowerCase().trim());
+                            }
                         }
                     });
             }
@@ -818,7 +856,7 @@ class ConversionWorkflowTurtleTest {
 
         System.out.println("Found " + typedResources.size() + " resources with rdf:type declarations");
 
-        // Check that we have ontology or concept scheme
+        // Check for ontology or concept scheme
         boolean hasOntologyOrScheme = model.contains(null, RDF.type, OWL.Ontology)
             || model.contains(null, RDF.type, SKOS.ConceptScheme);
 
@@ -846,5 +884,22 @@ class ConversionWorkflowTurtleTest {
         } else {
             System.out.println("Model contains labels");
         }
+    }
+
+    /**
+     * Checks if a concept should be excluded from expected count because it's from an external namespace.
+     * The TurtleExporter filters out concepts that don't belong to the ontology's namespace.
+     *
+     * @param identifier The concept's IRI/identifier
+     * @param vocabularyNamespace The ontology's namespace
+     * @return true if the concept should be excluded from expected count
+     */
+    private boolean shouldExcludeFromExpectedCount(String identifier, String vocabularyNamespace) {
+        if (identifier == null || vocabularyNamespace == null) {
+            return false;
+        }
+
+        // Exclude concepts that don't belong to the ontology's namespace
+        return !identifier.startsWith(vocabularyNamespace);
     }
 }
