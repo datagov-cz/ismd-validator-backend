@@ -80,9 +80,12 @@ public class EnterpriseArchitectReader {
         parseElements(document, vocabularyPackageIds, classes, properties);
         parseConnectors(document, vocabularyPackageIds, relationships, classes, properties);
 
-        List<HierarchyData> hierarchies = extractHierarchiesFromClasses(classes, document, vocabularyPackageIds);
+        List<HierarchyData> hierarchies = new ArrayList<>();
+        hierarchies.addAll(extractHierarchiesFromClasses(classes, document, vocabularyPackageIds));
+        hierarchies.addAll(extractHierarchiesFromProperties(properties, document, vocabularyPackageIds));
 
-        log.info("Parsed {} classes, {} properties, {} relationships", classes.size(), properties.size(), relationships.size());
+        log.info("Parsed {} classes, {} properties, {} relationships, {} hierarchies",
+                classes.size(), properties.size(), relationships.size(), hierarchies.size());
 
         return OntologyData.builder()
                 .vocabularyMetadata(vocabularyMetadata)
@@ -263,7 +266,7 @@ public class EnterpriseArchitectReader {
     private ClassData parseClassData(Element umlElement, Element extensionElement, String stereotype) {
         ClassData classData = new ClassData();
 
-        classData.setName(umlElement.getAttribute("name"));
+        classData.setName(umlElement.getAttribute("name").trim());
         classData.setType(STEREOTYPE_TYP_SUBJEKTU.equals(stereotype) ? "Subjekt práva" : "Objekt práva");
         classData.setDescription(getTagValueByPattern(extensionElement, "POPIS"));
         classData.setDefinition(getTagValueByPattern(extensionElement, "DEFINICE"));
@@ -296,7 +299,7 @@ public class EnterpriseArchitectReader {
     private PropertyData parsePropertyData(Element umlElement, Element extensionElement) {
         PropertyData propertyData = new PropertyData();
 
-        propertyData.setName(umlElement.getAttribute("name"));
+        propertyData.setName(umlElement.getAttribute("name").trim());
         propertyData.setDescription(getTagValueByPattern(extensionElement, "POPIS"));
         propertyData.setDefinition(getTagValueByPattern(extensionElement, "DEFINICE"));
 
@@ -531,6 +534,29 @@ public class EnterpriseArchitectReader {
         return hierarchies;
     }
 
+    private List<HierarchyData> extractHierarchiesFromProperties(List<PropertyData> properties, Document document,
+                                                                 Set<String> vocabularyPackageIds) {
+        List<HierarchyData> hierarchies = new ArrayList<>();
+
+        log.debug("Extracting hierarchies from {} properties", properties.size());
+
+        for (PropertyData propertyData : properties) {
+            if (propertyData.getSuperProperty() != null && !propertyData.getSuperProperty().trim().isEmpty()) {
+                HierarchyData hierarchy = new HierarchyData();
+                hierarchy.setSubClass(propertyData.getName());
+                hierarchy.setSuperClass(propertyData.getSuperProperty());
+
+                enrichHierarchyWithConnectorData(hierarchy, document, vocabularyPackageIds);
+
+                hierarchies.add(hierarchy);
+                log.debug("Created property hierarchy: {} -> {}", propertyData.getName(), propertyData.getSuperProperty());
+            }
+        }
+
+        log.info("Extracted {} hierarchical relationships from properties", hierarchies.size());
+        return hierarchies;
+    }
+
     private void enrichHierarchyWithConnectorData(HierarchyData hierarchy, Document document,
                                                   Set<String> vocabularyPackageIds) {
         NodeList connectors = document.getElementsByTagName("connector");
@@ -552,7 +578,11 @@ public class EnterpriseArchitectReader {
                 if (!connectorName.trim().isEmpty()) {
                     hierarchy.setRelationshipName(connectorName);
                 } else {
-                    hierarchy.setRelationshipName("rdfs:subClassOf");
+                    // Determine if this is a property or class hierarchy based on element type
+                    String defaultRelName = isPropertyHierarchy(hierarchy, document)
+                            ? "rdfs:subPropertyOf"
+                            : "rdfs:subClassOf";
+                    hierarchy.setRelationshipName(defaultRelName);
                 }
 
                 String connectorId = connector.getAttribute("xmi:id");
@@ -602,10 +632,32 @@ public class EnterpriseArchitectReader {
         return hierarchy.getSubClass().equals(childName) && hierarchy.getSuperClass().equals(parentName);
     }
 
+    private boolean isPropertyHierarchy(HierarchyData hierarchy, Document document) {
+        // Check if the subClass element is a property by looking for its stereotype
+        NodeList elements = document.getElementsByTagName(PACKAGED_ELEMENT);
+
+        for (int i = 0; i < elements.getLength(); i++) {
+            Element element = (Element) elements.item(i);
+            String name = element.getAttribute("name");
+
+            if (hierarchy.getSubClass().equals(name)) {
+                String elementId = element.getAttribute(XMI_ID);
+                Element extensionElement = findExtensionElement(document, elementId);
+
+                if (extensionElement != null) {
+                    String stereotype = getStereotype(extensionElement);
+                    return STEREOTYPE_TYP_VLASTNOSTI.equals(stereotype);
+                }
+            }
+        }
+
+        return false;
+    }
+
     private RelationshipData parseRelationshipData(Document document, Element connector) {
         RelationshipData relationshipData = new RelationshipData();
 
-        relationshipData.setName(connector.getAttribute("name"));
+        relationshipData.setName(connector.getAttribute("name").trim());
         relationshipData.setDescription(getTagValueByPattern(connector, "POPIS"));
         relationshipData.setDefinition(getTagValueByPattern(connector, "DEFINICE"));
         relationshipData.setSource(getTagValueByPattern(connector, "ZDROJ"));

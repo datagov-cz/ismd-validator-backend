@@ -610,14 +610,23 @@ public class OntologyResourceBuilder {
             return false;
         }
 
-        subClassResource.addProperty(RDFS.subClassOf, superClassResource);
+        boolean isPropertyHierarchy = localPropertyResources.containsKey(subClassName);
 
         String namespace = uriGenerator.getEffectiveNamespace();
-        Property hierarchyProperty = ontModel.createProperty(namespace + "nadřazená-třída");
-        subClassResource.addProperty(hierarchyProperty, superClassResource);
 
-        log.debug("Created hierarchy relationship: {} rdfs:subClassOf {}",
-                subClassResource.getURI(), superClassResource.getURI());
+        if (isPropertyHierarchy) {
+            subClassResource.addProperty(RDFS.subPropertyOf, superClassResource);
+            Property hierarchyProperty = ontModel.createProperty(namespace + "nadřazená-vlastnost");
+            subClassResource.addProperty(hierarchyProperty, superClassResource);
+            log.debug("Created property hierarchy relationship: {} rdfs:subPropertyOf {}",
+                    subClassResource.getURI(), superClassResource.getURI());
+        } else {
+            subClassResource.addProperty(RDFS.subClassOf, superClassResource);
+            Property hierarchyProperty = ontModel.createProperty(namespace + "nadřazená-třída");
+            subClassResource.addProperty(hierarchyProperty, superClassResource);
+            log.debug("Created class hierarchy relationship: {} rdfs:subClassOf {}",
+                    subClassResource.getURI(), superClassResource.getURI());
+        }
 
         addHierarchyMetadata(subClassResource, hierarchyData);
 

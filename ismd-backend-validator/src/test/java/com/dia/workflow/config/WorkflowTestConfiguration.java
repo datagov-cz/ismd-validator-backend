@@ -71,7 +71,7 @@ public class WorkflowTestConfiguration {
             .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld.jsonld")
             .contextPath("com/dia/context/json_ld_context.jsonld")
             .expectedCounts(EntityCounts.builder()
-                .classes(6)  // 7 total classes in OntologyData, but 1 (Adresa) is external reference without type declaration in TTL
+                .classes(7)  // 7 total classes in OntologyData, but 1 (Adresa) is external reference without type declaration in TTL
                 .properties(30)
                 .relationships(4)
                 .hierarchies(3)
