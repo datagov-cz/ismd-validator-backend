@@ -102,11 +102,54 @@ jobs:
           </settings>
           EOF
 
+      - name: Validate common library version
+        id: validate-common
+        run: |
+          # Dev branch has released versions only
+          COMMON_VERSION=$(grep '<version>' ismd-validator-common/pom.xml | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
+          VALIDATOR_COMMON_DEP=$(grep '<ismd-validator-common.version>' ismd-backend-validator/pom.xml | sed -E 's/.*<ismd-validator-common.version>([^<]+)<.*/\1/')
+          
+          echo "Common library version: $COMMON_VERSION"
+          echo "Validator dependency: $VALIDATOR_COMMON_DEP"
+          
+          # Verify it's a released version (no SNAPSHOT)
+          if [[ "$COMMON_VERSION" == *"-SNAPSHOT"* ]]; then
+            echo "❌ ERROR: Dev branch should not have SNAPSHOT versions"
+            echo "Please push to dev to trigger auto-release"
+            exit 1
+          fi
+          
+          # Verify the release tag exists
+          if ! git ls-remote --tags origin | grep -q "refs/tags/common-v${COMMON_VERSION}"; then
+            echo "❌ ERROR: Common library tag common-v$COMMON_VERSION not found"
+            echo "Publish common library before releasing validator"
+            exit 1
+          fi
+          
+          echo "✅ Using released common library: v$COMMON_VERSION"
+          echo "common_version=$COMMON_VERSION" >> $GITHUB_OUTPUT
+          
+          # Ensure validator dependency matches
+          if [ "$VALIDATOR_COMMON_DEP" != "$COMMON_VERSION" ]; then
+            echo "Updating validator to use $COMMON_VERSION..."
+            sed -i "s/<ismd-validator-common.version>.*<\/ismd-validator-common.version>/<ismd-validator-common.version>$COMMON_VERSION<\/ismd-validator-common.version>/" ismd-backend-validator/pom.xml
+          fi
+
       - name: Install common library locally
         working-directory: ismd-backend-validator
         run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit release preparation
+        run: |
+          git add ismd-validator-common ismd-backend-validator/pom.xml
+          git commit -m "Prepare release v${{ steps.new-version.outputs.version }}
+          
+          - Use common library v${{ steps.prepare-release.outputs.common_version }} (released)
+          - Common library code from tag common-v${{ steps.prepare-release.outputs.common_version }}
+          - Updated validator dependency to released version"
+          echo "✅ Committed release preparation"
 
       - name: Run tests
         working-directory: ismd-backend-validator

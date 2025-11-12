@@ -114,6 +114,28 @@ jobs:
           
           echo "Creating sync branch $SYNC_BRANCH from main..."
           git checkout -b $SYNC_BRANCH origin/main
+          
+          # Check if dev has newer common lib or validator code
+          DEV_COMMON=$(git show origin/dev:ismd-validator-common/pom.xml | grep '<version>' | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
+          MAIN_COMMON=$(grep '<version>' ismd-validator-common/pom.xml | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
+          
+          echo "Main has common library: $MAIN_COMMON"
+          echo "Dev has common library: $DEV_COMMON"
+          
+          # Only update if dev has newer version
+          if [ "$DEV_COMMON" != "$MAIN_COMMON" ]; then
+            echo "Dev has newer common library, updating..."
+            git checkout origin/dev -- ismd-validator-common
+            sed -i "s/<ismd-validator-common.version>.*<\/ismd-validator-common.version>/<ismd-validator-common.version>$DEV_COMMON<\/ismd-validator-common.version>/" ismd-backend-validator/pom.xml
+            git add ismd-validator-common ismd-backend-validator/pom.xml
+            git commit -m "Sync common library from dev after release
+          
+          - Updated common library to v$DEV_COMMON from dev
+          - Updated validator dependency to v$DEV_COMMON"
+          else
+            echo "Dev and main have same common library version, no update needed"
+          fi
+          
           git push origin $SYNC_BRANCH
           
           # Check if PR already exists
@@ -126,6 +148,14 @@ jobs:
               --body "# Sync Main → Dev after Release v$VERSION
               
               This PR syncs main back into dev after the v$VERSION release.
+              
+              ## Changes:
+              - Syncs validator code from main (released v$VERSION)
+              - Updates common library if dev has a newer released version
+              
+              ## Note:
+              Both branches use released versions only (no SNAPSHOT).
+              Dev may have newer common library versions from ongoing development.
               
               - If there are no conflicts, this can be merged automatically
               - If conflicts exist, they need to be resolved manually

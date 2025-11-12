@@ -22,6 +22,8 @@
         <revision>0.0.1</revision>
         <!-- Common library version - update explicitly when upgrading -->
         <ismd-validator-common.version>1.0.0</ismd-validator-common.version>
+        <!-- GitHub repository for common library packages -->
+        <github.repository>datagov-cz/ismd-validator-common</github.repository>
     </properties>
 
     <dependencies>
@@ -119,7 +121,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/${env.GITHUB_REPOSITORY}</url>
+            <url>https://maven.pkg.github.com/${github.repository}</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
