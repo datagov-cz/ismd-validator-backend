@@ -1,0 +1,2789 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model xmlns="http://www.opengroup.org/xsd/archimate/3.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengroup.org/xsd/archimate/3.0/ http://www.opengroup.org/xsd/archimate/3.1/archimate3_Diagram.xsd" identifier="id-63dbdc3529984029bb5d99c13bf1aa97">
+  <name xml:lang="en">Slovník dle metodiky dat Digitální a informační agentury</name>
+  <documentation xml:lang="en">Slovník dle metodiky popisu dat Digitální a informační agentury.&#xD;
+Popis samotného slovníku pište do "Properties", položka "popis slovníku"&#xD;
+Verze šablony v1.1</documentation>
+  <properties>
+    <property propertyDefinitionRef="propid-18">
+      <value xml:lang="en">Ukázkový slovník zákona o silničním provozu z metodiky. Jedná se o příklad popisu; není garantován soulad tohoto slovníku s aktuálními zákony a jinými zdroji z této oblasti.</value>
+    </property>
+    <property propertyDefinitionRef="propid-19">
+      <value xml:lang="en">https://data.dia.gov.cz</value>
+    </property>
+  </properties>
+  <elements>
+    <element identifier="id-3e68285870b44e3babb13cd1546c0e0d" xsi:type="BusinessObject">
+      <name xml:lang="en">Rodné číslo držitele řidičského průkazu</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">Směrnice EU</value>
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en">https://ofn.gov.cz/slovn%C3%ADky/draft2/cs/#360-2023</value>
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Datum</value>
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-ca1c75b790b249ada857f0e77fdeda48" xsi:type="BusinessObject">
+      <name xml:lang="en">Rodné číslo držitele řidičského průkazu subclass</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en">Směrnice EU;https://ofn.gov.cz/slovn%C3%ADky/draft2/cs/#360-2023</value>
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-158795d81f46425d9f03c5d6ca33a550" xsi:type="BusinessObject">
+      <name xml:lang="en">Je věk na ŘP nad 18? P</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">xsd:boolean</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Veřejně přístupné</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Provozní</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Identifikační</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-7fe398784ab94bf7bff98102ce5ea7a8" xsi:type="BusinessObject">
+      <name xml:lang="en">Věk na ŘP P</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">xsd:integer</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1</value>
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Poskytované na žádost</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Evidenční</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-fa542d598a8146ab9a4fa4ab226489d4" xsi:type="BusinessObject">
+      <name xml:lang="en">Čas P</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">xsd:time</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Nesdílené</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-985923b4cc3844d1933cb3474b6f17ba" xsi:type="BusinessObject">
+      <name xml:lang="en">Datum P</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">xsd:date</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Základních registrů</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-16172f97915e417eb2e20569e5234958" xsi:type="BusinessObject">
+      <name xml:lang="en">Desetinné číslo P</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">xsd:double</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Zpřístupňované pro výkon agendy</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Statistické</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-34cfbeef3b45420eb885c2b87ba417ed" xsi:type="BusinessObject">
+      <name xml:lang="en">Datum a čas P</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">xsd:dateTimeStamp</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-f6f23524c54a46e4990f16f73b49deee" xsi:type="BusinessObject">
+      <name xml:lang="en">Text P</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">rdfs:Literal</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Jiných agend</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-28e1214c6a2e485c94e59657dee91459" xsi:type="BusinessObject">
+      <name xml:lang="en">URL P</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">xsd:anyURI</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Vlastní</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-315f05b17d4040578814ac6d1a23d310" xsi:type="BusinessObject">
+      <name xml:lang="en">Je věk na ŘP nad 18? I</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">http://www.w3.org/2001/XMLSchema#boolean</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Veřejně přístupné</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Provozní</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Identifikační</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-9da43beb60bf413b9c926e8080e8ca14" xsi:type="BusinessObject">
+      <name xml:lang="en">Věk na ŘP I</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">http://www.w3.org/2001/XMLSchema#integer</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Poskytované na žádost</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Evidenční</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-36e6d99455bd4e2a86bf19e5042e8c57" xsi:type="BusinessObject">
+      <name xml:lang="en">Čas I</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">http://www.w3.org/2001/XMLSchema#time</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Nesdílené</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-96400091cebe4059bd9d5e433bb7c5eb" xsi:type="BusinessObject">
+      <name xml:lang="en">Datum I</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">http://www.w3.org/2001/XMLSchema#date</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Základních registrů</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-b03d6d72a9c742ecb7e911fbc53dd93e" xsi:type="BusinessObject">
+      <name xml:lang="en">Desetinné číslo I</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">http://www.w3.org/2001/XMLSchema#double</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Zpřístupňované pro výkon agendy</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Statistické</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-1d47c2f34c4c486d894b75b99dcfb342" xsi:type="BusinessObject">
+      <name xml:lang="en">Datum a čas I</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">http://www.w3.org/2001/XMLSchema#dateTimeStamp</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-c5ae578a159e4a9b95b8c161e6bca25a" xsi:type="BusinessObject">
+      <name xml:lang="en">Text I</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">http://www.w3.org/2000/01/rdf-schema#Literal</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Jiných agend</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-368b578a8716489b9d3368d79b4aacb8" xsi:type="BusinessObject">
+      <name xml:lang="en">URL I</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">http://www.w3.org/2001/XMLSchema#anyURI</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Vlastní</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-21e4f56dc87c400ca8e66232b5488629" xsi:type="BusinessObject">
+      <name xml:lang="en">Název obecního úřadu obce s rozšířenou působností (copy)</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en">Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností).</value>
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i</value>
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">test - má být literal</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností-copy</value>
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en">Ano</value>
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en">Ano</value>
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-6b7bc805b0364db095142a9ae6e7a283" xsi:type="BusinessObject">
+      <name xml:lang="en">Je věk na ŘP nad 18? S</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Ano či ne</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Veřejně přístupné</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Provozní</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Identifikační</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-a0f02c4fe8dc40b8a21ee08b2d50a851" xsi:type="BusinessObject">
+      <name xml:lang="en">Věk na ŘP S</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Celé číslo</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1</value>
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Poskytované na žádost</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Evidenční</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-4c5f65a918a5472c88be55a95ec85eee" xsi:type="BusinessObject">
+      <name xml:lang="en">Čas S</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Čas</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Nesdílené</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-0bd09aac66aa42c0b30d23478ab50d9e" xsi:type="BusinessObject">
+      <name xml:lang="en">Datum S</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Datum</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Základních registrů</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-e4b9f19ab41245aea9b5f27e52a1d4a5" xsi:type="BusinessObject">
+      <name xml:lang="en">Desetinné číslo S</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Desetinné číslo</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Zpřístupňované pro výkon agendy</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Statistické</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-c221481c32c240aba7a93e0e05d70052" xsi:type="BusinessObject">
+      <name xml:lang="en">Datum a čas S</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Datum a čas</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-0ea0f0693c9a4f2fb9136949b2087fc7" xsi:type="BusinessObject">
+      <name xml:lang="en">Test S</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Text</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Jiných agend</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-3b675b10aad24df9bc500ffc7ca67afa" xsi:type="BusinessObject">
+      <name xml:lang="en">URL S</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">URI, IRI, URL</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Vlastní</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-fcce6e0b9a0440c1a6ef6d91cf39a32f" xsi:type="BusinessObject">
+      <name xml:lang="en">Jméno držitele řidičského průkazu</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en">Řidičský průkaz obsahuje mj. jméno a příjmení držitele.</value>
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_a</value>
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en">jméno řidiče</value>
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Řetězec</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/jméno-držitele-řidičského-průkazu</value>
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en">Ano</value>
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en">Ne</value>
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-87e1584431e3406ab2afde761d05aea1" xsi:type="BusinessObject">
+      <name xml:lang="en">Název obecního úřadu obce s rozšířenou působností</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en">Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností).</value>
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i</value>
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Text</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností</value>
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en">Ano</value>
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en">Ano</value>
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-df770b2d876c49b9bd4ad6da58e2b1bc" xsi:type="BusinessObject">
+      <name xml:lang="en">Obecní úřad obce s rozšířenou působností</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ subjektu</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en">Úřad vydávající řidičský průkaz je vždy obecním úřadem obce s rozšířenou působností.</value>
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3</value>
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en">https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce-s-rozšířenou-působností;https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností</value>
+        </property>
+        <property propertyDefinitionRef="propid-16">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-17">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-658dfc02065742f58d74ff426f77d4a5" xsi:type="BusinessObject">
+      <name xml:lang="en">Příjmení držitele řidičského průkazu</name>
+      <properties>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en">Řidičský průkaz obsahuje mj. jméno a příjmení držitele.</value>
+        </property>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ vlastnosti</value>
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_a</value>
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en">příjmení řidiče</value>
+        </property>
+        <property propertyDefinitionRef="propid-8">
+          <value xml:lang="en">Text</value>
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en">Ano</value>
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en">Ne</value>
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/příjmení-držitele-řidičského-průkazu</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-42338ea788774b2791805bf6907992d2" xsi:type="BusinessObject">
+      <name xml:lang="en">Řidičský průkaz</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ objektu</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en">Řidičský průkaz je veřejná listina, která osvědčuje řidičské oprávnění držitele a jeho rozsah a kterou držitel prokazuje své jméno, příjmení a podobu, jakož i další údaje v ní zapsané podle tohoto zákona.</value>
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1</value>
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en">řidičák;ŘP</value>
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz</value>
+        </property>
+        <property propertyDefinitionRef="propid-16">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-17">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-03ec8e6907104f81a2a2b6bf8d989e4b" xsi:type="BusinessObject">
+      <name xml:lang="en">Účastník provozu na pozemních komunikacích</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ subjektu</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en">každý, kdo se přímým způsobem účastní provozu na pozemních komunikacích</value>
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_a</value>
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích</value>
+        </property>
+        <property propertyDefinitionRef="propid-16">
+          <value xml:lang="en">998</value>
+        </property>
+        <property propertyDefinitionRef="propid-17">
+          <value xml:lang="en">998</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-1a64dced9df5425885186fe89890d5b6" xsi:type="BusinessObject">
+      <name xml:lang="en">Řidič</name>
+      <properties>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en">účastník provozu na pozemních komunikacích, který řídí motorové nebo nemotorové vozidlo anebo tramvaj; řidičem je i jezdec na zvířeti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en">Řidič je tedy i cyklista, nejen řidič motorových vozidel – neváže se na něj nutně řidičské oprávnění.</value>
+        </property>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ subjektu</value>
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-04-01/dokument/norma/cast_1/hlava_1/par_2/pism_d</value>
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en">řidič auta</value>
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-17">
+          <value xml:lang="en">https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A998</value>
+        </property>
+        <property propertyDefinitionRef="propid-16">
+          <value xml:lang="en">https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/1234</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-1c8b3ae15e1c4e09b6bef87994cd14a1" xsi:type="BusinessObject">
+      <name xml:lang="en">Řidič evidovaný v registru řidičů</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ subjektu</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en">Registr řidičů obsahuje a) osobní údaje o řidiči motorového vozidla uvedené v řidičském průkazu a v mezinárodním řidičském průkazu, včetně digitalizované fotografie a digitalizovaného podpisu řidiče,</value>
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_4/par_119/odst_2/pism_a</value>
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů</value>
+        </property>
+        <property propertyDefinitionRef="propid-16">
+          <value xml:lang="en">1234</value>
+        </property>
+        <property propertyDefinitionRef="propid-17">
+          <value xml:lang="en">A998</value>
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-b288210148994874b5423b6de5f99216" xsi:type="BusinessObject">
+      <name xml:lang="en">Vozidlo</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ objektu</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en">motorové vozidlo, nemotorové vozidlo nebo tramvaj</value>
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_f</value>
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo</value>
+        </property>
+        <property propertyDefinitionRef="propid-16">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-17">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+    <element identifier="id-4ef2825d9fee4caaac87a63036811641" xsi:type="BusinessObject">
+      <name xml:lang="en">Adresa</name>
+      <properties>
+        <property propertyDefinitionRef="propid-1">
+          <value xml:lang="en">typ objektu</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en">Určení místa některým ze způsobů definovaných otevřenou formální normou pro adresu</value>
+        </property>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en">Adresou se rozumí kombinace názvu okresu, názvu obce nebo vojenského újezdu, názvu části obce nebo v případě hlavního města Prahy názvu katastrálního území a názvu městského obvodu, čísla popisného nebo evidenčního, názvu ulice a čísla orientačního a dále zvláštních údajů pro doručování prostřednictvím poštovních služeb, která jednoznačně určuje adresní místo.</value>
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://esbirka.opendata.cz/zdroj/p%C5%99edpis/111/2009/sekce/29/1/h</value>
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/adresa</value>
+        </property>
+        <property propertyDefinitionRef="propid-16">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-17">
+          <value xml:lang="en" />
+        </property>
+      </properties>
+    </element>
+  </elements>
+  <relationships>
+    <relationship identifier="id-50867c89c1ec4cd698bf63fab9c0363e" source="id-42338ea788774b2791805bf6907992d2" target="id-3e68285870b44e3babb13cd1546c0e0d" xsi:type="Composition" />
+    <relationship identifier="id-6637f0fa2fe3414da4301acd362ee5b5" source="id-ca1c75b790b249ada857f0e77fdeda48" target="id-3e68285870b44e3babb13cd1546c0e0d" xsi:type="Specialization" />
+    <relationship identifier="id-fe191ece71b647da9a29f790f3e1ff51" source="id-42338ea788774b2791805bf6907992d2" target="id-6b7bc805b0364db095142a9ae6e7a283" xsi:type="Composition" />
+    <relationship identifier="id-6a27982d321846058e7ca199fb9853de" source="id-42338ea788774b2791805bf6907992d2" target="id-a0f02c4fe8dc40b8a21ee08b2d50a851" xsi:type="Composition" />
+    <relationship identifier="id-bbaf9cf6b76d4436bd87dec2cf1f14e8" source="id-42338ea788774b2791805bf6907992d2" target="id-4c5f65a918a5472c88be55a95ec85eee" xsi:type="Composition" />
+    <relationship identifier="id-e682c61c57db4768a2242ec42758c81d" source="id-42338ea788774b2791805bf6907992d2" target="id-c221481c32c240aba7a93e0e05d70052" xsi:type="Composition" />
+    <relationship identifier="id-e71b96fc9f1a43e491c43fed1a4e71fc" source="id-42338ea788774b2791805bf6907992d2" target="id-e4b9f19ab41245aea9b5f27e52a1d4a5" xsi:type="Composition" />
+    <relationship identifier="id-ffeed24307b34ec4a99f3b9cbe187d2f" source="id-42338ea788774b2791805bf6907992d2" target="id-0bd09aac66aa42c0b30d23478ab50d9e" xsi:type="Composition" />
+    <relationship identifier="id-28dfe5163d7e47b69e7149d05e84e796" source="id-42338ea788774b2791805bf6907992d2" target="id-3b675b10aad24df9bc500ffc7ca67afa" xsi:type="Composition" />
+    <relationship identifier="id-cf5c677c6c1b48d3b79ecea2095a68f7" source="id-42338ea788774b2791805bf6907992d2" target="id-0ea0f0693c9a4f2fb9136949b2087fc7" xsi:type="Composition" />
+    <relationship identifier="id-9e67b79b27604dd0b78fff33a8fcdcd0" source="id-42338ea788774b2791805bf6907992d2" target="id-158795d81f46425d9f03c5d6ca33a550" xsi:type="Composition" />
+    <relationship identifier="id-560e3fd0d1a54220881d95ac930f9b13" source="id-42338ea788774b2791805bf6907992d2" target="id-985923b4cc3844d1933cb3474b6f17ba" xsi:type="Composition" />
+    <relationship identifier="id-0fb9f5045f7c4ebea26d9aadb88d688d" source="id-42338ea788774b2791805bf6907992d2" target="id-f6f23524c54a46e4990f16f73b49deee" xsi:type="Composition" />
+    <relationship identifier="id-78dfc2b9aea0433db86b27ab05cd13b8" source="id-42338ea788774b2791805bf6907992d2" target="id-7fe398784ab94bf7bff98102ce5ea7a8" xsi:type="Composition" />
+    <relationship identifier="id-943fec04eb484f93a94d1307c1a4d7ac" source="id-42338ea788774b2791805bf6907992d2" target="id-16172f97915e417eb2e20569e5234958" xsi:type="Composition" />
+    <relationship identifier="id-b2ce243f65d940658c6ffb6926b695e3" source="id-42338ea788774b2791805bf6907992d2" target="id-28e1214c6a2e485c94e59657dee91459" xsi:type="Composition" />
+    <relationship identifier="id-7c73f4004acb4dc1a43a4bdf49ae744f" source="id-42338ea788774b2791805bf6907992d2" target="id-fa542d598a8146ab9a4fa4ab226489d4" xsi:type="Composition" />
+    <relationship identifier="id-986e75f798034950952783918f6970ba" source="id-42338ea788774b2791805bf6907992d2" target="id-34cfbeef3b45420eb885c2b87ba417ed" xsi:type="Composition" />
+    <relationship identifier="id-0faf4068a7f8423d9a161ccff96aa116" source="id-42338ea788774b2791805bf6907992d2" target="id-315f05b17d4040578814ac6d1a23d310" xsi:type="Composition" />
+    <relationship identifier="id-513ca695d7264f2a941bd689d41541d1" source="id-42338ea788774b2791805bf6907992d2" target="id-9da43beb60bf413b9c926e8080e8ca14" xsi:type="Composition" />
+    <relationship identifier="id-23e387e9be9b43edb4daf8807a09f4e0" source="id-42338ea788774b2791805bf6907992d2" target="id-36e6d99455bd4e2a86bf19e5042e8c57" xsi:type="Composition" />
+    <relationship identifier="id-716bd3c597094050a0c7acc6b84309b3" source="id-42338ea788774b2791805bf6907992d2" target="id-96400091cebe4059bd9d5e433bb7c5eb" xsi:type="Composition" />
+    <relationship identifier="id-5337978fcc294eb5ae1c93936080223c" source="id-42338ea788774b2791805bf6907992d2" target="id-b03d6d72a9c742ecb7e911fbc53dd93e" xsi:type="Composition" />
+    <relationship identifier="id-29b30b390f554fa6870bbd29c6055c21" source="id-42338ea788774b2791805bf6907992d2" target="id-1d47c2f34c4c486d894b75b99dcfb342" xsi:type="Composition" />
+    <relationship identifier="id-0240d33eb5dc469bbf355ee60ee9b6ac" source="id-42338ea788774b2791805bf6907992d2" target="id-c5ae578a159e4a9b95b8c161e6bca25a" xsi:type="Composition" />
+    <relationship identifier="id-ffc7cfac98af49e4a8cb9747e995bd1b" source="id-42338ea788774b2791805bf6907992d2" target="id-368b578a8716489b9d3368d79b4aacb8" xsi:type="Composition" />
+    <relationship identifier="id-98740699202240beb58d17ef73a673a3" source="id-df770b2d876c49b9bd4ad6da58e2b1bc" target="id-21e4f56dc87c400ca8e66232b5488629" xsi:type="Composition" />
+    <relationship identifier="id-bb979dd6405d4161b8eb06b218922ab1" source="id-42338ea788774b2791805bf6907992d2" target="id-fcce6e0b9a0440c1a6ef6d91cf39a32f" xsi:type="Composition" />
+    <relationship identifier="id-846a8e75ef2b494d8e59de12c8902e9c" source="id-42338ea788774b2791805bf6907992d2" target="id-658dfc02065742f58d74ff426f77d4a5" xsi:type="Composition" />
+    <relationship identifier="id-ab8d68864ae243eea3b2c9860dcc242a" source="id-df770b2d876c49b9bd4ad6da58e2b1bc" target="id-87e1584431e3406ab2afde761d05aea1" xsi:type="Composition" />
+    <relationship identifier="id-0fc03dc828a54065b464b8cda399c2b0" source="id-1c8b3ae15e1c4e09b6bef87994cd14a1" target="id-42338ea788774b2791805bf6907992d2" xsi:type="Association" isDirected="true">
+      <name xml:lang="en">drží řidičský průkaz</name>
+      <properties>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en">Registr řidičů obsahuje a) osobní údaje o řidiči motorového vozidla uvedené v řidičském průkazu a v mezinárodním řidičském průkazu, včetně digitalizované fotografie a digitalizovaného podpisu řidiče,</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en">Z definice vyplývá, že řidiči, kteří jsou evidováni v registru řidičů, mohou být držiteli řidičského průkazu.</value>
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_4/par_119/odst_2/pism_a</value>
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en">Ne</value>
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en">Ne</value>
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Statistické</value>
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Veřejně přístupné</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Vlastní</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/drží-řidičský-průkaz</value>
+        </property>
+      </properties>
+    </relationship>
+    <relationship identifier="id-382710f468b7434bb1adeada40b22aa0" source="id-1a64dced9df5425885186fe89890d5b6" target="id-b288210148994874b5423b6de5f99216" xsi:type="Association" isDirected="true">
+      <name xml:lang="en">řídí vozidlo</name>
+      <properties>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en">řidič je účastník provozu na pozemních komunikacích, který řídí motorové nebo nemotorové vozidlo anebo tramvaj; řidičem je i jezdec na zvířeti</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-04-01/dokument/norma/cast_1/hlava_1/par_2/pism_d</value>
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en">Ne</value>
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en">Ano</value>
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řídí-vozidlo</value>
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Zpřístupňované pro výkon agendy</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Základních registrů</value>
+        </property>
+      </properties>
+    </relationship>
+    <relationship identifier="id-47b57dd5eb8d49308400f23b3efd6c9e" source="id-df770b2d876c49b9bd4ad6da58e2b1bc" target="id-4ef2825d9fee4caaac87a63036811641" xsi:type="Association" isDirected="true">
+      <name xml:lang="en">sídlí na adrese</name>
+      <properties>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en">Sídlo úřadu vydávajícího průkaz (obecním úřadem ORP) se nachází na nějaké adrese. Adresa je obecně definována v zákoně o základních registrech.</value>
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i</value>
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en">Ano</value>
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Evidenční</value>
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Nesdílené</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Jiných agend</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/sídlí-na-adrese</value>
+        </property>
+      </properties>
+    </relationship>
+    <relationship identifier="id-55114719eade4c1291d3de606805ea7e" source="id-1a64dced9df5425885186fe89890d5b6" target="id-03ec8e6907104f81a2a2b6bf8d989e4b" xsi:type="Specialization" />
+    <relationship identifier="id-cc7e0a43ad8a41e288e995b0fd72257f" source="id-1c8b3ae15e1c4e09b6bef87994cd14a1" target="id-1a64dced9df5425885186fe89890d5b6" xsi:type="Specialization" />
+    <relationship identifier="id-ac62572264c94b308dfac88415afde7e" source="id-df770b2d876c49b9bd4ad6da58e2b1bc" target="id-42338ea788774b2791805bf6907992d2" xsi:type="Association" isDirected="true">
+      <name xml:lang="en">vydává řidičský průkaz</name>
+      <properties>
+        <property propertyDefinitionRef="propid-3">
+          <value xml:lang="en">Řidičský průkaz vydá příslušný obecní úřad obce s rozšířenou působností na žádost držitele řidičského oprávnění.</value>
+        </property>
+        <property propertyDefinitionRef="propid-2">
+          <value xml:lang="en">Z definice vyplývá, že řidiči, kteří jsou evidováni v registru řidičů, mohou být držiteli řidičského průkazu.</value>
+        </property>
+        <property propertyDefinitionRef="propid-4">
+          <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3</value>
+        </property>
+        <property propertyDefinitionRef="propid-6">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-7">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-5">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-10">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-11">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-12">
+          <value xml:lang="en" />
+        </property>
+        <property propertyDefinitionRef="propid-15">
+          <value xml:lang="en">Identifikační</value>
+        </property>
+        <property propertyDefinitionRef="propid-13">
+          <value xml:lang="en">Poskytované na žádost</value>
+        </property>
+        <property propertyDefinitionRef="propid-14">
+          <value xml:lang="en">Provozní</value>
+        </property>
+        <property propertyDefinitionRef="propid-9">
+          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vydává-řidičský-průkaz</value>
+        </property>
+      </properties>
+    </relationship>
+  </relationships>
+  <organizations>
+    <item>
+      <label xml:lang="en">Business</label>
+      <item>
+        <label xml:lang="en">Šablona</label>
+        <item>
+          <label xml:lang="en">Prvky šablony</label>
+          <item>
+            <label xml:lang="en">Vlastnosti</label>
+            <item identifierRef="id-6b7bc805b0364db095142a9ae6e7a283" />
+            <item identifierRef="id-a0f02c4fe8dc40b8a21ee08b2d50a851" />
+            <item identifierRef="id-4c5f65a918a5472c88be55a95ec85eee" />
+            <item identifierRef="id-0bd09aac66aa42c0b30d23478ab50d9e" />
+            <item identifierRef="id-e4b9f19ab41245aea9b5f27e52a1d4a5" />
+            <item identifierRef="id-c221481c32c240aba7a93e0e05d70052" />
+            <item identifierRef="id-0ea0f0693c9a4f2fb9136949b2087fc7" />
+            <item identifierRef="id-3b675b10aad24df9bc500ffc7ca67afa" />
+          </item>
+        </item>
+        <item>
+          <label xml:lang="en">Prvky příkladu</label>
+          <item identifierRef="id-fcce6e0b9a0440c1a6ef6d91cf39a32f" />
+          <item identifierRef="id-87e1584431e3406ab2afde761d05aea1" />
+          <item identifierRef="id-df770b2d876c49b9bd4ad6da58e2b1bc" />
+          <item identifierRef="id-658dfc02065742f58d74ff426f77d4a5" />
+          <item identifierRef="id-42338ea788774b2791805bf6907992d2" />
+          <item identifierRef="id-03ec8e6907104f81a2a2b6bf8d989e4b" />
+          <item identifierRef="id-1a64dced9df5425885186fe89890d5b6" />
+          <item identifierRef="id-1c8b3ae15e1c4e09b6bef87994cd14a1" />
+          <item identifierRef="id-b288210148994874b5423b6de5f99216" />
+          <item identifierRef="id-4ef2825d9fee4caaac87a63036811641" />
+        </item>
+      </item>
+      <item identifierRef="id-3e68285870b44e3babb13cd1546c0e0d" />
+      <item identifierRef="id-ca1c75b790b249ada857f0e77fdeda48" />
+      <item identifierRef="id-158795d81f46425d9f03c5d6ca33a550" />
+      <item identifierRef="id-7fe398784ab94bf7bff98102ce5ea7a8" />
+      <item identifierRef="id-fa542d598a8146ab9a4fa4ab226489d4" />
+      <item identifierRef="id-985923b4cc3844d1933cb3474b6f17ba" />
+      <item identifierRef="id-16172f97915e417eb2e20569e5234958" />
+      <item identifierRef="id-34cfbeef3b45420eb885c2b87ba417ed" />
+      <item identifierRef="id-f6f23524c54a46e4990f16f73b49deee" />
+      <item identifierRef="id-28e1214c6a2e485c94e59657dee91459" />
+      <item identifierRef="id-315f05b17d4040578814ac6d1a23d310" />
+      <item identifierRef="id-9da43beb60bf413b9c926e8080e8ca14" />
+      <item identifierRef="id-36e6d99455bd4e2a86bf19e5042e8c57" />
+      <item identifierRef="id-96400091cebe4059bd9d5e433bb7c5eb" />
+      <item identifierRef="id-b03d6d72a9c742ecb7e911fbc53dd93e" />
+      <item identifierRef="id-1d47c2f34c4c486d894b75b99dcfb342" />
+      <item identifierRef="id-c5ae578a159e4a9b95b8c161e6bca25a" />
+      <item identifierRef="id-368b578a8716489b9d3368d79b4aacb8" />
+      <item identifierRef="id-21e4f56dc87c400ca8e66232b5488629" />
+    </item>
+    <item>
+      <label xml:lang="en">Relations</label>
+      <item>
+        <label xml:lang="en">Šablona</label>
+        <item>
+          <label xml:lang="en">Prvky příkladu</label>
+          <item identifierRef="id-bb979dd6405d4161b8eb06b218922ab1" />
+          <item identifierRef="id-846a8e75ef2b494d8e59de12c8902e9c" />
+          <item identifierRef="id-ab8d68864ae243eea3b2c9860dcc242a" />
+          <item identifierRef="id-0fc03dc828a54065b464b8cda399c2b0" />
+          <item identifierRef="id-382710f468b7434bb1adeada40b22aa0" />
+          <item identifierRef="id-47b57dd5eb8d49308400f23b3efd6c9e" />
+          <item identifierRef="id-55114719eade4c1291d3de606805ea7e" />
+          <item identifierRef="id-cc7e0a43ad8a41e288e995b0fd72257f" />
+          <item identifierRef="id-ac62572264c94b308dfac88415afde7e" />
+        </item>
+      </item>
+      <item identifierRef="id-50867c89c1ec4cd698bf63fab9c0363e" />
+      <item identifierRef="id-6637f0fa2fe3414da4301acd362ee5b5" />
+      <item identifierRef="id-fe191ece71b647da9a29f790f3e1ff51" />
+      <item identifierRef="id-6a27982d321846058e7ca199fb9853de" />
+      <item identifierRef="id-bbaf9cf6b76d4436bd87dec2cf1f14e8" />
+      <item identifierRef="id-e682c61c57db4768a2242ec42758c81d" />
+      <item identifierRef="id-e71b96fc9f1a43e491c43fed1a4e71fc" />
+      <item identifierRef="id-ffeed24307b34ec4a99f3b9cbe187d2f" />
+      <item identifierRef="id-28dfe5163d7e47b69e7149d05e84e796" />
+      <item identifierRef="id-cf5c677c6c1b48d3b79ecea2095a68f7" />
+      <item identifierRef="id-9e67b79b27604dd0b78fff33a8fcdcd0" />
+      <item identifierRef="id-560e3fd0d1a54220881d95ac930f9b13" />
+      <item identifierRef="id-0fb9f5045f7c4ebea26d9aadb88d688d" />
+      <item identifierRef="id-78dfc2b9aea0433db86b27ab05cd13b8" />
+      <item identifierRef="id-943fec04eb484f93a94d1307c1a4d7ac" />
+      <item identifierRef="id-b2ce243f65d940658c6ffb6926b695e3" />
+      <item identifierRef="id-7c73f4004acb4dc1a43a4bdf49ae744f" />
+      <item identifierRef="id-986e75f798034950952783918f6970ba" />
+      <item identifierRef="id-0faf4068a7f8423d9a161ccff96aa116" />
+      <item identifierRef="id-513ca695d7264f2a941bd689d41541d1" />
+      <item identifierRef="id-23e387e9be9b43edb4daf8807a09f4e0" />
+      <item identifierRef="id-716bd3c597094050a0c7acc6b84309b3" />
+      <item identifierRef="id-5337978fcc294eb5ae1c93936080223c" />
+      <item identifierRef="id-29b30b390f554fa6870bbd29c6055c21" />
+      <item identifierRef="id-0240d33eb5dc469bbf355ee60ee9b6ac" />
+      <item identifierRef="id-ffc7cfac98af49e4a8cb9747e995bd1b" />
+      <item identifierRef="id-98740699202240beb58d17ef73a673a3" />
+    </item>
+    <item>
+      <label xml:lang="en">Views</label>
+      <item>
+        <label xml:lang="en">Šablona</label>
+        <item identifierRef="id-77cd7fd7abc24e2d8aceabe7d27dffe0" />
+        <item identifierRef="id-36ce911e7b984104add6cf49578062a9" />
+      </item>
+    </item>
+  </organizations>
+  <propertyDefinitions>
+    <propertyDefinition identifier="propid-3" type="string">
+      <name>1. základ - definice</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-2" type="string">
+      <name>1. základ - popis</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-1" type="string">
+      <name>1. základ - typ</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-4" type="string">
+      <name>1. základ - zdroj</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-6" type="string">
+      <name>2. doplnění - alternativní název</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-8" type="string">
+      <name>2. doplnění - datový typ</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-7" type="string">
+      <name>2. doplnění - ekvivalentní pojem</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-5" type="string">
+      <name>2. doplnění - související zdroj</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-17" type="string">
+      <name>3. rpp - agenda (kód)</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-16" type="string">
+      <name>3. rpp - agendový informační systém (kód)</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-10" type="string">
+      <name>3. rpp - je pojem sdílen v PPDF?</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-11" type="string">
+      <name>3. rpp - je pojem veřejný?</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-12" type="string">
+      <name>3. rpp - ustanovení dokládající neveřejnost pojmu</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-15" type="string">
+      <name>4. 360/2023 - typ obsahu údaje</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-13" type="string">
+      <name>4. 360/2023 - způsob sdílení údaje</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-14" type="string">
+      <name>4. 360/2023 - způsob získání údaje</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-19" type="string">
+      <name>adresa lokálního katalogu dat, ve kterém bude slovník registrován</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-9" type="string">
+      <name>identifikátor</name>
+    </propertyDefinition>
+    <propertyDefinition identifier="propid-18" type="string">
+      <name>popis slovníku</name>
+    </propertyDefinition>
+  </propertyDefinitions>
+  <views>
+    <diagrams>
+      <view identifier="id-77cd7fd7abc24e2d8aceabe7d27dffe0" xsi:type="Diagram">
+        <name xml:lang="en">Základní šablona</name>
+      </view>
+      <view identifier="id-36ce911e7b984104add6cf49578062a9" xsi:type="Diagram">
+        <name xml:lang="en">Slovník dle metodiky dat Digitální a informační agentury</name>
+        <node identifier="id-7aa9783fb2644a3f923bcb103bfa9fb0" elementRef="id-1a64dced9df5425885186fe89890d5b6" xsi:type="Element" x="408" y="212" w="133" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-fe3ae6d40358441c95e4effeafe360a6" elementRef="id-df770b2d876c49b9bd4ad6da58e2b1bc" xsi:type="Element" x="672" y="200" w="133" h="73">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-c963f381442c4bfeadf96f99b279f609" elementRef="id-1c8b3ae15e1c4e09b6bef87994cd14a1" xsi:type="Element" x="408" y="336" w="133" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-dda8857818b541bbb4507c9c0263eb6c" elementRef="id-03ec8e6907104f81a2a2b6bf8d989e4b" xsi:type="Element" x="408" y="80" w="133" h="74">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-09c4e9d820a94eb795e30c2f04158034" elementRef="id-b288210148994874b5423b6de5f99216" xsi:type="Element" x="180" y="212" w="133" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-e8d62c824a454edaa4d3a13c35be3c4e" elementRef="id-42338ea788774b2791805bf6907992d2" xsi:type="Element" x="672" y="336" w="133" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-501a45afd5074c74b6dc28d3bd2203bb" elementRef="id-658dfc02065742f58d74ff426f77d4a5" xsi:type="Element" x="1008" y="272" w="133" h="78">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-b969440198944dbf97969f222ff252d6" elementRef="id-fcce6e0b9a0440c1a6ef6d91cf39a32f" xsi:type="Element" x="1409" y="480" w="133" h="73">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-b4dec577beab422296e4de4db8a016d9" elementRef="id-87e1584431e3406ab2afde761d05aea1" xsi:type="Element" x="653" y="80" w="133" h="90">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-e32bb55f3c084d4e9db1e0cc78827e50" elementRef="id-4ef2825d9fee4caaac87a63036811641" xsi:type="Element" x="1008" y="180" w="133" h="49">
+          <style>
+            <fillColor r="210" g="210" b="0" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-ed89f619cb204d6f8979fec5d7b1136e" elementRef="id-3e68285870b44e3babb13cd1546c0e0d" xsi:type="Element" x="1176" y="353" w="133" h="88">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-81bb8476f88a4422a0868fa92cf3c948" elementRef="id-ca1c75b790b249ada857f0e77fdeda48" xsi:type="Element" x="1452" y="345" w="133" h="103">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-5b389f3d9ee54f698b3436de28c967f2" elementRef="id-6b7bc805b0364db095142a9ae6e7a283" xsi:type="Element" x="342" y="660" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-08c827e0f9ad495e96f7aeb5ec1e2860" elementRef="id-a0f02c4fe8dc40b8a21ee08b2d50a851" xsi:type="Element" x="492" y="660" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-740a8c1c2a2446dd96e32c1eb840eba6" elementRef="id-4c5f65a918a5472c88be55a95ec85eee" xsi:type="Element" x="636" y="660" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-ee5a9f014b8943f380f6b0300b32b2fb" elementRef="id-0bd09aac66aa42c0b30d23478ab50d9e" xsi:type="Element" x="342" y="760" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-8aca0ea747ae467dae6b85408d79b4a4" elementRef="id-e4b9f19ab41245aea9b5f27e52a1d4a5" xsi:type="Element" x="492" y="760" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-08fa426be250476abb0a917c9cf37d38" elementRef="id-c221481c32c240aba7a93e0e05d70052" xsi:type="Element" x="636" y="760" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-95fd8ffda70c4d29b3bacf4050bc89c8" elementRef="id-0ea0f0693c9a4f2fb9136949b2087fc7" xsi:type="Element" x="342" y="860" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-8b34043b354e4b2eb3b63f18a8ef7b83" elementRef="id-3b675b10aad24df9bc500ffc7ca67afa" xsi:type="Element" x="492" y="860" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-1e09b6b7f6fc4201998964e4c808c043" elementRef="id-158795d81f46425d9f03c5d6ca33a550" xsi:type="Element" x="823" y="660" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-b71199f64a704a0e8b1e3d1d9d8916d2" elementRef="id-7fe398784ab94bf7bff98102ce5ea7a8" xsi:type="Element" x="973" y="660" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-5795aae9ca504d1da0c8d60d76e1467a" elementRef="id-fa542d598a8146ab9a4fa4ab226489d4" xsi:type="Element" x="1123" y="660" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-23a486ce59f1417aabc8b2de5f240eaf" elementRef="id-985923b4cc3844d1933cb3474b6f17ba" xsi:type="Element" x="823" y="760" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-9b99fa3c7e0a4efaa48cab6d8e13f64f" elementRef="id-16172f97915e417eb2e20569e5234958" xsi:type="Element" x="973" y="760" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-d0200cb2b40445b08762df5fcc6e3888" elementRef="id-34cfbeef3b45420eb885c2b87ba417ed" xsi:type="Element" x="1123" y="760" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-0ad5b6a3d354404990376d742269aa9c" elementRef="id-f6f23524c54a46e4990f16f73b49deee" xsi:type="Element" x="823" y="860" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-171b05763ced4ec9baf3d04d61cf5b89" elementRef="id-28e1214c6a2e485c94e59657dee91459" xsi:type="Element" x="973" y="860" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-77d0dbcbf164451e878e05cf01d1143a" elementRef="id-315f05b17d4040578814ac6d1a23d310" xsi:type="Element" x="1266" y="660" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-bcb59eae05df41c0b1febd4ed759b509" elementRef="id-9da43beb60bf413b9c926e8080e8ca14" xsi:type="Element" x="1416" y="660" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-7cfcd4525b23407fafc09aba4ab7790d" elementRef="id-36e6d99455bd4e2a86bf19e5042e8c57" xsi:type="Element" x="1566" y="660" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-18c161d0d5e04867ad9c0fe0488cc228" elementRef="id-96400091cebe4059bd9d5e433bb7c5eb" xsi:type="Element" x="1266" y="760" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-498a3e20ed124bbe9bc8906df304d024" elementRef="id-b03d6d72a9c742ecb7e911fbc53dd93e" xsi:type="Element" x="1416" y="760" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-2fbe89fe5e41460c83fd5e4a0ea02e5f" elementRef="id-1d47c2f34c4c486d894b75b99dcfb342" xsi:type="Element" x="1566" y="760" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-ddfb22a9f1b44d059a7f46509962638a" elementRef="id-c5ae578a159e4a9b95b8c161e6bca25a" xsi:type="Element" x="1266" y="860" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-d923b8ab9bd7490e8375ec9da8700cc5" elementRef="id-368b578a8716489b9d3368d79b4aacb8" xsi:type="Element" x="1416" y="860" w="120" h="55">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-39e199b503204f3ba299c46c09f1edae" elementRef="id-21e4f56dc87c400ca8e66232b5488629" xsi:type="Element" x="816" y="58" w="133" h="117">
+          <style>
+            <fillColor r="255" g="255" b="181" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-1982d5212d2d483c994014643fb20d85" xsi:type="Label" x="1266" y="264" w="199" h="73">
+          <label xml:lang="en">Vlastnost může mít max. 1 nadřazenou vlastnost. Podřazená vlastnost přebírá definiční obor a obor hodnot nadřazené vlastnosti.</label>
+          <style>
+            <fillColor r="255" g="255" b="255" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <node identifier="id-a1c6cef706b54c10bde2cb8efb2ee484" xsi:type="Label" x="1270" y="174" w="191" h="80">
+          <label xml:lang="en">Každý odkaz by měl být unescaped (%20 = " ")</label>
+          <style>
+            <fillColor r="255" g="255" b="255" a="100" />
+            <lineColor r="92" g="92" b="92" a="100" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </node>
+        <connection identifier="id-688a31b7e63d40d4ab8bc6f21796ac42" relationshipRef="id-382710f468b7434bb1adeada40b22aa0" xsi:type="Relationship" source="id-7aa9783fb2644a3f923bcb103bfa9fb0" target="id-09c4e9d820a94eb795e30c2f04158034">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-1ef90ccbb9f9451d9326f090cd6afe31" relationshipRef="id-55114719eade4c1291d3de606805ea7e" xsi:type="Relationship" source="id-7aa9783fb2644a3f923bcb103bfa9fb0" target="id-dda8857818b541bbb4507c9c0263eb6c">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-d9b550ebb36545479e3ba1e6275346bd" relationshipRef="id-ab8d68864ae243eea3b2c9860dcc242a" xsi:type="Relationship" source="id-fe3ae6d40358441c95e4effeafe360a6" target="id-b4dec577beab422296e4de4db8a016d9">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-e19e1bc21f694489b7b7b9ef2b0b381e" relationshipRef="id-ac62572264c94b308dfac88415afde7e" xsi:type="Relationship" source="id-fe3ae6d40358441c95e4effeafe360a6" target="id-e8d62c824a454edaa4d3a13c35be3c4e">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-4dc9a7a9b2af4f4bb157c69de39138f2" relationshipRef="id-47b57dd5eb8d49308400f23b3efd6c9e" xsi:type="Relationship" source="id-fe3ae6d40358441c95e4effeafe360a6" target="id-e32bb55f3c084d4e9db1e0cc78827e50">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-c5339b53124841bf8d9989a846cc6e23" relationshipRef="id-98740699202240beb58d17ef73a673a3" xsi:type="Relationship" source="id-fe3ae6d40358441c95e4effeafe360a6" target="id-39e199b503204f3ba299c46c09f1edae">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-b631d2f31b1c49879edf3399d5bc5dab" relationshipRef="id-cc7e0a43ad8a41e288e995b0fd72257f" xsi:type="Relationship" source="id-c963f381442c4bfeadf96f99b279f609" target="id-7aa9783fb2644a3f923bcb103bfa9fb0">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-bd4bc657507c4893b5043579f0e0b096" relationshipRef="id-0fc03dc828a54065b464b8cda399c2b0" xsi:type="Relationship" source="id-c963f381442c4bfeadf96f99b279f609" target="id-e8d62c824a454edaa4d3a13c35be3c4e">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-4125266f276e47bf89a3ddef0aa34377" relationshipRef="id-bb979dd6405d4161b8eb06b218922ab1" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-b969440198944dbf97969f222ff252d6">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-1706af305d014d209d03747e56764ce4" relationshipRef="id-846a8e75ef2b494d8e59de12c8902e9c" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-501a45afd5074c74b6dc28d3bd2203bb">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-a34478cd656f44468e81e7d32fbb462c" relationshipRef="id-50867c89c1ec4cd698bf63fab9c0363e" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-ed89f619cb204d6f8979fec5d7b1136e">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-ab482e8ce43b47b09f8358a9ce9d1d3e" relationshipRef="id-fe191ece71b647da9a29f790f3e1ff51" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-5b389f3d9ee54f698b3436de28c967f2">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-3d2025c4418e455c90a12d9e383ebf79" relationshipRef="id-6a27982d321846058e7ca199fb9853de" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-08c827e0f9ad495e96f7aeb5ec1e2860">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-32febb8af76f437eb4d07ea480c5e7fc" relationshipRef="id-bbaf9cf6b76d4436bd87dec2cf1f14e8" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-740a8c1c2a2446dd96e32c1eb840eba6">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-a0c4459f2cb54d31b5d513a0c051902e" relationshipRef="id-e682c61c57db4768a2242ec42758c81d" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-08fa426be250476abb0a917c9cf37d38">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-db51ab69fd5b42458cab96e08636d006" relationshipRef="id-e71b96fc9f1a43e491c43fed1a4e71fc" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-8aca0ea747ae467dae6b85408d79b4a4">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-143fa85e3fac42de8ff2b9b1abf56249" relationshipRef="id-ffeed24307b34ec4a99f3b9cbe187d2f" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-ee5a9f014b8943f380f6b0300b32b2fb">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-ce567e1b0a7f4e3f86bc85d750ded06f" relationshipRef="id-28dfe5163d7e47b69e7149d05e84e796" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-8b34043b354e4b2eb3b63f18a8ef7b83">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-be74a4ef69704f6c88dca11255130e33" relationshipRef="id-cf5c677c6c1b48d3b79ecea2095a68f7" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-95fd8ffda70c4d29b3bacf4050bc89c8">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-70233a02b86148e09bda7b6e1bfc837d" relationshipRef="id-9e67b79b27604dd0b78fff33a8fcdcd0" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-1e09b6b7f6fc4201998964e4c808c043">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-0dbc380632084ea1b9928f78e258476e" relationshipRef="id-560e3fd0d1a54220881d95ac930f9b13" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-23a486ce59f1417aabc8b2de5f240eaf">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-2d7c8eb1e36546ef94cc78849db6676e" relationshipRef="id-0fb9f5045f7c4ebea26d9aadb88d688d" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-0ad5b6a3d354404990376d742269aa9c">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-5c6cae216a4046fcbe41405498cbae95" relationshipRef="id-78dfc2b9aea0433db86b27ab05cd13b8" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-b71199f64a704a0e8b1e3d1d9d8916d2">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-239c1c8c32cc46ec9ea61b4327ea8487" relationshipRef="id-943fec04eb484f93a94d1307c1a4d7ac" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-9b99fa3c7e0a4efaa48cab6d8e13f64f">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-3e4db5fcda2742bf9faec0312717326c" relationshipRef="id-b2ce243f65d940658c6ffb6926b695e3" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-171b05763ced4ec9baf3d04d61cf5b89">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-c0a0af78c00942b787d30260e9292ad5" relationshipRef="id-7c73f4004acb4dc1a43a4bdf49ae744f" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-5795aae9ca504d1da0c8d60d76e1467a">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-86f78fef0e684db1a2955e8d950c559b" relationshipRef="id-986e75f798034950952783918f6970ba" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-d0200cb2b40445b08762df5fcc6e3888">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-57940f877d864f15952695ca9d61b8cf" relationshipRef="id-0faf4068a7f8423d9a161ccff96aa116" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-77d0dbcbf164451e878e05cf01d1143a">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-63b9c9eff068497bb90332989b3419a4" relationshipRef="id-513ca695d7264f2a941bd689d41541d1" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-bcb59eae05df41c0b1febd4ed759b509">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-57f4b609fe6f4b44b89a2a8b6a92adbe" relationshipRef="id-23e387e9be9b43edb4daf8807a09f4e0" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-7cfcd4525b23407fafc09aba4ab7790d">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-2a7b55d1d1804b078b7b817854b61be3" relationshipRef="id-716bd3c597094050a0c7acc6b84309b3" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-18c161d0d5e04867ad9c0fe0488cc228">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-9128f5372c1f46a4b2ad4aa91db0a9f4" relationshipRef="id-5337978fcc294eb5ae1c93936080223c" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-498a3e20ed124bbe9bc8906df304d024">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-578b42ed001f4c38b31c6e24a38137e6" relationshipRef="id-29b30b390f554fa6870bbd29c6055c21" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-2fbe89fe5e41460c83fd5e4a0ea02e5f">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-aba6131da5b444e4a935f0e6e59bd1de" relationshipRef="id-0240d33eb5dc469bbf355ee60ee9b6ac" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-ddfb22a9f1b44d059a7f46509962638a">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-be43effd44254d1181fc80054444528e" relationshipRef="id-ffc7cfac98af49e4a8cb9747e995bd1b" xsi:type="Relationship" source="id-e8d62c824a454edaa4d3a13c35be3c4e" target="id-d923b8ab9bd7490e8375ec9da8700cc5">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+        <connection identifier="id-5e66775ad48d40d6af075dc191bd97bf" relationshipRef="id-6637f0fa2fe3414da4301acd362ee5b5" xsi:type="Relationship" source="id-81bb8476f88a4422a0868fa92cf3c948" target="id-ed89f619cb204d6f8979fec5d7b1136e">
+          <style>
+            <lineColor r="0" g="0" b="0" />
+            <font name="Lucida Grande" size="12">
+              <color r="0" g="0" b="0" />
+            </font>
+          </style>
+        </connection>
+      </view>
+    </diagrams>
+  </views>
+</model>

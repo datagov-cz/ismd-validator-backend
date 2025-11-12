@@ -297,7 +297,7 @@ public class ExcelReader {
         ColumnMapping<PropertyData> propertyMapping = ColumnMapping.<PropertyData>builder()
                 .withColumn(NAZEV, PropertyData::setName)
                 .withColumn(ALT_NAZEV, PropertyData::setAlternativeName)
-                .withColumn(SUBJEKT_OBJEKT_PRAVA, PropertyData::setDomain)
+                .withColumn(SUBJEKTY_OBJEKTY_PRAVA, PropertyData::setDomain)
                 .withColumn(POPIS, PropertyData::setDescription)
                 .withColumn(DEFINICE, PropertyData::setDefinition)
                 .withColumn(ZDROJ, PropertyData::setSource)
