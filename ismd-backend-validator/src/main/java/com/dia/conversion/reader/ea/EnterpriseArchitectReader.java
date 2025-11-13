@@ -697,7 +697,7 @@ public class EnterpriseArchitectReader {
     private String getElementName(Document document, String elementId) {
         Element mainElement = findMainModelElement(document, elementId);
         if (mainElement != null) {
-            String name = mainElement.getAttribute("name");
+            String name = mainElement.getAttribute("name").trim();
             log.debug("Resolved element {} to name: {}", elementId, name);
             return name;
         }
