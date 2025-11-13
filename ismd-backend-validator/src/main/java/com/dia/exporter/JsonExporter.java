@@ -350,7 +350,12 @@ public class JsonExporter {
         ontModel.listSubjectsWithProperty(RDF.type, pojemType)
                 .forEachRemaining(concept -> {
                     try {
-                        pojmy.put(createConceptObject(concept));
+                        if (belongsToCurrentVocabulary(concept.getURI())) {
+                            pojmy.put(createConceptObject(concept));
+                            log.debug("Exported concept to JSON: {}", concept.getURI());
+                        } else {
+                            log.debug("Skipped external reference concept in JSON export: {}", concept.getURI());
+                        }
                     } catch (JSONException e) {
                         log.warn("Could not process concept: {}", concept.getURI(), e);
                     }
@@ -949,6 +954,17 @@ public class JsonExporter {
         if (stmt != null && stmt.getObject().isResource()) {
             targetObj.put(jsonProperty, stmt.getObject().asResource().getURI());
         }
+    }
+
+    private boolean belongsToCurrentVocabulary(String conceptURI) {
+        if (conceptURI == null || effectiveNamespace == null) {
+            return false;
+        }
+
+        boolean belongs = conceptURI.startsWith(effectiveNamespace);
+        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
+                conceptURI, belongs, effectiveNamespace);
+        return belongs;
     }
 
     private <T> T handleJsonOperation(JsonSupplier<T> operation) throws JsonExportException {

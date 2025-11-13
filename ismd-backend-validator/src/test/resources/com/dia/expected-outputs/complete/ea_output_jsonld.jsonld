@@ -28,11 +28,16 @@
             "definice": {
                 "cs": "Řidičský průkaz vydá příslušný obecní úřad obce s rozšířenou působností na žádost držitele řidičského oprávnění."
             },
-            "definující-ustanovení-právního-předpisu": [
+            "související-ustanovení-právního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností",
-            "obor-hodnot": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz"
+            "obor-hodnot": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "způsob-sdílení-údaje": [
+                "Poskytované na žádost"
+            ],
+            "způsob-získání-údaje": "Provozní",
+            "typ-obsahu-údaje": "Identifikační"
         },
         {
             "iri": "https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/text-p",
@@ -43,7 +48,7 @@
             "název": {
                 "cs": "Text P"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "http://www.w3.org/2000/01/rdf-schema#Literal",
             "způsob-získání-údaje": "Jiných agend"
         },
@@ -75,11 +80,9 @@
             "název": {
                 "cs": "Datum I"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:date",
-            "způsob-sdílení-údaje": [
-                "Základních registrů"
-            ]
+            "způsob-získání-údaje": "Základních registrů"
         },
         {
             "iri": "https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/je-věk-na-řp-nad-18-i",
@@ -90,7 +93,7 @@
             "název": {
                 "cs": "Je věk na ŘP nad 18? I"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:boolean",
             "způsob-sdílení-údaje": [
                 "Veřejně přístupné"
@@ -134,7 +137,7 @@
             "název": {
                 "cs": "Věk na ŘP P"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:integer",
             "způsob-sdílení-údaje": [
                 "Poskytované na žádost"
@@ -153,17 +156,16 @@
             "název": {
                 "cs": "Datum P"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:date",
-            "způsob-sdílení-údaje": [
-                "Základních registrů"
-            ]
+            "způsob-získání-údaje": "Základních registrů"
         },
         {
             "iri": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/drží-řidičský-průkaz",
             "typ": [
                 "Pojem",
-                "Vztah"
+                "Vztah",
+                "Neveřejný údaj"
             ],
             "název": {
                 "cs": "drží řidičský průkaz"
@@ -178,7 +180,16 @@
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_4/par_119/odst_2/pism_a"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
-            "obor-hodnot": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz"
+            "obor-hodnot": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "způsob-sdílení-údaje": [
+                "Veřejně přístupné"
+            ],
+            "způsob-získání-údaje": "Vlastní",
+            "typ-obsahu-údaje": "Statistické",
+            "ustanovení-dokládající-neveřejnost-údaje": [
+                "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c"
+            ],
+            "je-sdílen-v-ppdf": false
         },
         {
             "iri": "https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-s",
@@ -189,11 +200,9 @@
             "název": {
                 "cs": "Datum S"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:date",
-            "způsob-sdílení-údaje": [
-                "Základních registrů"
-            ]
+            "způsob-získání-údaje": "Základních registrů"
         },
         {
             "iri": "https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/věk-na-řp-s",
@@ -205,7 +214,7 @@
             "název": {
                 "cs": "Věk na ŘP S"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:integer",
             "způsob-sdílení-údaje": [
                 "Poskytované na žádost"
@@ -250,7 +259,7 @@
             "název": {
                 "cs": "Datum a čas S"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:dateTimeStamp"
         },
         {
@@ -287,7 +296,7 @@
             "název": {
                 "cs": "Věk na ŘP I"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:integer",
             "způsob-sdílení-údaje": [
                 "Poskytované na žádost"
@@ -310,7 +319,13 @@
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností",
-            "obor-hodnot": "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/adresa"
+            "obor-hodnot": "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/adresa",
+            "způsob-sdílení-údaje": [
+                "Nesdílené"
+            ],
+            "způsob-získání-údaje": "Jiných agend",
+            "typ-obsahu-údaje": "Evidenční",
+            "je-sdílen-v-ppdf": true
         },
         {
             "iri": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič",
@@ -349,7 +364,7 @@
             "název": {
                 "cs": "Čas P"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:time",
             "způsob-sdílení-údaje": [
                 "Nesdílené"
@@ -380,9 +395,6 @@
             "obor-hodnot": "http://www.w3.org/2000/01/rdf-schema#Literal",
             "nadřazená-vlastnost": [
                 "https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/rodné-číslo-držitele-řidičského-průkazu"
-            ],
-            "nadřazená-třída": [
-                "https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/rodné-číslo-držitele-řidičského-průkazu"
             ]
         },
         {
@@ -394,7 +406,7 @@
             "název": {
                 "cs": "Čas S"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:time",
             "způsob-sdílení-údaje": [
                 "Nesdílené"
@@ -409,7 +421,7 @@
             "název": {
                 "cs": "URL I"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:anyURI",
             "způsob-získání-údaje": "Vlastní"
         },
@@ -422,7 +434,7 @@
             "název": {
                 "cs": "Datum a čas I"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:dateTimeStamp"
         },
         {
@@ -442,7 +454,7 @@
             "název": {
                 "cs": "Čas I"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:time",
             "způsob-sdílení-údaje": [
                 "Nesdílené"
@@ -477,7 +489,7 @@
             "název": {
                 "cs": "URL S"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:anyURI",
             "způsob-získání-údaje": "Vlastní"
         },
@@ -490,7 +502,7 @@
             "název": {
                 "cs": "URL P"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:anyURI",
             "způsob-získání-údaje": "Vlastní"
         },
@@ -542,7 +554,7 @@
             "název": {
                 "cs": "Datum a čas P"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:dateTimeStamp"
         },
         {
@@ -580,7 +592,7 @@
             "název": {
                 "cs": "Desetinné číslo I"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:double",
             "způsob-sdílení-údaje": [
                 "Zpřístupňované pro výkon agendy"
@@ -596,7 +608,7 @@
             "název": {
                 "cs": "Test S"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "http://www.w3.org/2000/01/rdf-schema#Literal",
             "způsob-získání-údaje": "Jiných agend"
         },
@@ -609,7 +621,7 @@
             "název": {
                 "cs": "Desetinné číslo P"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:double",
             "způsob-sdílení-údaje": [
                 "Zpřístupňované pro výkon agendy"
@@ -643,7 +655,8 @@
             "iri": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řídí-vozidlo",
             "typ": [
                 "Pojem",
-                "Vztah"
+                "Vztah",
+                "Veřejný údaj"
             ],
             "název": {
                 "cs": "řídí vozidlo"
@@ -655,7 +668,12 @@
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-04-01/dokument/norma/cast_1/hlava_1/par_2/pism_d"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič",
-            "obor-hodnot": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo"
+            "obor-hodnot": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo",
+            "způsob-sdílení-údaje": [
+                "Zpřístupňované pro výkon agendy"
+            ],
+            "způsob-získání-údaje": "Základních registrů",
+            "je-sdílen-v-ppdf": false
         },
         {
             "iri": "https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/desetinné-číslo-s",
@@ -666,7 +684,7 @@
             "název": {
                 "cs": "Desetinné číslo S"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:double",
             "způsob-sdílení-údaje": [
                 "Zpřístupňované pro výkon agendy"
@@ -682,7 +700,7 @@
             "název": {
                 "cs": "Je věk na ŘP nad 18? S"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:boolean",
             "způsob-sdílení-údaje": [
                 "Veřejně přístupné"
@@ -701,7 +719,7 @@
                 "cs": "Název obecního úřadu obce s rozšířenou působností"
             },
             "popis": {
-                "cs": "Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností)."
+                "cs": "Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností)."
             },
             "definující-ustanovení-právního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i"
@@ -719,7 +737,7 @@
             "název": {
                 "cs": "Text I"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "http://www.w3.org/2000/01/rdf-schema#Literal",
             "způsob-získání-údaje": "Jiných agend"
         },
@@ -732,7 +750,7 @@
             "název": {
                 "cs": "Je věk na ŘP nad 18? P"
             },
-            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
+            "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "xsd:boolean",
             "způsob-sdílení-údaje": [
                 "Veřejně přístupné"
