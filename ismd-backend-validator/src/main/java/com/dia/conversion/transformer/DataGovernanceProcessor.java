@@ -228,8 +228,6 @@ public class DataGovernanceProcessor {
     }
 
     private void handleRelationshipNonPublicData(Resource relationshipResource, RelationshipData relationshipData, String privacyProvision) {
-        Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
-        relationshipResource.addProperty(dataClassificationProp, "non-public");
         relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
         log.debug("Added non-public data annotation and RDF type for relationship: {}", relationshipData.getName());
 
@@ -248,8 +246,6 @@ public class DataGovernanceProcessor {
                             relationshipData.getName(), privacyProvision);
                     handleRelationshipNonPublicData(relationshipResource, relationshipData, privacyProvision);
                 } else {
-                    Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
-                    relationshipResource.addProperty(dataClassificationProp, "public");
                     relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
                     log.debug("Added public data annotation and RDF type for relationship: {}", relationshipData.getName());
                 }

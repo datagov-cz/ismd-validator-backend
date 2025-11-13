@@ -84,6 +84,8 @@ public class EnterpriseArchitectReader {
         hierarchies.addAll(extractHierarchiesFromClasses(classes, document, vocabularyPackageIds));
         hierarchies.addAll(extractHierarchiesFromProperties(properties, document, vocabularyPackageIds));
 
+        inferSubPropertyDomains(properties, hierarchies);
+
         log.info("Parsed {} classes, {} properties, {} relationships, {} hierarchies",
                 classes.size(), properties.size(), relationships.size(), hierarchies.size());
 
@@ -325,8 +327,6 @@ public class EnterpriseArchitectReader {
         propertyData.setSharingMethod(getTagValueByPattern(extensionElement, "ZPUSOB_SDILENI_UDAJE"));
         propertyData.setAcquisitionMethod(getTagValueByPattern(extensionElement, "ZPUSOB_ZISKANI_UDAJE"));
         propertyData.setContentType(getTagValueByPattern(extensionElement, "TYP_OBSAHU_UDAJE"));
-
-        propertyData.setDomain("Subjekt nebo objekt práva");
 
         return propertyData;
     }
@@ -881,7 +881,35 @@ public class EnterpriseArchitectReader {
             return false;
         }
         String trimmedType = elementType.trim();
-        return "typ vlastnosti".equals(trimmedType) || 
+        return "typ vlastnosti".equals(trimmedType) ||
                 trimmedType.toLowerCase().contains("vlastnost");
+    }
+
+    private void inferSubPropertyDomains(List<PropertyData> properties, List<HierarchyData> hierarchies) {
+        Map<String, PropertyData> propertyMap = new HashMap<>();
+        for (PropertyData property : properties) {
+            propertyMap.put(property.getName(), property);
+        }
+
+        for (HierarchyData hierarchy : hierarchies) {
+            String subPropertyName = hierarchy.getSubClass();
+            String superPropertyName = hierarchy.getSuperClass();
+
+            PropertyData subProperty = propertyMap.get(subPropertyName);
+            PropertyData superProperty = propertyMap.get(superPropertyName);
+
+            if (subProperty != null && superProperty != null) {
+                String subDomain = subProperty.getDomain();
+                String superDomain = superProperty.getDomain();
+
+                if ((subDomain == null || subDomain.trim().isEmpty()) &&
+                    superDomain != null && !superDomain.trim().isEmpty()) {
+
+                    subProperty.setDomain(superDomain);
+                    log.debug("Inferred domain '{}' for sub-property '{}' from super-property '{}'",
+                            superDomain, subPropertyName, superPropertyName);
+                }
+            }
+        }
     }
 }

@@ -628,8 +628,6 @@ public class OntologyResourceBuilder {
                     subClassResource.getURI(), superClassResource.getURI());
         }
 
-        addHierarchyMetadata(subClassResource, hierarchyData);
-
         return true;
     }
 
@@ -660,29 +658,6 @@ public class OntologyResourceBuilder {
         }
 
         return null;
-    }
-
-    private void addHierarchyMetadata(Resource subClassResource, HierarchyData hierarchyData) {
-        String namespace = uriGenerator.getEffectiveNamespace();
-
-        if (hierarchyData.getDescription() != null && !hierarchyData.getDescription().trim().isEmpty()) {
-            Property hierarchyDescProperty = ontModel.createProperty(namespace + "popis-hierarchie");
-            DataTypeConverter.addTypedProperty(subClassResource, hierarchyDescProperty,
-                    hierarchyData.getDescription(), DEFAULT_LANG, ontModel);
-            log.debug("Added hierarchy description for {}: {}",
-                    subClassResource.getLocalName(), hierarchyData.getDescription());
-        }
-
-        if (hierarchyData.getRelationshipName() != null &&
-                !hierarchyData.getRelationshipName().trim().isEmpty() &&
-                !hierarchyData.getRelationshipName().startsWith("HIER-")) {
-
-            Property relationshipNameProperty = ontModel.createProperty(namespace + "název-vztahu");
-            DataTypeConverter.addTypedProperty(subClassResource, relationshipNameProperty,
-                    hierarchyData.getRelationshipName(), DEFAULT_LANG, ontModel);
-            log.debug("Added relationship name for {}: {}",
-                    subClassResource.getLocalName(), hierarchyData.getRelationshipName());
-        }
     }
 
     private void validateHierarchies(List<HierarchyData> hierarchies) {
