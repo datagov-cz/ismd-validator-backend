@@ -438,14 +438,6 @@
             "obor-hodnot": "xsd:dateTimeStamp"
         },
         {
-            "iri": "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/adresa",
-            "typ": [
-                "Pojem",
-                "Třída",
-                "Typ objektu práva"
-            ]
-        },
-        {
             "iri": "https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/čas-i",
             "typ": [
                 "Pojem",
