@@ -608,12 +608,8 @@ public class ArchiReader {
     }
 
     private void mapStandardizedLabel(String propId, String propName) {
-        if ("ekvivalentní pojem".equals(propName)) {
-            propertyMapping.put(propId, EKVIVALENTNI_POJEM);
-            return;
-        }
-
         Map<String, String> specificPatterns = new LinkedHashMap<>();
+        specificPatterns.put("ekvivalentní pojem", EKVIVALENTNI_POJEM);
         specificPatterns.put("související zdroj", SOUVISEJICI_ZDROJ);
         specificPatterns.put("ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST);
         specificPatterns.put("agendový informační systém", AIS);
