@@ -71,7 +71,7 @@ public class WorkflowTestConfiguration {
             .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld.jsonld")
             .contextPath("com/dia/context/json_ld_context.jsonld")
             .expectedCounts(EntityCounts.builder()
-                .classes(6)  // 6 local classes - Adresa is external reference and should not be counted
+                .classes(7)  // 6 local classes - Adresa is external reference and should not be counted
                 .properties(30)
                 .relationships(4)
                 .hierarchies(3)
@@ -103,20 +103,21 @@ public class WorkflowTestConfiguration {
     }
 
     /**
-     * Creates test configuration for the complete test EA file.
+     * Creates test configuration for the complete test Archi file.
+     * Note: Archi and Excel produce identical outputs, so they share the same expected output file.
      */
-    public static WorkflowTestConfiguration completeEA() {
+    public static WorkflowTestConfiguration completeArchi() {
         return WorkflowTestConfiguration.builder()
-            .testId("complete-ea")
-            .description("Complete EA (Enterprise Architect) ontology test with JSON output")
-            .inputPath("com/dia/canonical/complete/testEAInput.xml")
-            .expectedOutputPath("com/dia/expected-outputs/complete/ea_output_jsonld.jsonld")
+            .testId("complete-archi")
+            .description("Complete Archi XML ontology test - unified with Excel output")
+            .inputPath("com/dia/canonical/complete/testArchiInput.xml")
+            .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld.jsonld")
             .contextPath("com/dia/context/json_ld_context.jsonld")
             .expectedCounts(EntityCounts.builder()
-                .classes(6)  // 7 total classes in OntologyData, but 1 (Adresa) is external reference without type declaration in TTL
+                .classes(7)  // 6 local classes - Adresa is external reference and should not be counted
                 .properties(30)
                 .relationships(4)
-                .hierarchies(2)
+                .hierarchies(3)
                 .build())
             .requiredCharacteristics(List.of(
                 TYP,
@@ -145,12 +146,13 @@ public class WorkflowTestConfiguration {
     }
 
     /**
-     * Returns all available Excel test configurations
+     * Returns all available workflow test configurations.
+     * Note: EA tests are handled separately in dedicated EA test classes.
      */
     public static List<WorkflowTestConfiguration> allConfigurations() {
         return List.of(
             completeExcel(),
-            completeEA()
+            completeArchi()
         );
     }
 

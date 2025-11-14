@@ -1,7 +1,7 @@
 package com.dia.workflow;
 
 import com.dia.conversion.data.*;
-import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
+import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.workflow.config.WorkflowTestConfiguration;
@@ -29,14 +29,14 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Comprehensive Excel and EA conversion workflow test for Turtle (TTL) output with semantic validation.
+ * Comprehensive Excel and Archi conversion workflow test for Turtle (TTL) output with semantic validation.
  * <p>
- * This test validates the complete Excel/EA → OntologyData → TransformationResult → TTL pipeline
+ * This test validates the complete Excel/Archi → OntologyData → TransformationResult → TTL pipeline
  * with semantic RDF graph comparison using Apache Jena.
  * <p>
  * Features:
  * - Configurable with different test files via WorkflowTestConfiguration
- * - Supports both Excel (.xlsx) and EA (.xml) input files
+ * - Supports both Excel (.xlsx) and Archi XML (.xml) input files
  * - Stage-by-stage workflow validation
  * - Semantic RDF graph comparison (isomorphism)
  * - Triple-level validation
@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 @Tag("workflow")
 @Tag("excel")
-@Tag("ea")
+@Tag("archi")
 @Tag("turtle")
 @Tag("deviation-detection")
 class ConversionWorkflowTurtleTest {
@@ -57,7 +57,7 @@ class ConversionWorkflowTurtleTest {
     private ExcelReader excelReader;
 
     @Autowired
-    private EnterpriseArchitectReader eaReader;
+    private ArchiReader archiReader;
 
     @Autowired
     private OFNDataTransformerNew transformer;
@@ -73,11 +73,11 @@ class ConversionWorkflowTurtleTest {
         System.out.println("CONVERSION → TURTLE WORKFLOW TEST: " + config.getTestId());
         System.out.println("=".repeat(80));
 
-        // Stage 1: Load input file (Excel or EA)
-        boolean isEA = config.getInputPath().endsWith(".xml");
-        String fileType = isEA ? "EA XML" : "Excel";
+        // Stage 1: Load input file (Excel or Archi)
+        boolean isArchi = config.getInputPath().endsWith(".xml");
+        String fileType = isArchi ? "Archi XML" : "Excel";
         System.out.println("\n[STAGE 1] Loading " + fileType + " file: " + config.getInputPath());
-        OntologyData ontologyData = isEA ? loadEAFile(config.getInputPath()) : loadExcelFile(config.getInputPath());
+        OntologyData ontologyData = loadFile(config.getInputPath());
         assertNotNull(ontologyData, fileType + " file should be successfully parsed");
         System.out.println(fileType + " file loaded successfully");
 
@@ -155,8 +155,7 @@ class ConversionWorkflowTurtleTest {
         System.out.println("\n[TTL DATA PRESERVATION TEST] " + config.getTestId());
 
         // Execute workflow
-        boolean isEA = config.getInputPath().endsWith(".xml");
-        OntologyData ontologyData = isEA ? loadEAFile(config.getInputPath()) : loadExcelFile(config.getInputPath());
+        OntologyData ontologyData = loadFile(config.getInputPath());
         TransformationResult transformationResult = transformer.transform(ontologyData);
         String actualTtl = transformer.exportToTurtle(transformationResult);
 
@@ -219,8 +218,7 @@ class ConversionWorkflowTurtleTest {
         System.out.println("\n[TTL RDF VOCABULARY TEST] " + config.getTestId());
 
         // Execute workflow
-        boolean isEA = config.getInputPath().endsWith(".xml");
-        OntologyData ontologyData = isEA ? loadEAFile(config.getInputPath()) : loadExcelFile(config.getInputPath());
+        OntologyData ontologyData = loadFile(config.getInputPath());
         TransformationResult transformationResult = transformer.transform(ontologyData);
         String actualTtl = transformer.exportToTurtle(transformationResult);
 
@@ -254,15 +252,17 @@ class ConversionWorkflowTurtleTest {
 
     // ========== Helper Methods ==========
 
-    private OntologyData loadExcelFile(String path) throws Exception {
+    private OntologyData loadFile(String path) throws Exception {
         try (InputStream is = new ClassPathResource(path).getInputStream()) {
-            return excelReader.readOntologyFromExcel(is);
+            if (path.endsWith(".xlsx")) {
+                return excelReader.readOntologyFromExcel(is);
+            } else if (path.endsWith(".xml")) {
+                String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                return archiReader.readArchiFromString(content);
+            } else {
+                throw new IllegalArgumentException("Unsupported file format: " + path);
+            }
         }
-    }
-
-    private OntologyData loadEAFile(String path) throws Exception {
-        byte[] xmlBytes = new ClassPathResource(path).getContentAsByteArray();
-        return eaReader.readXmiFromBytes(xmlBytes);
     }
 
     private String loadResourceAsString(String path) throws Exception {

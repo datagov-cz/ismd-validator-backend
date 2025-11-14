@@ -1,7 +1,7 @@
 package com.dia.workflow;
 
 import com.dia.conversion.data.*;
-import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
+import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.workflow.config.WorkflowTestConfiguration;
@@ -25,24 +25,29 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Comprehensive Excel and EA conversion workflow test with deviation detection and isolation.
+ * Comprehensive Excel and Archi conversion workflow test for JSON-LD output with deep validation.
  * <p>
- * This test validates the complete Excel/EA → OntologyData → TransformationResult → JSON-LD pipeline
- * and can isolate exactly where deviations from expected output occur.
+ * This test validates the complete Excel/Archi → OntologyData → TransformationResult → JSON-LD pipeline
+ * with multi-stage validation and deviation detection.
  * <p>
  * Features:
- * - Configurable with different test files via ExcelTestConfiguration
- * - Supports both Excel (.xlsx) and EA (.xml) input files
+ * - Configurable with different test files via WorkflowTestConfiguration
+ * - Supports both Excel (.xlsx) and Archi XML (.xml) input files
  * - Stage-by-stage workflow validation
- * - Detailed deviation detection and reporting
- * - JSON-LD context verification
- * - Comparison against expected outputs
+ * - Deep JSON-LD structural comparison
+ * - Entity count validation with detailed mismatch analysis
+ * - Characteristic presence validation
+ * - Data preservation checks (no data loss)
+ * - Context compliance validation
+ * <p>
+ * Note: EA (Enterprise Architect) tests are handled in separate test classes.
  */
 @SpringBootTest
 @ActiveProfiles("test")
 @Tag("workflow")
 @Tag("excel")
-@Tag("ea")
+@Tag("archi")
+@Tag("json")
 @Tag("deviation-detection")
 class ConversionWorkflowJsonTest {
 
@@ -50,7 +55,7 @@ class ConversionWorkflowJsonTest {
     private ExcelReader excelReader;
 
     @Autowired
-    private EnterpriseArchitectReader eaReader;
+    private ArchiReader archiReader;
 
     @Autowired
     private OFNDataTransformerNew transformer;
@@ -69,7 +74,7 @@ class ConversionWorkflowJsonTest {
         System.out.println("CONVERSION WORKFLOW TEST: " + config.getTestId());
         System.out.println("=".repeat(80));
 
-        // Stage 1: Load input file (Excel or EA)
+        // Stage 1: Load input file (Excel or Archi)
         System.out.println("\n[STAGE 1] Loading input file: " + config.getInputPath());
         OntologyData ontologyData = loadFile(config.getInputPath());
         assertNotNull(ontologyData, "Input file should be successfully parsed");
@@ -219,8 +224,9 @@ class ConversionWorkflowJsonTest {
             if (path.endsWith(".xlsx")) {
                 return excelReader.readOntologyFromExcel(is);
             } else if (path.endsWith(".xml")) {
-                byte[] xmlBytes = is.readAllBytes();
-                return eaReader.readXmiFromBytes(xmlBytes);
+                String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                // Archi XML format
+                return archiReader.readArchiFromString(content);
             } else {
                 throw new IllegalArgumentException("Unsupported file format: " + path);
             }

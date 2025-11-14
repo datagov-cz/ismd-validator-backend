@@ -219,7 +219,7 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
                 ];
         <https://data.dia.gov.cz/související-nelegislativní-zdroj>
                 [ rdf:type    <https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt>;
-                  schema:url  "https://ofn.gov.cz/slovn%C3%ADky/draft2/cs/#360-2023"^^xsd:anyURI
+                  schema:url  "https://ofn.gov.cz/slovníky/draft2/cs/#360-2023"^^xsd:anyURI
                 ] .
 
 <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/je-věk-na-řp-nad-18-s>

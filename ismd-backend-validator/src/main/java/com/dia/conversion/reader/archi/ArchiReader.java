@@ -20,6 +20,8 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static com.dia.constants.VocabularyConstants.*;
@@ -428,7 +430,7 @@ public class ArchiReader {
                     relationships.add(relationshipData);
                     log.debug("Successfully extracted relationship: {} (type: {})", relationshipData.getName(), type);
                 } else {
-                    log.warn("Failed to create relationship data for type: {}", type);
+                    log.warn("Failed to create relationship data for type: {}, data: {}", type, relationshipData);
                 }
             } else {
                 log.debug("Skipping relationship with unknown type: {}", type);
@@ -702,7 +704,17 @@ public class ArchiReader {
     private String getPropertyValue(Element property) {
         NodeList valueNodes = property.getElementsByTagNameNS(ARCHI_NS, "value");
         if (valueNodes.getLength() > 0) {
-            return valueNodes.item(0).getTextContent();
+            String value = valueNodes.item(0).getTextContent();
+            // Decode URL-encoded values to normalize with Excel/EA readers
+            // This handles cases like slovn%C3%ADky -> slovníky
+            if (value != null && value.contains("%")) {
+                try {
+                    value = URLDecoder.decode(value, StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                    log.debug("Failed to URL-decode value (keeping original): {}", value);
+                }
+            }
+            return value;
         }
         return null;
     }
