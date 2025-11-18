@@ -7,6 +7,12 @@ on:
         description: 'Version to release (e.g., 1.0.0, 1.1.0; leave empty for auto-patch-increment)'
         required: false
         type: string
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to release (leave empty for auto-patch-increment from SNAPSHOT)'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -118,27 +124,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Bump to next SNAPSHOT version
-        working-directory: ismd-validator-common
+      - name: Update validator to use released version
         run: |
-          CURRENT_VERSION="${{ steps.version.outputs.version }}"
-          NEXT_VERSION=$(echo $CURRENT_VERSION | awk -F. -v OFS=. '{$NF++;print}')-SNAPSHOT
-          sed -i "0,/<version>/s/<version>[^<]*<\/version>/<version>$NEXT_VERSION<\/version>/" pom.xml
-          echo "Bumped common library pom.xml to next SNAPSHOT version: $NEXT_VERSION"
+          RELEASED_VERSION="${{ steps.version.outputs.version }}"
           
-          # Also update the validator POM to use the new SNAPSHOT version
-          sed -i "s/<ismd-validator-common.version>.*<\/ismd-validator-common.version>/<ismd-validator-common.version>$NEXT_VERSION<\/ismd-validator-common.version>/" ../ismd-backend-validator/pom.xml
-          echo "Updated validator pom.xml to use common library version: $NEXT_VERSION"
-
-      - name: Commit SNAPSHOT version
-        run: |
-          git add ismd-validator-common/pom.xml ismd-backend-validator/pom.xml
+          # Update validator to use the released common lib version
+          sed -i "s/<ismd-validator-common.version>.*<\/ismd-validator-common.version>/<ismd-validator-common.version>$RELEASED_VERSION<\/ismd-validator-common.version>/" ismd-backend-validator/pom.xml
+          
+          git add ismd-backend-validator/pom.xml
+          
           # Only commit if there are changes
           if git diff --staged --quiet; then
-            echo "No SNAPSHOT version changes needed"
+            echo "No update needed - validator already uses v$RELEASED_VERSION"
           else
-            git commit -m "Bump common library to next SNAPSHOT version"
+            git commit -m "Update validator to use common library v$RELEASED_VERSION"
             git push origin ${{ github.ref_name }}
+            echo "✅ Updated validator to use common library v$RELEASED_VERSION"
           fi
 
       - name: Create GitHub Release
