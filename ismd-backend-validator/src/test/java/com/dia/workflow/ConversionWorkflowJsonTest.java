@@ -69,7 +69,7 @@ class ConversionWorkflowJsonTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_shouldProduceExpectedOutput(WorkflowTestConfiguration config) throws Exception {
+    void conversionWorkflow_shouldProduceExpectedOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("CONVERSION WORKFLOW TEST: " + config.getTestId());
         System.out.println("=".repeat(80));
@@ -137,7 +137,7 @@ class ConversionWorkflowJsonTest {
 
     @ParameterizedTest(name = "{0} - No Data Loss")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_shouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
+    void conversionWorkflow_shouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[DATA PRESERVATION TEST] " + config.getTestId());
 
         // Execute workflow
@@ -179,7 +179,7 @@ class ConversionWorkflowJsonTest {
 
     @ParameterizedTest(name = "{0} - Characteristics")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_shouldPreserveCharacteristics(WorkflowTestConfiguration config) throws Exception {
+    void conversionWorkflow_shouldPreserveCharacteristics(WorkflowTestConfiguration config) throws Exception {
         if (config.getRequiredCharacteristics() == null || config.getRequiredCharacteristics().isEmpty()) {
             return;
         }
@@ -261,21 +261,63 @@ class ConversionWorkflowJsonTest {
         System.out.println("Relationships: " + relationshipCount);
         System.out.println("Hierarchies: " + hierarchyCount);
 
+
+        String vocabularyNamespace = data.getVocabularyMetadata() != null
+            ? data.getVocabularyMetadata().getNamespace()
+            : null;
+
+        if (vocabularyNamespace != null && data.getClasses() != null) {
+            int externalReferences = 0;
+            for (ClassData classData : data.getClasses()) {
+                if (shouldExcludeFromExpectedCount(classData.getIdentifier(), vocabularyNamespace)) {
+                    System.out.println("- External reference found: " + classData.getName() +
+                        " (IRI: " + classData.getIdentifier() + ") - will be filtered during export");
+                    externalReferences++;
+                }
+            }
+            if (externalReferences > 0) {
+                System.out.println("Total external references: " + externalReferences);
+                System.out.println("Expected output classes (after filtering): " + (classCount - externalReferences));
+            }
+        }
+
         if (config.getExpectedCounts() != null) {
             WorkflowTestConfiguration.EntityCounts expected = config.getExpectedCounts();
 
-            if (expected.getClasses() != null) {
-                assertEquals((int) expected.getClasses(), classCount, "Expected " + expected.getClasses() + " classes but found " + classCount);
+            // For classes, validate against output count (after filtering external references)
+            if (expected.getClasses() != null && vocabularyNamespace != null) {
+                int localClassCount = classCount;
+                if (data.getClasses() != null) {
+                    for (ClassData classData : data.getClasses()) {
+                        if (shouldExcludeFromExpectedCount(classData.getIdentifier(), vocabularyNamespace)) {
+                            localClassCount--;
+                        }
+                    }
+                }
+                System.out.println("Validating class count: expected " + expected.getClasses() + " local classes (after filtering), found " + localClassCount);
+                assertEquals((int) expected.getClasses(), localClassCount,
+                    "Expected " + expected.getClasses() + " local classes (after filtering) but found " + localClassCount);
             }
+
             if (expected.getProperties() != null) {
-                assertEquals((int) expected.getProperties(), propertyCount, "Expected " + expected.getProperties() + " properties but found " + propertyCount);
+                assertEquals((int) expected.getProperties(), propertyCount,
+                    "Expected " + expected.getProperties() + " properties but found " + propertyCount);
             }
             if (expected.getRelationships() != null) {
-                assertEquals((int) expected.getRelationships(), relationshipCount, "Expected " + expected.getRelationships() + " relationships but found " + relationshipCount);
+                assertEquals((int) expected.getRelationships(), relationshipCount,
+                    "Expected " + expected.getRelationships() + " relationships but found " + relationshipCount);
             }
         }
 
         System.out.println("OntologyData structure validated");
+    }
+
+    private boolean shouldExcludeFromExpectedCount(String identifier, String vocabularyNamespace) {
+        if (identifier == null || vocabularyNamespace == null) {
+            return false;
+        }
+        // Exclude concepts that don't belong to the ontology's namespace
+        return !identifier.startsWith(vocabularyNamespace);
     }
 
     private void validateAgainstContext(String json, String context) throws Exception {

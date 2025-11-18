@@ -68,7 +68,7 @@ class ConversionWorkflowTurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL Output")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_shouldProduceSemanticallySameTurtleOutput(WorkflowTestConfiguration config) throws Exception {
+    void conversionWorkflow_shouldProduceSemanticallySameTurtleOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("CONVERSION → TURTLE WORKFLOW TEST: " + config.getTestId());
         System.out.println("=".repeat(80));
@@ -151,7 +151,7 @@ class ConversionWorkflowTurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL Data Preservation")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_turtleShouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
+    void conversionWorkflow_turtleShouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[TTL DATA PRESERVATION TEST] " + config.getTestId());
 
         // Execute workflow
@@ -211,7 +211,7 @@ class ConversionWorkflowTurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL RDF Vocabulary")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_turtleShouldUseCorrectRdfVocabulary(WorkflowTestConfiguration config) throws Exception {
+    void conversionWorkflow_turtleShouldUseCorrectRdfVocabulary(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[TTL RDF VOCABULARY TEST] " + config.getTestId());
 
         // Execute workflow
