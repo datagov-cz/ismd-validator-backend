@@ -60,5 +60,4 @@ jobs:
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       branch: dev
-      push-to-registry: true
     secrets: inherit
