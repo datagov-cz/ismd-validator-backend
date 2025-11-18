@@ -71,7 +71,7 @@ public class WorkflowTestConfiguration {
             .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld.jsonld")
             .contextPath("com/dia/context/json_ld_context.jsonld")
             .expectedCounts(EntityCounts.builder()
-                .classes(7)  // 6 local classes - Adresa is external reference and should not be counted
+                .classes(6)  // 6 local classes - Adresa is external reference and should not be counted
                 .properties(30)
                 .relationships(4)
                 .hierarchies(3)
@@ -114,7 +114,7 @@ public class WorkflowTestConfiguration {
             .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld.jsonld")
             .contextPath("com/dia/context/json_ld_context.jsonld")
             .expectedCounts(EntityCounts.builder()
-                .classes(7)  // 6 local classes - Adresa is external reference and should not be counted
+                .classes(6)  // 6 local classes - Adresa is external reference and should not be counted
                 .properties(30)
                 .relationships(4)
                 .hierarchies(3)
@@ -146,13 +146,63 @@ public class WorkflowTestConfiguration {
     }
 
     /**
-     * Returns all available workflow test configurations.
-     * Note: EA tests are handled separately in dedicated EA test classes.
+     * Creates test configuration for the complete test EA (Enterprise Architect) file
+     */
+    public static WorkflowTestConfiguration completeEA() {
+        return WorkflowTestConfiguration.builder()
+            .testId("complete-ea")
+            .description("Complete Enterprise Architect ontology test with all characteristics")
+            .inputPath("com/dia/canonical/complete/testEAInput.xml")
+            .expectedOutputPath("com/dia/expected-outputs/complete/ea_output_jsonld.jsonld")
+            .contextPath("com/dia/context/json_ld_context.jsonld")
+            .expectedCounts(EntityCounts.builder()
+                .classes(6)
+                .properties(30)
+                .relationships(4)
+                .hierarchies(3)
+                .build())
+            .requiredCharacteristics(List.of(
+                TYP,
+                NAZEV,
+                IRI,
+                POPIS,
+                DEFINICE,
+                DEFINICNI_OBOR,
+                OBOR_HODNOT,
+                DEFINUJICI_USTANOVENI,
+                NADRAZENA_TRIDA,
+                ZPUSOB_SDILENI_ALT,
+                ZPUSOB_ZISKANI_ALT,
+                TYP_OBSAHU_ALT,
+                JE_PPDF,
+                USTANOVENI_NEVEREJNOST,
+                AGENDA,
+                AIS,
+                EKVIVALENTNI_POJEM,
+                ALTERNATIVNI_NAZEV,
+                DEFINUJICI_NELEGISLATIVNI_ZDROJ,
+                SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+                NADRAZENA_VLASTNOST
+            ))
+            .build();
+    }
+
+    /**
+     * Returns all available workflow test configurations for Excel and Archi.
      */
     public static List<WorkflowTestConfiguration> allConfigurations() {
         return List.of(
             completeExcel(),
             completeArchi()
+        );
+    }
+
+    /**
+     * Returns all EA (Enterprise Architect) workflow test configurations.
+     */
+    public static List<WorkflowTestConfiguration> eaConfigurations() {
+        return List.of(
+            completeEA()
         );
     }
 

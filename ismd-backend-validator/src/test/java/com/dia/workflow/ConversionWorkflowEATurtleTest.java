@@ -1,8 +1,7 @@
 package com.dia.workflow;
 
 import com.dia.conversion.data.*;
-import com.dia.conversion.reader.archi.ArchiReader;
-import com.dia.conversion.reader.excel.ExcelReader;
+import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.workflow.config.WorkflowTestConfiguration;
 import org.apache.jena.rdf.model.Model;
@@ -29,14 +28,13 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Comprehensive Excel and Archi conversion workflow test for Turtle (TTL) output with semantic validation.
+ * Comprehensive Enterprise Architect (EA) conversion workflow test for Turtle (TTL) output with semantic validation.
  * <p>
- * This test validates the complete Excel/Archi → OntologyData → TransformationResult → TTL pipeline
+ * This test validates the complete EA XMI → OntologyData → TransformationResult → TTL pipeline
  * with semantic RDF graph comparison using Apache Jena.
  * <p>
  * Features:
- * - Configurable with different test files via WorkflowTestConfiguration
- * - Supports both Excel (.xlsx) and Archi XML (.xml) input files
+ * - Configurable with different EA test files via WorkflowTestConfiguration
  * - Stage-by-stage workflow validation
  * - Semantic RDF graph comparison (isomorphism)
  * - Triple-level validation
@@ -47,39 +45,34 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @Tag("workflow")
-@Tag("excel")
-@Tag("archi")
+@Tag("ea")
+@Tag("enterprise-architect")
 @Tag("turtle")
 @Tag("deviation-detection")
-class ConversionWorkflowTurtleTest {
+class ConversionWorkflowEATurtleTest {
 
     @Autowired
-    private ExcelReader excelReader;
-
-    @Autowired
-    private ArchiReader archiReader;
+    private EnterpriseArchitectReader eaReader;
 
     @Autowired
     private OFNDataTransformerNew transformer;
 
     static Stream<WorkflowTestConfiguration> testConfigurationProvider() {
-        return WorkflowTestConfiguration.allConfigurations().stream();
+        return WorkflowTestConfiguration.eaConfigurations().stream();
     }
 
     @ParameterizedTest(name = "{0} - TTL Output")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_shouldProduceSemanticallySameTurtleOutput(WorkflowTestConfiguration config) throws Exception {
+    void eaConversionWorkflow_shouldProduceSemanticallySameTurtleOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
-        System.out.println("CONVERSION → TURTLE WORKFLOW TEST: " + config.getTestId());
+        System.out.println("EA CONVERSION → TURTLE WORKFLOW TEST: " + config.getTestId());
         System.out.println("=".repeat(80));
 
-        // Stage 1: Load input file (Excel or Archi)
-        boolean isArchi = config.getInputPath().endsWith(".xml");
-        String fileType = isArchi ? "Archi XML" : "Excel";
-        System.out.println("\n[STAGE 1] Loading " + fileType + " file: " + config.getInputPath());
-        OntologyData ontologyData = loadFile(config.getInputPath());
-        assertNotNull(ontologyData, fileType + " file should be successfully parsed");
-        System.out.println(fileType + " file loaded successfully");
+        // Stage 1: Load EA XMI file
+        System.out.println("\n[STAGE 1] Loading EA XMI file: " + config.getInputPath());
+        OntologyData ontologyData = loadEAFile(config.getInputPath());
+        assertNotNull(ontologyData, "EA XMI file should be successfully parsed");
+        System.out.println("EA XMI file loaded successfully");
 
         // Stage 2: Transform to OFN format
         System.out.println("\n[STAGE 2] Transforming to OFN format");
@@ -151,11 +144,11 @@ class ConversionWorkflowTurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL Data Preservation")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_turtleShouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
-        System.out.println("\n[TTL DATA PRESERVATION TEST] " + config.getTestId());
+    void eaConversionWorkflow_turtleShouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
+        System.out.println("\n[EA TTL DATA PRESERVATION TEST] " + config.getTestId());
 
         // Execute workflow
-        OntologyData ontologyData = loadFile(config.getInputPath());
+        OntologyData ontologyData = loadEAFile(config.getInputPath());
         TransformationResult transformationResult = transformer.transform(ontologyData);
         String actualTtl = transformer.exportToTurtle(transformationResult);
 
@@ -172,10 +165,11 @@ class ConversionWorkflowTurtleTest {
             ? ontologyData.getVocabularyMetadata().getNamespace()
             : null;
 
-        if (vocabularyNamespace != null) {
+        if (vocabularyNamespace != null && ontologyData.getClasses() != null) {
             for (ClassData classData : ontologyData.getClasses()) {
                 if (shouldExcludeFromExpectedCount(classData.getIdentifier(), vocabularyNamespace)) {
-                    System.out.println("- External reference: " + classData.getName() + " (included in TTL for referential purposes)");
+                    System.out.println("- External reference: " + classData.getName() +
+                        " (IRI: " + classData.getIdentifier() + ") - included in TTL for referential purposes");
                 }
             }
         }
@@ -211,11 +205,11 @@ class ConversionWorkflowTurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL RDF Vocabulary")
     @MethodSource("testConfigurationProvider")
-    void excelConversionWorkflow_turtleShouldUseCorrectRdfVocabulary(WorkflowTestConfiguration config) throws Exception {
-        System.out.println("\n[TTL RDF VOCABULARY TEST] " + config.getTestId());
+    void eaConversionWorkflow_turtleShouldUseCorrectRdfVocabulary(WorkflowTestConfiguration config) throws Exception {
+        System.out.println("\n[EA TTL RDF VOCABULARY TEST] " + config.getTestId());
 
         // Execute workflow
-        OntologyData ontologyData = loadFile(config.getInputPath());
+        OntologyData ontologyData = loadEAFile(config.getInputPath());
         TransformationResult transformationResult = transformer.transform(ontologyData);
         String actualTtl = transformer.exportToTurtle(transformationResult);
 
@@ -249,16 +243,10 @@ class ConversionWorkflowTurtleTest {
 
     // ========== Helper Methods ==========
 
-    private OntologyData loadFile(String path) throws Exception {
+    private OntologyData loadEAFile(String path) throws Exception {
         try (InputStream is = new ClassPathResource(path).getInputStream()) {
-            if (path.endsWith(".xlsx")) {
-                return excelReader.readOntologyFromExcel(is);
-            } else if (path.endsWith(".xml")) {
-                String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-                return archiReader.readArchiFromString(content);
-            } else {
-                throw new IllegalArgumentException("Unsupported file format: " + path);
-            }
+            byte[] fileBytes = is.readAllBytes();
+            return eaReader.readXmiFromBytes(fileBytes);
         }
     }
 
@@ -417,108 +405,17 @@ class ConversionWorkflowTurtleTest {
 
         long objectPropertyCount = objectPropertyResources.size();
         long datatypePropertyCount = datatypePropertyResources.size();
-        long totalPropertyCount = objectPropertyCount + datatypePropertyCount;
-
-        // Count all concepts
-        Set<Resource> allConcepts = findConceptResources(model);
 
         System.out.println("OWL/SKOS Classes (unique): " + classCount);
         System.out.println("OWL ObjectProperty (relationships): " + objectPropertyCount);
         System.out.println("OWL DatatypeProperty (properties): " + datatypePropertyCount);
-        System.out.println("Total properties (ObjectProperty + DatatypeProperty): " + totalPropertyCount);
-        System.out.println("Total unique concepts: " + allConcepts.size());
-
-        // Check for overlaps
-        Set<Resource> overlap = new HashSet<>(classResources);
-        overlap.retainAll(objectPropertyResources);
-        overlap.retainAll(datatypePropertyResources);
-        if (!overlap.isEmpty()) {
-            System.out.println("Found " + overlap.size() + " resources that are BOTH classes and properties:");
-            overlap.forEach(r -> System.out.println("    - " + shortenUri(r.getURI())));
-        }
 
         if (expectedCounts.getClasses() != null && (expectedCounts.getClasses() != classCount)) {
             System.out.println("Class count mismatch: expected " + expectedCounts.getClasses() + " but found " + classCount);
-            System.out.println("Missing " + (expectedCounts.getClasses() - classCount) + " class(es)");
-            analyzeClassMismatch(model, classResources, expectedCounts.getClasses());
         }
 
-        if (expectedCounts.getProperties() != null) {
-            // Properties in the expected counts should map to DatatypeProperty
-            // Relationships should map to ObjectProperty
-            System.out.println("\nProperty type validation:");
-            System.out.println("Expected properties (should be owl:DatatypeProperty): " + expectedCounts.getProperties());
-            System.out.println("Actual owl:DatatypeProperty: " + datatypePropertyCount);
-            System.out.println("Actual owl:ObjectProperty: " + objectPropertyCount);
-
-            if (datatypePropertyCount == 0 && objectPropertyCount > expectedCounts.getProperties()) {
-                System.out.println("ERROR: All properties AND relationships are typed as owl:ObjectProperty!");
-                System.out.println("Properties (datatype values) should be owl:DatatypeProperty");
-                System.out.println("Relationships (object references) should be owl:ObjectProperty");
-                analyzePropertyMismatch(model, objectPropertyResources, expectedCounts.getProperties());
-            } else if (expectedCounts.getProperties() != datatypePropertyCount) {
-                System.out.println("Property count mismatch: expected " + expectedCounts.getProperties() + " but found " + datatypePropertyCount);
-                analyzePropertyMismatch(model, datatypePropertyResources, expectedCounts.getProperties());
-            }
-        }
-    }
-
-    private void analyzeClassMismatch(Model model, Set<Resource> actualClasses, Integer expectedCount) {
-        System.out.println("\nDetailed class analysis (expected: " + expectedCount + ", found: " + actualClasses.size() + "):");
-
-        // List all resources typed as classes
-        System.out.println("Resources with rdf:type owl:Class:");
-        model.listSubjectsWithProperty(RDF.type, OWL.Class).forEachRemaining(r ->
-            System.out.println("    - " + shortenUri(r.getURI())));
-
-        System.out.println("Resources with rdf:type rdfs:Class:");
-        model.listSubjectsWithProperty(RDF.type, RDFS.Class).forEachRemaining(r ->
-            System.out.println("    - " + shortenUri(r.getURI())));
-
-        System.out.println("Resources with rdf:type skos:Concept:");
-        model.listSubjectsWithProperty(RDF.type, SKOS.Concept).forEachRemaining(r ->
-            System.out.println("    - " + shortenUri(r.getURI())));
-
-        // Check for resources with multiple type declarations
-        System.out.println("\nChecking for resources with multiple type declarations:");
-        for (Resource classResource : actualClasses) {
-            List<String> types = new ArrayList<>();
-            if (model.contains(classResource, RDF.type, OWL.Class)) types.add("owl:Class");
-            if (model.contains(classResource, RDF.type, RDFS.Class)) types.add("rdfs:Class");
-            if (model.contains(classResource, RDF.type, SKOS.Concept)) types.add("skos:Concept");
-            if (model.contains(classResource, RDF.type, OWL.ObjectProperty)) types.add("owl:ObjectProperty");
-            if (model.contains(classResource, RDF.type, OWL.DatatypeProperty)) types.add("owl:DatatypeProperty");
-
-            if (types.size() > 1) {
-                System.out.println("    - " + shortenUri(classResource.getURI()) + " has types: " + types);
-            }
-        }
-    }
-
-    private void analyzePropertyMismatch(Model model, Set<Resource> actualProperties, Integer expectedCount) {
-        System.out.println("\nDetailed property analysis (expected: " + expectedCount + ", found: " + actualProperties.size() + "):");
-
-        // List all resources typed as properties
-        System.out.println("Resources with rdf:type owl:ObjectProperty:");
-        model.listSubjectsWithProperty(RDF.type, OWL.ObjectProperty).forEachRemaining(r ->
-            System.out.println("    - " + shortenUri(r.getURI())));
-
-        System.out.println("Resources with rdf:type owl:DatatypeProperty:");
-        model.listSubjectsWithProperty(RDF.type, OWL.DatatypeProperty).forEachRemaining(r ->
-            System.out.println("    - " + shortenUri(r.getURI())));
-
-        // Check for resources with multiple type declarations
-        System.out.println("\nChecking for properties with multiple type declarations:");
-        for (Resource propResource : actualProperties) {
-            List<String> types = new ArrayList<>();
-            if (model.contains(propResource, RDF.type, OWL.ObjectProperty)) types.add("owl:ObjectProperty");
-            if (model.contains(propResource, RDF.type, OWL.DatatypeProperty)) types.add("owl:DatatypeProperty");
-            if (model.contains(propResource, RDF.type, OWL.Class)) types.add("owl:Class");
-            if (model.contains(propResource, RDF.type, SKOS.Concept)) types.add("skos:Concept");
-
-            if (types.size() > 1) {
-                System.out.println(" - " + shortenUri(propResource.getURI()) + " has types: " + types);
-            }
+        if (expectedCounts.getProperties() != null && expectedCounts.getProperties() != datatypePropertyCount) {
+            System.out.println("Property count mismatch: expected " + expectedCounts.getProperties() + " but found " + datatypePropertyCount);
         }
     }
 
@@ -555,7 +452,6 @@ class ConversionWorkflowTurtleTest {
         String predicate = stmt.getPredicate().toString();
         String object = stmt.getObject().toString();
 
-        // Shorten URIs for readability
         subject = shortenUri(subject);
         predicate = shortenUri(predicate);
         object = shortenUri(object);
@@ -599,58 +495,12 @@ class ConversionWorkflowTurtleTest {
 
         assertTrue(hasLabels, "Model should contain labels for concepts");
 
-        // Validate that concept count matches input ontology
-        String vocabularyNamespace = ontologyData.getVocabularyMetadata() != null
-            ? ontologyData.getVocabularyMetadata().getNamespace()
-            : null;
-
         int expectedConceptCount = countEntitiesOfType(ontologyData, ClassData.class)
             + countEntitiesOfType(ontologyData, PropertyData.class)
             + countEntitiesOfType(ontologyData, RelationshipData.class);
 
-        if (vocabularyNamespace != null) {
-            for (ClassData classData : ontologyData.getClasses()) {
-                if (shouldExcludeFromExpectedCount(classData.getIdentifier(), vocabularyNamespace)) {
-                    System.out.println("- External reference: " + classData.getName() + " (IRI: " + classData.getIdentifier() + ")");
-                }
-            }
-        }
-
         System.out.println("Expected concepts from OntologyData: " + expectedConceptCount);
         System.out.println("Actual concepts in TTL model: " + concepts.size());
-
-        // Validate ontology metadata
-        if (ontologyData.getVocabularyMetadata() != null) {
-            VocabularyMetadata metadata = ontologyData.getVocabularyMetadata();
-            System.out.println("\nValidating ontology metadata:");
-
-            // Check for ontology name/label
-            if (metadata.getName() != null) {
-                boolean hasMatchingLabel = model.listStatements(null, SKOS.prefLabel, (Resource) null).toList().stream()
-                    .anyMatch(stmt -> stmt.getObject().isLiteral() &&
-                        stmt.getObject().asLiteral().getString().contains(metadata.getName()));
-                System.out.println("- Ontology name found in labels: " + hasMatchingLabel);
-            }
-
-            // Check for ontology namespace/IRI
-            if (metadata.getNamespace() != null) {
-                System.out.println("- Ontology namespace: " + metadata.getNamespace());
-            }
-
-            // Check for description
-            if (metadata.getDescription() != null) {
-                boolean hasDescription = model.listStatements(null, model.createProperty("http://purl.org/dc/terms/description"), (Resource) null).hasNext();
-                System.out.println("- Has description: " + hasDescription);
-            }
-        }
-
-        // Validate concept count
-        if (expectedConceptCount != concepts.size()) {
-            System.out.println("Note: Expected " + expectedConceptCount + " concepts but found " + concepts.size());
-            System.out.println("This may indicate an issue with TTL export or concept counting.");
-        } else {
-            System.out.println("Concept count matches expected (" + expectedConceptCount + " concepts)");
-        }
 
         System.out.println("Model contains meaningful content");
     }
@@ -690,9 +540,8 @@ class ConversionWorkflowTurtleTest {
     }
 
     private void findMissingEntitiesInTurtle(OntologyData ontologyData, Model actualModel, Set<Resource> conceptResources) {
-        System.out.println("\nAnalyzing missing entities in TTL output...");
+        System.out.println("\nAnalyzing missing entities in EA TTL output...");
 
-        // Extract IRIs from concept resources
         Set<String> outputIris = new HashSet<>();
         for (Resource resource : conceptResources) {
             if (resource.isURIResource()) {
@@ -700,7 +549,6 @@ class ConversionWorkflowTurtleTest {
             }
         }
 
-        // Extract labels from concept resources
         Set<String> outputLabels = new HashSet<>();
         for (Resource resource : conceptResources) {
             if (actualModel.contains(resource, SKOS.prefLabel, (RDFNode) null)) {
@@ -729,7 +577,6 @@ class ConversionWorkflowTurtleTest {
 
         System.out.println("Output contains " + outputIris.size() + " IRIs and " + outputLabels.size() + " unique labels");
 
-        // Check classes
         System.out.println("\nClasses:");
         int missingClasses = 0;
         if (ontologyData.getClasses() != null) {
@@ -745,7 +592,6 @@ class ConversionWorkflowTurtleTest {
             }
         }
 
-        // Check properties
         System.out.println("\nProperties:");
         int missingProperties = 0;
         if (ontologyData.getProperties() != null) {
@@ -757,8 +603,6 @@ class ConversionWorkflowTurtleTest {
                 String normalizedName = propertyName.trim().toLowerCase();
                 if (!outputLabels.contains(normalizedName)) {
                     System.out.println("MISSING: " + propertyName);
-                    System.out.println("Domain: " + propertyData.getDomain());
-                    System.out.println("DataType: " + propertyData.getDataType());
                     missingProperties++;
                 }
             }
@@ -767,7 +611,6 @@ class ConversionWorkflowTurtleTest {
             }
         }
 
-        // Check relationships
         System.out.println("\nRelationships:");
         int missingRelationships = 0;
         if (ontologyData.getRelationships() != null) {
@@ -779,8 +622,6 @@ class ConversionWorkflowTurtleTest {
                 String normalizedName = relationshipName.trim().toLowerCase();
                 if (!outputLabels.contains(normalizedName)) {
                     System.out.println("MISSING: " + relationshipName);
-                    System.out.println("Domain: " + relationshipData.getDomain());
-                    System.out.println("Range: " + relationshipData.getRange());
                     missingRelationships++;
                 }
             }
@@ -797,133 +638,68 @@ class ConversionWorkflowTurtleTest {
     }
 
     private void validateVocabularyUsage(Model model, List<String> validationErrors) {
-        // Check for proper namespace usage
         Map<String, String> prefixes = model.getNsPrefixMap();
 
-        // Expected prefixes with their standard URIs
         Map<String, String> expectedPrefixes = new HashMap<>();
         expectedPrefixes.put("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
         expectedPrefixes.put("rdfs", "http://www.w3.org/2000/01/rdf-schema#");
         expectedPrefixes.put("owl", "http://www.w3.org/2002/07/owl#");
         expectedPrefixes.put("skos", "http://www.w3.org/2004/02/skos/core#");
 
-        List<String> missingPrefixes = new ArrayList<>();
-        List<String> incorrectNamespaces = new ArrayList<>();
-
         for (Map.Entry<String, String> expected : expectedPrefixes.entrySet()) {
             String prefix = expected.getKey();
             String expectedUri = expected.getValue();
 
             if (!prefixes.containsKey(prefix)) {
-                missingPrefixes.add(prefix);
                 validationErrors.add("Missing required prefix: " + prefix);
             } else {
-                // Validate namespace URI
                 String actualUri = prefixes.get(prefix);
                 if (!expectedUri.equals(actualUri)) {
-                    incorrectNamespaces.add(prefix + " (expected: " + expectedUri + ", got: " + actualUri + ")");
                     validationErrors.add("Incorrect namespace URI for prefix " + prefix + ": expected " + expectedUri + " but got " + actualUri);
                 }
             }
         }
 
-        if (!missingPrefixes.isEmpty()) {
-            System.out.println("Missing prefixes: " + missingPrefixes);
-        }
-
-        if (!incorrectNamespaces.isEmpty()) {
-            System.out.println("Incorrect namespace URIs: " + incorrectNamespaces);
-        }
-
-        if (missingPrefixes.isEmpty() && incorrectNamespaces.isEmpty()) {
-            System.out.println("All expected prefixes present with correct namespace URIs");
-        }
-
-        // Count usage of each vocabulary
-        long rdfUsage = model.listStatements(null, RDF.type, (Resource) null).toList().size();
-        long rdfsUsage = model.listStatements(null, RDFS.domain, (Resource) null).toList().size()
-            + model.listStatements(null, RDFS.range, (Resource) null).toList().size()
-            + model.listStatements(null, RDFS.label, (Resource) null).toList().size();
-        long owlUsage = model.listSubjectsWithProperty(RDF.type, OWL.Class).toList().size()
-            + model.listSubjectsWithProperty(RDF.type, OWL.ObjectProperty).toList().size();
-        long skosUsage = model.listStatements(null, SKOS.prefLabel, (Resource) null).toList().size()
-            + model.listStatements(null, SKOS.definition, (Resource) null).toList().size();
-
-        System.out.println("\n  Vocabulary usage statistics:");
-        System.out.println("RDF statements: " + rdfUsage);
-        System.out.println("RDFS statements: " + rdfsUsage);
-        System.out.println("OWL statements: " + owlUsage);
-        System.out.println("SKOS statements: " + skosUsage);
-
-        // Warn if no usage detected for expected vocabularies
-        if (rdfUsage == 0) {
-            System.out.println("Warning: No RDF vocabulary usage detected");
-        }
-        if (owlUsage == 0 && skosUsage == 0) {
-            System.out.println("Warning: No OWL or SKOS vocabulary usage detected");
-        }
+        System.out.println("Vocabulary usage validated");
     }
 
     private void validateTypeDeclarations(Model model, List<String> validationErrors) {
-        // Find all subjects with rdf:type
         Set<Resource> typedResources = new HashSet<>();
         model.listStatements(null, RDF.type, (Resource) null).forEachRemaining(stmt -> typedResources.add(stmt.getSubject()));
 
         System.out.println("Found " + typedResources.size() + " resources with rdf:type declarations");
 
-        // Check for ontology or concept scheme
         boolean hasOntologyOrScheme = model.contains(null, RDF.type, OWL.Ontology)
             || model.contains(null, RDF.type, SKOS.ConceptScheme);
 
         if (!hasOntologyOrScheme) {
             validationErrors.add("Model should contain at least one owl:Ontology or skos:ConceptScheme");
-        } else {
-            System.out.println("Model has ontology or concept scheme definition");
         }
     }
 
     private void validatePropertyUsage(Model model, List<String> validationErrors) {
-        // Check for domain/range declarations
         boolean hasDomain = model.contains(null, RDFS.domain, (Resource) null);
         boolean hasRange = model.contains(null, RDFS.range, (Resource) null);
 
         System.out.println("Properties have rdfs:domain: " + hasDomain);
         System.out.println("Properties have rdfs:range: " + hasRange);
 
-        // Check for labels
         boolean hasSkosLabels = model.listStatements(null, SKOS.prefLabel, (Resource) null).hasNext();
         boolean hasRdfsLabels = model.listStatements(null, RDFS.label, (Resource) null).hasNext();
 
         if (!hasSkosLabels && !hasRdfsLabels) {
             validationErrors.add("Model should contain labels (skos:prefLabel or rdfs:label)");
-        } else {
-            System.out.println("Model contains labels");
         }
     }
 
-    /**
-     * Checks if a concept should be excluded from expected count because it's from an external namespace.
-     * The TurtleExporter filters out concepts that don't belong to the ontology's namespace.
-     *
-     * @param identifier The concept's IRI/identifier
-     * @param vocabularyNamespace The ontology's namespace
-     * @return true if the concept should be excluded from expected count
-     */
     private boolean shouldExcludeFromExpectedCount(String identifier, String vocabularyNamespace) {
         if (identifier == null || vocabularyNamespace == null) {
             return false;
         }
 
-        // Exclude concepts that don't belong to the ontology's namespace
         return !identifier.startsWith(vocabularyNamespace);
     }
 
-    /**
-     * Checks if a model contains blank nodes.
-     *
-     * @param model The RDF model to check
-     * @return true if the model contains at least one blank node
-     */
     private boolean containsBlankNodes(Model model) {
         return model.listStatements().toList().stream()
             .anyMatch(stmt ->
@@ -932,15 +708,6 @@ class ConversionWorkflowTurtleTest {
             );
     }
 
-    /**
-     * Checks if two models have the same predicate distribution.
-     * This is useful for verifying that differences are only due to blank node IDs
-     * and not structural differences.
-     *
-     * @param model1 First model
-     * @param model2 Second model
-     * @return true if both models have the same predicates with the same counts
-     */
     private boolean haveSamePredicateDistribution(Model model1, Model model2) {
         Map<String, Long> dist1 = model1.listStatements().toList().stream()
             .collect(java.util.stream.Collectors.groupingBy(
