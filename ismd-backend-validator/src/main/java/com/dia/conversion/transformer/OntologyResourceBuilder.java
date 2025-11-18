@@ -385,29 +385,27 @@ public class OntologyResourceBuilder {
 
     private boolean isObjectProperty(PropertyData propertyData) {
         String dataType = propertyData.getDataType();
-        String domain = propertyData.getDomain();
 
-        if (domain != null && !domain.trim().isEmpty()) {
-            String trimmedDomain = domain.trim();
-            if (isDatatype(trimmedDomain)) {
-                return true;
-            }
-        }
-
-        if (dataType != null && !dataType.trim().isEmpty()) {
-            String trimmedDataType = dataType.trim();
-            return isDatatype(trimmedDataType);
-        }
-
-        return false;
-    }
-
-    private boolean isDatatype(String value) {
-        if (value.startsWith("xsd:") || value.startsWith(ExportConstants.Json.XSD_NS)) {
+        if (dataType == null || dataType.trim().isEmpty()) {
             return false;
         }
 
-        return !CZECH_TO_XSD_MAPPING.containsKey(value) && !value.matches("(?i)(string|boolean|integer|double|date|time|datetime|uri|literal).*");
+        String trimmedDataType = dataType.trim();
+
+        return !isLiteralDatatype(trimmedDataType);
+    }
+
+    private boolean isLiteralDatatype(String value) {
+        if (value.startsWith("xsd:") || value.startsWith(ExportConstants.Json.XSD_NS)) {
+            return true;
+        }
+
+        if (CZECH_TO_XSD_MAPPING.containsKey(value)) {
+            return true;
+        }
+
+        return value.contains("rdfs:Literal") || value.contains("rdf-schema#Literal") ||
+                value.toLowerCase().contains("literal");
     }
 
     public void transformRelationships(List<RelationshipData> relationships, Map<String, Resource> localRelationshipResources,
@@ -757,23 +755,36 @@ public class OntologyResourceBuilder {
 
     private void addEquivalentConcept(Resource resource, String equivalentConcept, String entityType,
                                       ConceptFilterUtil.FilterStatistics filterStatistics) {
-        if (!UtilityMethods.isValidIRI(equivalentConcept)) {
-            log.warn("Skipping invalid equivalent concept for {} '{}': '{}' is not a valid IRI",
-                    entityType, resource.getLocalName(), equivalentConcept);
-            return;
-        }
-
-        if (conceptFilterUtil.shouldFilterConcept(equivalentConcept)) {
-            log.info("OMITTED: equivalentConcept '{}' for {} '{}' (equivalentConcept is filtered)",
-                    equivalentConcept, entityType, resource.getLocalName());
-            filterStatistics.omittedEquivalentConcepts++;
-            return;
-        }
+        String[] concepts = equivalentConcept.contains(";")
+            ? equivalentConcept.split(";")
+            : new String[]{equivalentConcept};
 
         Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
-        resource.addProperty(exactMatchProperty, ontModel.createResource(equivalentConcept));
-        log.debug("Added valid equivalent concept IRI for {} '{}': {}",
-                entityType, resource.getLocalName(), equivalentConcept);
+
+        for (String concept : concepts) {
+            String trimmedConcept = concept.trim();
+
+            if (trimmedConcept.isEmpty()) {
+                continue;
+            }
+
+            if (!UtilityMethods.isValidIRI(trimmedConcept)) {
+                log.warn("Skipping invalid equivalent concept for {} '{}': '{}' is not a valid IRI",
+                        entityType, resource.getLocalName(), trimmedConcept);
+                continue;
+            }
+
+            if (conceptFilterUtil.shouldFilterConcept(trimmedConcept)) {
+                log.info("OMITTED: equivalentConcept '{}' for {} '{}' (equivalentConcept is filtered)",
+                        trimmedConcept, entityType, resource.getLocalName());
+                filterStatistics.omittedEquivalentConcepts++;
+                continue;
+            }
+
+            resource.addProperty(exactMatchProperty, ontModel.createResource(trimmedConcept));
+            log.debug("Added valid equivalent concept IRI for {} '{}': {}",
+                    entityType, resource.getLocalName(), trimmedConcept);
+        }
     }
 
     private void addAlternativeNamesAsLangString(Resource resource, String altNamesValue) {

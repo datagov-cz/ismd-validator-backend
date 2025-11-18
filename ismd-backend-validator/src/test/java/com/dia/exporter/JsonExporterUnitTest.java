@@ -176,12 +176,12 @@ class JsonExporterUnitTest {
         JsonNode concept = pojmyArray.get(0);
 
         // Check governance properties
-        assertTrue(concept.has("způsob-sdílení-údajů"), "Should have sharing method");
-        assertTrue(concept.has("způsob-získání-údajů"), "Should have acquisition method");
-        assertTrue(concept.has("typ-obsahu-údajů"), "Should have content type");
+        assertTrue(concept.has("způsob-sdílení-údaje"), "Should have sharing method");
+        assertTrue(concept.has("způsob-získání-údaje"), "Should have acquisition method");
+        assertTrue(concept.has("typ-obsahu-údaje"), "Should have content type");
 
         // Verify arrays are properly formatted
-        JsonNode sharingMethod = concept.get("způsob-sdílení-údajů");
+        JsonNode sharingMethod = concept.get("způsob-sdílení-údaje");
         assertTrue(sharingMethod.isArray(), "Sharing method should be array");
         assertFalse(sharingMethod.isEmpty(), "Should have at least one sharing method");
     }
@@ -201,9 +201,9 @@ class JsonExporterUnitTest {
         JsonNode concept = pojmyArray.get(0);
 
         // Should find governance properties from fallback namespace
-        assertTrue(concept.has("způsob-sdílení-údajů") ||
-                        concept.has("způsob-získání-údajů") ||
-                        concept.has("typ-obsahu-údajů"),
+        assertTrue(concept.has("způsob-sdílení-údaje") ||
+                        concept.has("způsob-získání-údaje") ||
+                        concept.has("typ-obsahu-údaje"),
                 "Should have at least one governance property from fallback");
     }
 
@@ -221,7 +221,7 @@ class JsonExporterUnitTest {
         JsonNode pojmyArray = rootNode.get("pojmy");
         JsonNode concept = pojmyArray.get(0);
 
-        JsonNode sharingMethod = concept.get("způsob-sdílení-údajů");
+        JsonNode sharingMethod = concept.get("způsob-sdílení-údaje");
         assertTrue(sharingMethod.isArray(), "Should be array");
         assertEquals(3, sharingMethod.size(), "Should split semicolon-separated values");
         assertEquals("Method1", sharingMethod.get(0).asText());

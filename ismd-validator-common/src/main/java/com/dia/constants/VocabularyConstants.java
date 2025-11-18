@@ -90,9 +90,9 @@ public class VocabularyConstants {
     public static final String TYP_OBSAHU = "má-typ-obsahu-údajů";
 
     // Alternate forms from OFNJsonConstants
-    public static final String ZPUSOB_SDILENI_ALT = "způsob-sdílení-údajů";
-    public static final String ZPUSOB_ZISKANI_ALT = "způsob-získání-údajů";
-    public static final String TYP_OBSAHU_ALT = "typ-obsahu-údajů";
+    public static final String ZPUSOB_SDILENI_ALT = "způsob-sdílení-údaje";
+    public static final String ZPUSOB_ZISKANI_ALT = "způsob-získání-údaje";
+    public static final String TYP_OBSAHU_ALT = "typ-obsahu-údaje";
 
     // =============== LONG FORM PROPERTIES ===============
     public static final String JE_PPDF_LONG = "je-sdílen-v-propojeném-datovém-fondu";
