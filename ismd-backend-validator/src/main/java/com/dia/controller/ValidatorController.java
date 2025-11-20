@@ -29,7 +29,7 @@ public class ValidatorController {
                 request.getOntologyContent()
         );
 
-        ValidationReportDto dto = new ValidationReportDto(ismdReport.results(), Instant.now());
+        ValidationReportDto dto = new ValidationReportDto(ismdReport.results(), request.getIri(), Instant.now());
 
         return ResponseEntity.ok(dto);
     }
