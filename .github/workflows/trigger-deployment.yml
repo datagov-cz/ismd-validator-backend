@@ -6,9 +6,6 @@ on:
     workflows: [Build Docker on Main, Build Docker on Dev]
     types: [completed]
     branches: [main, dev]
-  # Receive completion signal from the infrastructure repo
-  repository_dispatch:
-    types: [infra-deploy-complete]
   
   # Manual trigger with environment and version selection
   workflow_dispatch:
@@ -172,21 +169,6 @@ jobs:
           echo "workflow_run_id=${WORKFLOW_RUN_ID}" >> $GITHUB_OUTPUT
           echo "ref=${REF}" >> $GITHUB_OUTPUT
 
-  # Finalize the GitHub Deployment when infra reports completion
-  finalize-deployment:
-    name: Finalize Deployment Status
-    runs-on: ubuntu-latest
-    if: github.event_name == 'repository_dispatch' && github.event.action == 'infra-deploy-complete'
-    steps:
-      - name: Update Deployment Status (final)
-        uses: chrnorm/deployment-status@v2
-        with:
-          token: ${{ github.token }}
-          deployment-id: ${{ github.event.client_payload.deployment_id }}
-          state: ${{ github.event.client_payload.state }}
-          description: Deployment completed in infrastructure repository
-          log-url: ${{ github.event.client_payload.infra_run_url }}
-  
   # Ensure the image tag exists in GHCR before dispatching to infra
   validate-image:
     name: Validate Image Tag Exists
@@ -230,6 +212,8 @@ jobs:
     needs: [determine-params, validate-image]
     if: needs.determine-params.outputs.environment == 'DEV'
     runs-on: ubuntu-latest
+    environment:
+      name: DEV
     
     steps:
       - name: Checkout code
@@ -262,27 +246,42 @@ jobs:
           description: "Preparing to deploy"
           log-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       
-      - name: Trigger Infrastructure Deployment
-        uses: peter-evans/repository-dispatch@v4
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          token: ${{ secrets.INFRA_REPO_TOKEN }}
-          repository: ${{ env.INFRA_REPO }}
-          event-type: new-image-dev
-          client-payload: |
-            {
-              "component": "${{ env.COMPONENT_NAME }}",
-              "image_tag": "${{ needs.determine-params.outputs.image_tag }}",
-              "source_repo": "${{ github.repository }}",
-              "source_deployment_id": "${{ steps.create_deployment.outputs.deployment_id }}"
-            }
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
       
-      - name: Update Deployment Status
+      - name: Deploy to Azure Container App
+        run: |
+          IMAGE="ghcr.io/datagov-cz/ismd-validator-backend-dev:${{ needs.determine-params.outputs.image_tag }}"
+          echo "Deploying $IMAGE to ismd-validator-backend-dev"
+          
+          az containerapp update \
+            --name ismd-validator-backend-dev \
+            --resource-group ismd-validator-dev \
+            --image "$IMAGE" \
+            --output table
+          
+          echo "✅ Deployment complete"
+      
+      - name: Update Deployment Status - Success
+        if: success()
         uses: chrnorm/deployment-status@v2
         with:
           token: ${{ github.token }}
           deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
-          state: "in_progress"
-          description: "Deployment triggered in infrastructure repository"
+          state: "success"
+          description: "Deployed successfully"
+          log-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      
+      - name: Update Deployment Status - Failure
+        if: failure()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
+          state: "failure"
+          description: "Deployment failed"
           log-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   
   # Deploy to test environment
@@ -291,6 +290,8 @@ jobs:
     needs: [determine-params, validate-image]
     if: needs.determine-params.outputs.environment == 'TEST'
     runs-on: ubuntu-latest
+    environment:
+      name: TEST
     
     steps:
       - name: Checkout code
@@ -322,27 +323,43 @@ jobs:
           state: "pending"
           description: "Preparing to deploy"
       
-      - name: Trigger Infrastructure Deployment
-        uses: peter-evans/repository-dispatch@v4
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          token: ${{ secrets.INFRA_REPO_TOKEN }}
-          repository: ${{ env.INFRA_REPO }}
-          event-type: new-image-test
-          client-payload: |
-            {
-              "component": "${{ env.COMPONENT_NAME }}",
-              "image_tag": "${{ needs.determine-params.outputs.image_tag }}",
-              "source_repo": "${{ github.repository }}",
-              "source_deployment_id": "${{ steps.create_deployment.outputs.deployment_id }}"
-            }
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
       
-      - name: Update Deployment Status
+      - name: Deploy to Azure Container App
+        run: |
+          IMAGE="ghcr.io/datagov-cz/ismd-validator-backend:${{ needs.determine-params.outputs.image_tag }}"
+          echo "Deploying $IMAGE to ismd-validator-backend-test"
+          
+          az containerapp update \
+            --name ismd-validator-backend-test \
+            --resource-group ismd-validator-test \
+            --image "$IMAGE" \
+            --output table
+          
+          echo "✅ Deployment complete"
+      
+      - name: Update Deployment Status - Success
+        if: success()
         uses: chrnorm/deployment-status@v2
         with:
           token: ${{ github.token }}
           deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
-          state: "in_progress"
-          description: "Deployment triggered in infrastructure repository"
+          state: "success"
+          description: "Deployed successfully"
+          log-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      
+      - name: Update Deployment Status - Failure
+        if: failure()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
+          state: "failure"
+          description: "Deployment failed"
+          log-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   
   # Deploy to prod environment
   deploy-to-prod:
@@ -350,6 +367,8 @@ jobs:
     needs: [determine-params, validate-image]
     if: needs.determine-params.outputs.environment == 'PROD'
     runs-on: ubuntu-latest
+    environment:
+      name: PROD
     
     steps:
       - name: Checkout code
@@ -381,24 +400,40 @@ jobs:
           state: "pending"
           description: "Preparing to deploy"
       
-      - name: Trigger Infrastructure Deployment
-        uses: peter-evans/repository-dispatch@v4
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          token: ${{ secrets.INFRA_REPO_TOKEN }}
-          repository: ${{ env.INFRA_REPO }}
-          event-type: new-image-prod
-          client-payload: |
-            {
-              "component": "${{ env.COMPONENT_NAME }}",
-              "image_tag": "${{ needs.determine-params.outputs.image_tag }}",
-              "source_repo": "${{ github.repository }}",
-              "source_deployment_id": "${{ steps.create_deployment.outputs.deployment_id }}"
-            }
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
       
-      - name: Update Deployment Status
+      - name: Deploy to Azure Container App
+        run: |
+          IMAGE="ghcr.io/datagov-cz/ismd-validator-backend:${{ needs.determine-params.outputs.image_tag }}"
+          echo "Deploying $IMAGE to ismd-validator-backend-prod"
+          
+          az containerapp update \
+            --name ismd-validator-backend-prod \
+            --resource-group ismd-validator-prod \
+            --image "$IMAGE" \
+            --output table
+          
+          echo "✅ Deployment complete"
+      
+      - name: Update Deployment Status - Success
+        if: success()
         uses: chrnorm/deployment-status@v2
         with:
           token: ${{ github.token }}
           deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
-          state: "in_progress"
-          description: "Deployment triggered in infrastructure repository"
+          state: "success"
+          description: "Deployed successfully"
+          log-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      
+      - name: Update Deployment Status - Failure
+        if: failure()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ github.token }}
+          deployment-id: ${{ steps.create_deployment.outputs.deployment_id }}
+          state: "failure"
+          description: "Deployment failed"
+          log-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

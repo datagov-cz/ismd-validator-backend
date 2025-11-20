@@ -1,46 +1,63 @@
-name: Build Docker on Dev
+name: Build Dev Branch
 
 on:
   push:
     branches:
       - dev
-    paths-ignore:
-      - '**/README.md'
-      - '**/.gitignore'
-      - '**/*.md'
-      - '**/.gitkeep'
-      - '**/LICENSE'
-      - '**/target/**'
-      - '**/.idea/**'
-      - '**/*.iml'
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
-  run-tests:
-    uses: ./.github/workflows/reusable-test.yml
-    
-  check-version-bump:
+  check-common-lib-changes:
+    name: Check for Common Library Changes
     runs-on: ubuntu-latest
     outputs:
-      skip-build: ${{ steps.check-commit.outputs.skip-build }}
+      common_changed: ${{ steps.check.outputs.changed }}
+      needs_release: ${{ steps.check.outputs.needs_release }}
     steps:
-      - name: Check for version bump commit
-        id: check-commit
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      
+      - name: Check if common library changed
+        id: check
         run: |
-          if [[ "${{ github.event.head_commit.message }}" =~ (Release v|Bump version) ]]; then
-            echo "skip-build=true" >> $GITHUB_OUTPUT
-            echo "Skipping build: Version bump detected"
+          # Check if common lib source files changed (exclude pom.xml version changes)
+          if git diff --name-only HEAD^ HEAD | grep "^ismd-validator-common/" | grep -v "pom.xml" | grep -q .; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "needs_release=true" >> $GITHUB_OUTPUT
+            echo "📦 Common library source files changed - will release new version"
+          elif git log -1 --pretty=%B | grep -q "Update validator to use common library"; then
+            # This is the auto-commit from release workflow, skip
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "needs_release=false" >> $GITHUB_OUTPUT
+            echo "⏭️  Skipping: This is a version update commit from release workflow"
           else
-            echo "skip-build=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "needs_release=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  No common library source changes"
           fi
-  
-  # Build validator on every push (except version bump commits)
-  build-validator:
-    needs: [run-tests, check-version-bump]
-    if: needs.check-version-bump.outputs.skip-build != 'true'
+
+  release-common-lib:
+    name: Auto-Release Common Library
+    needs: check-common-lib-changes
+    if: needs.check-common-lib-changes.outputs.needs_release == 'true'
+    uses: ./.github/workflows/release-common-library.yml
+    secrets: inherit
+
+  test:
+    name: Run Tests
+    needs: [check-common-lib-changes, release-common-lib]
+    if: always() && !cancelled() && !failure()
+    uses: ./.github/workflows/reusable-test.yml
+    secrets: inherit
+
+  build-docker:
+    name: Build Docker Image
+    needs: test
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       branch: dev
+    secrets: inherit
