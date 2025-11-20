@@ -502,7 +502,6 @@ public class JsonExporter {
 
         String nazevValue = nazevStmt.getString();
         if (nazevValue != null && !nazevValue.trim().isEmpty()) {
-            // Create language map object to match JSON-LD context specification
             JSONObject langMap = new JSONObject();
             String lang = nazevStmt.getLanguage();
             if (lang != null && !lang.isEmpty()) {
