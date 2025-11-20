@@ -58,7 +58,7 @@ jobs:
   build-docker:
     name: Build Docker Image
     needs: test
-    if: needs.test.result == 'success'
+    if: always() && needs.test.result == 'success'
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       branch: dev
