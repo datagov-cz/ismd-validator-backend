@@ -22,7 +22,6 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.*;
 
 @Component
@@ -97,8 +96,8 @@ public class SHACLRuleEngine {
             throw new ValidationException("Validation was interrupted");
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            if (cause instanceof ValidationException) {
-                throw (ValidationException) cause;
+            if (cause instanceof ValidationException validationException) {
+                throw validationException;
             }
             throw new ValidationException("Validation execution failed", cause);
         }
@@ -142,12 +141,10 @@ public class SHACLRuleEngine {
             return handleValidationReportAlternative(jenaReport);
         }
 
-        boolean isValid = jenaReport.conforms();
+        log.debug("Converted {} validation entries.",
+                results.size());
 
-        log.debug("Converted {} validation entries. Overall result: {}",
-                results.size(), isValid ? "VALID" : "INVALID");
-
-        return new ISMDValidationReport(results, isValid, Instant.now());
+        return new ISMDValidationReport(results, Instant.now());
     }
 
     private ISMDValidationReport handleValidationReportAlternative(ValidationReport jenaReport) {
@@ -156,7 +153,7 @@ public class SHACLRuleEngine {
 
             if (isValid) {
                 log.info("Validation passed, no entries to process");
-                return new ISMDValidationReport(new ArrayList<>(), true, Instant.now());
+                return new ISMDValidationReport(new ArrayList<>(), Instant.now());
             } else {
                 log.warn("Validation failed but could not extract detailed entries");
                 ValidationResult errorResult = new ValidationResult(
@@ -169,7 +166,6 @@ public class SHACLRuleEngine {
                 );
                 return new ISMDValidationReport(
                         List.of(errorResult),
-                        false,
                         Instant.now()
                 );
             }

@@ -8,10 +8,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public record ISMDValidationReport(List<ValidationResult> results, boolean isValid, Instant timestamp) {
+public record ISMDValidationReport(List<ValidationResult> results, Instant timestamp) {
 
     public static ISMDValidationReport empty() {
-        return new ISMDValidationReport(Collections.emptyList(), true, Instant.now());
+        return new ISMDValidationReport(Collections.emptyList(), Instant.now());
     }
 
     public static ISMDValidationReport error(String errorMessage) {
@@ -25,7 +25,6 @@ public record ISMDValidationReport(List<ValidationResult> results, boolean isVal
         );
         return new ISMDValidationReport(
                 Collections.singletonList(errorResult),
-                false,
                 Instant.now()
         );
     }
@@ -123,8 +122,7 @@ public record ISMDValidationReport(List<ValidationResult> results, boolean isVal
     @Override
     public String toString() {
         return String.format(
-                "ValidationReport{valid=%s, results=%d, errors=%d, warnings=%d, information=%d, timestamp=%s}",
-                isValid,
+                "ValidationReport{results=%d, errors=%d, warnings=%d, information=%d, timestamp=%s}",
                 results.size(),
                 getErrorCount(),
                 getWarningCount(),

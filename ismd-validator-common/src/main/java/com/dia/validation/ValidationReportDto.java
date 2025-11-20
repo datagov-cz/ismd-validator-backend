@@ -6,21 +6,20 @@ import lombok.Setter;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 public class ValidationReportDto implements ValidationReport {
-    private Long id;
     private List<ValidationResult> results;
-    private boolean isValid;
     private Instant timestamp;
-    private Long ontologyId;
+    private String ontologyIri;
 
     public ValidationReportDto(List<ValidationResult> results,
-                               Long ontologyId, Instant timestamp) {
+                               String ontologyIri, Instant timestamp) {
         this.results = results;
-        this.ontologyId = ontologyId;
+        this.ontologyIri = ontologyIri;
         this.timestamp = timestamp;
     }
 
@@ -31,7 +30,7 @@ public class ValidationReportDto implements ValidationReport {
 
     @Override
     public Long getId() {
-        return id;
+        return UUID.randomUUID().getMostSignificantBits();
     }
 
     @Override
@@ -40,7 +39,7 @@ public class ValidationReportDto implements ValidationReport {
     }
 
     @Override
-    public Long getOntologyId() {
-        return ontologyId;
+    public String getOntologyIri() {
+        return ontologyIri;
     }
 }
