@@ -1,4 +1,4 @@
-package com.dia.controller.dto;
+package com.dia.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

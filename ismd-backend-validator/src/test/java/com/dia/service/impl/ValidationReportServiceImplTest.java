@@ -85,7 +85,7 @@ class ValidationReportServiceImplTest {
     void testConvertToDto_SingleReport_WithResults() {
         // Arrange
         List<ValidationResult> results = Arrays.asList(errorResult1, warningResult, infoResult, duplicateErrorResult);
-        ISMDValidationReport report = new ISMDValidationReport(results, false, Instant.now());
+        ISMDValidationReport report = new ISMDValidationReport(results, Instant.now());
 
         // Act
         ValidationResultsDto dto = validationReportService.convertToDto(report);
@@ -108,7 +108,7 @@ class ValidationReportServiceImplTest {
     @Test
     void testConvertToDto_SingleReport_EmptyResults() {
         // Arrange
-        ISMDValidationReport report = new ISMDValidationReport(Collections.emptyList(), true, Instant.now());
+        ISMDValidationReport report = new ISMDValidationReport(Collections.emptyList(), Instant.now());
 
         // Act
         ValidationResultsDto dto = validationReportService.convertToDto(report);
@@ -125,8 +125,8 @@ class ValidationReportServiceImplTest {
         List<ValidationResult> localResults = Arrays.asList(errorResult1, warningResult);
         List<ValidationResult> globalResults = Arrays.asList(errorResult2, infoResult);
 
-        ISMDValidationReport localReport = new ISMDValidationReport(localResults, false, Instant.now());
-        ISMDValidationReport globalReport = new ISMDValidationReport(globalResults, false, Instant.now());
+        ISMDValidationReport localReport = new ISMDValidationReport(localResults, Instant.now());
+        ISMDValidationReport globalReport = new ISMDValidationReport(globalResults, Instant.now());
 
         // Act
         ValidationResultsDto dto = validationReportService.convertToDto(localReport, globalReport);
@@ -152,17 +152,17 @@ class ValidationReportServiceImplTest {
     @Test
     void testConvertToDto_CombinedReports_ValidityLogic() {
         // Test case 1: Both reports valid
-        ISMDValidationReport validLocalReport = new ISMDValidationReport(Collections.emptyList(), true, Instant.now());
-        ISMDValidationReport validGlobalReport = new ISMDValidationReport(Collections.emptyList(), true, Instant.now());
+        ISMDValidationReport validLocalReport = new ISMDValidationReport(Collections.emptyList(), Instant.now());
+        ISMDValidationReport validGlobalReport = new ISMDValidationReport(Collections.emptyList(), Instant.now());
 
         ValidationResultsDto dto1 = validationReportService.convertToDto(validLocalReport, validGlobalReport);
 
         // Test case 2: Local invalid, global valid
-        ISMDValidationReport invalidLocalReport = new ISMDValidationReport(Collections.singletonList(errorResult1), false, Instant.now());
+        ISMDValidationReport invalidLocalReport = new ISMDValidationReport(Collections.singletonList(errorResult1), Instant.now());
         ValidationResultsDto dto2 = validationReportService.convertToDto(invalidLocalReport, validGlobalReport);
 
         // Test case 3: Local valid, global invalid
-        ISMDValidationReport invalidGlobalReport = new ISMDValidationReport(Collections.singletonList(errorResult2), false, Instant.now());
+        ISMDValidationReport invalidGlobalReport = new ISMDValidationReport(Collections.singletonList(errorResult2), Instant.now());
         ValidationResultsDto dto3 = validationReportService.convertToDto(validLocalReport, invalidGlobalReport);
 
         // Assert
@@ -179,7 +179,7 @@ class ValidationReportServiceImplTest {
         ValidationResult infoResult = new ValidationResult(ValidationSeverity.INFO, "Info message", "rule", "node", "path", "value");
 
         List<ValidationResult> results = Arrays.asList(errorResult, warningResult, infoResult);
-        ISMDValidationReport report = new ISMDValidationReport(results, false, Instant.now());
+        ISMDValidationReport report = new ISMDValidationReport(results, Instant.now());
 
         // Act
         ValidationResultsDto dto = validationReportService.convertToDto(report);
@@ -201,7 +201,7 @@ class ValidationReportServiceImplTest {
         ValidationResult errorResult = new ValidationResult(ValidationSeverity.ERROR, "CCC Error message", "rule", "node", "path", "value");
 
         List<ValidationResult> results = Arrays.asList(infoResult, warningResult, errorResult);
-        ISMDValidationReport report = new ISMDValidationReport(results, false, Instant.now());
+        ISMDValidationReport report = new ISMDValidationReport(results, Instant.now());
 
         // Act
         ValidationResultsDto dto = validationReportService.convertToDto(report);
@@ -223,7 +223,7 @@ class ValidationReportServiceImplTest {
         ValidationResult errorResult3 = new ValidationResult(ValidationSeverity.ERROR, "MMM Middle message", "rule", "node", "path", "value");
 
         List<ValidationResult> results = Arrays.asList(errorResult1, errorResult2, errorResult3);
-        ISMDValidationReport report = new ISMDValidationReport(results, false, Instant.now());
+        ISMDValidationReport report = new ISMDValidationReport(results, Instant.now());
 
         // Act
         ValidationResultsDto dto = validationReportService.convertToDto(report);
@@ -249,7 +249,7 @@ class ValidationReportServiceImplTest {
         ValidationResult warningResult = new ValidationResult(ValidationSeverity.WARNING, "Same message", "rule", "node2", "path", "value");
 
         List<ValidationResult> results = Arrays.asList(errorResult, warningResult);
-        ISMDValidationReport report = new ISMDValidationReport(results, false, Instant.now());
+        ISMDValidationReport report = new ISMDValidationReport(results, Instant.now());
 
         // Act
         ValidationResultsDto dto = validationReportService.convertToDto(report);
@@ -275,7 +275,7 @@ class ValidationReportServiceImplTest {
         ValidationResult errorResult3 = new ValidationResult(ValidationSeverity.ERROR, "Duplicate message", "rule", "node3", "path", "value3");
 
         List<ValidationResult> results = Arrays.asList(errorResult1, errorResult2, errorResult3);
-        ISMDValidationReport report = new ISMDValidationReport(results, false, Instant.now());
+        ISMDValidationReport report = new ISMDValidationReport(results, Instant.now());
 
         // Act
         ValidationResultsDto dto = validationReportService.convertToDto(report);
@@ -296,8 +296,8 @@ class ValidationReportServiceImplTest {
         ValidationResult globalResult1 = new ValidationResult(ValidationSeverity.ERROR, "Global error", "rule", "node", "path", "value");
         ValidationResult globalResult2 = new ValidationResult(ValidationSeverity.WARNING, "Global warning", "rule", "node", "path", "value");
 
-        ISMDValidationReport localReport = new ISMDValidationReport(Collections.emptyList(), true, Instant.now());
-        ISMDValidationReport globalReport = new ISMDValidationReport(Arrays.asList(globalResult1, globalResult2), false, Instant.now());
+        ISMDValidationReport localReport = new ISMDValidationReport(Collections.emptyList(), Instant.now());
+        ISMDValidationReport globalReport = new ISMDValidationReport(Arrays.asList(globalResult1, globalResult2), Instant.now());
 
         // Act
         ValidationResultsDto dto = validationReportService.convertToDto(localReport, globalReport);
@@ -320,8 +320,8 @@ class ValidationReportServiceImplTest {
         ValidationResult globalError = new ValidationResult(ValidationSeverity.ERROR, "Common error message", "rule", "node3", "path", "value");
         ValidationResult globalInfo = new ValidationResult(ValidationSeverity.INFO, "Global info", "rule", "node4", "path", "value");
 
-        ISMDValidationReport localReport = new ISMDValidationReport(Arrays.asList(localError, localWarning), false, Instant.now());
-        ISMDValidationReport globalReport = new ISMDValidationReport(Arrays.asList(globalError, globalInfo), false, Instant.now());
+        ISMDValidationReport localReport = new ISMDValidationReport(Arrays.asList(localError, localWarning), Instant.now());
+        ISMDValidationReport globalReport = new ISMDValidationReport(Arrays.asList(globalError, globalInfo), Instant.now());
 
         // Act
         ValidationResultsDto dto = validationReportService.convertToDto(localReport, globalReport);

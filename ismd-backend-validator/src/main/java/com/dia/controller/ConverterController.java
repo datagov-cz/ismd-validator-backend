@@ -1,7 +1,7 @@
 package com.dia.controller;
 
 import com.dia.controller.data.UrlMultipartFile;
-import com.dia.controller.dto.CatalogRecordDto;
+import com.dia.dto.CatalogRecordDto;
 import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;

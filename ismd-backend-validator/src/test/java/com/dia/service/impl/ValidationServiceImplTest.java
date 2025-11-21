@@ -1,5 +1,9 @@
 package com.dia.service.impl;
 
+import com.dia.controller.exception.EmptyContentException;
+import com.dia.controller.exception.InvalidFileException;
+import com.dia.controller.exception.InvalidFormatException;
+import com.dia.controller.exception.ValidationException;
 import com.dia.conversion.data.TransformationResult;
 import com.dia.service.record.ValidationConfigurationSummary;
 import com.dia.validation.config.RuleManager;
@@ -140,6 +144,38 @@ class ValidationServiceImplTest {
     }
 
     @Test
+    void testValidateRdf_EmptyContent() {
+        // Arrange
+        String emptyContent = "";
+        String format = "TTL";
+
+        // Act & Assert
+        assertThrows(EmptyContentException.class, () ->
+            validationService.validateRdf(emptyContent, format));
+    }
+
+    @Test
+    void testValidateRdf_NullContent() {
+        // Arrange
+        String format = "TTL";
+
+        // Act & Assert
+        assertThrows(EmptyContentException.class, () ->
+            validationService.validateRdf(null, format));
+    }
+
+    @Test
+    void testValidateRdf_EmptyFormat() {
+        // Arrange
+        String content = "some content";
+        String format = "";
+
+        // Act & Assert
+        assertThrows(InvalidFormatException.class, () ->
+            validationService.validateRdf(content, format));
+    }
+
+    @Test
     void testValidateRdf_ParseError() {
         // Arrange
         String invalidRdfContent = "invalid rdf content";
@@ -148,13 +184,11 @@ class ValidationServiceImplTest {
         try (MockedStatic<ModelFactory> modelFactory = mockStatic(ModelFactory.class)) {
             Model parsedModel = mock(Model.class);
             modelFactory.when(ModelFactory::createDefaultModel).thenReturn(parsedModel);
-            doThrow(new RiotException("Parse error")).when(parsedModel).read((InputStream) any(), isNull(), eq(format));
+            doThrow(new RiotException("Parse error")).when(parsedModel).read(any(java.io.Reader.class), isNull(), eq(format));
 
-            // Act
-            ISMDValidationReport result = validationService.validateRdf(invalidRdfContent, format);
-
-            // Assert
-            assertNotNull(result);
+            // Act & Assert
+            assertThrows(ValidationException.class, () ->
+                validationService.validateRdf(invalidRdfContent, format));
         }
     }
 
@@ -184,6 +218,23 @@ class ValidationServiceImplTest {
     }
 
     @Test
+    void testValidateTtl_EmptyContent() {
+        // Arrange
+        String emptyContent = "";
+
+        // Act & Assert
+        assertThrows(EmptyContentException.class, () ->
+            validationService.validateTtl(emptyContent));
+    }
+
+    @Test
+    void testValidateTtl_NullContent() {
+        // Act & Assert
+        assertThrows(EmptyContentException.class, () ->
+            validationService.validateTtl(null));
+    }
+
+    @Test
     void testValidateTtl_ParseError() {
         // Arrange
         String invalidTtlContent = "invalid ttl content";
@@ -197,11 +248,9 @@ class ValidationServiceImplTest {
             rdfDataMgr.when(() -> RDFDataMgr.read(any(Model.class), any(InputStream.class), eq(Lang.TTL)))
                     .thenThrow(new RiotException("Parse error"));
 
-            // Act
-            ISMDValidationReport result = validationService.validateTtl(invalidTtlContent);
-
-            // Assert
-            assertNotNull(result);
+            // Act & Assert
+            assertThrows(ValidationException.class, () ->
+                validationService.validateTtl(invalidTtlContent));
         }
     }
 
@@ -235,15 +284,20 @@ class ValidationServiceImplTest {
     }
 
     @Test
+    void testValidateTtlFile_NullFile() {
+        // Act & Assert
+        assertThrows(InvalidFileException.class, () ->
+            validationService.validateTtlFile(null));
+    }
+
+    @Test
     void testValidateTtlFile_EmptyFile() {
         // Arrange
         when(multipartFile.isEmpty()).thenReturn(true);
 
-        // Act
-        ISMDValidationReport result = validationService.validateTtlFile(multipartFile);
-
-        // Assert
-        assertNotNull(result);
+        // Act & Assert
+        assertThrows(EmptyContentException.class, () ->
+            validationService.validateTtlFile(multipartFile));
     }
 
     @Test
@@ -252,11 +306,9 @@ class ValidationServiceImplTest {
         when(multipartFile.isEmpty()).thenReturn(false);
         when(multipartFile.getOriginalFilename()).thenReturn("test.txt");
 
-        // Act
-        ISMDValidationReport result = validationService.validateTtlFile(multipartFile);
-
-        // Assert
-        assertNotNull(result);
+        // Act & Assert
+        assertThrows(InvalidFileException.class, () ->
+            validationService.validateTtlFile(multipartFile));
     }
 
     @Test
@@ -265,11 +317,9 @@ class ValidationServiceImplTest {
         when(multipartFile.isEmpty()).thenReturn(false);
         when(multipartFile.getOriginalFilename()).thenReturn(null);
 
-        // Act
-        ISMDValidationReport result = validationService.validateTtlFile(multipartFile);
-
-        // Assert
-        assertNotNull(result);
+        // Act & Assert
+        assertThrows(InvalidFileException.class, () ->
+            validationService.validateTtlFile(multipartFile));
     }
 
     @Test
@@ -280,11 +330,9 @@ class ValidationServiceImplTest {
         when(multipartFile.getSize()).thenReturn(100L);
         when(multipartFile.getBytes()).thenThrow(new IOException("File read error"));
 
-        // Act
-        ISMDValidationReport result = validationService.validateTtlFile(multipartFile);
-
-        // Assert
-        assertNotNull(result);
+        // Act & Assert
+        assertThrows(InvalidFileException.class, () ->
+            validationService.validateTtlFile(multipartFile));
     }
 
     @Test
