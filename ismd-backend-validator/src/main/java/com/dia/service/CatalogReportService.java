@@ -1,10 +1,9 @@
 package com.dia.service;
 
-import com.dia.controller.dto.CatalogRecordDto;
+import com.dia.dto.CatalogRecordDto;
 import com.dia.controller.dto.CatalogRecordRequestDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
-import com.dia.validation.ValidationReportDto;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;

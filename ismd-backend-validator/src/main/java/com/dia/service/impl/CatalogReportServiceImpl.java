@@ -1,6 +1,6 @@
 package com.dia.service.impl;
 
-import com.dia.controller.dto.CatalogRecordDto;
+import com.dia.dto.CatalogRecordDto;
 import com.dia.controller.dto.CatalogRecordRequestDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.controller.exception.CatalogGenerationException;
@@ -9,7 +9,6 @@ import com.dia.controller.exception.InvalidFileException;
 import com.dia.controller.exception.ValidationException;
 import com.dia.conversion.data.ConversionResult;
 import com.dia.service.CatalogReportService;
-import com.dia.validation.ValidationReportDto;
 import com.dia.validation.ValidationResult;
 import lombok.Builder;
 import lombok.Data;

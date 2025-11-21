@@ -1,6 +1,10 @@
 package com.dia.service.impl;
 
-import com.dia.controller.dto.CatalogRecordDto;
+import com.dia.controller.exception.CatalogGenerationException;
+import com.dia.controller.exception.EmptyContentException;
+import com.dia.controller.exception.InvalidFileException;
+import com.dia.controller.exception.ValidationException;
+import com.dia.dto.CatalogRecordDto;
 import com.dia.controller.dto.SeverityGroupDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
@@ -30,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.quality.Strictness.LENIENT;
@@ -252,36 +257,64 @@ class CatalogReportServiceImplTest {
         }
 
         @Test
-        @DisplayName("Should return empty when file reading fails")
-        void shouldReturnEmptyWhenFileReadingFails() throws IOException {
+        @DisplayName("Should throw InvalidFileException when file is null")
+        void shouldThrowInvalidFileExceptionWhenFileIsNull() {
             // Given
-            MultipartFile mockFile = mock(MultipartFile.class);
-            when(mockFile.getBytes()).thenThrow(new IOException("File read error"));
-            String requestId = "test-file-read-error";
+            String requestId = "test-null-file";
 
-            // When
-            Optional<CatalogRecordDto> result = catalogService.generateCatalogReportFromFile(
-                    mockFile, validValidationResults, requestId);
-
-            // Then
-            assertThat(result).isEmpty();
+            // When & Then
+            assertThatThrownBy(() -> catalogService.generateCatalogReportFromFile(
+                    null, validValidationResults, requestId))
+                    .isInstanceOf(InvalidFileException.class)
+                    .hasMessageContaining("File cannot be null");
         }
 
         @Test
-        @DisplayName("Should return empty when TTL parsing fails")
-        void shouldReturnEmptyWhenTtlParsingFails() throws IOException {
+        @DisplayName("Should throw EmptyContentException when file is empty")
+        void shouldThrowEmptyContentExceptionWhenFileIsEmpty() throws IOException {
+            // Given
+            MultipartFile mockFile = mock(MultipartFile.class);
+            when(mockFile.isEmpty()).thenReturn(true);
+            String requestId = "test-empty-file-exception";
+
+            // When & Then
+            assertThatThrownBy(() -> catalogService.generateCatalogReportFromFile(
+                    mockFile, validValidationResults, requestId))
+                    .isInstanceOf(EmptyContentException.class)
+                    .hasMessageContaining("File is empty");
+        }
+
+        @Test
+        @DisplayName("Should throw InvalidFileException when file reading fails")
+        void shouldThrowInvalidFileExceptionWhenFileReadingFails() throws IOException {
+            // Given
+            MultipartFile mockFile = mock(MultipartFile.class);
+            when(mockFile.isEmpty()).thenReturn(false);
+            when(mockFile.getBytes()).thenThrow(new IOException("File read error"));
+            String requestId = "test-file-read-error";
+
+            // When & Then
+            assertThatThrownBy(() -> catalogService.generateCatalogReportFromFile(
+                    mockFile, validValidationResults, requestId))
+                    .isInstanceOf(InvalidFileException.class)
+                    .hasMessageContaining("Failed to read file");
+        }
+
+        @Test
+        @DisplayName("Should throw ValidationException when TTL parsing fails")
+        void shouldThrowValidationExceptionWhenTtlParsingFails() throws IOException {
             // Given
             String invalidTtlContent = "This is not valid TTL @#$%^&*";
             MultipartFile mockFile = mock(MultipartFile.class);
+            when(mockFile.isEmpty()).thenReturn(false);
             when(mockFile.getBytes()).thenReturn(invalidTtlContent.getBytes());
             String requestId = "test-invalid-ttl";
 
-            // When
-            Optional<CatalogRecordDto> result = catalogService.generateCatalogReportFromFile(
-                    mockFile, validValidationResults, requestId);
-
-            // Then
-            assertThat(result).isEmpty();
+            // When & Then
+            assertThatThrownBy(() -> catalogService.generateCatalogReportFromFile(
+                    mockFile, validValidationResults, requestId))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessageContaining("Invalid TTL syntax");
         }
 
         @Test

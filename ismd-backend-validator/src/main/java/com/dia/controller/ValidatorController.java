@@ -1,6 +1,6 @@
 package com.dia.controller;
 
-import com.dia.controller.dto.CatalogRecordDto;
+import com.dia.dto.CatalogRecordDto;
 import com.dia.controller.dto.CatalogRecordRequestDto;
 import com.dia.controller.dto.ValidationRequestDto;
 import com.dia.service.CatalogReportService;
@@ -97,7 +97,7 @@ public class ValidatorController {
     }
 
     @PostMapping("/catalog-record")
-    public ResponseEntity<CatalogRecordDto> requestCatalogRecord(
+    public ResponseEntity<Optional<CatalogRecordDto>> requestCatalogRecord(
             @RequestBody CatalogRecordRequestDto request
     ) {
         String requestId = UUID.randomUUID().toString();
@@ -110,7 +110,7 @@ public class ValidatorController {
 
             if (catalogRecordDto.isPresent()) {
                 log.info("Catalog record generated successfully [requestId={}]", requestId);
-                return ResponseEntity.ok(catalogRecordDto.get());
+                return ResponseEntity.ok(catalogRecordDto);
             } else {
                 log.warn("Catalog record generation returned empty result [requestId={}]", requestId);
                 return ResponseEntity.badRequest().build();
