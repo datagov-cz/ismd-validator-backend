@@ -110,11 +110,11 @@ public class ValidationServiceImpl implements ValidationService {
 
     @Override
     public ISMDValidationReport validateTtlFile(MultipartFile file) {
-        log.info("Starting TTL file validation: filename={}, size={}", file.getOriginalFilename(), file.getSize());
-
         if (file == null) {
             throw new InvalidFileException("File cannot be null");
         }
+
+        log.info("Starting TTL file validation: filename={}, size={}", file.getOriginalFilename(), file.getSize());
 
         try {
             validateTtlFileFormat(file);

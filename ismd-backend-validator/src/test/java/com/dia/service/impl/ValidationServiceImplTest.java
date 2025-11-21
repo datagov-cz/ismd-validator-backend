@@ -184,7 +184,7 @@ class ValidationServiceImplTest {
         try (MockedStatic<ModelFactory> modelFactory = mockStatic(ModelFactory.class)) {
             Model parsedModel = mock(Model.class);
             modelFactory.when(ModelFactory::createDefaultModel).thenReturn(parsedModel);
-            doThrow(new RiotException("Parse error")).when(parsedModel).read((InputStream) any(), isNull(), eq(format));
+            doThrow(new RiotException("Parse error")).when(parsedModel).read(any(java.io.Reader.class), isNull(), eq(format));
 
             // Act & Assert
             assertThrows(ValidationException.class, () ->

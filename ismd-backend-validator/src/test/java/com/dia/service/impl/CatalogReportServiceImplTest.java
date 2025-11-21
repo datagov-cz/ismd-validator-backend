@@ -318,12 +318,13 @@ class CatalogReportServiceImplTest {
         }
 
         @Test
-        @DisplayName("Should handle empty TTL file")
-        void shouldHandleEmptyTtlFile() throws IOException {
+        @DisplayName("Should handle empty TTL content")
+        void shouldHandleEmptyTtlContent() throws IOException {
             // Given
             MultipartFile mockFile = mock(MultipartFile.class);
+            when(mockFile.isEmpty()).thenReturn(false);
             when(mockFile.getBytes()).thenReturn("".getBytes());
-            String requestId = "test-empty-file";
+            String requestId = "test-empty-content";
 
             // When
             Optional<CatalogRecordDto> result = catalogService.generateCatalogReportFromFile(
@@ -334,6 +335,24 @@ class CatalogReportServiceImplTest {
             CatalogRecordDto catalogRecord = result.get();
             assertThat(catalogRecord.getIri()).isEqualTo("_:ds");
             assertThat(catalogRecord.getNazev()).containsEntry("cs", "Converted Vocabulary");
+        }
+    }
+
+    @Nested
+    @DisplayName("generateCatalogReportFromTool Tests")
+    class GenerateCatalogReportFromToolTests {
+
+        @Test
+        @DisplayName("Should throw EmptyContentException when request is null")
+        void shouldThrowEmptyContentExceptionWhenRequestIsNull() {
+            // Given
+            String requestId = "test-null-request";
+
+            // When & Then
+            assertThatThrownBy(() -> catalogService.generateCatalogReportFromTool(
+                    null, requestId))
+                    .isInstanceOf(EmptyContentException.class)
+                    .hasMessageContaining("Request cannot be null");
         }
     }
 
