@@ -350,7 +350,12 @@ public class JsonExporter {
         ontModel.listSubjectsWithProperty(RDF.type, pojemType)
                 .forEachRemaining(concept -> {
                     try {
-                        pojmy.put(createConceptObject(concept));
+                        if (belongsToCurrentVocabulary(concept.getURI())) {
+                            pojmy.put(createConceptObject(concept));
+                            log.debug("Exported concept to JSON: {}", concept.getURI());
+                        } else {
+                            log.debug("Skipped external reference concept in JSON export: {}", concept.getURI());
+                        }
                     } catch (JSONException e) {
                         log.warn("Could not process concept: {}", concept.getURI(), e);
                     }
@@ -390,7 +395,7 @@ public class JsonExporter {
 
         addSuperPropertyHierarchy(concept, pojemObj);
 
-        addGovernanceProperties(concept, pojemObj, effectiveNamespace);
+        addGovernanceProperties(concept, pojemObj);
 
         addRppMetadataWithBothNamespaces(concept, pojemObj, effectiveNamespace);
 
@@ -497,7 +502,6 @@ public class JsonExporter {
 
         String nazevValue = nazevStmt.getString();
         if (nazevValue != null && !nazevValue.trim().isEmpty()) {
-            // Create language map object to match JSON-LD context specification
             JSONObject langMap = new JSONObject();
             String lang = nazevStmt.getLanguage();
             if (lang != null && !lang.isEmpty()) {
@@ -524,79 +528,26 @@ public class JsonExporter {
         }
     }
 
-    private void addGovernanceProperties(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
-        addGovernancePropertyArrayWithFallback(concept, pojemObj, namespace
-        );
+    private void addGovernanceProperties(Resource concept, JSONObject pojemObj) throws JSONException {
+        addGovernancePropertyArrayWithFallback(concept, pojemObj);
 
-        addGovernancePropertySingleWithFallback(concept, pojemObj, namespace,
-                ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, ZPUSOB_ZISKANI_ALT);
+        addGovernancePropertySingleWithFallback(concept, pojemObj, "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje", ZPUSOB_ZISKANI_ALT);
 
-        addGovernancePropertySingleWithFallback(concept, pojemObj, namespace,
-                TYP_OBSAHU_UDAJE, TYP_OBSAHU, TYP_OBSAHU_ALT);
+        addGovernancePropertySingleWithFallback(concept, pojemObj, "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje", TYP_OBSAHU_ALT);
     }
 
-    private void addGovernancePropertyArrayWithFallback(Resource concept, JSONObject pojemObj, String namespace) throws JSONException {
+    private void addGovernancePropertyArrayWithFallback(Resource concept, JSONObject pojemObj) throws JSONException {
 
-        Property excelProperty = ontModel.getProperty(namespace + ZPUSOB_SDILENI_UDEJE);
+        Property excelProperty = ontModel.getProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
         if (concept.hasProperty(excelProperty)) {
             addGovernancePropertyArray(concept, excelProperty, pojemObj);
-            return;
-        }
-
-        Property excelDefaultProperty = ontModel.getProperty(DEFAULT_NS + ZPUSOB_SDILENI_UDEJE);
-        if (concept.hasProperty(excelDefaultProperty)) {
-            addGovernancePropertyArray(concept, excelDefaultProperty, pojemObj);
-            return;
-        }
-
-        Property originalProperty = ontModel.getProperty(namespace + VocabularyConstants.ZPUSOB_SDILENI);
-        if (concept.hasProperty(originalProperty)) {
-            addGovernancePropertyArray(concept, originalProperty, pojemObj);
-            return;
-        }
-
-        Property originalDefaultProperty = ontModel.getProperty(DEFAULT_NS + VocabularyConstants.ZPUSOB_SDILENI);
-        if (concept.hasProperty(originalDefaultProperty)) {
-            addGovernancePropertyArray(concept, originalDefaultProperty, pojemObj);
-            return;
-        }
-
-        Property hyphenatedProperty = ontModel.getProperty(namespace + ZPUSOB_SDILENI_ALT);
-        if (concept.hasProperty(hyphenatedProperty)) {
-            addGovernancePropertyArray(concept, hyphenatedProperty, pojemObj);
         }
     }
 
-    private void addGovernancePropertySingleWithFallback(Resource concept, JSONObject pojemObj, String namespace,
-                                                   String excelConstant, String originalConstant, String jsonFieldName) throws JSONException {
-
-        Property excelProperty = ontModel.getProperty(namespace + excelConstant);
+    private void addGovernancePropertySingleWithFallback(Resource concept, JSONObject pojemObj, String property, String jsonFieldName) throws JSONException {
+        Property excelProperty = ontModel.getProperty(property);
         if (concept.hasProperty(excelProperty)) {
             addGovernancePropertySingle(concept, excelProperty, jsonFieldName, pojemObj);
-            return;
-        }
-
-        Property excelDefaultProperty = ontModel.getProperty(DEFAULT_NS + excelConstant);
-        if (concept.hasProperty(excelDefaultProperty)) {
-            addGovernancePropertySingle(concept, excelDefaultProperty, jsonFieldName, pojemObj);
-            return;
-        }
-
-        Property originalProperty = ontModel.getProperty(namespace + originalConstant);
-        if (concept.hasProperty(originalProperty)) {
-            addGovernancePropertySingle(concept, originalProperty, jsonFieldName, pojemObj);
-            return;
-        }
-
-        Property originalDefaultProperty = ontModel.getProperty(DEFAULT_NS + originalConstant);
-        if (concept.hasProperty(originalDefaultProperty)) {
-            addGovernancePropertySingle(concept, originalDefaultProperty, jsonFieldName, pojemObj);
-            return;
-        }
-
-        Property hyphenatedProperty = ontModel.getProperty(namespace + jsonFieldName);
-        if (concept.hasProperty(hyphenatedProperty)) {
-            addGovernancePropertySingle(concept, hyphenatedProperty, jsonFieldName, pojemObj);
         }
     }
 
@@ -949,6 +900,17 @@ public class JsonExporter {
         if (stmt != null && stmt.getObject().isResource()) {
             targetObj.put(jsonProperty, stmt.getObject().asResource().getURI());
         }
+    }
+
+    private boolean belongsToCurrentVocabulary(String conceptURI) {
+        if (conceptURI == null || effectiveNamespace == null) {
+            return false;
+        }
+
+        boolean belongs = conceptURI.startsWith(effectiveNamespace);
+        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
+                conceptURI, belongs, effectiveNamespace);
+        return belongs;
     }
 
     private <T> T handleJsonOperation(JsonSupplier<T> operation) throws JsonExportException {

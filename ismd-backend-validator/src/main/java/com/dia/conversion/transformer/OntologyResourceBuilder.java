@@ -229,6 +229,7 @@ public class OntologyResourceBuilder {
         String classURI = uriGenerator.generateConceptURI(classData.getName(), classData.getIdentifier());
         Resource classResource = ontModel.createResource(classURI);
 
+        classResource.addProperty(RDF.type, SKOS.Concept);
         classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
         addSpecificClassType(classResource, classData);
 
@@ -341,6 +342,8 @@ public class OntologyResourceBuilder {
             propertyResource = ontModel.createDatatypeProperty(propertyURI);
         }
 
+        propertyResource.addProperty(RDF.type, SKOS.Concept);
+        propertyResource.addProperty(RDF.type, OWL2.DatatypeProperty);
         propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
         propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VLASTNOST));
 
@@ -465,6 +468,7 @@ public class OntologyResourceBuilder {
                 relationshipData.getIdentifier());
 
         OntProperty relationshipResource = ontModel.createObjectProperty(relationshipURI);
+        relationshipResource.addProperty(RDF.type, SKOS.Concept);
         relationshipResource.addProperty(RDF.type, OWL2.ObjectProperty);
         relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + POJEM));
         relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VZTAH));
@@ -610,16 +614,23 @@ public class OntologyResourceBuilder {
             return false;
         }
 
-        subClassResource.addProperty(RDFS.subClassOf, superClassResource);
+        boolean isPropertyHierarchy = localPropertyResources.containsKey(subClassName);
 
         String namespace = uriGenerator.getEffectiveNamespace();
-        Property hierarchyProperty = ontModel.createProperty(namespace + "nadřazená-třída");
-        subClassResource.addProperty(hierarchyProperty, superClassResource);
 
-        log.debug("Created hierarchy relationship: {} rdfs:subClassOf {}",
-                subClassResource.getURI(), superClassResource.getURI());
-
-        addHierarchyMetadata(subClassResource, hierarchyData);
+        if (isPropertyHierarchy) {
+            subClassResource.addProperty(RDFS.subPropertyOf, superClassResource);
+            Property hierarchyProperty = ontModel.createProperty(namespace + "nadřazená-vlastnost");
+            subClassResource.addProperty(hierarchyProperty, superClassResource);
+            log.debug("Created property hierarchy relationship: {} rdfs:subPropertyOf {}",
+                    subClassResource.getURI(), superClassResource.getURI());
+        } else {
+            subClassResource.addProperty(RDFS.subClassOf, superClassResource);
+            Property hierarchyProperty = ontModel.createProperty(namespace + "nadřazená-třída");
+            subClassResource.addProperty(hierarchyProperty, superClassResource);
+            log.debug("Created class hierarchy relationship: {} rdfs:subClassOf {}",
+                    subClassResource.getURI(), superClassResource.getURI());
+        }
 
         return true;
     }
@@ -651,29 +662,6 @@ public class OntologyResourceBuilder {
         }
 
         return null;
-    }
-
-    private void addHierarchyMetadata(Resource subClassResource, HierarchyData hierarchyData) {
-        String namespace = uriGenerator.getEffectiveNamespace();
-
-        if (hierarchyData.getDescription() != null && !hierarchyData.getDescription().trim().isEmpty()) {
-            Property hierarchyDescProperty = ontModel.createProperty(namespace + "popis-hierarchie");
-            DataTypeConverter.addTypedProperty(subClassResource, hierarchyDescProperty,
-                    hierarchyData.getDescription(), DEFAULT_LANG, ontModel);
-            log.debug("Added hierarchy description for {}: {}",
-                    subClassResource.getLocalName(), hierarchyData.getDescription());
-        }
-
-        if (hierarchyData.getRelationshipName() != null &&
-                !hierarchyData.getRelationshipName().trim().isEmpty() &&
-                !hierarchyData.getRelationshipName().startsWith("HIER-")) {
-
-            Property relationshipNameProperty = ontModel.createProperty(namespace + "název-vztahu");
-            DataTypeConverter.addTypedProperty(subClassResource, relationshipNameProperty,
-                    hierarchyData.getRelationshipName(), DEFAULT_LANG, ontModel);
-            log.debug("Added relationship name for {}: {}",
-                    subClassResource.getLocalName(), hierarchyData.getRelationshipName());
-        }
     }
 
     private void validateHierarchies(List<HierarchyData> hierarchies) {

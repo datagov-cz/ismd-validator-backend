@@ -114,6 +114,11 @@ public class AttributePatterns {
                 Pattern.compile(".*\\btyp\\b.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
                 Pattern.compile(".*type.*", Pattern.CASE_INSENSITIVE)
         });
+
+        ATTRIBUTE_PATTERNS.put("NAMESPACE", new Pattern[]{
+                Pattern.compile(".*adresa\\s+lok[aá]ln[ií]ho\\s+katalogu.*", Pattern.UNICODE_CASE | Pattern.CASE_INSENSITIVE),
+                Pattern.compile(".*namespace.*", Pattern.CASE_INSENSITIVE)
+        });
     }
 
     private AttributePatterns() {}

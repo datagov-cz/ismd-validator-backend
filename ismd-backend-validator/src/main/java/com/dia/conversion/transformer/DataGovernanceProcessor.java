@@ -228,8 +228,6 @@ public class DataGovernanceProcessor {
     }
 
     private void handleRelationshipNonPublicData(Resource relationshipResource, RelationshipData relationshipData, String privacyProvision) {
-        Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
-        relationshipResource.addProperty(dataClassificationProp, "non-public");
         relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
         log.debug("Added non-public data annotation and RDF type for relationship: {}", relationshipData.getName());
 
@@ -248,8 +246,6 @@ public class DataGovernanceProcessor {
                             relationshipData.getName(), privacyProvision);
                     handleRelationshipNonPublicData(relationshipResource, relationshipData, privacyProvision);
                 } else {
-                    Property dataClassificationProp = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + "data-classification");
-                    relationshipResource.addProperty(dataClassificationProp, "public");
                     relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
                     log.debug("Added public data annotation and RDF type for relationship: {}", relationshipData.getName());
                 }
@@ -376,24 +372,14 @@ public class DataGovernanceProcessor {
 
     private String getGovernancePropertyConstant(String propertyType) {
         return switch (propertyType) {
-            case SHARING_METHOD -> getConstantValue(FormatConstants.Excel.ZPUSOB_SDILENI_UDEJE, ZPUSOB_SDILENI, "způsob-sdílení-údajů");
-            case ACQUISITION_METHOD -> getConstantValue(FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE, ZPUSOB_ZISKANI, "způsob-získání-údajů");
-            case CONTENT_TYPE -> getConstantValue(FormatConstants.Excel.TYP_OBSAHU_UDAJE, TYP_OBSAHU, "typ-obsahu-údajů");
+            case SHARING_METHOD -> ("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
+            case ACQUISITION_METHOD -> ("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje");
+            case CONTENT_TYPE -> ("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje");
             default -> {
                 log.warn("Unknown governance property type: {}", propertyType);
                 yield null;
             }
         };
-    }
-
-    private String getConstantValue(String optionOne, String optionTwo, String defaultValue) {
-        if (optionOne != null && !optionOne.trim().isEmpty()) {
-            return UtilityMethods.sanitizeForIRI(optionOne);
-        } else if (optionTwo != null && !optionTwo.trim().isEmpty()) {
-            return optionTwo;
-        } else {
-            return defaultValue;
-        }
     }
 
     private void addGovernanceProperty(Resource resource, String value, String propertyName) {
@@ -402,7 +388,7 @@ public class DataGovernanceProcessor {
         }
 
         String trimmedValue = value.trim();
-        Property property = ontModel.createProperty(uriGenerator.getEffectiveNamespace() + propertyName);
+        Property property = ontModel.createProperty(propertyName);
 
         String governanceIRI = transformToGovernanceIRI(propertyName, trimmedValue);
 
@@ -426,11 +412,11 @@ public class DataGovernanceProcessor {
         String sanitizedValue = UtilityMethods.sanitizeForIRI(value);
 
         return switch (propertyName) {
-            case "typ-obsahu-udaje" ->
+            case "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje" ->
                     "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/" + sanitizedValue;
-            case "zpusob-sdileni-udaje" ->
+            case "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje" ->
                     "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/" + sanitizedValue;
-            case "zpusob-ziskani-udaje" ->
+            case "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje" ->
                     "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/" + sanitizedValue;
             default -> null;
         };

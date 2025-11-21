@@ -20,6 +20,8 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static com.dia.constants.VocabularyConstants.*;
@@ -106,6 +108,8 @@ public class ArchiReader {
         List<PropertyData> properties = extractProperties();
         List<RelationshipData> relationships = extractRelationships();
         List<HierarchyData> hierarchies = extractHierarchies();
+
+        inferSubPropertyDomains(properties, hierarchies);
 
         log.info("Extracted {} classes, {} properties, {} relationships",
                 classes.size(), properties.size(), relationships.size());
@@ -426,7 +430,7 @@ public class ArchiReader {
                     relationships.add(relationshipData);
                     log.debug("Successfully extracted relationship: {} (type: {})", relationshipData.getName(), type);
                 } else {
-                    log.warn("Failed to create relationship data for type: {}", type);
+                    log.warn("Failed to create relationship data for type: {}, data: {}", type, relationshipData);
                 }
             } else {
                 log.debug("Skipping relationship with unknown type: {}", type);
@@ -606,12 +610,8 @@ public class ArchiReader {
     }
 
     private void mapStandardizedLabel(String propId, String propName) {
-        if ("ekvivalentní pojem".equals(propName)) {
-            propertyMapping.put(propId, EKVIVALENTNI_POJEM);
-            return;
-        }
-
         Map<String, String> specificPatterns = new LinkedHashMap<>();
+        specificPatterns.put("ekvivalentní pojem", EKVIVALENTNI_POJEM);
         specificPatterns.put("související zdroj", SOUVISEJICI_ZDROJ);
         specificPatterns.put("ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST);
         specificPatterns.put("agendový informační systém", AIS);
@@ -704,7 +704,17 @@ public class ArchiReader {
     private String getPropertyValue(Element property) {
         NodeList valueNodes = property.getElementsByTagNameNS(ARCHI_NS, "value");
         if (valueNodes.getLength() > 0) {
-            return valueNodes.item(0).getTextContent();
+            String value = valueNodes.item(0).getTextContent();
+            // Decode URL-encoded values to normalize with Excel/EA readers
+            // This handles cases like slovn%C3%ADky -> slovníky
+            if (value != null && value.contains("%")) {
+                try {
+                    value = URLDecoder.decode(value, StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                    log.debug("Failed to URL-decode value (keeping original): {}", value);
+                }
+            }
+            return value;
         }
         return null;
     }
@@ -772,5 +782,33 @@ public class ArchiReader {
 
         return "typ vlastnosti".equals(trimmedType) ||
                 trimmedType.toLowerCase().contains("vlastnost");
+    }
+
+    private void inferSubPropertyDomains(List<PropertyData> properties, List<HierarchyData> hierarchies) {
+        Map<String, PropertyData> propertyMap = new HashMap<>();
+        for (PropertyData property : properties) {
+            propertyMap.put(property.getName(), property);
+        }
+
+        for (HierarchyData hierarchy : hierarchies) {
+            String subPropertyName = hierarchy.getSubClass();
+            String superPropertyName = hierarchy.getSuperClass();
+
+            PropertyData subProperty = propertyMap.get(subPropertyName);
+            PropertyData superProperty = propertyMap.get(superPropertyName);
+
+            if (subProperty != null && superProperty != null) {
+                String subDomain = subProperty.getDomain();
+                String superDomain = superProperty.getDomain();
+
+                if ((subDomain == null || subDomain.trim().isEmpty()) &&
+                    superDomain != null && !superDomain.trim().isEmpty()) {
+
+                    subProperty.setDomain(superDomain);
+                    log.debug("Inferred domain '{}' for sub-property '{}' from super-property '{}'",
+                            superDomain, subPropertyName, superPropertyName);
+                }
+            }
+        }
     }
 }

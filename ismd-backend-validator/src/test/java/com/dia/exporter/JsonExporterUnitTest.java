@@ -187,27 +187,6 @@ class JsonExporterUnitTest {
     }
 
     @Test
-    void exportToJson_WithGovernancePropertiesFallback_UsesCorrectNamespace() throws Exception {
-        // Arrange
-        setupModelWithGovernancePropertiesFallback();
-        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
-
-        // Act
-        String result = exporter.exportToJson();
-
-        // Assert
-        JsonNode rootNode = objectMapper.readTree(result);
-        JsonNode pojmyArray = rootNode.get("pojmy");
-        JsonNode concept = pojmyArray.get(0);
-
-        // Should find governance properties from fallback namespace
-        assertTrue(concept.has("způsob-sdílení-údaje") ||
-                        concept.has("způsob-získání-údaje") ||
-                        concept.has("typ-obsahu-údaje"),
-                "Should have at least one governance property from fallback");
-    }
-
-    @Test
     void exportToJson_WithSplitMultipleValues_HandlesCorrectly() throws Exception {
         // Arrange
         setupModelWithMultipleValuesInGovernanceProperties();
@@ -623,34 +602,17 @@ class JsonExporterUnitTest {
         concept.addProperty(SKOS.prefLabel, "Governance Concept", "cs");
 
         // Add governance properties
-        Property sharingProp = ontModel.createProperty(effectiveNamespace + FormatConstants.Excel.ZPUSOB_SDILENI_UDEJE);
+        Property sharingProp = ontModel.createProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
         concept.addProperty(sharingProp, "Public sharing");
         concept.addProperty(sharingProp, "Restricted sharing");
 
-        Property acquisitionProp = ontModel.createProperty(effectiveNamespace + FormatConstants.Excel.ZPUSOB_ZISKANI_UDEJE);
+        Property acquisitionProp = ontModel.createProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje");
         concept.addProperty(acquisitionProp, "Manual entry");
 
-        Property contentTypeProp = ontModel.createProperty(effectiveNamespace + FormatConstants.Excel.TYP_OBSAHU_UDAJE);
+        Property contentTypeProp = ontModel.createProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje");
         concept.addProperty(contentTypeProp, "Structured data");
 
         resourceMap.put("governance-concept-id", concept);
-    }
-
-    private void setupModelWithGovernancePropertiesFallback() {
-        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
-        ontology.addProperty(RDF.type, OWL2.Ontology);
-        resourceMap.put("ontology", ontology);
-
-        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "fallback-concept");
-        concept.addProperty(RDF.type, pojemClass);
-        concept.addProperty(SKOS.prefLabel, "Fallback Concept", "cs");
-
-        // Add property using DEFAULT_NS (fallback namespace)
-        Property fallbackProp = ontModel.createProperty(DEFAULT_NS + ZPUSOB_ZISKANI);
-        concept.addProperty(fallbackProp, "Fallback method");
-
-        resourceMap.put("fallback-concept-id", concept);
     }
 
     private void setupModelWithMultipleValuesInGovernanceProperties() {
@@ -664,7 +626,7 @@ class JsonExporterUnitTest {
         concept.addProperty(SKOS.prefLabel, "Multi Value Concept", "cs");
 
         // Add property with semicolon-separated values
-        Property sharingProp = ontModel.createProperty(effectiveNamespace + FormatConstants.Excel.ZPUSOB_SDILENI_UDEJE);
+        Property sharingProp = ontModel.createProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
         concept.addProperty(sharingProp, "Method1;Method2;Method3");
 
         resourceMap.put("multi-value-concept-id", concept);

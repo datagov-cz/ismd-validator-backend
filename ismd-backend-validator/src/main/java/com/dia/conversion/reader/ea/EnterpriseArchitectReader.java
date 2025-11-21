@@ -80,9 +80,14 @@ public class EnterpriseArchitectReader {
         parseElements(document, vocabularyPackageIds, classes, properties);
         parseConnectors(document, vocabularyPackageIds, relationships, classes, properties);
 
-        List<HierarchyData> hierarchies = extractHierarchiesFromClasses(classes, document, vocabularyPackageIds);
+        List<HierarchyData> hierarchies = new ArrayList<>();
+        hierarchies.addAll(extractHierarchiesFromClasses(classes, document, vocabularyPackageIds));
+        hierarchies.addAll(extractHierarchiesFromProperties(properties, document, vocabularyPackageIds));
 
-        log.info("Parsed {} classes, {} properties, {} relationships", classes.size(), properties.size(), relationships.size());
+        inferSubPropertyDomains(properties, hierarchies);
+
+        log.info("Parsed {} classes, {} properties, {} relationships, {} hierarchies",
+                classes.size(), properties.size(), relationships.size(), hierarchies.size());
 
         return OntologyData.builder()
                 .vocabularyMetadata(vocabularyMetadata)
@@ -138,7 +143,7 @@ public class EnterpriseArchitectReader {
             metadata.setDescription(getTagValueByPattern(extensionElement, "POPIS_SLOVNIKU"));
         }
 
-        String namespace = getTagValue(extensionElement, "namespace");
+        String namespace = getTagValueByPattern(extensionElement, "NAMESPACE");
         if (namespace == null || namespace.trim().isEmpty()) {
             String name = metadata.getName();
             if (name != null && !name.trim().isEmpty()) {
@@ -263,7 +268,7 @@ public class EnterpriseArchitectReader {
     private ClassData parseClassData(Element umlElement, Element extensionElement, String stereotype) {
         ClassData classData = new ClassData();
 
-        classData.setName(umlElement.getAttribute("name"));
+        classData.setName(umlElement.getAttribute("name").trim());
         classData.setType(STEREOTYPE_TYP_SUBJEKTU.equals(stereotype) ? "Subjekt práva" : "Objekt práva");
         classData.setDescription(getTagValueByPattern(extensionElement, "POPIS"));
         classData.setDefinition(getTagValueByPattern(extensionElement, "DEFINICE"));
@@ -279,7 +284,7 @@ public class EnterpriseArchitectReader {
 
         classData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         classData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
-        classData.setId(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
+        classData.setIdentifier(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
         classData.setSharedInPPDF(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_SDILEN_V_PPDF"));
         classData.setAgendaCode(getTagValueByPattern(extensionElement, "AGENDA"));
         classData.setAgendaSystemCode(getTagValueByPattern(extensionElement, "AGENDOVY_INFORMACNI_SYSTEM"));
@@ -296,7 +301,7 @@ public class EnterpriseArchitectReader {
     private PropertyData parsePropertyData(Element umlElement, Element extensionElement) {
         PropertyData propertyData = new PropertyData();
 
-        propertyData.setName(umlElement.getAttribute("name"));
+        propertyData.setName(umlElement.getAttribute("name").trim());
         propertyData.setDescription(getTagValueByPattern(extensionElement, "POPIS"));
         propertyData.setDefinition(getTagValueByPattern(extensionElement, "DEFINICE"));
 
@@ -322,8 +327,6 @@ public class EnterpriseArchitectReader {
         propertyData.setSharingMethod(getTagValueByPattern(extensionElement, "ZPUSOB_SDILENI_UDAJE"));
         propertyData.setAcquisitionMethod(getTagValueByPattern(extensionElement, "ZPUSOB_ZISKANI_UDAJE"));
         propertyData.setContentType(getTagValueByPattern(extensionElement, "TYP_OBSAHU_UDAJE"));
-
-        propertyData.setDomain("Subjekt nebo objekt práva");
 
         return propertyData;
     }
@@ -355,7 +358,7 @@ public class EnterpriseArchitectReader {
                     }
                     break;
                 case "Generalization":
-                    processGeneralizationConnector(document, connector, classMap);
+                    processGeneralizationConnector(document, connector, classMap, propertyMap);
                     break;
                 case "Aggregation":
                     processAggregationConnector(document, connector, propertyMap, classMap);
@@ -405,7 +408,9 @@ public class EnterpriseArchitectReader {
         return STEREOTYPE_TYP_VZTAHU.equals(stereotype);
     }
 
-    private void processGeneralizationConnector(Document document, Element connector, Map<String, ClassData> classMap) {
+    private void processGeneralizationConnector(Document document, Element connector,
+                                               Map<String, ClassData> classMap,
+                                               Map<String, PropertyData> propertyMap) {
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);
 
@@ -420,10 +425,18 @@ public class EnterpriseArchitectReader {
             String parentName = getElementName(document, parentId);
 
             if (childName != null && parentName != null) {
-                ClassData childClass = classMap.get(childName);
+                ClassData childClass = classMap != null ? classMap.get(childName) : null;
                 if (childClass != null) {
                     childClass.setSuperClass(parentName);
-                    log.debug("Established inheritance: {} extends {}", childName, parentName);
+                    log.debug("Established class inheritance: {} extends {}", childName, parentName);
+                } else if (propertyMap != null) {
+                    PropertyData childProperty = propertyMap.get(childName);
+                    if (childProperty != null) {
+                        childProperty.setSuperProperty(parentName);
+                        log.debug("Established property inheritance: {} extends {}", childName, parentName);
+                    } else {
+                        log.warn("Child element not found for inheritance: {}", childName);
+                    }
                 } else {
                     log.warn("Child class not found for inheritance: {}", childName);
                 }
@@ -521,6 +534,29 @@ public class EnterpriseArchitectReader {
         return hierarchies;
     }
 
+    private List<HierarchyData> extractHierarchiesFromProperties(List<PropertyData> properties, Document document,
+                                                                 Set<String> vocabularyPackageIds) {
+        List<HierarchyData> hierarchies = new ArrayList<>();
+
+        log.debug("Extracting hierarchies from {} properties", properties.size());
+
+        for (PropertyData propertyData : properties) {
+            if (propertyData.getSuperProperty() != null && !propertyData.getSuperProperty().trim().isEmpty()) {
+                HierarchyData hierarchy = new HierarchyData();
+                hierarchy.setSubClass(propertyData.getName());
+                hierarchy.setSuperClass(propertyData.getSuperProperty());
+
+                enrichHierarchyWithConnectorData(hierarchy, document, vocabularyPackageIds);
+
+                hierarchies.add(hierarchy);
+                log.debug("Created property hierarchy: {} -> {}", propertyData.getName(), propertyData.getSuperProperty());
+            }
+        }
+
+        log.info("Extracted {} hierarchical relationships from properties", hierarchies.size());
+        return hierarchies;
+    }
+
     private void enrichHierarchyWithConnectorData(HierarchyData hierarchy, Document document,
                                                   Set<String> vocabularyPackageIds) {
         NodeList connectors = document.getElementsByTagName("connector");
@@ -542,7 +578,11 @@ public class EnterpriseArchitectReader {
                 if (!connectorName.trim().isEmpty()) {
                     hierarchy.setRelationshipName(connectorName);
                 } else {
-                    hierarchy.setRelationshipName("rdfs:subClassOf");
+                    // Determine if this is a property or class hierarchy based on element type
+                    String defaultRelName = isPropertyHierarchy(hierarchy, document)
+                            ? "rdfs:subPropertyOf"
+                            : "rdfs:subClassOf";
+                    hierarchy.setRelationshipName(defaultRelName);
                 }
 
                 String connectorId = connector.getAttribute("xmi:id");
@@ -592,10 +632,32 @@ public class EnterpriseArchitectReader {
         return hierarchy.getSubClass().equals(childName) && hierarchy.getSuperClass().equals(parentName);
     }
 
+    private boolean isPropertyHierarchy(HierarchyData hierarchy, Document document) {
+        // Check if the subClass element is a property by looking for its stereotype
+        NodeList elements = document.getElementsByTagName(PACKAGED_ELEMENT);
+
+        for (int i = 0; i < elements.getLength(); i++) {
+            Element element = (Element) elements.item(i);
+            String name = element.getAttribute("name");
+
+            if (hierarchy.getSubClass().equals(name)) {
+                String elementId = element.getAttribute(XMI_ID);
+                Element extensionElement = findExtensionElement(document, elementId);
+
+                if (extensionElement != null) {
+                    String stereotype = getStereotype(extensionElement);
+                    return STEREOTYPE_TYP_VLASTNOSTI.equals(stereotype);
+                }
+            }
+        }
+
+        return false;
+    }
+
     private RelationshipData parseRelationshipData(Document document, Element connector) {
         RelationshipData relationshipData = new RelationshipData();
 
-        relationshipData.setName(connector.getAttribute("name"));
+        relationshipData.setName(connector.getAttribute("name").trim());
         relationshipData.setDescription(getTagValueByPattern(connector, "POPIS"));
         relationshipData.setDefinition(getTagValueByPattern(connector, "DEFINICE"));
         relationshipData.setSource(getTagValueByPattern(connector, "ZDROJ"));
@@ -635,7 +697,7 @@ public class EnterpriseArchitectReader {
     private String getElementName(Document document, String elementId) {
         Element mainElement = findMainModelElement(document, elementId);
         if (mainElement != null) {
-            String name = mainElement.getAttribute("name");
+            String name = mainElement.getAttribute("name").trim();
             log.debug("Resolved element {} to name: {}", elementId, name);
             return name;
         }
@@ -819,7 +881,35 @@ public class EnterpriseArchitectReader {
             return false;
         }
         String trimmedType = elementType.trim();
-        return "typ vlastnosti".equals(trimmedType) || 
+        return "typ vlastnosti".equals(trimmedType) ||
                 trimmedType.toLowerCase().contains("vlastnost");
+    }
+
+    private void inferSubPropertyDomains(List<PropertyData> properties, List<HierarchyData> hierarchies) {
+        Map<String, PropertyData> propertyMap = new HashMap<>();
+        for (PropertyData property : properties) {
+            propertyMap.put(property.getName(), property);
+        }
+
+        for (HierarchyData hierarchy : hierarchies) {
+            String subPropertyName = hierarchy.getSubClass();
+            String superPropertyName = hierarchy.getSuperClass();
+
+            PropertyData subProperty = propertyMap.get(subPropertyName);
+            PropertyData superProperty = propertyMap.get(superPropertyName);
+
+            if (subProperty != null && superProperty != null) {
+                String subDomain = subProperty.getDomain();
+                String superDomain = superProperty.getDomain();
+
+                if ((subDomain == null || subDomain.trim().isEmpty()) &&
+                    superDomain != null && !superDomain.trim().isEmpty()) {
+
+                    subProperty.setDomain(superDomain);
+                    log.debug("Inferred domain '{}' for sub-property '{}' from super-property '{}'",
+                            superDomain, subPropertyName, superPropertyName);
+                }
+            }
+        }
     }
 }
