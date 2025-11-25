@@ -1,7 +1,10 @@
 package com.dia.service.impl;
 
 import com.dia.conversion.data.TransformationResult;
-import com.dia.exceptions.ValidationException;
+import com.dia.controller.exception.EmptyContentException;
+import com.dia.controller.exception.InvalidFileException;
+import com.dia.controller.exception.InvalidFormatException;
+import com.dia.controller.exception.ValidationException;
 import com.dia.service.ValidationService;
 import com.dia.service.record.ValidationConfigurationSummary;
 import com.dia.validation.config.RuleManager;
@@ -65,13 +68,23 @@ public class ValidationServiceImpl implements ValidationService {
     public ISMDValidationReport validateRdf(String rdfContent, String format) {
         log.info("Starting RDF string validation with format: {}", format);
 
+        if (rdfContent == null || rdfContent.trim().isEmpty()) {
+            throw new EmptyContentException("RDF content cannot be null or empty");
+        }
+
+        if (format == null || format.trim().isEmpty()) {
+            throw new InvalidFormatException("RDF format cannot be null or empty");
+        }
+
         try {
             Model model = parseRdfString(rdfContent, format);
             return shaclEngine.validate(model);
 
+        } catch (ValidationException | InvalidFormatException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to parse RDF content for validation", e);
-            return ISMDValidationReport.error("Failed to parse RDF content: " + e.getMessage());
+            throw new ValidationException("Failed to parse RDF content: " + e.getMessage(), e);
         }
     }
 
@@ -79,31 +92,43 @@ public class ValidationServiceImpl implements ValidationService {
     public ISMDValidationReport validateTtl(String ttlContent) {
         log.info("Starting TTL validation");
 
+        if (ttlContent == null || ttlContent.trim().isEmpty()) {
+            throw new EmptyContentException("TTL content cannot be null or empty");
+        }
+
         try {
             Model model = parseTtlString(ttlContent);
             return shaclEngine.validate(model);
 
+        } catch (ValidationException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to parse TTL content for validation", e);
-            return ISMDValidationReport.error("Failed to parse TTL content: " + e.getMessage());
+            throw new ValidationException("Failed to parse TTL content: " + e.getMessage(), e);
         }
     }
 
     @Override
     public ISMDValidationReport validateTtlFile(MultipartFile file) {
+        if (file == null) {
+            throw new InvalidFileException("File cannot be null");
+        }
+
         log.info("Starting TTL file validation: filename={}, size={}", file.getOriginalFilename(), file.getSize());
 
         try {
-            validateTtl(file);
+            validateTtlFileFormat(file);
             String ttlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
             return validateTtl(ttlContent);
 
+        } catch (ValidationException | InvalidFileException | EmptyContentException e) {
+            throw e;
         } catch (IOException e) {
             log.error("Failed to read TTL file: {}", file.getOriginalFilename(), e);
-            return ISMDValidationReport.error("Failed to read TTL file: " + e.getMessage());
+            throw new InvalidFileException("Failed to read TTL file: " + e.getMessage(), e);
         } catch (Exception e) {
             log.error("TTL file validation failed: {}", file.getOriginalFilename(), e);
-            return ISMDValidationReport.error("TTL file validation failed: " + e.getMessage());
+            throw new ValidationException("TTL file validation failed: " + e.getMessage(), e);
         }
     }
 
@@ -189,14 +214,14 @@ public class ValidationServiceImpl implements ValidationService {
         }
     }
 
-    private void validateTtl(MultipartFile file) {
+    private void validateTtlFileFormat(MultipartFile file) {
         if (file.isEmpty()) {
-            throw new ValidationException("TTL file is empty");
+            throw new EmptyContentException("TTL file is empty");
         }
 
         String filename = file.getOriginalFilename();
         if (filename == null || !filename.toLowerCase().endsWith(".ttl")) {
-            throw new ValidationException("File must have .ttl extension");
+            throw new InvalidFileException("File must have .ttl extension");
         }
     }
 

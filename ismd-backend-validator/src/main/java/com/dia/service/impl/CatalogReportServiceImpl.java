@@ -1,10 +1,15 @@
 package com.dia.service.impl;
 
-import com.dia.controller.dto.CatalogRecordDto;
+import com.dia.dto.CatalogRecordDto;
+import com.dia.controller.dto.CatalogRecordRequestDto;
 import com.dia.controller.dto.ValidationResultsDto;
+import com.dia.controller.exception.CatalogGenerationException;
+import com.dia.controller.exception.EmptyContentException;
+import com.dia.controller.exception.InvalidFileException;
+import com.dia.controller.exception.ValidationException;
 import com.dia.conversion.data.ConversionResult;
-import com.dia.exceptions.ValidationException;
 import com.dia.service.CatalogReportService;
+import com.dia.validation.ValidationResult;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -64,6 +70,15 @@ public class CatalogReportServiceImpl implements CatalogReportService {
     @Override
     public Optional<CatalogRecordDto> generateCatalogReportFromFile(MultipartFile file, ValidationResultsDto validationResults, String requestId) {
         log.debug("Attempting to generate catalog record: requestId={}", requestId);
+
+        if (file == null) {
+            throw new InvalidFileException("File cannot be null");
+        }
+
+        if (file.isEmpty()) {
+            throw new EmptyContentException("File is empty");
+        }
+
         if (shouldGenerateCatalogReport(validationResults)) {
             log.info("Catalog report generation skipped - validation contains ERROR severity findings, requestId={}", requestId);
             return Optional.empty();
@@ -81,9 +96,54 @@ public class CatalogReportServiceImpl implements CatalogReportService {
             log.info("Catalog report generated successfully for vocabulary: {}, requestId={}", metadata.getIri(), requestId);
             return Optional.of(catalogReport);
 
+        } catch (ValidationException | InvalidFileException | EmptyContentException e) {
+            throw e;
+        } catch (IOException e) {
+            log.error("Failed to read file, requestId={}", requestId, e);
+            throw new InvalidFileException("Failed to read file: " + e.getMessage(), e);
         } catch (Exception e) {
-            log.error("Failed to generate catalog report, error:{}, requestId={},", e, requestId);
+            log.error("Failed to generate catalog report, requestId={}", requestId, e);
+            throw new CatalogGenerationException("Failed to generate catalog report: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Optional<CatalogRecordDto> generateCatalogReportFromTool(CatalogRecordRequestDto request, String requestId) {
+        log.debug("Attempting to generate catalog record: requestId={}", requestId);
+
+        if (request == null) {
+            throw new EmptyContentException("Request cannot be null");
+        }
+
+        if (request.getTtlContent() == null || request.getTtlContent().trim().isEmpty()) {
+            throw new EmptyContentException("TTL content cannot be null or empty");
+        }
+
+        if (request.getValidationReport() == null || request.getValidationReport().getResults() == null) {
+            throw new EmptyContentException("Validation report cannot be null");
+        }
+
+        if (!shouldGenerateCatalogReportFromList(request.getValidationReport().getResults())) {
+            log.info("Catalog report generation skipped - validation contains ERROR severity findings, requestId={}", requestId);
             return Optional.empty();
+        }
+
+        log.info("Generating catalog report - no ERROR severity findings detected, requestId={}", requestId);
+
+        try {
+            OntModel ontModel = parseTtlToModel(request.getTtlContent());
+            VocabularyMetadata metadata = extractVocabularyMetadata(ontModel);
+
+            CatalogRecordDto catalogReport = buildCatalogReport(metadata);
+
+            log.info("Catalog report generated successfully for vocabulary: {}, requestId={}", metadata.getIri(), requestId);
+            return Optional.of(catalogReport);
+
+        } catch (ValidationException | EmptyContentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to generate catalog report, requestId={}", requestId, e);
+            throw new CatalogGenerationException("Failed to generate catalog report: " + e.getMessage(), e);
         }
     }
 
@@ -94,6 +154,10 @@ public class CatalogReportServiceImpl implements CatalogReportService {
 
         return validationResults.getSeverityGroups().stream()
                 .anyMatch(group -> "ERROR".equalsIgnoreCase(group.getSeverity()) && group.getCount() > 0);
+    }
+
+    private boolean shouldGenerateCatalogReportFromList(List<ValidationResult> validationResults) {
+        return validationResults.stream().anyMatch(ValidationResult::isError);
     }
 
     private VocabularyMetadata extractVocabularyMetadata(OntModel ontModel) {
