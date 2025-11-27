@@ -32,8 +32,8 @@ public class FormatConstants {
         public static final String EKVIVALENTNI_POJEM = "Ekvivalentní pojem";
         public static final String ALT_NAZEV = "Alternativní název";
         public static final String IDENTIFIKATOR = "Identifikátor";
-        public static final String AGENDA = "Agenda (kód)";
-        public static final String AIS = "Agendový informační systém (kód)";
+        public static final String AGENDA = "Agenda";
+        public static final String AIS = "Agendový informační systém";
         public static final String DATOVY_TYP = "Datový typ";
         public static final String JE_PPDF = "Je pojem sdílen v PPDF?";
         public static final String JE_VEREJNY = "Je pojem veřejný?";
