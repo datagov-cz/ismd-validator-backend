@@ -13,7 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- GitHub repository for publishing packages -->
-        <github.repository>datagov-cz/ismd-validator-common</github.repository>
+        <github.repository>datagov-cz/ismd-validator-backend</github.repository>
     </properties>
 
     <distributionManagement>
