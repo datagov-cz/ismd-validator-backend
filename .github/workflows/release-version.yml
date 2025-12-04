@@ -24,7 +24,7 @@ jobs:
       new_version: ${{ steps.new-version.outputs.version }}
     steps:
       - name: Checkout dev branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
         with:
           ref: dev
           fetch-depth: 0
@@ -144,12 +144,18 @@ jobs:
       - name: Commit release preparation
         run: |
           git add ismd-validator-common ismd-backend-validator/pom.xml
-          git commit -m "Prepare release v${{ steps.new-version.outputs.version }}
           
-          - Use common library v${{ steps.prepare-release.outputs.common_version }} (released)
-          - Common library code from tag common-v${{ steps.prepare-release.outputs.common_version }}
-          - Updated validator dependency to released version"
-          echo "✅ Committed release preparation"
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No release preparation changes needed (already up to date)"
+          else
+            git commit -m "Prepare release v${{ steps.new-version.outputs.version }}
+            
+            - Use common library v${{ steps.validate-common.outputs.common_version }} (released)
+            - Common library code from tag common-v${{ steps.validate-common.outputs.common_version }}
+            - Updated validator dependency to released version"
+            echo "✅ Committed release preparation"
+          fi
 
       - name: Run tests
         working-directory: ismd-backend-validator

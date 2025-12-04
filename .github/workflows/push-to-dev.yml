@@ -18,7 +18,7 @@ jobs:
       common_changed: ${{ steps.check.outputs.changed }}
       needs_release: ${{ steps.check.outputs.needs_release }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 2
       

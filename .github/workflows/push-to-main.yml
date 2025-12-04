@@ -30,7 +30,7 @@ jobs:
       should_build: ${{ steps.determine-version.outputs.should_build }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0
       
@@ -85,7 +85,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0  # Get full history
       
