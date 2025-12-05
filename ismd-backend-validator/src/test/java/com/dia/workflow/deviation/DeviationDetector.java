@@ -238,7 +238,7 @@ public class DeviationDetector {
 
             if (matchedActual != null) {
                 matchedActualElements.add(matchedActual);
-                // Use a generic index notation since order doesn't matter
+                // Use a generic index notation
                 String elementPath = path + "[" + i + "]";
                 compareNodes(expectedElement, matchedActual, elementPath);
             } else {
@@ -322,7 +322,6 @@ public class DeviationDetector {
      * Compares two value nodes
      */
     private void compareValues(JsonNode expected, JsonNode actual, String path) {
-        // Your existing special case for @context
         if (path.equals("root.@context") && expected.isTextual() && actual.isTextual()) {
             String expectedText = expected.asText();
             String actualText = actual.asText();
@@ -331,7 +330,7 @@ public class DeviationDetector {
             }
         }
 
-        // Handle text nodes with both Unicode normalization AND space normalization
+        // Handle text nodes with both Unicode normalization and space normalization
         if (expected.isTextual() && actual.isTextual()) {
             String expectedText = expected.asText();
             String actualText = actual.asText();
@@ -349,7 +348,6 @@ public class DeviationDetector {
             }
         }
 
-        // Existing comparison logic
         if (!expected.equals(actual)) {
             addDeviation(WorkflowDeviation.builder()
                     .type(WorkflowDeviation.DeviationType.VALUE_MISMATCH)

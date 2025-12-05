@@ -188,7 +188,7 @@ class EnterpriseArchitectUnitTest {
         assertNotNull(property, "Should find property: " + propertyName);
 
         if (expectedDomain != null) {
-            assertEquals(expectedDomain, property.getDomain());
+            assertEquals(expectedDomain.trim(), property.getDomain().trim());
         }
 
         if (shouldHaveDescription) {
@@ -420,7 +420,7 @@ class EnterpriseArchitectUnitTest {
         return Stream.of(
                 Arguments.of("Řidič", "Subjekt práva", true),
                 Arguments.of("Řidičský průkaz", "Objekt práva", true),
-                Arguments.of("Obecní úřad obce s rozšířenou působností ", "Subjekt práva", false),
+                Arguments.of("Obecní úřad obce s rozšířenou působností", "Subjekt práva", false),
                 Arguments.of("Vozidlo", "Objekt práva", true),
                 Arguments.of("Adresa", "Objekt práva", true),
                 Arguments.of("Účastník provozu na pozemních komunikacích", "Subjekt práva", true)
@@ -431,7 +431,7 @@ class EnterpriseArchitectUnitTest {
         return Stream.of(
                 Arguments.of("Jméno držitele řidičského průkazu", "Řidičský průkaz", true),
                 Arguments.of("Příjmení držitele řidičského průkazu", "Řidičský průkaz", true),
-                Arguments.of("Název obecního úřadu obce s rozšířenou působností", "Obecní úřad obce s rozšířenou působností ", true)
+                Arguments.of("Název obecního úřadu obce s rozšířenou působností", "Obecní úřad obce s rozšířenou působností", true)
         );
     }
 

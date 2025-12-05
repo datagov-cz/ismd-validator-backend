@@ -73,12 +73,12 @@ public class ClassSheetProcessor extends BaseSheetProcessor<List<ClassData>> {
         ClassData classData = new ClassData();
 
         for (String columnName : mapping.getColumnNames()) {
-            Integer columnIndex = columnMap.get(columnName);
+            Integer columnIndex = findColumnIndex(columnName, columnMap);
             if (columnIndex != null) {
                 Cell cell = row.getCell(columnIndex);
                 String value = getCellValueAsString(cell);
 
-                PropertySetter<ClassData> setter = mapping.getColumnMapping(columnName);
+                PropertySetter<ClassData> setter = mapping.getColumnMappingFlexible(columnName);
                 if (setter != null && !value.isEmpty()) {
                     setter.setProperty(classData, value);
                 }
@@ -86,5 +86,21 @@ public class ClassSheetProcessor extends BaseSheetProcessor<List<ClassData>> {
         }
 
         return classData;
+    }
+
+    private Integer findColumnIndex(String mappingKey, Map<String, Integer> columnMap) {
+        Integer index = columnMap.get(mappingKey);
+        if (index != null) {
+            return index;
+        }
+
+        for (Map.Entry<String, Integer> entry : columnMap.entrySet()) {
+            String excelColumnName = entry.getKey();
+            if (mappingKey.contains(excelColumnName) || excelColumnName.contains(mappingKey)) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
     }
 }

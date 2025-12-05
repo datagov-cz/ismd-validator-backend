@@ -66,7 +66,7 @@ public class ExcelReader {
     }
 
     private VocabularyMetadata processVocabularySheet(Workbook workbook) throws ExcelReadingException {
-        if (!workbookProcessor.hasSheet(workbook, SLOVNIK)) {
+        if (workbookProcessor.hasSheet(workbook, SLOVNIK)) {
             throw new ExcelReadingException("Workbook does not have Slovník sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, SLOVNIK);
@@ -74,7 +74,7 @@ public class ExcelReader {
     }
 
     private List<ClassData> processClassesSheet(Workbook workbook) throws ExcelReadingException {
-        if (!workbookProcessor.hasSheet(workbook, SUBJEKTY_OBJEKTY_PRAVA)) {
+        if (workbookProcessor.hasSheet(workbook, SUBJEKTY_OBJEKTY_PRAVA)) {
             log.debug("Available sheets in workbook:");
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 String sheetName = workbook.getSheetName(i);
@@ -168,7 +168,7 @@ public class ExcelReader {
     }
 
     private List<PropertyData> processPropertiesSheet(Workbook workbook) throws ExcelReadingException {
-        if (!workbookProcessor.hasSheet(workbook, VLASTNOSTI)) {
+        if (workbookProcessor.hasSheet(workbook, VLASTNOSTI)) {
             throw new ExcelReadingException("Workbook does not have Vlastnosti sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, VLASTNOSTI);
@@ -176,7 +176,7 @@ public class ExcelReader {
     }
 
     private List<RelationshipData> processRelationshipsSheet(Workbook workbook) throws ExcelReadingException {
-        if (!workbookProcessor.hasSheet(workbook, VZTAHY)) {
+        if (workbookProcessor.hasSheet(workbook, VZTAHY)) {
             throw new ExcelReadingException("Workbook does not have Vztahy sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, VZTAHY);

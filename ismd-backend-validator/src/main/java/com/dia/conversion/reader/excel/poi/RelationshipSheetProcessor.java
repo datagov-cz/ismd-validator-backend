@@ -75,12 +75,12 @@ public class RelationshipSheetProcessor extends BaseSheetProcessor<List<Relation
         relationshipData.setRange(getCellValueAsString(row.getCell(2)));
 
         for (String columnName : mapping.getColumnNames()) {
-            Integer columnIndex = columnMap.get(columnName);
+            Integer columnIndex = findColumnIndex(columnName, columnMap);
             if (columnIndex != null && columnIndex > 2) {
                 Cell cell = row.getCell(columnIndex);
                 String value = getCellValueAsString(cell);
 
-                PropertySetter<RelationshipData> setter = mapping.getColumnMapping(columnName);
+                PropertySetter<RelationshipData> setter = mapping.getColumnMappingFlexible(columnName);
                 if (setter != null && !value.isEmpty()) {
                     setter.setProperty(relationshipData, value);
                 }
@@ -88,5 +88,21 @@ public class RelationshipSheetProcessor extends BaseSheetProcessor<List<Relation
         }
 
         return relationshipData;
+    }
+
+    private Integer findColumnIndex(String mappingKey, Map<String, Integer> columnMap) {
+        Integer index = columnMap.get(mappingKey);
+        if (index != null) {
+            return index;
+        }
+
+        for (Map.Entry<String, Integer> entry : columnMap.entrySet()) {
+            String excelColumnName = entry.getKey();
+            if (mappingKey.contains(excelColumnName) || excelColumnName.contains(mappingKey)) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
     }
 }
