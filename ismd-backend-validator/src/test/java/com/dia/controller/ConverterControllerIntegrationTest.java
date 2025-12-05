@@ -68,6 +68,9 @@ class ConverterControllerIntegrationTest {
     @MockitoBean
     private CatalogReportService catalogReportService;
 
+    @MockitoBean
+    private com.dia.validation.config.ValidationConfiguration validationConfiguration;
+
     private String minimalArchiXML;
     private ObjectMapper objectMapper;
     private ConversionResult mockConversionResult;

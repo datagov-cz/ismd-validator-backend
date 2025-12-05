@@ -25,21 +25,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ConversionResponseDto> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException e) {
         log.error("Unsupported Media Type: {}", e.getMessage());
-        ConversionResponseDto response = new ConversionResponseDto(null, "Nepodporovaný typ požadavku (Content-Type). Požadováno multipart/form-data.", null, null, null);
+        ConversionResponseDto response = new ConversionResponseDto(null, "Nepodporovaný typ požadavku (Content-Type). Požadováno multipart/form-data.", null, null, null, null);
         return new ResponseEntity<>(response, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ConversionResponseDto> handleMaxSizeException(MaxUploadSizeExceededException e) {
         log.error("File size exceeds the limit: {}", e.getMessage());
-        ConversionResponseDto response = new ConversionResponseDto(null, "Soubor je příliš velký. Maximální velikost je 5 MB.", null, null, null);
+        ConversionResponseDto response = new ConversionResponseDto(null, "Soubor je příliš velký. Maximální velikost je 5 MB.", null, null, null, null);
         return new ResponseEntity<>(response, HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ConversionResponseDto> handleValidationErrors(MethodArgumentNotValidException e) {
         log.error("Validation error: {}", e.getMessage());
-        ConversionResponseDto response = new ConversionResponseDto(null, "Nepodporovaný vstupní formát.", null, null, null);
+        ConversionResponseDto response = new ConversionResponseDto(null, "Nepodporovaný vstupní formát.", null, null, null, null);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -150,7 +150,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ConversionResponseDto> handleGenericException(Exception e) {
         log.error("Unexpected error: {}", e.getMessage(), e);
-        ConversionResponseDto response = new ConversionResponseDto(null, "Došlo k neočekávané chybě.", null, null, null);
+        ConversionResponseDto response = new ConversionResponseDto(null, "Došlo k neočekávané chybě.", null, null, null, null);
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
