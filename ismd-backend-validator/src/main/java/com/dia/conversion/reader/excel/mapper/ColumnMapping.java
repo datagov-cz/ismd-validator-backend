@@ -20,6 +20,22 @@ public class ColumnMapping<T> {
         return columnMappings.get(columnName);
     }
 
+    public PropertySetter<T> getColumnMappingFlexible(String columnName) {
+        PropertySetter<T> setter = columnMappings.get(columnName);
+        if (setter != null) {
+            return setter;
+        }
+
+        for (Map.Entry<String, PropertySetter<T>> entry : columnMappings.entrySet()) {
+            String registeredName = entry.getKey();
+            if (registeredName.contains(columnName) || columnName.contains(registeredName)) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
+    }
+
     public PropertySetter<T> getKeyValueMapping(String key) {
         return keyValueMappings.get(key);
     }

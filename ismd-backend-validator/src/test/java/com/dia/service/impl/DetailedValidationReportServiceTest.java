@@ -83,7 +83,6 @@ class DetailedValidationReportServiceTest {
     private void setupMockValidationReport() {
         mockValidationReport = new ISMDValidationReport(
                 sampleValidationResults,
-                false,
                 Instant.now()
         );
     }
@@ -131,7 +130,7 @@ class DetailedValidationReportServiceTest {
         void shouldHandleEmptyValidationResults() {
             // Given
             ISMDValidationReport emptyReport = new ISMDValidationReport(
-                    Collections.emptyList(), true, Instant.now());
+                    Collections.emptyList(), Instant.now());
 
             // When
             DetailedValidationReportDto result = validationService.generateDetailedReport(
@@ -158,7 +157,7 @@ class DetailedValidationReportServiceTest {
                     )
             );
             ISMDValidationReport reportWithNullFocus = new ISMDValidationReport(
-                    resultsWithNullFocus, false, Instant.now());
+                    resultsWithNullFocus, Instant.now());
 
             // When
             DetailedValidationReportDto result = validationService.generateDetailedReport(
@@ -216,7 +215,7 @@ class DetailedValidationReportServiceTest {
         void shouldGenerateCSVWithNoViolationsMessage() {
             // Given
             ISMDValidationReport emptyReport = new ISMDValidationReport(
-                    Collections.emptyList(), true, Instant.now());
+                    Collections.emptyList(), Instant.now());
             DetailedValidationReportDto report = validationService.generateDetailedReport(
                     emptyReport, mockOntologyModel);
 
@@ -242,7 +241,7 @@ class DetailedValidationReportServiceTest {
                     )
             );
             ISMDValidationReport reportWithNulls = new ISMDValidationReport(
-                    resultsWithNulls, false, Instant.now());
+                    resultsWithNulls, Instant.now());
             DetailedValidationReportDto report = validationService.generateDetailedReport(
                     reportWithNulls, mockOntologyModel);
 
@@ -266,7 +265,7 @@ class DetailedValidationReportServiceTest {
                     )
             );
             ISMDValidationReport report = new ISMDValidationReport(
-                    resultsWithSpecialChars, false, Instant.now());
+                    resultsWithSpecialChars, Instant.now());
             DetailedValidationReportDto detailedReport = validationService.generateDetailedReport(
                     report, mockOntologyModel);
 
@@ -289,9 +288,9 @@ class DetailedValidationReportServiceTest {
         void shouldCombineLocalAndGlobalReportsSuccessfully() {
             // Given
             ISMDValidationReport localReport = new ISMDValidationReport(
-                    Collections.singletonList(sampleValidationResults.get(0)), false, Instant.now());
+                    Collections.singletonList(sampleValidationResults.get(0)), Instant.now());
             ISMDValidationReport globalReport = new ISMDValidationReport(
-                    Collections.singletonList(sampleValidationResults.get(1)), false, Instant.now());
+                    Collections.singletonList(sampleValidationResults.get(1)), Instant.now());
             Model shaclRulesModel = ModelFactory.createDefaultModel();
 
             // When
@@ -330,9 +329,9 @@ class DetailedValidationReportServiceTest {
         void shouldCorrectlyCombineValidationStatus() {
             // Given
             ISMDValidationReport validLocalReport = new ISMDValidationReport(
-                    Collections.emptyList(), true, Instant.now());
+                    Collections.emptyList(), Instant.now());
             ISMDValidationReport invalidGlobalReport = new ISMDValidationReport(
-                    Collections.singletonList(sampleValidationResults.get(0)), false, Instant.now());
+                    Collections.singletonList(sampleValidationResults.get(0)), Instant.now());
             Model shaclRulesModel = ModelFactory.createDefaultModel();
 
             // When
@@ -446,7 +445,7 @@ class DetailedValidationReportServiceTest {
                             "", null, null)
             );
             ISMDValidationReport report = new ISMDValidationReport(
-                    resultsWithDifferentIris, false, Instant.now());
+                    resultsWithDifferentIris, Instant.now());
 
             // When
             DetailedValidationReportDto result = validationService.generateDetailedReport(
@@ -470,7 +469,7 @@ class DetailedValidationReportServiceTest {
                             "http://example.com/concept1", null, null)
             );
             ISMDValidationReport report = new ISMDValidationReport(
-                    resultsWithUnknownRules, false, Instant.now());
+                    resultsWithUnknownRules, Instant.now());
 
             // When
             DetailedValidationReportDto result = validationService.generateDetailedReport(
@@ -496,7 +495,7 @@ class DetailedValidationReportServiceTest {
                             "http://example.com/concept1", null, "value2")
             );
             ISMDValidationReport report = new ISMDValidationReport(
-                    multipleViolations, false, Instant.now());
+                    multipleViolations, Instant.now());
 
             // When
             DetailedValidationReportDto result = validationService.generateDetailedReport(
@@ -521,7 +520,7 @@ class DetailedValidationReportServiceTest {
                             "http://example.com/concept3", null, null)
             );
             ISMDValidationReport report = new ISMDValidationReport(
-                    allSeverities, false, Instant.now());
+                    allSeverities, Instant.now());
 
             // When
             DetailedValidationReportDto result = validationService.generateDetailedReport(

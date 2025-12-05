@@ -1,5 +1,6 @@
 package com.dia.controller.dto;
 
+import com.dia.dto.CatalogRecordDto;
 import com.dia.validation.data.DetailedValidationReportDto;
 import lombok.*;
 

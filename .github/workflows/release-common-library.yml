@@ -4,7 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.0.0, 1.1.0; leave empty for auto-patch-increment)'
+        description: 'Version to release (e.g., 1.0.3; leave empty for auto-increment)'
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to release'
         required: false
         type: string
   workflow_call:
@@ -23,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0
 
@@ -46,14 +52,13 @@ jobs:
           CURRENT_VERSION=$(grep '<version>' pom.xml | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
           echo "Current version: $CURRENT_VERSION"
           
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            NEW_VERSION="${{ github.event.inputs.version }}"
+          if [ -n "${{ inputs.version }}" ]; then
+            NEW_VERSION="${{ inputs.version }}"
             echo "User provided version: $NEW_VERSION"
           else
-            # Strip -SNAPSHOT first, then use as release version
-            # (next SNAPSHOT version will be incremented after release)
-            NEW_VERSION=$(echo $CURRENT_VERSION | sed 's/-SNAPSHOT//')
-            echo "Release version (stripped SNAPSHOT): $NEW_VERSION"
+            # Auto-increment patch version: 1.0.2 -> 1.0.3
+            NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. -v OFS=. '{$NF++;print}')
+            echo "Auto-incremented version: $NEW_VERSION"
           fi
           
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT

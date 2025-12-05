@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static com.dia.constants.VocabularyConstants.*;
-import static com.dia.constants.VocabularyConstants.PropertySets.*;
 import static com.dia.constants.ExportConstants.Turtle.*;
 import static com.dia.constants.ExportConstants.Common.*;
 import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
@@ -32,6 +31,7 @@ public class TurtleExporter {
     private final Map<String, String> modelProperties;
     private final String effectiveNamespace;
 
+    private static final String POJEM_IRI = "/pojem/";
     private static final Map<String, String> STANDARD_PREFIXES = new HashMap<>();
 
     static {
@@ -47,6 +47,9 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put("slovníky", "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/");
         STANDARD_PREFIXES.put("čas", CAS_NS);
         STANDARD_PREFIXES.put("schema", "http://schema.org/");
+        STANDARD_PREFIXES.put("typ-obsahu-údajů", "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje");
+        STANDARD_PREFIXES.put("způsoby-sdílení-údajů", "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
+        STANDARD_PREFIXES.put("způsoby-získání-údajů", "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje");
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
@@ -162,17 +165,26 @@ public class TurtleExporter {
         while (stmtIter.hasNext()) {
             Statement stmt = stmtIter.next();
             originalStatements++;
+            boolean shouldSkip = false;
 
             if (isEmptyLiteralStatement(stmt)) {
                 filteredStatements++;
                 log.debug("Filtering out empty literal statement: {}", stmt);
-                continue;
+                shouldSkip = true;
+            } else {
+                Resource subject = stmt.getSubject();
+                if (isBaseSchemaResource(subject.getURI())) {
+                    filteredStatements++;
+                    log.debug("Filtering out base schema definition: {}", stmt);
+                    shouldSkip = true;
+                } else if (isExternalReferenceOnlyResource(subject)) {
+                    filteredStatements++;
+                    log.debug("Filtering out external reference-only resource: {}", subject.getURI());
+                    shouldSkip = true;
+                }
             }
 
-            Resource subject = stmt.getSubject();
-            if (isBaseSchemaResource(subject.getURI())) {
-                filteredStatements++;
-                log.debug("Filtering out base schema definition: {}", stmt);
+            if (shouldSkip) {
                 continue;
             }
 
@@ -183,6 +195,16 @@ public class TurtleExporter {
                 originalStatements, filteredStatements, originalStatements - filteredStatements);
 
         return newModel;
+    }
+
+    private boolean isExternalReferenceOnlyResource(Resource resource) {
+        if (resource == null || resource.getURI() == null) {
+            return false;
+        }
+
+        String uri = resource.getURI();
+
+        return !uri.startsWith(effectiveNamespace);
     }
 
     private boolean shouldFilterAsBaseSchema(String uri) {
@@ -225,12 +247,12 @@ public class TurtleExporter {
                 return true;
             }
 
-            if (uri.startsWith("https://slovník.gov.cz/agendový") && !uri.contains("/pojem/")) {
+            if (uri.startsWith("https://slovník.gov.cz/agendový") && !uri.contains(POJEM_IRI)) {
                 log.debug("Filtering out base schema property: {}", uri);
                 return true;
             }
 
-            if (uri.startsWith("https://slovník.gov.cz/agendový") && uri.contains("/pojem/")) {
+            if (uri.startsWith("https://slovník.gov.cz/agendový") && uri.contains(POJEM_IRI)) {
                 return false;
             }
 
@@ -238,7 +260,7 @@ public class TurtleExporter {
                 return false;
             } else if ((uri.startsWith("https://slovník.gov.cz/generický") ||
                     uri.startsWith("https://slovník.gov.cz/")) &&
-                    !uri.contains("/pojem/") &&
+                    !uri.contains(POJEM_IRI) &&
                     !uri.contains("/slovník")) {
                 log.debug("Filtering out base schema property: {}", uri);
                 return true;
@@ -253,11 +275,7 @@ public class TurtleExporter {
             return !isTemporalInstantInUse(uri);
         }
 
-        if (uri.contains("digitální-dokument-")) {
-            return isDigitalDocumentInUse(uri);
-        }
-
-        return false;
+        return uri.contains("digitální-dokument-") && isDigitalDocumentInUse(uri);
     }
 
     private boolean isTemporalInstantInUse(String uri) {
@@ -479,17 +497,20 @@ public class TurtleExporter {
 
         while (classResources.hasNext()) {
             Resource resource = classResources.next();
+            boolean shouldSkip = false;
 
             if (baseSchemaClasses.contains(resource.getURI())) {
                 filteredCount++;
                 log.debug("Filtering out base schema class from SKOS concepts: {}", resource.getURI());
-                continue;
-            }
-
-            if (resource.hasProperty(RDF.type, OWL2.ObjectProperty) ||
+                shouldSkip = true;
+            } else if (resource.hasProperty(RDF.type, OWL2.ObjectProperty) ||
                     resource.hasProperty(RDF.type, OWL2.DatatypeProperty)) {
                 filteredCount++;
                 log.debug("Skipping OWL property from SKOS concepts: {}", resource.getURI());
+                shouldSkip = true;
+            }
+
+            if (shouldSkip) {
                 continue;
             }
 
@@ -506,50 +527,73 @@ public class TurtleExporter {
     }
 
     private void transformLabelsToSKOS(OntModel transformedModel) {
+        Map<Resource, Map<String, String>> resourceLabels = collectResourceLabels(transformedModel);
+        transformedModel.removeAll(null, RDFS.label, null);
+        applyTransformedLabels(transformedModel, resourceLabels);
+        transformDefinitionsToSKOS(transformedModel);
+    }
+
+    private Map<Resource, Map<String, String>> collectResourceLabels(OntModel transformedModel) {
         Map<Resource, Map<String, String>> resourceLabels = new HashMap<>();
 
         StmtIterator labelStmts = transformedModel.listStatements(null, RDFS.label, (RDFNode) null);
         while (labelStmts.hasNext()) {
             Statement stmt = labelStmts.next();
-            if (stmt.getObject().isLiteral()) {
-                Resource subject = stmt.getSubject();
+            boolean shouldSkip = false;
+
+            if (!stmt.getObject().isLiteral()) {
+                shouldSkip = true;
+            } else {
                 Literal lit = stmt.getObject().asLiteral();
-                String lang = lit.getLanguage();
                 String text = lit.getString();
 
                 if (text == null || text.isEmpty()) {
-                    continue;
+                    shouldSkip = true;
                 }
-
-                if (lang == null || lang.isEmpty()) {
-                    lang = DEFAULT_LANG;
-                }
-
-                resourceLabels.computeIfAbsent(subject, k -> new HashMap<>()).put(lang, text);
             }
+
+            if (shouldSkip) {
+                continue;
+            }
+
+            Literal lit = stmt.getObject().asLiteral();
+            String text = lit.getString();
+            Resource subject = stmt.getSubject();
+            String lang = getLanguageOrDefault(lit);
+            resourceLabels.computeIfAbsent(subject, k -> new HashMap<>()).put(lang, text);
         }
 
-        transformedModel.removeAll(null, RDFS.label, null);
+        return resourceLabels;
+    }
 
+    private String getLanguageOrDefault(Literal literal) {
+        String lang = literal.getLanguage();
+        return (lang == null || lang.isEmpty()) ? DEFAULT_LANG : lang;
+    }
+
+    private void applyTransformedLabels(OntModel transformedModel, Map<Resource, Map<String, String>> resourceLabels) {
         for (Map.Entry<Resource, Map<String, String>> entry : resourceLabels.entrySet()) {
             Resource subject = entry.getKey();
             Map<String, String> labels = entry.getValue();
 
-            Property labelProperty;
-            if (subject.hasProperty(RDF.type, OWL2.ObjectProperty) ||
-                    subject.hasProperty(RDF.type, OWL2.DatatypeProperty)) {
-                labelProperty = RDFS.label;
-            } else {
-                labelProperty = SKOS.prefLabel;
-            }
-
-            for (Map.Entry<String, String> langLabel : labels.entrySet()) {
-                subject.addProperty(labelProperty,
-                        transformedModel.createLiteral(langLabel.getValue(), langLabel.getKey()));
-            }
+            Property labelProperty = determineLabelProperty(subject);
+            addLabelsToResource(transformedModel, subject, labels, labelProperty);
         }
+    }
 
-        transformDefinitionsToSKOS(transformedModel);
+    private Property determineLabelProperty(Resource subject) {
+        if (subject.hasProperty(RDF.type, OWL2.ObjectProperty) ||
+                subject.hasProperty(RDF.type, OWL2.DatatypeProperty)) {
+            return RDFS.label;
+        }
+        return SKOS.prefLabel;
+    }
+
+    private void addLabelsToResource(OntModel transformedModel, Resource subject, Map<String, String> labels, Property labelProperty) {
+        for (Map.Entry<String, String> langLabel : labels.entrySet()) {
+            subject.addProperty(labelProperty,
+                    transformedModel.createLiteral(langLabel.getValue(), langLabel.getKey()));
+        }
     }
 
     private void transformDefinitionsToSKOS(OntModel transformedModel) {

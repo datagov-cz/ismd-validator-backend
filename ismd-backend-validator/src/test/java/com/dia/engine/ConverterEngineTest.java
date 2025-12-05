@@ -1,5 +1,6 @@
 package com.dia.engine;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -11,7 +12,7 @@ import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.reader.ssp.SSPReader;
-import com.dia.conversion.transformer.OFNDataTransformer;
+import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.*;
 import org.junit.jupiter.api.AfterEach;
@@ -49,7 +50,7 @@ class ConverterEngineTest {
     private SSPReader sspReader;
 
     @Mock
-    private OFNDataTransformer ofnDataTransformer;
+    private OFNDataTransformerNew ofnDataTransformer;
 
     @InjectMocks
     private ConverterEngine converterEngine;
@@ -62,15 +63,27 @@ class ConverterEngineTest {
         // Clear MDC and add ListAppender for log capture
         MDC.clear();
         testLogger = (Logger) LoggerFactory.getLogger(ConverterEngine.class);
+
+        // Ensure logger is enabled and set to capture all log levels
+        testLogger.setLevel(Level.INFO);
+
+        // Create and configure list appender
         listAppender = new ListAppender<>();
+        listAppender.setContext(testLogger.getLoggerContext());
         listAppender.start();
+
+        // Add appender to logger
         testLogger.addAppender(listAppender);
     }
 
     @AfterEach
     void tearDown() {
         // Remove ListAppender and clear MDC
-        testLogger.detachAppender(listAppender);
+        if (testLogger != null && listAppender != null) {
+            testLogger.detachAppender(listAppender);
+            listAppender.stop();
+            listAppender.list.clear();
+        }
         MDC.clear();
     }
 

@@ -14,8 +14,4 @@ public class ColumnMappingRegistry {
     public <T> ColumnMapping<T> getMapping(String sheetName) {
         return (ColumnMapping<T>) mappings.get(sheetName);
     }
-
-    public boolean hasMapping(String sheetName) {
-        return mappings.containsKey(sheetName);
-    }
 }

@@ -90,9 +90,9 @@ public class VocabularyConstants {
     public static final String TYP_OBSAHU = "má-typ-obsahu-údajů";
 
     // Alternate forms from OFNJsonConstants
-    public static final String ZPUSOB_SDILENI_ALT = "způsob-sdílení-údajů";
-    public static final String ZPUSOB_ZISKANI_ALT = "způsob-získání-údajů";
-    public static final String TYP_OBSAHU_ALT = "typ-obsahu-údajů";
+    public static final String ZPUSOB_SDILENI_ALT = "způsob-sdílení-údaje";
+    public static final String ZPUSOB_ZISKANI_ALT = "způsob-získání-údaje";
+    public static final String TYP_OBSAHU_ALT = "typ-obsahu-údaje";
 
     // =============== LONG FORM PROPERTIES ===============
     public static final String JE_PPDF_LONG = "je-sdílen-v-propojeném-datovém-fondu";
@@ -127,11 +127,11 @@ public class VocabularyConstants {
 
     // =============== FIELD ORDERING FOR JSON OUTPUT ===============
     public static final String[] CONCEPT_FIELD_ORDER = {
-            "iri", "typ", "název", "alternativní název", "identifikátor", "popis", "definice",
-            "ekvivalentní pojem", DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU, SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU,
+            JSON_IRI, TYP, NAZEV, ALTERNATIVNI_NAZEV, IDENTIFIKATOR, POPIS, DEFINICE,
+            EKVIVALENTNI_POJEM, DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU, SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU,
             DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
-            "definiční-obor", "obor-hodnot", "nadřazený-vztah", "nadřazená-vlastnost",
-            "nadřazená-třída", "způsob-sdílení-údajů", "způsob-získání-údajů", "typ-obsahu-údajů"
+            DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENY_VZTAH, NADRAZENA_VLASTNOST,
+            NADRAZENA_TRIDA, ZPUSOB_SDILENI_ALT, ZPUSOB_ZISKANI_ALT, TYP_OBSAHU_ALT
     };
 
     private VocabularyConstants() {

@@ -66,7 +66,7 @@ public class ExcelReader {
     }
 
     private VocabularyMetadata processVocabularySheet(Workbook workbook) throws ExcelReadingException {
-        if (!workbookProcessor.hasSheet(workbook, SLOVNIK)) {
+        if (workbookProcessor.hasSheet(workbook, SLOVNIK)) {
             throw new ExcelReadingException("Workbook does not have Slovník sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, SLOVNIK);
@@ -74,7 +74,7 @@ public class ExcelReader {
     }
 
     private List<ClassData> processClassesSheet(Workbook workbook) throws ExcelReadingException {
-        if (!workbookProcessor.hasSheet(workbook, SUBJEKTY_OBJEKTY_PRAVA)) {
+        if (workbookProcessor.hasSheet(workbook, SUBJEKTY_OBJEKTY_PRAVA)) {
             log.debug("Available sheets in workbook:");
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 String sheetName = workbook.getSheetName(i);
@@ -168,7 +168,7 @@ public class ExcelReader {
     }
 
     private List<PropertyData> processPropertiesSheet(Workbook workbook) throws ExcelReadingException {
-        if (!workbookProcessor.hasSheet(workbook, VLASTNOSTI)) {
+        if (workbookProcessor.hasSheet(workbook, VLASTNOSTI)) {
             throw new ExcelReadingException("Workbook does not have Vlastnosti sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, VLASTNOSTI);
@@ -176,7 +176,7 @@ public class ExcelReader {
     }
 
     private List<RelationshipData> processRelationshipsSheet(Workbook workbook) throws ExcelReadingException {
-        if (!workbookProcessor.hasSheet(workbook, VZTAHY)) {
+        if (workbookProcessor.hasSheet(workbook, VZTAHY)) {
             throw new ExcelReadingException("Workbook does not have Vztahy sheet.");
         }
         Sheet sheet = workbookProcessor.getSheet(workbook, VZTAHY);
@@ -297,7 +297,7 @@ public class ExcelReader {
         ColumnMapping<PropertyData> propertyMapping = ColumnMapping.<PropertyData>builder()
                 .withColumn(NAZEV, PropertyData::setName)
                 .withColumn(ALT_NAZEV, PropertyData::setAlternativeName)
-                .withColumn(SUBJEKTY_OBJEKTY_PRAVA, PropertyData::setDomain)
+                .withColumn(SUBJEKT_OBJEKT_PRAVA, PropertyData::setDomain)
                 .withColumn(POPIS, PropertyData::setDescription)
                 .withColumn(DEFINICE, PropertyData::setDefinition)
                 .withColumn(ZDROJ, PropertyData::setSource)
@@ -332,6 +332,14 @@ public class ExcelReader {
                 .withColumn(NADRAZENY_POJEM, RelationshipData::setSuperRelation)
                 .withColumn(EKVIVALENTNI_POJEM, RelationshipData::setEquivalentConcept)
                 .withColumn(IDENTIFIKATOR, RelationshipData::setIdentifier)
+                .withColumn(JE_PPDF, RelationshipData::setSharedInPPDF)
+                .withColumn(AGENDA, RelationshipData::setAgendaCode)
+                .withColumn(AIS, RelationshipData::setAgendaSystemCode)
+                .withColumn(JE_VEREJNY, RelationshipData::setIsPublic)
+                .withColumn(USTANOVENI_DOKLADAJICI_NEVEREJNOST, RelationshipData::setPrivacyProvision)
+                .withColumn(ZPUSOB_SDILENI_UDEJE, RelationshipData::setSharingMethod)
+                .withColumn(ZPUSOB_ZISKANI_UDEJE, RelationshipData::setAcquisitionMethod)
+                .withColumn(TYP_OBSAHU_UDAJE, RelationshipData::setContentType)
                 .build();
 
         mappingRegistry.registerMapping(VZTAHY, relationMapping);

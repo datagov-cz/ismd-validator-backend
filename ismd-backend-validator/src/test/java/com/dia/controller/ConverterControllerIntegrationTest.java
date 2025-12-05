@@ -4,13 +4,14 @@ import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
 import com.dia.conversion.data.TransformationResult;
+import com.dia.dto.CatalogRecordDto;
 import com.dia.enums.FileFormat;
 import com.dia.exceptions.JsonExportException;
-import com.dia.service.ConverterService;
-import com.dia.service.ValidationReportService;
-import com.dia.service.ValidationService;
+import com.dia.service.*;
+import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.jena.ontology.OntModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,7 +49,7 @@ class ConverterControllerIntegrationTest {
 
     private static final String JSON_OUTPUT = "{\"result\":\"success\"}";
     private static final String TTL_OUTPUT = "@prefix : <http://example.org/> .\n:subject :predicate :object .";
-/*
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -59,6 +61,12 @@ class ConverterControllerIntegrationTest {
 
     @MockitoBean
     private ValidationReportService validationReportService;
+
+    @MockitoBean
+    private DetailedValidationReportService detailedValidationReportService;
+
+    @MockitoBean
+    private CatalogReportService catalogReportService;
 
     private String minimalArchiXML;
     private ObjectMapper objectMapper;
@@ -136,22 +144,35 @@ class ConverterControllerIntegrationTest {
     }
 
     @BeforeEach
-    public void setup() throws IOException {
+    void setup() throws IOException {
         this.objectMapper = new ObjectMapper();
         minimalArchiXML = loadTestFile();
 
         // Create a mock ConversionResult with a transformation result
         mockConversionResult = mock(ConversionResult.class);
         TransformationResult mockTransformationResult = mock(TransformationResult.class);
+        OntModel mockOntModel = mock(OntModel.class);
         when(mockConversionResult.getTransformationResult()).thenReturn(mockTransformationResult);
+        when(mockTransformationResult.getOntModel()).thenReturn(mockOntModel);
 
         // Create mock validation objects
         ISMDValidationReport mockValidationReport = mock(ISMDValidationReport.class);
         ValidationResultsDto mockValidationResults = mock(ValidationResultsDto.class);
+        DetailedValidationReportDto mockDetailedReport = mock(DetailedValidationReportDto.class);
+        CatalogRecordDto mockCatalogRecord = mock(CatalogRecordDto.class);
 
         // Configure validation service mocks
         when(validationService.validate(any(TransformationResult.class))).thenReturn(mockValidationReport);
+        when(validationService.validateTtlFile(any(MultipartFile.class))).thenReturn(mockValidationReport);
         when(validationReportService.convertToDto(any(ISMDValidationReport.class))).thenReturn(mockValidationResults);
+        when(detailedValidationReportService.generateDetailedReport(any(ISMDValidationReport.class), any(OntModel.class)))
+                .thenReturn(mockDetailedReport);
+        when(detailedValidationReportService.generateDetailedReportFromTtlFile(any(ISMDValidationReport.class), any(MultipartFile.class)))
+                .thenReturn(mockDetailedReport);
+        when(catalogReportService.generateCatalogReport(any(ConversionResult.class), any(ValidationResultsDto.class), anyString()))
+                .thenReturn(Optional.of(mockCatalogRecord));
+        when(catalogReportService.generateCatalogReportFromFile(any(MultipartFile.class), any(ValidationResultsDto.class), anyString()))
+                .thenReturn(Optional.of(mockCatalogRecord));
 
         reset(converterService);
     }
@@ -171,7 +192,7 @@ class ConverterControllerIntegrationTest {
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
         // Configure mock service behavior
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
 
         if ("json".equals(outputFormat)) {
             when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(expectedOutput);
@@ -180,7 +201,7 @@ class ConverterControllerIntegrationTest {
         }
 
         // Act & Assert
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert")
                         .file(file)
                         .param("output", outputFormat))
                 .andExpect(status().isOk())
@@ -197,7 +218,7 @@ class ConverterControllerIntegrationTest {
         assertNotNull(responseDto.getValidationResults());
 
         // Verify service interactions
-        verify(converterService).processArchiFile(anyString(), any());
+        verify(converterService).processArchiFile(anyString());
         verify(validationService).validate(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
 
@@ -216,7 +237,7 @@ class ConverterControllerIntegrationTest {
                 "fake xlsx content".getBytes(StandardCharsets.UTF_8));
 
         // Configure mock service behavior
-        when(converterService.processExcelFile(any(MultipartFile.class), any())).thenReturn(mockConversionResult);
+        when(converterService.processExcelFile(any(MultipartFile.class))).thenReturn(mockConversionResult);
 
         if ("json".equals(outputFormat)) {
             when(converterService.exportToJson(eq(FileFormat.XLSX), any())).thenReturn(expectedOutput);
@@ -225,7 +246,7 @@ class ConverterControllerIntegrationTest {
         }
 
         // Act & Assert
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert")
                         .file(file)
                         .param("output", outputFormat))
                 .andExpect(status().isOk())
@@ -242,7 +263,7 @@ class ConverterControllerIntegrationTest {
         assertNotNull(responseDto.getValidationResults());
 
         // Verify service interactions
-        verify(converterService).processExcelFile(any(MultipartFile.class), any());
+        verify(converterService).processExcelFile(any(MultipartFile.class));
         verify(validationService).validate(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
 
@@ -262,7 +283,7 @@ class ConverterControllerIntegrationTest {
                 xmiContent.getBytes(StandardCharsets.UTF_8));
 
         // Configure mock service behavior
-        when(converterService.processEAFile(any(MultipartFile.class), any())).thenReturn(mockConversionResult);
+        when(converterService.processEAFile(any(MultipartFile.class))).thenReturn(mockConversionResult);
 
         if ("json".equals(outputFormat)) {
             when(converterService.exportToJson(eq(FileFormat.XMI), any())).thenReturn(expectedOutput);
@@ -271,7 +292,7 @@ class ConverterControllerIntegrationTest {
         }
 
         // Act & Assert
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert")
                         .file(file)
                         .param("output", outputFormat))
                 .andExpect(status().isOk())
@@ -288,7 +309,7 @@ class ConverterControllerIntegrationTest {
         assertNotNull(responseDto.getValidationResults());
 
         // Verify service interactions
-        verify(converterService).processEAFile(any(MultipartFile.class), any());
+        verify(converterService).processEAFile(any(MultipartFile.class));
         verify(validationService).validate(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
 
@@ -304,7 +325,7 @@ class ConverterControllerIntegrationTest {
     @ParameterizedTest(name = "File validation: {0}")
     @MethodSource("fileValidationProvider")
     void testFileValidation(String testName, MockMultipartFile file, int expectedStatus, String expectedMessage) throws Exception {
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
                 .andExpect(status().is(expectedStatus))
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
@@ -328,7 +349,7 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
 
         String expectedOutput;
         if ("json".equals(expectedServiceMethod)) {
@@ -339,7 +360,7 @@ class ConverterControllerIntegrationTest {
             when(converterService.exportToTurtle(eq(FileFormat.ARCHI_XML), any())).thenReturn(TTL_OUTPUT);
         }
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert")
                         .file(file)
                         .header("Accept", acceptHeader))
                 .andExpect(status().isOk())
@@ -374,7 +395,7 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
 
         boolean isJson = outputFormat.equalsIgnoreCase("json");
         String expectedOutput;
@@ -386,7 +407,7 @@ class ConverterControllerIntegrationTest {
             when(converterService.exportToTurtle(eq(FileFormat.ARCHI_XML), any())).thenReturn(TTL_OUTPUT);
         }
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert")
                         .file(file)
                         .param("output", outputFormat))
                 .andExpect(status().isOk())
@@ -421,10 +442,10 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", contentType,
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
         when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
@@ -438,7 +459,7 @@ class ConverterControllerIntegrationTest {
         assertNull(responseDto.getErrorMessage());
         assertNotNull(responseDto.getValidationResults());
 
-        verify(converterService).processArchiFile(anyString(), any());
+        verify(converterService).processArchiFile(anyString());
         verify(validationService).validate(any(TransformationResult.class));
         verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
     }
@@ -454,14 +475,14 @@ class ConverterControllerIntegrationTest {
                 content.getBytes(StandardCharsets.UTF_8));
 
         if (shouldCallService && filename.endsWith(".xlsx")) {
-            when(converterService.processExcelFile(any(MultipartFile.class), any())).thenReturn(mockConversionResult);
+            when(converterService.processExcelFile(any(MultipartFile.class))).thenReturn(mockConversionResult);
             when(converterService.exportToJson(eq(FileFormat.XLSX), any())).thenReturn(JSON_OUTPUT);
         } else if (shouldCallService) {
-            when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+            when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
             when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
         }
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
                 .andExpect(status().is(expectedStatus))
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
@@ -473,8 +494,8 @@ class ConverterControllerIntegrationTest {
 
             assertNotNull(responseDto);
             if (filename.endsWith(".ttl")) {
-                assertEquals("File processed successfully", responseDto.getOutput());
-                assertNull(responseDto.getValidationResults()); // Turtle files don't have validation
+                assertNull(responseDto.getOutput()); // Turtle files don't produce conversion output
+                assertNotNull(responseDto.getValidationResults()); // Turtle files have validation
             } else {
                 assertEquals(JSON_OUTPUT, responseDto.getOutput());
                 assertNotNull(responseDto.getValidationResults());
@@ -492,11 +513,11 @@ class ConverterControllerIntegrationTest {
         }
 
         if (shouldCallService && filename.endsWith(".xlsx")) {
-            verify(converterService).processExcelFile(any(MultipartFile.class), any());
+            verify(converterService).processExcelFile(any(MultipartFile.class));
             verify(validationService).validate(any(TransformationResult.class));
             verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
         } else if (shouldCallService && !filename.endsWith(".ttl")) {
-            verify(converterService).processArchiFile(anyString(), any());
+            verify(converterService).processArchiFile(anyString());
             verify(validationService).validate(any(TransformationResult.class));
             verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
         } else {
@@ -517,10 +538,10 @@ class ConverterControllerIntegrationTest {
                 "file", filename, "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
         when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
@@ -543,7 +564,7 @@ class ConverterControllerIntegrationTest {
     @ParameterizedTest(name = "Multiple files: {0}")
     @MethodSource("multipleFilesProvider")
     void testMultipleFileRejection(String testName, MockMultipartFile[] files) throws Exception {
-        var request = multipart("/api/convertor/convert");
+        var request = multipart("/api/converter/convert");
         for (MockMultipartFile file : files) {
             request.file(file);
         }
@@ -572,7 +593,7 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
 
         if ("json".equals(outputFormat)) {
             when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any()))
@@ -582,7 +603,7 @@ class ConverterControllerIntegrationTest {
                     .thenThrow(new JsonExportException(exceptionMessage));
         }
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert")
                         .file(file)
                         .param("output", outputFormat))
                 .andExpect(status().isInternalServerError())
@@ -609,9 +630,9 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert")
                         .file(file)
                         .param("output", "csv"))
                 .andExpect(status().isUnsupportedMediaType())
@@ -640,10 +661,10 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any()))
+        when(converterService.processArchiFile(anyString()))
                 .thenThrow(new RuntimeException("Service processing error"));
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
@@ -668,10 +689,10 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
         when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
@@ -691,45 +712,15 @@ class ConverterControllerIntegrationTest {
     }
 
     @Test
-    void testRemoveInvalidSourcesParameter() throws Exception {
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "test.xml", "application/xml",
-                minimalArchiXML.getBytes(StandardCharsets.UTF_8));
-
-        when(converterService.processArchiFile(anyString(), eq(true))).thenReturn(mockConversionResult);
-        when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
-
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
-                        .file(file)
-                        .param("removeInvalidSources", "true"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType("application/json"))
-                .andReturn();
-
-        // Parse and verify DTO response
-        String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
-
-        assertNotNull(responseDto);
-        assertEquals(JSON_OUTPUT, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
-        assertNotNull(responseDto.getValidationResults());
-
-        verify(converterService).processArchiFile(anyString(), eq(true));
-        verify(validationService).validate(any(TransformationResult.class));
-        verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
-    }
-
-    @Test
     void testOutputParameterOverridesAcceptHeader() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
         when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert")
                         .file(file)
                         .param("output", "json")
                         .header("Accept", "text/turtle"))
@@ -757,10 +748,10 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
         when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
 
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert")
                         .file(file)
                         .param("output", ""))
                 .andExpect(status().isOk())
@@ -783,40 +774,19 @@ class ConverterControllerIntegrationTest {
 
     @Test
     void testEmptyMultipartRequest() throws Exception {
-        mockMvc.perform(multipart("/api/convertor/convert"))
-                .andExpect(status().isInternalServerError());
-    }
-
-    @Test
-    void testXlsxRemoveInvalidSourcesParameter() throws Exception {
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "test.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "fake xlsx content".getBytes(StandardCharsets.UTF_8));
-
-        when(converterService.processExcelFile(any(MultipartFile.class), eq(true))).thenReturn(mockConversionResult);
-        when(converterService.exportToJson(eq(FileFormat.XLSX), any())).thenReturn(JSON_OUTPUT);
-
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert")
-                        .file(file)
-                        .param("removeInvalidSources", "true"))
-                .andExpect(status().isOk())
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert"))
+                .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
 
-        // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
         ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
 
         assertNotNull(responseDto);
-        assertEquals(JSON_OUTPUT, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
-        assertNotNull(responseDto.getValidationResults());
-
-        verify(converterService).processExcelFile(any(MultipartFile.class), eq(true));
-        verify(validationService).validate(any(TransformationResult.class));
-        verify(validationReportService).convertToDto(any(ISMDValidationReport.class));
+        assertNull(responseDto.getOutput());
+        assertEquals("Nebyl vložen žádný soubor.", responseDto.getErrorMessage());
+        assertNull(responseDto.getValidationResults());
     }
-
 
     @Test
     void testValidationServiceException() throws Exception {
@@ -824,17 +794,14 @@ class ConverterControllerIntegrationTest {
                 "file", "test.xml", "application/xml",
                 minimalArchiXML.getBytes(StandardCharsets.UTF_8));
 
-        when(converterService.processArchiFile(anyString(), any())).thenReturn(mockConversionResult);
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
 
-        // Mock the validation service to throw exception on both attempts
+        // Mock the validation service to throw exception
         when(validationService.validate(any(TransformationResult.class)))
                 .thenThrow(new RuntimeException("Validation service error"));
 
-        // Mock the export method since conversion continues even when validation fails
-        when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
-
-        MvcResult result = mockMvc.perform(multipart("/api/convertor/convert").file(file))
-                .andExpect(status().isOk())
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
+                .andExpect(status().isInternalServerError())
                 .andExpect(content().contentType("application/json"))
                 .andReturn();
 
@@ -843,14 +810,12 @@ class ConverterControllerIntegrationTest {
         ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
 
         assertNotNull(responseDto);
-        assertEquals(JSON_OUTPUT, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertNull(responseDto.getOutput());
+        assertEquals("Validation service error", responseDto.getErrorMessage());
         assertNull(responseDto.getValidationResults());
 
-        verify(converterService).processArchiFile(anyString(), any());
-        verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
-        verify(validationService, times(2)).validate(any(TransformationResult.class));
+        verify(converterService).processArchiFile(anyString());
+        verify(validationService).validate(any(TransformationResult.class));
         verifyNoInteractions(validationReportService);
     }
- */
 }
