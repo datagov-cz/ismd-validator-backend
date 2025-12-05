@@ -11,6 +11,7 @@ import com.dia.exceptions.SecurityException;
 import com.dia.exceptions.UnsupportedFormatException;
 import com.dia.service.*;
 import com.dia.utility.UtilityMethods;
+import com.dia.validation.ValidationSeverity;
 import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,6 +65,7 @@ public class ConverterController {
     private final ValidationReportService validationReportService;
     private final DetailedValidationReportService detailedValidationReportService;
     private final CatalogReportService catalogReportService;
+    private final com.dia.validation.config.ValidationConfiguration validationConfiguration;
 
     private HttpClient httpClient;
 
@@ -150,7 +152,7 @@ public class ConverterController {
                             catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.get()
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.orElseThrow()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
@@ -169,7 +171,7 @@ public class ConverterController {
                             catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.get()
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.orElseThrow()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
@@ -188,7 +190,7 @@ public class ConverterController {
                             catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
                     ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.get()
+                            outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.orElseThrow()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
                             requestId, fileFormat, output, results, includeDetailedReport);
@@ -207,7 +209,7 @@ public class ConverterController {
 
                     yield ResponseEntity.ok()
                             .contentType(MediaType.APPLICATION_JSON)
-                            .body(ConversionResponseDto.success(null, results, detailedReport, catalogRecord.get()));
+                            .body(ConversionResponseDto.success(null, results, detailedReport, catalogRecord.orElseThrow()));
                 }
                 default -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(ConversionResponseDto.error("Nepodporovaný formát souboru."));
@@ -259,7 +261,7 @@ public class ConverterController {
             Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
                     catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
-            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport, catalogRecord.get());
+            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport, catalogRecord.orElseThrow());
             log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, SSP, output);
             return response;
@@ -483,6 +485,14 @@ public class ConverterController {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.debug("Preparing response entity: requestId={}, outputFormat={}", requestId, outputFormat);
 
+        String ontologyData = null;
+        if (validationConfiguration.isEnableOntologyViolationDownload()) {
+            log.debug("Including ontology data due to validation violations: requestId={}", requestId);
+            ontologyData = converterService.exportToTurtle(fileFormat, conversionResult.getTransformationResult());
+        } else if (results.getSeverityGroups().stream().anyMatch(r -> r.getSeverity().equalsIgnoreCase(ValidationSeverity.ERROR.getDisplayName()))) {
+            return ResponseEntity.badRequest().body(ConversionResponseDto.error("Validační zpráva obsahuje chyby"));
+        }
+
         return switch (outputFormat.toLowerCase()) {
             case "json" -> {
                 log.debug("Exporting to JSON: requestId={}", requestId);
@@ -490,7 +500,13 @@ public class ConverterController {
                 log.debug("JSON export completed: requestId={}, outputSize={}", requestId, jsonOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.success(jsonOutput, results, detailedReport, catalogRecord));
+                        .body(ConversionResponseDto.builder()
+                                .output(jsonOutput)
+                                .validationResults(results)
+                                .validationReport(detailedReport)
+                                .catalogReport(catalogRecord)
+                                .ontologyData(ontologyData)
+                                .build());
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
@@ -498,7 +514,13 @@ public class ConverterController {
                 log.debug("Turtle export completed: requestId={}, outputSize={}", requestId, ttlOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.success(ttlOutput, results, detailedReport, catalogRecord));
+                        .body(ConversionResponseDto.builder()
+                                .output(ttlOutput)
+                                .validationResults(results)
+                                .validationReport(detailedReport)
+                                .catalogReport(catalogRecord)
+                                .ontologyData(ontologyData)
+                                .build());
             }
             default -> {
                 log.warn("Unsupported output format requested: requestId={}, format={}", requestId, outputFormat);

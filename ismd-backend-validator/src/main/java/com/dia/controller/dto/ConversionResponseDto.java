@@ -14,6 +14,7 @@ public class ConversionResponseDto {
     private ValidationResultsDto validationResults;
     private DetailedValidationReportDto validationReport;
     private CatalogRecordDto catalogReport;
+    private String ontologyData;
 
     public static ConversionResponseDto success(String output, ValidationResultsDto results, DetailedValidationReportDto validationReport, CatalogRecordDto catalogReport) {
         return ConversionResponseDto.builder()

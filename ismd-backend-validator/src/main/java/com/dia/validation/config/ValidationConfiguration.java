@@ -25,6 +25,8 @@ public class ValidationConfiguration {
 
     private boolean continueOnRuleError = true;
 
+    private boolean enableOntologyViolationDownload = false;
+
     public boolean isRuleEnabled(String ruleName) {
         return enabled.getOrDefault(ruleName, true);
     }
