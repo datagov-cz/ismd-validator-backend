@@ -113,6 +113,10 @@ public class EnterpriseArchitectReader {
                         return umlPackage;
                     }
                 }
+
+                if (hasNamespacePrefixedStereotype(document, packageId)) {
+                    return umlPackage;
+                }
             }
         }
         return null;
@@ -127,6 +131,68 @@ public class EnterpriseArchitectReader {
                 return element;
             }
         }
+        return null;
+    }
+
+    private boolean hasNamespacePrefixedStereotype(Document document, String elementId) {
+        NodeList allElements = document.getElementsByTagName("*");
+
+        for (int i = 0; i < allElements.getLength(); i++) {
+            Element element = (Element) allElements.item(i);
+            String localName = element.getLocalName();
+
+            if (localName != null && localName.equals(com.dia.constants.FormatConstants.EnterpriseArchitect.STEREOTYPE_SLOVNIKY_PACKAGE)) {
+                String basePackage = element.getAttribute("base_Package");
+                String baseClass = element.getAttribute("base_Class");
+                String baseAssociation = element.getAttribute("base_Association");
+
+                if (elementId.equals(basePackage) || elementId.equals(baseClass) || elementId.equals(baseAssociation)) {
+                    log.debug("Found namespace-prefixed stereotype '{}' for element ID: {}", com.dia.constants.FormatConstants.EnterpriseArchitect.STEREOTYPE_SLOVNIKY_PACKAGE, elementId);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private String getNamespacePrefixedStereotype(Document document, String elementId) {
+        NodeList allElements = document.getElementsByTagName("*");
+
+        for (int i = 0; i < allElements.getLength(); i++) {
+            Element element = (Element) allElements.item(i);
+            String localName = element.getLocalName();
+
+            if (localName != null) {
+                String basePackage = element.getAttribute("base_Package");
+                String baseClass = element.getAttribute("base_Class");
+                String baseAssociation = element.getAttribute("base_Association");
+
+                if (elementId.equals(basePackage) || elementId.equals(baseClass) || elementId.equals(baseAssociation)) {
+                    log.debug("Found namespace-prefixed stereotype '{}' for element ID: {}", localName, elementId);
+                    return localName;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private Element findNamespacePrefixedStereotypeElement(Document document, String elementId) {
+        NodeList allElements = document.getElementsByTagName("*");
+
+        for (int i = 0; i < allElements.getLength(); i++) {
+            Element element = (Element) allElements.item(i);
+
+            String basePackage = element.getAttribute("base_Package");
+            String baseClass = element.getAttribute("base_Class");
+            String baseAssociation = element.getAttribute("base_Association");
+
+            if (elementId.equals(basePackage) || elementId.equals(baseClass) || elementId.equals(baseAssociation)) {
+                return element;
+            }
+        }
+
         return null;
     }
 
@@ -230,9 +296,27 @@ public class EnterpriseArchitectReader {
     private void parseExtensions(Document document, String elementId, List<ClassData> classes,
                                  List<PropertyData> properties, Element umlClass) {
         Element extensionElement = findExtensionElement(document, elementId);
+        String stereotype = null;
+
         if (extensionElement != null) {
-            String stereotype = getStereotype(extensionElement);
+            stereotype = getStereotype(extensionElement);
+        }
+
+        if (stereotype == null) {
+            stereotype = getNamespacePrefixedStereotype(document, elementId);
+            extensionElement = findNamespacePrefixedStereotypeElement(document, elementId);
+        }
+
+        if (stereotype != null) {
             String elementType = getTagValueByPattern(extensionElement, "TYP");
+
+            if (elementType == null && extensionElement != null) {
+                elementType = extensionElement.getAttribute("typ");
+                if (elementType.trim().isEmpty()) {
+                    elementType = null;
+                }
+            }
+
             log.debug("Found element {} with stereotype: {}, type: {}", umlClass.getAttribute("name"), stereotype, elementType);
 
             if (STEREOTYPE_TYP_OBJEKTU.equals(stereotype) || STEREOTYPE_TYP_SUBJEKTU.equals(stereotype)) {
@@ -240,7 +324,7 @@ public class EnterpriseArchitectReader {
                     log.debug("Skipping '{}' from class extraction - it's a property type (type: '{}')", umlClass.getAttribute("name"), elementType);
                     return;
                 }
-                
+
                 ClassData classData = parseClassData(umlClass, extensionElement, stereotype);
                 if (classData.hasValidData()) {
                     classes.add(classData);
@@ -342,7 +426,7 @@ public class EnterpriseArchitectReader {
         for (int i = 0; i < connectors.getLength(); i++) {
             Element connector = (Element) connectors.item(i);
 
-            if (!isConnectorInVocabulary(document, connector, vocabularyPackageIds)) {
+            if (isConnectorInVocabulary(document, connector, vocabularyPackageIds)) {
                 continue;
             }
 
@@ -481,7 +565,7 @@ public class EnterpriseArchitectReader {
         NodeList targets = connector.getElementsByTagName(TARGET);
 
         if (sources.getLength() == 0 || targets.getLength() == 0) {
-            return false;
+            return true;
         }
 
         Element source = (Element) sources.item(0);
@@ -496,7 +580,7 @@ public class EnterpriseArchitectReader {
         log.debug("Connector {} - source {} in vocab: {}, target {} in vocab: {}",
                 connector.getAttribute("name"), sourceId, sourceInVocab, targetId, targetInVocab);
 
-        return sourceInVocab && targetInVocab;
+        return !sourceInVocab || !targetInVocab;
     }
 
     private boolean isElementInVocabulary(Document document, String elementId, Set<String> vocabularyPackageIds) {
@@ -564,7 +648,7 @@ public class EnterpriseArchitectReader {
         for (int i = 0; i < connectors.getLength(); i++) {
             Element connector = (Element) connectors.item(i);
 
-            if (!isConnectorInVocabulary(document, connector, vocabularyPackageIds)) {
+            if (isConnectorInVocabulary(document, connector, vocabularyPackageIds)) {
                 continue;
             }
 
@@ -578,7 +662,6 @@ public class EnterpriseArchitectReader {
                 if (!connectorName.trim().isEmpty()) {
                     hierarchy.setRelationshipName(connectorName);
                 } else {
-                    // Determine if this is a property or class hierarchy based on element type
                     String defaultRelName = isPropertyHierarchy(hierarchy, document)
                             ? "rdfs:subPropertyOf"
                             : "rdfs:subClassOf";
@@ -758,9 +841,36 @@ public class EnterpriseArchitectReader {
             }
         }
 
-        log.debug("No matching tag with non-empty value found for logical attribute '{}' with patterns: {}",
+        for (Pattern pattern : patterns) {
+            for (String candidate : getElementAttributeNames(element)) {
+                if (pattern.matcher(candidate).matches()) {
+                    String rawValue = element.getAttribute(candidate);
+                    if (!rawValue.trim().isEmpty()) {
+                        String cleanedValue = cleanTagValue(rawValue);
+                        if (cleanedValue != null && !cleanedValue.trim().isEmpty()) {
+                            log.debug("Found value for '{}' as direct attribute '{}': {}",
+                                    logicalAttributeName, candidate, cleanedValue);
+                            return cleanedValue;
+                        }
+                    }
+                }
+            }
+        }
+
+        log.debug("No matching tag or attribute with non-empty value found for logical attribute '{}' with patterns: {}",
                 logicalAttributeName, Arrays.toString(patterns));
         return null;
+    }
+
+    private List<String> getElementAttributeNames(Element element) {
+        List<String> attributeNames = new ArrayList<>();
+        if (element != null && element.hasAttributes()) {
+            org.w3c.dom.NamedNodeMap attributes = element.getAttributes();
+            for (int i = 0; i < attributes.getLength(); i++) {
+                attributeNames.add(attributes.item(i).getNodeName());
+            }
+        }
+        return attributeNames;
     }
 
     private String getBooleanTagValueByPattern(Element element, String logicalAttributeName) {
