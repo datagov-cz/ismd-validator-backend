@@ -53,7 +53,6 @@ import static com.dia.enums.FileFormat.*;
 @Slf4j
 public class ConverterController {
 
-    private static final long MAX_FILE_SIZE = 5242880;
     private static final Duration DOWNLOAD_TIMEOUT = Duration.ofSeconds(30);
     private static final Set<String> ALLOWED_PROTOCOLS = Set.of("https");
     private static final Pattern PRIVATE_IP_PATTERN = Pattern.compile(
@@ -119,13 +118,6 @@ public class ConverterController {
                 log.warn("Empty file upload attempt");
                 return ResponseEntity.badRequest()
                         .body(ConversionResponseDto.error("Nebyl vložen žádný soubor."));
-            }
-
-            if (processedFile.getSize() > MAX_FILE_SIZE) {
-                log.warn("File too large: filename={}, size={}, maxAllowedSize={}",
-                        processedFile.getOriginalFilename(), processedFile.getSize(), MAX_FILE_SIZE);
-                return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                        .body(ConversionResponseDto.error("Soubor je příliš velký. Maximální povolená velikost je 5 MB."));
             }
 
             FileFormat fileFormat = checkFileFormat(processedFile);
@@ -619,11 +611,6 @@ public class ConverterController {
         }
 
         byte[] fileContent = response.body();
-
-        if (fileContent.length > MAX_FILE_SIZE) {
-            throw new SecurityException("Stažený soubor je příliš velký. Velikost: " + fileContent.length +
-                    " bytů, maximální povolená velikost: " + MAX_FILE_SIZE + " bytů.");
-        }
 
         if (fileContent.length == 0) {
             throw new SecurityException("Stažený soubor je prázdný.");
