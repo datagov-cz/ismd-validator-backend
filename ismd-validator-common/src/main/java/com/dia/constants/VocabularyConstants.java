@@ -22,6 +22,8 @@ public class VocabularyConstants {
     public static final String CONTEXT_JSONLD = "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld";
     public static final String SCHEMA_URL = "http://schema.org/url";
     public static final String IDENT = "identifier";
+    public static final String OFN_NAMESPACE_VS = "https://slovník.gov.cz/veřejný-sektor/pojem/";
+    public static final String OFN_NAMESPACE_LEGAL = "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/";
 
     // =============== VALIDATION NAMESPACES ===============
     public static final String LOCAL_SHACL_BASE_URI = "https://slovník.gov.cz/shacl/lokální/";
