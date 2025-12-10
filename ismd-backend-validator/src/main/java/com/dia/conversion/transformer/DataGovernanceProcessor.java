@@ -67,7 +67,7 @@ public class DataGovernanceProcessor {
     }
 
     private void handleClassNonPublicData(Resource classResource, ClassData classData, String privacyProvision) {
-        classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
+        classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ));
         log.debug("Added non-public data annotation and RDF type for class: {}", classData.getName());
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
@@ -85,7 +85,7 @@ public class DataGovernanceProcessor {
                             classData.getName(), privacyProvision);
                     handleClassNonPublicData(classResource, classData, privacyProvision);
                 } else {
-                    classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + VEREJNY_UDAJ));
                     log.debug("Added public data annotation and RDF type for class: {}", classData.getName());
                 }
             } else {
@@ -147,7 +147,7 @@ public class DataGovernanceProcessor {
     }
 
     private void handlePropertyNonPublicData(Resource propertyResource, PropertyData propertyData, String privacyProvision) {
-        propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
+        propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ));
         log.debug("Added non-public data annotation and RDF type for property: {}", propertyData.getName());
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
@@ -165,7 +165,7 @@ public class DataGovernanceProcessor {
                             propertyData.getName(), privacyProvision);
                     handlePropertyNonPublicData(propertyResource, propertyData, privacyProvision);
                 } else {
-                    propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + VEREJNY_UDAJ));
                     log.debug("Added public data annotation and RDF type for property: {}", propertyData.getName());
                 }
             } else {
@@ -228,7 +228,7 @@ public class DataGovernanceProcessor {
     }
 
     private void handleRelationshipNonPublicData(Resource relationshipResource, RelationshipData relationshipData, String privacyProvision) {
-        relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + NEVEREJNY_UDAJ));
+        relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ));
         log.debug("Added non-public data annotation and RDF type for relationship: {}", relationshipData.getName());
 
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
@@ -246,7 +246,7 @@ public class DataGovernanceProcessor {
                             relationshipData.getName(), privacyProvision);
                     handleRelationshipNonPublicData(relationshipResource, relationshipData, privacyProvision);
                 } else {
-                    relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + VEREJNY_UDAJ));
+                    relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + VEREJNY_UDAJ));
                     log.debug("Added public data annotation and RDF type for relationship: {}", relationshipData.getName());
                 }
             } else {

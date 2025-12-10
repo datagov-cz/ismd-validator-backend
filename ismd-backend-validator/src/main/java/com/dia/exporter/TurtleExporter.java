@@ -41,8 +41,8 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put(PREFIX_RDFS, RDFS.getURI());
         STANDARD_PREFIXES.put(PREFIX_SKOS, SKOS.getURI());
         STANDARD_PREFIXES.put(PREFIX_XSD, XSD);
-        STANDARD_PREFIXES.put("vsgov", "https://slovník.gov.cz/veřejný-sektor/pojem/");
-        STANDARD_PREFIXES.put("l111-2009", "https://slovník.gov.cz/legislativním/sbírka/111/2009/pojem/");
+        STANDARD_PREFIXES.put("vsgov", OFN_NAMESPACE_VS);
+        STANDARD_PREFIXES.put("l111-2009", OFN_NAMESPACE_LEGAL);
         STANDARD_PREFIXES.put("a104", "https://slovník.gov.cz/agendový/104/pojem/");
         STANDARD_PREFIXES.put("slovníky", "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/");
         STANDARD_PREFIXES.put("čas", CAS_NS);
@@ -383,7 +383,7 @@ public class TurtleExporter {
             ontologyResource.addProperty(RDF.type, SKOS.ConceptScheme);
         }
 
-        Resource slovnikType = transformedModel.createResource("https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/slovník");
+        Resource slovnikType = transformedModel.createResource("https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/slovník");
         if (!ontologyResource.hasProperty(RDF.type, slovnikType)) {
             ontologyResource.addProperty(RDF.type, slovnikType);
         }
@@ -483,10 +483,10 @@ public class TurtleExporter {
                 OFN_NAMESPACE + VLASTNOST,
                 OFN_NAMESPACE + VZTAH,
                 OFN_NAMESPACE + TRIDA,
-                OFN_NAMESPACE + TSP,
-                OFN_NAMESPACE + TOP,
-                OFN_NAMESPACE + VEREJNY_UDAJ,
-                OFN_NAMESPACE + NEVEREJNY_UDAJ
+                OFN_NAMESPACE_VS + TSP,
+                OFN_NAMESPACE_VS + TOP,
+                OFN_NAMESPACE_LEGAL + VEREJNY_UDAJ,
+                OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ
         );
 
         ResIterator classResources = transformedModel.listSubjectsWithProperty(RDF.type,

@@ -24,6 +24,7 @@ public class VocabularyConstants {
     public static final String IDENT = "identifier";
     public static final String OFN_NAMESPACE_VS = "https://slovník.gov.cz/veřejný-sektor/pojem/";
     public static final String OFN_NAMESPACE_LEGAL = "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/";
+    public static final String DIGITALNI_OBJEKT = "https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt";
 
     // =============== VALIDATION NAMESPACES ===============
     public static final String LOCAL_SHACL_BASE_URI = "https://slovník.gov.cz/shacl/lokální/";
