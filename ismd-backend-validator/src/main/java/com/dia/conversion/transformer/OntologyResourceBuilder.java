@@ -249,9 +249,9 @@ public class OntologyResourceBuilder {
         String excelType = classData.getType();
 
         if ("Subjekt práva".equals(excelType)) {
-            classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + TSP));
+            classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_VS + TSP));
         } else if ("Objekt práva".equals(excelType)) {
-            classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + TOP));
+            classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_VS + TOP));
         }
         classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + TRIDA));
     }

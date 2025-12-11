@@ -486,7 +486,7 @@ public class JsonExporter {
     }
 
     private void addDigitalObjectType(Resource digitalDoc, JSONObject docObj) {
-        Resource digitalObjectType = ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt");
+        Resource digitalObjectType = ontModel.createResource(DIGITALNI_OBJEKT);
         if (digitalDoc.hasProperty(RDF.type, digitalObjectType)) {
             docObj.put(VocabularyConstants.TYP, "Digitální objekt");
         }
@@ -836,6 +836,12 @@ public class JsonExporter {
 
         for (String[] mapping : typeMapping) {
             if (concept.hasProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + mapping[0]))) {
+                types.put(mapping[1]);
+            }
+            if (concept.hasProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_VS + mapping[0]))) {
+                types.put(mapping[1]);
+            }
+            if (concept.hasProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + mapping[0]))) {
                 types.put(mapping[1]);
             }
         }

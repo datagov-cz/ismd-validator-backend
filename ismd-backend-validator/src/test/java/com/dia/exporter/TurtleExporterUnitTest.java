@@ -566,7 +566,7 @@ class TurtleExporterUnitTest {
         StmtIterator schemeIter = model.listStatements(null, RDF.type, SKOS.ConceptScheme);
         while (schemeIter.hasNext()) {
             Resource conceptScheme = schemeIter.next().getSubject();
-            String vocabularyTypeURI = "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/slovník";
+            String vocabularyTypeURI = "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/slovník";
             Resource vocabularyType = model.createResource(vocabularyTypeURI);
             if (conceptScheme.hasProperty(RDF.type, vocabularyType)) {
                 return true;
