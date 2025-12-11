@@ -6,7 +6,7 @@
 
     <groupId>com.dia</groupId>
     <artifactId>ismd-validator-common</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
 
     <properties>
         <java.version>17</java.version>
