@@ -13,12 +13,6 @@ on:
         description: 'Version to release'
         required: false
         type: string
-  workflow_call:
-    inputs:
-      version:
-        description: 'Version to release (leave empty for auto-patch-increment from SNAPSHOT)'
-        required: false
-        type: string
 
 permissions:
   contents: write
