@@ -372,9 +372,9 @@ public class DataGovernanceProcessor {
 
     private String getGovernancePropertyConstant(String propertyType) {
         return switch (propertyType) {
-            case SHARING_METHOD -> ("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
-            case ACQUISITION_METHOD -> ("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje");
-            case CONTENT_TYPE -> ("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje");
+            case SHARING_METHOD -> (OFN_NAMESPACE + ZPUSOB_SDILENI);
+            case ACQUISITION_METHOD -> (OFN_NAMESPACE + ZPUSOB_ZISKANI);
+            case CONTENT_TYPE -> (OFN_NAMESPACE + TYP_OBSAHU);
             default -> {
                 log.warn("Unknown governance property type: {}", propertyType);
                 yield null;
@@ -412,11 +412,11 @@ public class DataGovernanceProcessor {
         String sanitizedValue = UtilityMethods.sanitizeForIRI(value);
 
         return switch (propertyName) {
-            case "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje" ->
+            case OFN_NAMESPACE + TYP_OBSAHU ->
                     "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/" + sanitizedValue;
-            case "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje" ->
+            case OFN_NAMESPACE + ZPUSOB_SDILENI ->
                     "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/" + sanitizedValue;
-            case "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje" ->
+            case OFN_NAMESPACE + ZPUSOB_ZISKANI ->
                     "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/" + sanitizedValue;
             default -> null;
         };

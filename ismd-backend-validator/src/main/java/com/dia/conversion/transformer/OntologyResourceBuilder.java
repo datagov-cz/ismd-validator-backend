@@ -17,6 +17,7 @@ import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.SKOS;
 
+import javax.crypto.spec.SecretKeySpec;
 import java.util.*;
 
 import static com.dia.constants.ExportConstants.Common.DEFAULT_LANG;
@@ -351,6 +352,7 @@ public class OntologyResourceBuilder {
             addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
             addPropertySpecificMetadata(propertyResource, propertyData, localResourceMap, filterStatistics);
             addPropertySuperPropertyRelationship(propertyResource, propertyData);
+            addSchemeRelationship(propertyResource, localResourceMap);
         }
 
         return propertyResource;
@@ -479,6 +481,7 @@ public class OntologyResourceBuilder {
             addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData));
             addRelationshipSpecificMetadata(relationshipResource, relationshipData, filterStatistics);
             addRelationshipSuperPropertyRelationship(relationshipResource, relationshipData);
+            addSchemeRelationship(relationshipResource, localResourceMap);
             log.debug("Added full metadata for local relationship: {}", relationshipURI);
         } else {
             log.debug("Skipped full metadata for external relationship (different namespace): {}", relationshipURI);

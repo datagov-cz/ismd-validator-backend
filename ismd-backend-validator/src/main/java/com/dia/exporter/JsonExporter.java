@@ -531,14 +531,14 @@ public class JsonExporter {
     private void addGovernanceProperties(Resource concept, JSONObject pojemObj) throws JSONException {
         addGovernancePropertyArrayWithFallback(concept, pojemObj);
 
-        addGovernancePropertySingleWithFallback(concept, pojemObj, "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje", ZPUSOB_ZISKANI_ALT);
+        addGovernancePropertySingleWithFallback(concept, pojemObj, OFN_NAMESPACE + ZPUSOB_ZISKANI, ZPUSOB_ZISKANI_ALT);
 
-        addGovernancePropertySingleWithFallback(concept, pojemObj, "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje", TYP_OBSAHU_ALT);
+        addGovernancePropertySingleWithFallback(concept, pojemObj, OFN_NAMESPACE + TYP_OBSAHU, TYP_OBSAHU_ALT);
     }
 
     private void addGovernancePropertyArrayWithFallback(Resource concept, JSONObject pojemObj) throws JSONException {
 
-        Property excelProperty = ontModel.getProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
+        Property excelProperty = ontModel.getProperty(OFN_NAMESPACE + ZPUSOB_SDILENI);
         if (concept.hasProperty(excelProperty)) {
             addGovernancePropertyArray(concept, excelProperty, pojemObj);
         }
