@@ -404,10 +404,10 @@ public class JsonExporter {
 
     private void addNewSourceProperties(Resource concept, JSONObject pojemObj) throws JSONException {
         addSourcePropertyFromEitherNamespace(concept, pojemObj, effectiveNamespace,
-                DEFINUJICI_USTANOVENI, DEFINUJICI_USTANOVENI);
+                DEFINUJICI_USTANOVENI, DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU);
 
         addSourcePropertyFromEitherNamespace(concept, pojemObj, effectiveNamespace,
-                SOUVISEJICI_USTANOVENI, SOUVISEJICI_USTANOVENI);
+                SOUVISEJICI_USTANOVENI, SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU);
 
         addNonLegislativeSourceProperty(concept, pojemObj, effectiveNamespace,
                 DEFINUJICI_NELEGISLATIVNI_ZDROJ, DEFINUJICI_NELEGISLATIVNI_ZDROJ);

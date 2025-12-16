@@ -28,7 +28,7 @@
             "definice": {
                 "cs": "Řidičský průkaz vydá příslušný obecní úřad obce s rozšířenou působností na žádost držitele řidičského oprávnění."
             },
-            "související-ustanovení": [
+            "související-ustanovení-právního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností",
@@ -65,7 +65,7 @@
             "definice": {
                 "cs": "každý, kdo se přímým způsobem účastní provozu na pozemních komunikacích"
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_a"
             ],
             "agenda": "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A998",
@@ -117,7 +117,7 @@
             "popis": {
                 "cs": "Řidičský průkaz obsahuje mj. jméno a příjmení držitele."
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_a"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
@@ -176,7 +176,7 @@
             "definice": {
                 "cs": "Registr řidičů obsahuje a) osobní údaje o řidiči motorového vozidla uvedené v řidičském průkazu a v mezinárodním řidičském průkazu, včetně digitalizované fotografie a digitalizovaného podpisu řidiče,"
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_4/par_119/odst_2/pism_a"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
@@ -283,7 +283,7 @@
                     "id": "https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce"
                 }
             ],
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3"
             ]
         },
@@ -315,7 +315,7 @@
             "popis": {
                 "cs": "Sídlo úřadu vydávajícího průkaz (obecním úřadem ORP) se nachází na nějaké adrese. Adresa je obecně definována v zákoně o základních registrech."
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností",
@@ -346,7 +346,7 @@
             "definice": {
                 "cs": "účastník provozu na pozemních komunikacích, který řídí motorové nebo nemotorové vozidlo anebo tramvaj; řidičem je i jezdec na zvířeti"
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-04-01/dokument/norma/cast_1/hlava_1/par_2/pism_d"
             ],
             "nadřazená-třída": [
@@ -382,13 +382,13 @@
             "související-nelegislativní-zdroj": [
                 {
                     "typ": "Digitální objekt",
-                    "název": {
-                        "cs": "Směrnice EU"
-                    }
+                    "url": "https://ofn.gov.cz/slovníky/draft2/cs/#360-2023"
                 },
                 {
                     "typ": "Digitální objekt",
-                    "url": "https://ofn.gov.cz/slovníky/draft2/cs/#360-2023"
+                    "název": {
+                        "cs": "Směrnice EU"
+                    }
                 }
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
@@ -465,7 +465,7 @@
             "popis": {
                 "cs": "Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností)."
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností",
@@ -511,7 +511,7 @@
             "definice": {
                 "cs": "motorové vozidlo, nemotorové vozidlo nebo tramvaj"
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_f"
             ]
         },
@@ -528,7 +528,7 @@
             "definice": {
                 "cs": "Registr řidičů obsahuje a) osobní údaje o řidiči motorového vozidla uvedené v řidičském průkazu a v mezinárodním řidičském průkazu, včetně digitalizované fotografie a digitalizovaného podpisu řidiče,"
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_4/par_119/odst_2/pism_a"
             ],
             "nadřazená-třída": [
@@ -565,7 +565,7 @@
             "popis": {
                 "cs": "Řidičský průkaz obsahuje mj. jméno a příjmení držitele."
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_a"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
@@ -639,7 +639,7 @@
             "definice": {
                 "cs": "Řidičský průkaz je veřejná listina, která osvědčuje řidičské oprávnění držitele a jeho rozsah a kterou držitel prokazuje své jméno, příjmení a podobu, jakož i další údaje v ní zapsané podle tohoto zákona."
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1"
             ]
         },
@@ -656,7 +656,7 @@
             "definice": {
                 "cs": "řidič je účastník provozu na pozemních komunikacích, který řídí motorové nebo nemotorové vozidlo anebo tramvaj; řidičem je i jezdec na zvířeti"
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-04-01/dokument/norma/cast_1/hlava_1/par_2/pism_d"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič",
@@ -713,7 +713,7 @@
             "popis": {
                 "cs": "Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností)."
             },
-            "definující-ustanovení": [
+            "definující-ustanovení-prívního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i"
             ],
             "definiční-obor": "https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností",
