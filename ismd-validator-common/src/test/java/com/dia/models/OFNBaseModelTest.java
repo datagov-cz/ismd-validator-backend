@@ -102,7 +102,7 @@ class OFNBaseModelTest {
         void testFullModel_allClassesAndProperties() {
             Set<String> requiredClasses = Set.of(POJEM, TRIDA, TSP, TOP, "typ-vlastnosti", 
                     DATOVY_TYP, UDAJ, VEREJNY_UDAJ, NEVEREJNY_UDAJ, POLOZKA_CISELNIKU,
-                    ZPUSOB_SDILENI_UDAJE, ZPUSOB_ZISKANI_UDAJE, "číselník");
+                    ZPUSOBY_SDILENI_UDAJE, ZPUSOB_ZISKANI_UDAJE, "číselník");
             Set<String> requiredProperties = Set.of(NAZEV, POPIS, DEFINICE, ALTERNATIVNI_NAZEV,
                     DEFINUJICI_USTANOVENI, SOUVISEJICI_USTANOVENI, DEFINUJICI_NELEGISLATIVNI_ZDROJ,
                     SOUVISEJICI_NELEGISLATIVNI_ZDROJ, "schema:url", JE_PPDF,

@@ -42,7 +42,7 @@ public class VocabularyConstants {
     public static final String NEVEREJNY_UDAJ = "neveřejný-údaj";
     public static final String DATOVY_TYP = "datový-typ";
     public static final String POLOZKA_CISELNIKU = "položka-číselníku";
-    public static final String ZPUSOB_SDILENI_UDAJE = "způsob-sdílení-údaje";
+    public static final String ZPUSOBY_SDILENI_UDAJE = "způsoby-sdílení-údaje";
     public static final String ZPUSOB_ZISKANI_UDAJE = "způsob-získání-údaje";
     public static final String CASOVY_OKAMZIK = "časový-okamžik";
     public static final String SLOVNIK = "slovník";
@@ -64,8 +64,8 @@ public class VocabularyConstants {
     public static final String DATUM_A_CAS = "datum-a-čas";
     public static final String ZDROJ = "zdroj";
     public static final String SOUVISEJICI_ZDROJ = "související-zdroj";
-    public static final String DEFINUJICI_USTANOVENI = "definující-ustanovení-právního-předpisu";
-    public static final String SOUVISEJICI_USTANOVENI = "související-ustanovení-právního-předpisu";
+    public static final String DEFINUJICI_USTANOVENI = "definující-ustanovení";
+    public static final String SOUVISEJICI_USTANOVENI = "související-ustanovení";
     public static final String DEFINUJICI_NELEGISLATIVNI_ZDROJ = "definující-nelegislativní-zdroj";
     public static final String SOUVISEJICI_NELEGISLATIVNI_ZDROJ = "související-nelegislativní-zdroj";
     public static final String DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU = DEFINUJICI_USTANOVENI; // Alias
@@ -88,12 +88,12 @@ public class VocabularyConstants {
     public static final String JE_VEREJNY = "je-pojem-veřejný";
     public static final String USTANOVENI_NEVEREJNOST = "ustanovení-dokládající-neveřejnost-údaje";
     public static final String SUPP = "související-ustanovení-právního-předpisu";
-    public static final String ZPUSOB_SDILENI = "má-způsob-sdílení-údajů";
-    public static final String ZPUSOB_ZISKANI = "má-kategorii-údajů";
-    public static final String TYP_OBSAHU = "má-typ-obsahu-údajů";
+    public static final String ZPUSOB_SDILENI = "má-způsob-sdílení-údaje";
+    public static final String ZPUSOB_ZISKANI = "má-kategorii-údaje";
+    public static final String TYP_OBSAHU = "má-typ-obsahu-údaje";
 
     // Alternate forms from OFNJsonConstants
-    public static final String ZPUSOB_SDILENI_ALT = "způsob-sdílení-údaje";
+    public static final String ZPUSOBY_SDILENI_ALT = "způsoby-sdílení-údaje";
     public static final String ZPUSOB_ZISKANI_ALT = "způsob-získání-údaje";
     public static final String TYP_OBSAHU_ALT = "typ-obsahu-údaje";
 
@@ -134,7 +134,7 @@ public class VocabularyConstants {
             EKVIVALENTNI_POJEM, DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU, SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU,
             DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
             DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENY_VZTAH, NADRAZENA_VLASTNOST,
-            NADRAZENA_TRIDA, ZPUSOB_SDILENI_ALT, ZPUSOB_ZISKANI_ALT, TYP_OBSAHU_ALT
+            NADRAZENA_TRIDA, ZPUSOBY_SDILENI_ALT, ZPUSOB_ZISKANI_ALT, TYP_OBSAHU_ALT
     };
 
     private VocabularyConstants() {
@@ -164,7 +164,7 @@ public class VocabularyConstants {
         public static final String[] VOCABULARY_TYPES = {
                 POJEM, TRIDA, VZTAH, VLASTNOST, TSP, TOP, UDAJ,
                 VEREJNY_UDAJ, NEVEREJNY_UDAJ, DATOVY_TYP, POLOZKA_CISELNIKU,
-                ZPUSOB_SDILENI_UDAJE, ZPUSOB_ZISKANI_UDAJE
+                ZPUSOBY_SDILENI_UDAJE, ZPUSOB_ZISKANI_UDAJE
         };
 
         public static final String[] NAMESPACE_PATHS = {
@@ -204,7 +204,7 @@ public class VocabularyConstants {
                 NEVEREJNY_UDAJ,
                 DATOVY_TYP,
                 POLOZKA_CISELNIKU,
-                ZPUSOB_SDILENI_UDAJE,
+                ZPUSOBY_SDILENI_UDAJE,
                 ZPUSOB_ZISKANI_UDAJE,
                 CASOVY_OKAMZIK,
                 SLOVNIK,

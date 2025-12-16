@@ -557,7 +557,7 @@ public class JsonExporter {
 
         if (!allValues.isEmpty()) {
             JSONArray propArray = createJsonArray(allValues);
-            pojemObj.put(ZPUSOB_SDILENI_ALT, propArray);
+            pojemObj.put(ZPUSOBY_SDILENI_ALT, propArray);
         }
     }
 
