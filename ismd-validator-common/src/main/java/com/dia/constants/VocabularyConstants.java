@@ -68,8 +68,8 @@ public class VocabularyConstants {
     public static final String SOUVISEJICI_USTANOVENI = "související-ustanovení";
     public static final String DEFINUJICI_NELEGISLATIVNI_ZDROJ = "definující-nelegislativní-zdroj";
     public static final String SOUVISEJICI_NELEGISLATIVNI_ZDROJ = "související-nelegislativní-zdroj";
-    public static final String DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU = DEFINUJICI_USTANOVENI; // Alias
-    public static final String SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU = SOUVISEJICI_USTANOVENI; // Alias
+    public static final String DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU = "definující-ustanovení-prívního-předpisu";
+    public static final String SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU = "související-ustanovení-právního-předpisu";
 
     // =============== STRUCTURAL PROPERTIES ===============
     public static final String LOKALNI_KATALOG = "adresa-lokálního-katalogu-dat-ve-kterém-bude-slovník-registrován";
