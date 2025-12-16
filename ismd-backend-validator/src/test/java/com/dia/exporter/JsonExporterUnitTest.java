@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.dia.constants.ExportConstants;
-import com.dia.constants.FormatConstants;
 import com.dia.constants.VocabularyConstants;
 import static com.dia.constants.VocabularyConstants.*;
 import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
@@ -602,14 +601,14 @@ class JsonExporterUnitTest {
         concept.addProperty(SKOS.prefLabel, "Governance Concept", "cs");
 
         // Add governance properties
-        Property sharingProp = ontModel.createProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
+        Property sharingProp = ontModel.createProperty(OFN_NAMESPACE + ZPUSOB_SDILENI);
         concept.addProperty(sharingProp, "Public sharing");
         concept.addProperty(sharingProp, "Restricted sharing");
 
-        Property acquisitionProp = ontModel.createProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje");
+        Property acquisitionProp = ontModel.createProperty(OFN_NAMESPACE + ZPUSOB_ZISKANI);
         concept.addProperty(acquisitionProp, "Manual entry");
 
-        Property contentTypeProp = ontModel.createProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje");
+        Property contentTypeProp = ontModel.createProperty(OFN_NAMESPACE + TYP_OBSAHU);
         concept.addProperty(contentTypeProp, "Structured data");
 
         resourceMap.put("governance-concept-id", concept);
@@ -626,7 +625,7 @@ class JsonExporterUnitTest {
         concept.addProperty(SKOS.prefLabel, "Multi Value Concept", "cs");
 
         // Add property with semicolon-separated values
-        Property sharingProp = ontModel.createProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
+        Property sharingProp = ontModel.createProperty(OFN_NAMESPACE + ZPUSOB_SDILENI);
         concept.addProperty(sharingProp, "Method1;Method2;Method3");
 
         resourceMap.put("multi-value-concept-id", concept);
