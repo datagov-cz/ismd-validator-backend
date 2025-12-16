@@ -47,9 +47,6 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put("slovníky", "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/");
         STANDARD_PREFIXES.put("čas", CAS_NS);
         STANDARD_PREFIXES.put("schema", "http://schema.org/");
-        STANDARD_PREFIXES.put("typ-obsahu-údajů", "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje");
-        STANDARD_PREFIXES.put("způsoby-sdílení-údajů", "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
-        STANDARD_PREFIXES.put("způsoby-získání-údajů", "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje");
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
@@ -318,8 +315,6 @@ public class TurtleExporter {
         mapCustomPropertiesToStandard(transformedModel);
 
         transformSourceProperties(transformedModel);
-
-        addInSchemeRelationships(transformedModel);
 
         cleanupSKOSProperties(transformedModel);
 
@@ -868,31 +863,6 @@ public class TurtleExporter {
 
         transformedModel.remove(toRemove);
         transformedModel.add(toAdd);
-    }
-
-    private void addInSchemeRelationships(OntModel transformedModel) {
-        String ontologyIRI = getOntologyIRI();
-        if (ontologyIRI == null) {
-            log.warn("Cannot add skos:inScheme relationships without ontology IRI");
-            return;
-        }
-
-        Resource conceptScheme = transformedModel.getResource(ontologyIRI);
-        if (conceptScheme == null) {
-            log.warn("ConceptScheme resource not found: {}", ontologyIRI);
-            return;
-        }
-
-        ResIterator conceptIter = transformedModel.listSubjectsWithProperty(RDF.type, SKOS.Concept);
-        while (conceptIter.hasNext()) {
-            Resource concept = conceptIter.next();
-
-            if (!concept.hasProperty(RDF.type, OWL2.ObjectProperty) &&
-                    !concept.hasProperty(RDF.type, OWL2.DatatypeProperty)) {
-                concept.removeAll(SKOS.inScheme);
-                concept.addProperty(SKOS.inScheme, conceptScheme);
-            }
-        }
     }
 
     private <T> T handleTurtleOperation(TurtleSupplier<T> operation) throws TurtleExportException {

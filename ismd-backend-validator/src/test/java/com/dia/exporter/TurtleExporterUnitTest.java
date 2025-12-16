@@ -71,27 +71,6 @@ class TurtleExporterUnitTest {
         validateSKOSStructure(parseModel(result));
     }
 
-    /*
-    @Test
-    void exportToTurtle_WithConcepts_TransformsToSKOSConcepts() {
-        // Arrange
-        setupModelWithConcepts();
-
-        // Act & Assert
-        Model parsedModel = exportAndParseModel();
-
-        assertAll("SKOS concept transformations",
-                () -> assertTrue(parsedModel.contains(null, RDF.type, SKOS.Concept),
-                        "Should transform concepts to SKOS Concepts"),
-                () -> assertTrue(parsedModel.contains(null, SKOS.prefLabel, (RDFNode) null),
-                        "Should transform labels to SKOS prefLabel"),
-                () -> assertTrue(parsedModel.contains(null, SKOS.inScheme, (RDFNode) null),
-                        "Should add inScheme relationships")
-        );
-    }
-
-     */
-
     @Test
     void exportToTurtle_WithConceptScheme_CreatesProperConceptScheme() {
         // Arrange
@@ -241,35 +220,6 @@ class TurtleExporterUnitTest {
         assertFalse(hasEmptyLiterals(parsedModel),
                 "Should filter out empty value: '" + emptyValue + "'");
     }
-
-    // ================= ADVANCED CONCEPT TYPES =================
-
-    /*
-    @TestFactory
-    Stream<DynamicTest> conceptTypeTests() {
-        return Stream.of(
-                dynamicTest("OFN Pojem to SKOS Concept transformation", () -> {
-                    setupModelWithOFNConcepts();
-                    Model parsedModel = exportAndParseModel();
-                    assertTrue(parsedModel.contains(null, RDF.type, SKOS.Concept),
-                            "Should transform OFN pojmy to SKOS Concepts");
-                }),
-                dynamicTest("Multiple concept types handling", () -> {
-                    setupModelWithDifferentConceptTypes();
-                    Model parsedModel = exportAndParseModel();
-                    assertTrue(parsedModel.contains(null, RDF.type, SKOS.Concept),
-                            "Should handle multiple concept types");
-                }),
-                dynamicTest("InScheme relationships creation", () -> {
-                    setupModelWithConcepts();
-                    Model parsedModel = exportAndParseModel();
-                    assertTrue(parsedModel.contains(null, SKOS.inScheme, (RDFNode) null),
-                            "Should create inScheme relationships");
-                })
-        );
-    }
-
-     */
 
     // ================= BASE SCHEMA FILTERING TESTS =================
 
@@ -620,10 +570,10 @@ class TurtleExporterUnitTest {
                 OFN_NAMESPACE + VLASTNOST,
                 OFN_NAMESPACE + VZTAH,
                 OFN_NAMESPACE + TRIDA,
-                OFN_NAMESPACE + TSP,
-                OFN_NAMESPACE + TOP,
-                OFN_NAMESPACE + VEREJNY_UDAJ,
-                OFN_NAMESPACE + NEVEREJNY_UDAJ
+                OFN_NAMESPACE_VS + TSP,
+                OFN_NAMESPACE_VS + TOP,
+                OFN_NAMESPACE_LEGAL + VEREJNY_UDAJ,
+                OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ
         };
 
         for (String uri : baseSchemaURIs) {
@@ -651,30 +601,6 @@ class TurtleExporterUnitTest {
         testConcept.addProperty(RDF.type, ofnPojemType);
         testConcept.addProperty(RDFS.label, "Test Concept", "cs");
         resourceMap.put("test-concept", testConcept);
-    }
-
-    private void setupModelWithConcepts() {
-        setupMinimalOntologyModel();
-
-        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
-
-        Resource concept2 = ontModel.createResource(effectiveNamespace + "concept-2");
-        concept2.addProperty(RDF.type, ofnPojemType);
-        concept2.addProperty(RDFS.label, "Second Concept", "cs");
-        resourceMap.put("concept-2", concept2);
-    }
-
-    private void setupModelWithOFNConcepts() {
-        Resource ontology = ontModel.createOntology(effectiveNamespace + "ofn-vocab");
-        ontology.addProperty(RDF.type, OWL2.Ontology);
-        resourceMap.put("ontology", ontology);
-
-        Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
-
-        Resource concept = ontModel.createResource(effectiveNamespace + "ofn-concept");
-        concept.addProperty(RDF.type, ofnPojemType);
-        concept.addProperty(RDFS.label, "OFN Concept", "cs");
-        resourceMap.put("ofn-concept", concept);
     }
 
     private void setupModelWithCustomProperty(String propertyName, String value) {
@@ -751,28 +677,6 @@ class TurtleExporterUnitTest {
         concept.addProperty(RDFS.label, "Czech Concept", "cs");
         concept.addProperty(RDFS.label, "English Concept", "en");
         resourceMap.put("multilingual-concept", concept);
-    }
-
-    private void setupModelWithDifferentConceptTypes() {
-        Resource ontology = ontModel.createOntology(effectiveNamespace + "typed-vocab");
-        ontology.addProperty(RDF.type, OWL2.Ontology);
-        resourceMap.put("ontology", ontology);
-
-        Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
-        Resource tridaClass = ontModel.createResource(OFN_NAMESPACE + TRIDA);
-        Resource vlastnostClass = ontModel.createResource(OFN_NAMESPACE + VLASTNOST);
-
-        // Class concept
-        Resource classConcept = ontModel.createResource(effectiveNamespace + "class-concept");
-        classConcept.addProperty(RDF.type, pojemClass);
-        classConcept.addProperty(RDF.type, tridaClass);
-        classConcept.addProperty(RDFS.label, "Class Concept", "cs");
-
-        // Property concept
-        Resource propertyConcept = ontModel.createResource(effectiveNamespace + "property-concept");
-        propertyConcept.addProperty(RDF.type, pojemClass);
-        propertyConcept.addProperty(RDF.type, vlastnostClass);
-        propertyConcept.addProperty(RDFS.label, "Property Concept", "cs");
     }
 
     private void setupModelWithBaseSchemaResources() {

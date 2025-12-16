@@ -89,7 +89,7 @@ public class VocabularyConstants {
     public static final String USTANOVENI_NEVEREJNOST = "ustanovení-dokládající-neveřejnost-údaje";
     public static final String SUPP = "související-ustanovení-právního-předpisu";
     public static final String ZPUSOB_SDILENI = "má-způsob-sdílení-údaje";
-    public static final String ZPUSOB_ZISKANI = "má-kategorii-údaje";
+    public static final String ZPUSOB_ZISKANI = "má-způsob-získání-údaje";
     public static final String TYP_OBSAHU = "má-typ-obsahu-údaje";
 
     // Alternate forms from OFNJsonConstants
