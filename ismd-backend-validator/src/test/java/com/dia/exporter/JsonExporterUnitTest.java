@@ -176,12 +176,12 @@ class JsonExporterUnitTest {
         JsonNode concept = pojmyArray.get(0);
 
         // Check governance properties
-        assertTrue(concept.has("způsob-sdílení-údaje"), "Should have sharing method");
+        assertTrue(concept.has("způsoby-sdílení-údaje"), "Should have sharing method");
         assertTrue(concept.has("způsob-získání-údaje"), "Should have acquisition method");
         assertTrue(concept.has("typ-obsahu-údaje"), "Should have content type");
 
         // Verify arrays are properly formatted
-        JsonNode sharingMethod = concept.get("způsob-sdílení-údaje");
+        JsonNode sharingMethod = concept.get("způsoby-sdílení-údaje");
         assertTrue(sharingMethod.isArray(), "Sharing method should be array");
         assertFalse(sharingMethod.isEmpty(), "Should have at least one sharing method");
     }
@@ -200,7 +200,7 @@ class JsonExporterUnitTest {
         JsonNode pojmyArray = rootNode.get("pojmy");
         JsonNode concept = pojmyArray.get(0);
 
-        JsonNode sharingMethod = concept.get("způsob-sdílení-údaje");
+        JsonNode sharingMethod = concept.get("způsoby-sdílení-údaje");
         assertTrue(sharingMethod.isArray(), "Should be array");
         assertEquals(3, sharingMethod.size(), "Should split semicolon-separated values");
         assertEquals("Method1", sharingMethod.get(0).asText());
