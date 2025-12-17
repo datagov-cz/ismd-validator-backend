@@ -21,7 +21,7 @@
         <!-- Version from Git tag, overridden at build time (this default is not used) -->
         <revision>1.0.0</revision>
         <!-- Common library version - update explicitly when upgrading -->
-        <ismd-validator-common.version>1.0.8</ismd-validator-common.version>
+        <ismd-validator-common.version>1.0.9</ismd-validator-common.version>
         <!-- GitHub repository for common library packages -->
         <github.repository>datagov-cz/ismd-validator-backend</github.repository>
     </properties>
