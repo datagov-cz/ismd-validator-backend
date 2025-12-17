@@ -68,7 +68,7 @@ public class VocabularyConstants {
     public static final String SOUVISEJICI_USTANOVENI = "související-ustanovení";
     public static final String DEFINUJICI_NELEGISLATIVNI_ZDROJ = "definující-nelegislativní-zdroj";
     public static final String SOUVISEJICI_NELEGISLATIVNI_ZDROJ = "související-nelegislativní-zdroj";
-    public static final String DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU = "definující-ustanovení-prívního-předpisu";
+    public static final String DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU = "definující-ustanovení-právního-předpisu";
     public static final String SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU = "související-ustanovení-právního-předpisu";
 
     // =============== STRUCTURAL PROPERTIES ===============
@@ -100,7 +100,7 @@ public class VocabularyConstants {
     // =============== LONG FORM PROPERTIES ===============
     public static final String JE_PPDF_LONG = "je-sdílen-v-propojeném-datovém-fondu";
     public static final String AGENDA_LONG = "sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy";
-    public static final String USTANOVENI_LONG = "je-vymezen-ustanovení-stanovujícím-jeho-neveřejnost";
+    public static final String USTANOVENI_LONG = "je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost";
 
     // =============== NAMESPACE PATHS ===============
     public static final String AGENDOVY_104 = "agendový/104/pojem/";
