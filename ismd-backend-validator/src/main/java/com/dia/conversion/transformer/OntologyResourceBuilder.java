@@ -17,7 +17,6 @@ import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.SKOS;
 
-import javax.crypto.spec.SecretKeySpec;
 import java.util.*;
 
 import static com.dia.constants.ExportConstants.Common.DEFAULT_LANG;

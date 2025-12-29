@@ -23,6 +23,6 @@ public class WorkbookProcessor {
     }
 
     public boolean hasSheet(Workbook workbook, String sheetName) {
-        return workbook.getSheet(sheetName) == null;
+        return workbook.getSheet(sheetName) != null;
     }
 }

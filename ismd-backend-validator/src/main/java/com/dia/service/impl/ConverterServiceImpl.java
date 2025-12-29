@@ -30,17 +30,17 @@ public class ConverterServiceImpl implements ConverterService {
 
     @Override
     public ConversionResult processExcelFile(MultipartFile file) throws ExcelReadingException, IOException, ConversionException {
-        log.info("Processing Excel file: filename={}", file.getOriginalFilename());
+        log.info("Processing Excel file: filename={}", file != null ? file.getOriginalFilename() : null);
         ConversionResult result = converterEngine.processExcelFile(file);
-        log.info("Excel file processed successfully: filename={}", file.getOriginalFilename());
+        log.info("Excel file processed successfully: filename={}", file != null ? file.getOriginalFilename() : null);
         return result;
     }
 
     @Override
     public ConversionResult processEAFile(MultipartFile file) throws FileParsingException, IOException, ConversionException {
-        log.info("Processing Enterprise Architect XMI file: filename={}", file.getOriginalFilename());
+        log.info("Processing Enterprise Architect XMI file: filename={}", file != null ? file.getOriginalFilename() : null);
         ConversionResult result = converterEngine.processEAFile(file);
-        log.info("Enterprise Architect XMI file processed successfully: filename={}", file.getOriginalFilename());
+        log.info("Enterprise Architect XMI file processed successfully: filename={}", file != null ? file.getOriginalFilename() : null);
         return result;
     }
 
@@ -56,7 +56,7 @@ public class ConverterServiceImpl implements ConverterService {
     public String exportToJson(FileFormat fileFormat, TransformationResult transformationResult) throws JsonExportException {
         log.info("Exporting to JSON format: inputFormat={}", fileFormat);
         String result = converterEngine.exportToJson(fileFormat, transformationResult);
-        log.debug("JSON export completed: size={} characters", result.length());
+        log.debug("JSON export completed: size={} characters", result != null ? result.length() : 0);
         return result;
     }
 
@@ -64,7 +64,7 @@ public class ConverterServiceImpl implements ConverterService {
     public String exportToTurtle(FileFormat fileFormat, TransformationResult transformationResult) throws TurtleExportException {
         log.info("Exporting to Turtle format: inputFormat={}", fileFormat);
         String result = converterEngine.exportToTurtle(fileFormat, transformationResult);
-        log.debug("Turtle export completed: size={} characters", result.length());
+        log.debug("Turtle export completed: size={} characters", result != null ? result.length() : 0);
         return result;
     }
 }
