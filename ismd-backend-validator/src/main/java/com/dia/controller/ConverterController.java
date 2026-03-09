@@ -73,7 +73,7 @@ public class ConverterController {
             description = "Konverze slovníku ze souboru nebo URL do formátu dle OFN a jeho export dle parametrů. Podporuje vstup v Archi xml, EA xmi, Excel xlsx, a SSP. Podporuje vložení pouze jednoho souboru. Podporuje slovníky v url dle OFN. Formát výstupu konverze podporuje json-ld a ttl. Podporuje validaci dle SHACL. Podporuje generaci výpisu z validace a generaci nekompletního katalogizačního záznamu do NKD."
     )
     @PostMapping("/convert")
-    public ResponseEntity<ConversionResponseDto> convertFile(
+    public ResponseEntity<?> convertFile(
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "fileUrl", required = false) String fileUrl,
             @RequestParam(value = "output", required = false) String output,
@@ -143,7 +143,7 @@ public class ConverterController {
                     Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
                             catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(
+                    ResponseEntity<?> response = getResponseEntity(
                             outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.orElseThrow()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
@@ -162,7 +162,7 @@ public class ConverterController {
                     Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
                             catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(
+                    ResponseEntity<?> response = getResponseEntity(
                             outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.orElseThrow()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
@@ -181,7 +181,7 @@ public class ConverterController {
                     Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
                             catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(
+                    ResponseEntity<?> response = getResponseEntity(
                             outputFormat, fileFormat, conversionResult, results, detailedReport, catalogRecord.orElseThrow()
                     );
                     log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
@@ -224,7 +224,7 @@ public class ConverterController {
             description = "Konverze slovníku vyhledaného přes SPARQL do formátu dle OFN a jeho export dle parametrů. Podporuje vyhedávání dle IRI. Formát výstupu konverze podporuje json-ld a ttl. Podporuje validaci dle SHACL. Podporuje generaci výpisu z validace a generaci nekompletního katalogizačního záznamu do NKD."
     )
     @PostMapping("/ssp/convert")
-    public ResponseEntity<ConversionResponseDto> convertSSPFromIRI(
+    public ResponseEntity<?> convertSSPFromIRI(
             @RequestParam(value = "iri") String iri,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
@@ -253,7 +253,7 @@ public class ConverterController {
             Optional<CatalogRecordDto> catalogRecord = Boolean.TRUE.equals(includeCatalogRecord) ?
                     catalogReportService.generateCatalogReport(conversionResult, results, requestId) : Optional.empty();
 
-            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport, catalogRecord.orElseThrow());
+            ResponseEntity<?> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport, catalogRecord.orElseThrow());
             log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
                     requestId, SSP, output);
             return response;
@@ -470,7 +470,7 @@ public class ConverterController {
         return UNSUPPORTED;
     }
 
-    private ResponseEntity<ConversionResponseDto> getResponseEntity(
+    private ResponseEntity<?> getResponseEntity(
             String outputFormat, FileFormat fileFormat, ConversionResult conversionResult,
             ValidationResultsDto results, DetailedValidationReportDto detailedReport,
             CatalogRecordDto catalogRecord) throws JsonExportException {
@@ -498,7 +498,7 @@ public class ConverterController {
                                 .validationReport(detailedReport)
                                 .catalogReport(catalogRecord)
                                 .ontologyData(ontologyData)
-                                .build());
+                                .build().getOutput());
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
@@ -512,7 +512,7 @@ public class ConverterController {
                                 .validationReport(detailedReport)
                                 .catalogReport(catalogRecord)
                                 .ontologyData(ontologyData)
-                                .build());
+                                .build().getOutput());
             }
             default -> {
                 log.warn("Unsupported output format requested: requestId={}, format={}", requestId, outputFormat);
