@@ -646,15 +646,11 @@ public class JsonExporter {
                 Statement exactMatchStmt = exactMatchIter.next();
 
                 if (exactMatchStmt.getObject().isResource()) {
-                    JSONObject exactMatchObj = new JSONObject();
-                    exactMatchObj.put("id", exactMatchStmt.getObject().asResource().getURI());
-                    exactMatchArray.put(exactMatchObj);
+                    exactMatchArray.put(exactMatchStmt.getObject().asResource().getURI());
                 } else if (exactMatchStmt.getObject().isLiteral()) {
                     String literalValue = exactMatchStmt.getString();
                     if (literalValue != null && !literalValue.trim().isEmpty()) {
-                        JSONObject exactMatchObj = new JSONObject();
-                        exactMatchObj.put("id", literalValue);
-                        exactMatchArray.put(exactMatchObj);
+                        exactMatchArray.put(literalValue);
                     }
                 }
             }
