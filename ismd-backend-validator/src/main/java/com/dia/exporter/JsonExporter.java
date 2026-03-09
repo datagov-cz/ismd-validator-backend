@@ -823,6 +823,7 @@ public class JsonExporter {
     private JSONArray getConceptTypes(Resource concept) {
         JSONArray types = new JSONArray();
         types.put(ExportConstants.Json.POJEM_JSON_LD);
+        types.put(ExportConstants.Json.KONCEPT_JSON_LD);
 
         String[][] typeMapping = {
                 {TRIDA, ExportConstants.Json.TRIDA_JSON_LD},
