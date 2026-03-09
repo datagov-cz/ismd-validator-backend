@@ -118,7 +118,7 @@
                 "cs": "Příjmení držitele řidičského průkazu"
             },
             "alternativní-název": {
-                "cs": "příjmení řidiče"
+                "cs": ["příjmení řidiče"]
             },
             "popis": {
                 "cs": "Řidičský průkaz obsahuje mj. jméno a příjmení držitele."
@@ -355,7 +355,7 @@
                 "cs": "Řidič"
             },
             "alternativní-název": {
-                "cs": "řidič auta"
+                "cs": ["řidič auta"]
             },
             "popis": {
                 "cs": "Řidič je tedy i cyklista, nejen řidič motorových vozidel – neváže se na něj nutně řidičské oprávnění."
@@ -590,7 +590,7 @@
                 "cs": "Jméno držitele řidičského průkazu"
             },
             "alternativní-název": {
-                "cs": "jméno řidiče"
+                "cs": ["jméno řidiče"]
             },
             "popis": {
                 "cs": "Řidičský průkaz obsahuje mj. jméno a příjmení držitele."

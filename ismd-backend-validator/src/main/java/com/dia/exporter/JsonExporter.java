@@ -771,18 +771,15 @@ public class JsonExporter {
 
     private void addValueToAltNamesObject(JSONObject altNamesObj, String lang, String value) throws JSONException {
         if (!altNamesObj.has(lang)) {
-            altNamesObj.put(lang, value);
+            JSONArray langArray = new JSONArray();
+            langArray.put(value);
+            altNamesObj.put(lang, langArray);
             return;
         }
 
         Object existingValue = altNamesObj.get(lang);
         if (existingValue instanceof JSONArray jsonArray) {
             jsonArray.put(value);
-        } else {
-            JSONArray langArray = new JSONArray();
-            langArray.put(existingValue);
-            langArray.put(value);
-            altNamesObj.put(lang, langArray);
         }
     }
 
