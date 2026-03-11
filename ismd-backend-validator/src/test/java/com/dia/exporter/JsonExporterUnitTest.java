@@ -324,7 +324,8 @@ class JsonExporterUnitTest {
         assertTrue(exactMatch.isArray(), "Exact match should be array");
 
         JsonNode firstMatch = exactMatch.get(0);
-        assertTrue(firstMatch.has("id"), "Match should have id field");
+        assertTrue(firstMatch.isTextual(), "Match should be a URI string");
+        assertEquals("http://example.org/equivalent", firstMatch.asText());
     }
 
     @Test
