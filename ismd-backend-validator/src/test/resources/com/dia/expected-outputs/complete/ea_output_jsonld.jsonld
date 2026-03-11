@@ -118,7 +118,7 @@
                 "cs": "Příjmení držitele řidičského průkazu"
             },
             "alternativní-název": {
-                "cs": "příjmení řidiče"
+                "cs": ["příjmení řidiče"]
             },
             "popis": {
                 "cs": "Řidičský průkaz obsahuje mj. jméno a příjmení držitele."
@@ -290,12 +290,8 @@
                 "cs": "Úřad vydávající řidičský průkaz je vždy obecním úřadem obce s rozšířenou působností."
             },
             "ekvivalentní-pojem": [
-                {
-                    "id": "https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce-s-rozšířenou-působností"
-                },
-                {
-                    "id": "https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce"
-                }
+                "https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce-s-rozšířenou-působností",
+                "https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce"
             ],
             "definující-ustanovení-právního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3"
@@ -355,7 +351,7 @@
                 "cs": "Řidič"
             },
             "alternativní-název": {
-                "cs": "řidič auta"
+                "cs": ["řidič auta"]
             },
             "popis": {
                 "cs": "Řidič je tedy i cyklista, nejen řidič motorových vozidel – neváže se na něj nutně řidičské oprávnění."
@@ -590,7 +586,7 @@
                 "cs": "Jméno držitele řidičského průkazu"
             },
             "alternativní-název": {
-                "cs": "jméno řidiče"
+                "cs": ["jméno řidiče"]
             },
             "popis": {
                 "cs": "Řidičský průkaz obsahuje mj. jméno a příjmení držitele."

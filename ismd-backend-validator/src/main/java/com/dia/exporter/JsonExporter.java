@@ -646,15 +646,11 @@ public class JsonExporter {
                 Statement exactMatchStmt = exactMatchIter.next();
 
                 if (exactMatchStmt.getObject().isResource()) {
-                    JSONObject exactMatchObj = new JSONObject();
-                    exactMatchObj.put("id", exactMatchStmt.getObject().asResource().getURI());
-                    exactMatchArray.put(exactMatchObj);
+                    exactMatchArray.put(exactMatchStmt.getObject().asResource().getURI());
                 } else if (exactMatchStmt.getObject().isLiteral()) {
                     String literalValue = exactMatchStmt.getString();
                     if (literalValue != null && !literalValue.trim().isEmpty()) {
-                        JSONObject exactMatchObj = new JSONObject();
-                        exactMatchObj.put("id", literalValue);
-                        exactMatchArray.put(exactMatchObj);
+                        exactMatchArray.put(literalValue);
                     }
                 }
             }
@@ -771,18 +767,15 @@ public class JsonExporter {
 
     private void addValueToAltNamesObject(JSONObject altNamesObj, String lang, String value) throws JSONException {
         if (!altNamesObj.has(lang)) {
-            altNamesObj.put(lang, value);
+            JSONArray langArray = new JSONArray();
+            langArray.put(value);
+            altNamesObj.put(lang, langArray);
             return;
         }
 
         Object existingValue = altNamesObj.get(lang);
         if (existingValue instanceof JSONArray jsonArray) {
             jsonArray.put(value);
-        } else {
-            JSONArray langArray = new JSONArray();
-            langArray.put(existingValue);
-            langArray.put(value);
-            altNamesObj.put(lang, langArray);
         }
     }
 
