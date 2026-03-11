@@ -37,6 +37,7 @@ public class ExportConstants {
 
         // =============== JSON-LD TYPE MAPPINGS ===============
         public static final String POJEM_JSON_LD = "Pojem";
+        public static final String KONCEPT_JSON_LD = "Koncept";
         public static final String TRIDA_JSON_LD = "Třída";
         public static final String VZTAH_JSON_LD = "Vztah";
         public static final String VLASTNOST_JSON_LD = "Vlastnost";
