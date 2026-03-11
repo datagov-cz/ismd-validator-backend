@@ -611,6 +611,11 @@ public class OntologyResourceBuilder {
             return false;
         }
 
+        if (superClassResource == null && hierarchyData.getSuperClassIRI() != null) {
+            log.debug("Superclass '{}' not found locally, using external IRI: {}", superClassName, hierarchyData.getSuperClassIRI());
+            superClassResource = ontModel.createResource(hierarchyData.getSuperClassIRI());
+        }
+
         if (superClassResource == null) {
             log.warn("Superclass resource not found: {}", superClassName);
             return false;

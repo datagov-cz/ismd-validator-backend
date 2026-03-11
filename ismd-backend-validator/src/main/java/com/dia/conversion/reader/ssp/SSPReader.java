@@ -40,8 +40,6 @@ public class SSPReader {
 
             log.debug("Using full ontology IRI for filtering: {}", ontologyIRI);
 
-            discoverSGovStructure(ontologyIRI);
-
             VocabularyMetadata metadata = readVocabularyMetadata(ontologyIRI);
 
             Map<String, ConceptData> ownedConcepts = readSGovOwnedConcepts(ontologyIRI);
@@ -339,12 +337,21 @@ public class SSPReader {
                     QuerySolution solution = results.nextSolution();
                     resultCount++;
 
-                    String childIRI = solution.getResource("child").getURI();
-                    String parentIRI = solution.getResource("parent").getURI();
+                    RDFNode childNode = solution.get("child");
+                    RDFNode parentNode = solution.get("parent");
+
+                    if (childNode == null || !childNode.isResource() || parentNode == null || !parentNode.isResource()) {
+                        log.debug("Skipping hierarchy result #{}: child or parent is not a resource (child={}, parent={})",
+                                resultCount, childNode, parentNode);
+                        continue;
+                    }
+
+                    String childIRI = childNode.asResource().getURI();
+                    String parentIRI = parentNode.asResource().getURI();
                     String childLabel = getStringValue(solution, "childLabel");
                     String parentLabel = getStringValue(solution, "parentLabel");
 
-                    log.debug("Hierarchy result #{}: childIRI='{}', parentIRI='{}', childLabel='{}', parentLabel='{}'", 
+                    log.debug("Hierarchy result #{}: childIRI='{}', parentIRI='{}', childLabel='{}', parentLabel='{}'",
                              resultCount, childIRI, parentIRI, childLabel, parentLabel);
 
                     String childName = childLabel != null ? childLabel : UtilityMethods.extractNameFromIRI(childIRI);
@@ -355,6 +362,7 @@ public class SSPReader {
                     HierarchyData hierarchyData = new HierarchyData();
                     hierarchyData.setSubClass(childName);
                     hierarchyData.setSuperClass(parentName);
+                    hierarchyData.setSuperClassIRI(parentIRI);
                     hierarchyData.setRelationshipId(childIRI);
                     hierarchyData.setRelationshipName("rdfs:subClassOf");
 
@@ -625,300 +633,4 @@ public class SSPReader {
         return relationshipData;
     }
     
-    public void discoverSGovStructure(String namespace) {
-        log.info("=== DISCOVERING SGOV STRUCTURE FOR: {} ===", namespace);
-
-        testOwnershipQuery(namespace);
-        exploreRelationshipRestrictions(namespace);
-        explorePropertyRestrictions(namespace);
-        exploreDirectDomainRange(namespace);
-        diagnoseObjectPropertyStructure(namespace);
-        diagnosePropertyStructure(namespace);
-        diagnoseHierarchyStructure(namespace);
-    }
-    
-    public void diagnoseObjectPropertyStructure(String namespace) {
-        log.info("=== DIAGNOSTIC: ObjectProperty Structure for {} ===", namespace);
-        String queryString = String.format(DIAGNOSTIC_OBJECT_PROPERTY_STRUCTURE_QUERY, namespace);
-
-        try {
-            Query query = QueryFactory.create(queryString);
-
-            try (QueryExecution qexec = QueryExecutionHTTPBuilder
-                    .service(config.getSparqlEndpoint())
-                    .query(query)
-                    .sendMode(QuerySendMode.asPost)
-                    .build()) {
-
-                ResultSet results = qexec.execSelect();
-
-                // Group results by concept for readable output
-                Map<String, List<String>> conceptDetails = new java.util.LinkedHashMap<>();
-                int resultCount = 0;
-
-                while (results.hasNext()) {
-                    QuerySolution solution = results.nextSolution();
-                    resultCount++;
-
-                    String conceptIRI = solution.getResource("concept").getURI();
-                    String type = solution.getResource("type").getURI();
-                    String domain = solution.contains("domain") && solution.get("domain").isResource()
-                            ? solution.getResource("domain").getURI() : null;
-                    String range = solution.contains("range") && solution.get("range").isResource()
-                            ? solution.getResource("range").getURI() : null;
-                    String subClassOf = solution.contains("subClassOf") && solution.get("subClassOf").isResource()
-                            ? solution.getResource("subClassOf").getURI() : null;
-                    String restrictionProp = solution.contains("restrictionProp") && solution.get("restrictionProp").isResource()
-                            ? solution.getResource("restrictionProp").getURI() : null;
-                    String restrictionClass = solution.contains("restrictionClass") && solution.get("restrictionClass").isResource()
-                            ? solution.getResource("restrictionClass").getURI() : null;
-                    String prefLabel = getStringValue(solution, "prefLabel");
-
-                    StringBuilder detail = new StringBuilder();
-                    detail.append("  type=").append(shorten(type));
-                    if (domain != null) detail.append(" | domain=").append(shorten(domain));
-                    if (range != null) detail.append(" | range=").append(shorten(range));
-                    if (subClassOf != null) detail.append(" | subClassOf=").append(shorten(subClassOf));
-                    if (restrictionProp != null) detail.append(" | restriction[").append(shorten(restrictionProp)).append("]=").append(shorten(restrictionClass));
-                    if (prefLabel != null) detail.append(" | label='").append(prefLabel).append("'");
-
-                    conceptDetails.computeIfAbsent(conceptIRI, k -> new ArrayList<>()).add(detail.toString());
-                }
-
-                // Log grouped output
-                int withDomain = 0;
-                int withRange = 0;
-                int withRestriction = 0;
-                int withoutDomainRange = 0;
-
-                for (Map.Entry<String, List<String>> entry : conceptDetails.entrySet()) {
-                    String conceptIRI = entry.getKey();
-                    List<String> details = entry.getValue();
-
-                    boolean hasDomain = details.stream().anyMatch(d -> d.contains("domain="));
-                    boolean hasRange = details.stream().anyMatch(d -> d.contains("range="));
-                    boolean hasRestriction = details.stream().anyMatch(d -> d.contains("restriction["));
-
-                    if (hasDomain) withDomain++;
-                    if (hasRange) withRange++;
-                    if (hasRestriction) withRestriction++;
-                    if (!hasDomain && !hasRange && !hasRestriction) withoutDomainRange++;
-
-                    String status = (!hasDomain && !hasRange && !hasRestriction) ? " *** MISSING DOMAIN/RANGE ***" : "";
-                    log.info("DIAG [{}]{}", shorten(conceptIRI), status);
-                    for (String detail : details) {
-                        log.info("  {}", detail);
-                    }
-                }
-
-                log.info("=== DIAGNOSTIC SUMMARY: {} concepts examined, {} raw results ===", conceptDetails.size(), resultCount);
-                log.info("  With rdfs:domain: {}", withDomain);
-                log.info("  With rdfs:range: {}", withRange);
-                log.info("  With owl:Restriction: {}", withRestriction);
-                log.info("  Without any domain/range info: {} *** THESE WILL HAVE NO DOMAIN/RANGE IN OUTPUT ***", withoutDomainRange);
-            }
-        } catch (Exception e) {
-            log.error("Error running ObjectProperty structure diagnostic", e);
-        }
-    }
-
-    private String shorten(String uri) {
-        if (uri == null) return "null";
-        // Show just the last path segment for readability
-        int lastSlash = uri.lastIndexOf('/');
-        int lastHash = uri.lastIndexOf('#');
-        int pos = Math.max(lastSlash, lastHash);
-        if (pos >= 0 && pos < uri.length() - 1) {
-            return uri.substring(pos + 1);
-        }
-        return uri;
-    }
-
-    public void diagnosePropertyStructure(String namespace) {
-        log.info("=== DIAGNOSTIC: Restriction contents for first 3 typ-vlastnosti in {} ===", namespace);
-        String queryString = String.format(DIAGNOSTIC_PROPERTY_STRUCTURE_QUERY, namespace);
-
-        try {
-            Query query = QueryFactory.create(queryString);
-
-            try (QueryExecution qexec = QueryExecutionHTTPBuilder
-                    .service(config.getSparqlEndpoint())
-                    .query(query)
-                    .sendMode(QuerySendMode.asPost)
-                    .build()) {
-
-                ResultSet results = qexec.execSelect();
-                Map<String, List<String>> propertyRestrictions = new java.util.LinkedHashMap<>();
-                int resultCount = 0;
-
-                while (results.hasNext()) {
-                    QuerySolution solution = results.nextSolution();
-                    resultCount++;
-
-                    String propertyIRI = solution.getResource("property").getURI();
-                    String prefLabel = getStringValue(solution, "prefLabel");
-
-                    String predicate = solution.getResource("restrictionPred").getURI();
-                    RDFNode objNode = solution.get("restrictionObj");
-                    String object;
-                    if (objNode.isResource()) {
-                        if (objNode.isAnon()) {
-                            object = "_:blank";
-                        } else {
-                            object = objNode.asResource().getURI();
-                        }
-                    } else if (objNode.isLiteral()) {
-                        object = "\"" + objNode.asLiteral().getString() + "\"";
-                    } else {
-                        object = objNode.toString();
-                    }
-
-                    String line = shorten(predicate) + " = " + shorten(object);
-                    if (prefLabel != null && !propertyRestrictions.containsKey(propertyIRI)) {
-                        propertyRestrictions.put(propertyIRI, new ArrayList<>());
-                        propertyRestrictions.get(propertyIRI).add("label='" + prefLabel + "'");
-                    }
-                    propertyRestrictions.computeIfAbsent(propertyIRI, k -> new ArrayList<>()).add(line);
-                }
-
-                for (Map.Entry<String, List<String>> entry : propertyRestrictions.entrySet()) {
-                    log.info("PROP-RESTRICTION [{}]", shorten(entry.getKey()));
-                    for (String line : entry.getValue()) {
-                        log.info("  {}", line);
-                    }
-                }
-
-                log.info("=== PROPERTY RESTRICTION DUMP: {} properties, {} triples ===", propertyRestrictions.size(), resultCount);
-            }
-        } catch (Exception e) {
-            log.error("Error running property structure diagnostic", e);
-        }
-    }
-
-    public void diagnoseHierarchyStructure(String namespace) {
-        log.info("=== DIAGNOSTIC: Hierarchy Structure for {} ===", namespace);
-        String queryString = String.format(DIAGNOSTIC_HIERARCHY_STRUCTURE_QUERY, namespace);
-
-        try {
-            Query query = QueryFactory.create(queryString);
-
-            try (QueryExecution qexec = QueryExecutionHTTPBuilder
-                    .service(config.getSparqlEndpoint())
-                    .query(query)
-                    .sendMode(QuerySendMode.asPost)
-                    .build()) {
-
-                ResultSet results = qexec.execSelect();
-                int resultCount = 0;
-
-                while (results.hasNext()) {
-                    QuerySolution solution = results.nextSolution();
-                    resultCount++;
-
-                    RDFNode childNode = solution.get("child");
-                    RDFNode parentNode = solution.get("parent");
-                    if (!childNode.isResource() || !parentNode.isResource()) {
-                        continue;
-                    }
-                    String childIRI = childNode.asResource().getURI();
-                    String parentIRI = parentNode.asResource().getURI();
-                    String childLabel = getStringValue(solution, "childLabel");
-                    String parentLabel = getStringValue(solution, "parentLabel");
-                    String childType = solution.contains("childType") && solution.get("childType").isResource()
-                            ? solution.getResource("childType").getURI() : "UNKNOWN";
-                    String parentType = solution.contains("parentType") && solution.get("parentType").isResource()
-                            ? solution.getResource("parentType").getURI() : "NO TYPE";
-
-                    log.info("HIER-DIAG: [{}] '{}' --subClassOf--> [{}] '{}' | childType={} | parentType={}",
-                            shorten(childIRI), childLabel,
-                            shorten(parentIRI), parentLabel,
-                            shorten(childType), shorten(parentType));
-                }
-
-                log.info("=== HIERARCHY DIAGNOSTIC SUMMARY: {} raw results ===", resultCount);
-            }
-        } catch (Exception e) {
-            log.error("Error running hierarchy structure diagnostic", e);
-        }
-    }
-
-    public void exploreRelationshipRestrictions(String namespace) {
-        log.info("--- Exploring Relationship Restrictions ---");
-        String queryString = String.format(EXPLORE_RELATIONSHIP_RESTRICTIONS_QUERY, namespace);
-        executeExploratoryQuery(queryString, "Relationship Restrictions");
-    }
-    
-    public void explorePropertyRestrictions(String namespace) {
-        log.info("--- Exploring Property Restrictions ---");
-        String queryString = String.format(EXPLORE_PROPERTY_RESTRICTIONS_QUERY, namespace);
-        executeExploratoryQuery(queryString, "Property Restrictions");
-    }
-    
-    public void exploreDirectDomainRange(String namespace) {
-        log.info("--- Exploring Direct Domain/Range ---");
-        String queryString = String.format(EXPLORE_DIRECT_DOMAIN_RANGE_QUERY, namespace);
-        executeExploratoryQuery(queryString, "Direct Domain/Range");
-    }
-
-    
-    public void testOwnershipQuery(String namespace) {
-        log.info("--- Testing SGoV Ownership Query ---");
-        String queryString = String.format(SGOV_ALL_CONCEPTS_WITH_OWNERSHIP_QUERY, namespace);
-        executeExploratoryQuery(queryString, "SGoV Ownership Test");
-    }
-
-    private void executeExploratoryQuery(String queryString, String queryName) {
-        log.debug("Executing exploratory query: {}", queryName);
-        log.debug("Query: {}", queryString);
-
-        try {
-            Query query = QueryFactory.create(queryString);
-
-            try (QueryExecution qexec = QueryExecutionHTTPBuilder
-                    .service(config.getSparqlEndpoint())
-                    .query(query)
-                    .sendMode(QuerySendMode.asPost)
-                    .build()) {
-
-                ResultSet results = qexec.execSelect();
-                int resultCount = 0;
-
-                while (results.hasNext()) {
-                    QuerySolution solution = results.nextSolution();
-                    resultCount++;
-
-                    StringBuilder resultLine = new StringBuilder();
-                    resultLine.append("Result #").append(resultCount).append(": ");
-
-                    List<String> varNamesList = new ArrayList<>();
-                    solution.varNames().forEachRemaining(varNamesList::add);
-                    for (String varName : varNamesList) {
-                        if (solution.contains(varName)) {
-                            RDFNode node = solution.get(varName);
-                            String value;
-                            if (node.isLiteral()) {
-                                value = node.asLiteral().getString();
-                            } else if (node.isResource()) {
-                                value = node.asResource().getURI();
-                            } else {
-                                value = node.toString();
-                            }
-                            resultLine.append(varName).append("='").append(value).append("' ");
-                        }
-                    }
-
-                    log.info("{}", resultLine);
-
-                    if (resultCount >= 50) {
-                        log.info("... (showing first 50 results)");
-                        break;
-                    }
-                }
-
-                log.info("Total results for {}: {}", queryName, resultCount);
-            }
-        } catch (Exception e) {
-            log.error("Error executing exploratory query: {}", queryName, e);
-        }
-    }
 }
