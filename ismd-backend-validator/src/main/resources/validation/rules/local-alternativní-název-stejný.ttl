@@ -1,0 +1,27 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+
+# Warning rule: Alternative name is the same as the primary name
+<https://slovník.gov.cz/shacl/lokální/alternativní-název-stejný>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Alternativní název stejný jako název"@cs ;
+    sh:description "Reports when concept's alternative name equals its primary name" ;
+    sh:message "Alternativní název je stejný, jako název"@cs ;
+    sh:severity sh:Warning ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this ?altName
+            WHERE {
+                $this a slovníky:pojem .
+                $this skos:prefLabel ?prefName .
+                $this skos:altLabel ?altName .
+                FILTER(STR(?prefName) = STR(?altName) && LANG(?prefName) = LANG(?altName))
+            }
+        """ ;
+    ] .
