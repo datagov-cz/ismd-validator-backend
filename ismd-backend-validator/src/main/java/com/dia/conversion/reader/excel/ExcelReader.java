@@ -10,6 +10,8 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.stereotype.Component;
 
+import com.dia.utility.UtilityMethods;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -280,7 +282,7 @@ public class ExcelReader {
                 .withColumn(SOUVISEJICI_ZDROJ, ClassData::setRelatedSource)
                 .withColumn(NADRAZENY_POJEM, ClassData::setSuperClass)
                 .withColumn(EKVIVALENTNI_POJEM, ClassData::setEquivalentConcept)
-                .withColumn(IDENTIFIKATOR, ClassData::setIdentifier)
+                .withColumn(IDENTIFIKATOR, (data, value) -> setValidatedIdentifier(data::setIdentifier, data::getName, value))
                 .withColumn(AGENDA, ClassData::setAgendaCode)
                 .withColumn(AIS, ClassData::setAgendaSystemCode)
                 .withColumn(JE_VEREJNY, ClassData::setIsPublic)
@@ -304,7 +306,7 @@ public class ExcelReader {
                 .withColumn(SOUVISEJICI_ZDROJ, PropertyData::setRelatedSource)
                 .withColumn(NADRAZENY_POJEM, PropertyData::setSuperProperty)
                 .withColumn(EKVIVALENTNI_POJEM, PropertyData::setEquivalentConcept)
-                .withColumn(IDENTIFIKATOR, PropertyData::setIdentifier)
+                .withColumn(IDENTIFIKATOR, (data, value) -> setValidatedIdentifier(data::setIdentifier, data::getName, value))
                 .withColumn(DATOVY_TYP, PropertyData::setDataType)
                 .withColumn(JE_PPDF, PropertyData::setSharedInPPDF)
                 .withColumn(AGENDA, PropertyData::setAgendaCode)
@@ -331,7 +333,7 @@ public class ExcelReader {
                 .withColumn(SOUVISEJICI_ZDROJ, RelationshipData::setRelatedSource)
                 .withColumn(NADRAZENY_POJEM, RelationshipData::setSuperRelation)
                 .withColumn(EKVIVALENTNI_POJEM, RelationshipData::setEquivalentConcept)
-                .withColumn(IDENTIFIKATOR, RelationshipData::setIdentifier)
+                .withColumn(IDENTIFIKATOR, (data, value) -> setValidatedIdentifier(data::setIdentifier, data::getName, value))
                 .withColumn(JE_PPDF, RelationshipData::setSharedInPPDF)
                 .withColumn(AGENDA, RelationshipData::setAgendaCode)
                 .withColumn(AIS, RelationshipData::setAgendaSystemCode)
@@ -358,6 +360,21 @@ public class ExcelReader {
         log.debug("Registering mapping for 'Slovník' sheet");
         mappingRegistry.registerMapping("Slovník", vocabMapping);
         log.debug("Vocabulary mapping setup completed");
+    }
+
+    private void setValidatedIdentifier(java.util.function.Consumer<String> setter,
+                                           java.util.function.Supplier<String> nameSupplier,
+                                           String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return;
+        }
+        String trimmed = value.trim();
+        if (UtilityMethods.isValidIRI(trimmed)) {
+            setter.accept(trimmed);
+        } else {
+            log.warn("Invalid identifier '{}' for concept '{}' - not a valid IRI/URI, ignoring",
+                    trimmed, nameSupplier.get());
+        }
     }
 
     private enum ValidationStatus {

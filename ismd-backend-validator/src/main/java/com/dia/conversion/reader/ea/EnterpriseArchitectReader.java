@@ -368,7 +368,7 @@ public class EnterpriseArchitectReader {
 
         classData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         classData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
-        classData.setIdentifier(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
+        setValidatedIdentifier(classData, getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
         classData.setSharedInPPDF(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_SDILEN_V_PPDF"));
         classData.setAgendaCode(getTagValueByPattern(extensionElement, "AGENDA"));
         classData.setAgendaSystemCode(getTagValueByPattern(extensionElement, "AGENDOVY_INFORMACNI_SYSTEM"));
@@ -399,7 +399,7 @@ public class EnterpriseArchitectReader {
 
         propertyData.setAlternativeName(getTagValueByPattern(extensionElement, "ALTERNATIVNI_NAZEV"));
         propertyData.setEquivalentConcept(getTagValueByPattern(extensionElement, "EKVIVALENTNI_POJEM"));
-        propertyData.setIdentifier(getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
+        setValidatedIdentifier(propertyData, getTagValueByPattern(extensionElement, "IDENTIFIKATOR"));
         propertyData.setDataType(getTagValueByPattern(extensionElement, "DATOVY_TYP"));
         propertyData.setSharedInPPDF(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_SDILEN_V_PPDF"));
 
@@ -747,7 +747,7 @@ public class EnterpriseArchitectReader {
         relationshipData.setRelatedSource(getTagValueByPattern(connector, "SOUVISEJICI_ZDROJ"));
         relationshipData.setAlternativeName(getTagValueByPattern(connector, "ALTERNATIVNI_NAZEV"));
         relationshipData.setEquivalentConcept(getTagValueByPattern(connector, "EKVIVALENTNI_POJEM"));
-        relationshipData.setIdentifier(getTagValueByPattern(connector, "IDENTIFIKATOR"));
+        setValidatedIdentifier(relationshipData, getTagValueByPattern(connector, "IDENTIFIKATOR"));
         relationshipData.setSharedInPPDF(getBooleanTagValueByPattern(connector, "JE_POJEM_SDILEN_V_PPDF"));
         relationshipData.setAgendaCode(getTagValueByPattern(connector, "AGENDA"));
         relationshipData.setAgendaSystemCode(getTagValueByPattern(connector, "AGENDOVY_INFORMACNI_SYSTEM"));
@@ -1019,6 +1019,42 @@ public class EnterpriseArchitectReader {
                     log.debug("Inferred domain '{}' for sub-property '{}' from super-property '{}'",
                             superDomain, subPropertyName, superPropertyName);
                 }
+            }
+        }
+    }
+
+    private void setValidatedIdentifier(ClassData data, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            String trimmed = value.trim();
+            if (UtilityMethods.isValidIRI(trimmed)) {
+                data.setIdentifier(trimmed);
+            } else {
+                log.warn("Invalid identifier '{}' for class '{}' - not a valid IRI/URI, ignoring",
+                        trimmed, data.getName());
+            }
+        }
+    }
+
+    private void setValidatedIdentifier(PropertyData data, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            String trimmed = value.trim();
+            if (UtilityMethods.isValidIRI(trimmed)) {
+                data.setIdentifier(trimmed);
+            } else {
+                log.warn("Invalid identifier '{}' for property '{}' - not a valid IRI/URI, ignoring",
+                        trimmed, data.getName());
+            }
+        }
+    }
+
+    private void setValidatedIdentifier(RelationshipData data, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            String trimmed = value.trim();
+            if (UtilityMethods.isValidIRI(trimmed)) {
+                data.setIdentifier(trimmed);
+            } else {
+                log.warn("Invalid identifier '{}' for relationship '{}' - not a valid IRI/URI, ignoring",
+                        trimmed, data.getName());
             }
         }
     }
