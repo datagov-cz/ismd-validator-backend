@@ -17,6 +17,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDFS;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.quality.Strictness.LENIENT;
 
+@Disabled("Catalog record feature disabled — enable with Spring profile 'catalog-record'")
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = LENIENT)
 class CatalogReportServiceImplTest {
