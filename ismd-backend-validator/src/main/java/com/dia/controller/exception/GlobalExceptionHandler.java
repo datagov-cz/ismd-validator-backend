@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ConversionResponseDto> handleMaxSizeException(MaxUploadSizeExceededException e) {
         log.error("File size exceeds the limit: {}", e.getMessage());
-        ConversionResponseDto response = ConversionResponseDto.error("Soubor je příliš velký. Maximální velikost je 5 MB.");
+        ConversionResponseDto response = ConversionResponseDto.error("Soubor je příliš velký. Maximální velikost je 10 MB.");
         return new ResponseEntity<>(response, HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
