@@ -20,10 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
-
 import static com.dia.conversion.reader.ssp.queries.SPARQLQueries.*;
-import static java.util.regex.Pattern.CANON_EQ;
 
 @Component
 @Data
@@ -42,8 +39,6 @@ public class SSPReader {
             }
 
             log.debug("Using full ontology IRI for filtering: {}", ontologyIRI);
-
-            discoverSGovStructure(ontologyIRI);
 
             VocabularyMetadata metadata = readVocabularyMetadata(ontologyIRI);
 
@@ -105,8 +100,21 @@ public class SSPReader {
                 }
             }
 
-            log.info("SGoV ontology conversion completed: {} classes, {} properties, {} relationships",
-                    classesCreated, propertiesCreated, relationshipsCreated);
+            // Diagnostic summary: show which relationships ended up without domain/range
+            int missingDomain = 0;
+            int missingRange = 0;
+            for (RelationshipData rel : relationships) {
+                boolean noDomain = rel.getDomain() == null || rel.getDomain().isBlank();
+                boolean noRange = rel.getRange() == null || rel.getRange().isBlank();
+                if (noDomain || noRange) {
+                    log.warn("RELATIONSHIP MISSING D/R: '{}' [{}] -> domain='{}', range='{}'",
+                            rel.getName(), rel.getIdentifier(), rel.getDomain(), rel.getRange());
+                }
+                if (noDomain) missingDomain++;
+                if (noRange) missingRange++;
+            }
+            log.info("SGoV ontology conversion completed: {} classes, {} properties, {} relationships (missing domain: {}, missing range: {})",
+                    classesCreated, propertiesCreated, relationshipsCreated, missingDomain, missingRange);
 
             return builder
                     .classes(classes)
@@ -198,28 +206,16 @@ public class SSPReader {
         
         Map<String, String> conceptTypes = executeSGovModelElementsQuery(namespace);
         
+        int skippedCount = 0;
         for (Map.Entry<String, ConceptData> entry : ownedConcepts.entrySet()) {
             String conceptIRI = entry.getKey();
-            
             if (!conceptTypes.containsKey(conceptIRI)) {
-                ConceptData concept = entry.getValue();
-                String name = concept.getName().toLowerCase();
-                String defaultType;
-                
-                if (isRelationshipName(name)) {
-                    defaultType = "https://slovník.gov.cz/základní/pojem/typ-vztahu";
-                } else if (isPropertyName(name)) {
-                    defaultType = "https://slovník.gov.cz/základní/pojem/typ-vlastnosti";
-                } else {
-                    defaultType = "https://slovník.gov.cz/základní/pojem/typ-objektu";
-                }
-                
-                conceptTypes.put(conceptIRI, defaultType);
-                log.debug("Assigned default type {} to concept: {}", defaultType, concept.getName());
+                skippedCount++;
+                log.debug("No explicit type found for concept, skipping: {} - {}", conceptIRI, entry.getValue().getName());
             }
         }
-        
-        log.debug("Found {} concept types (explicit + inferred)", conceptTypes.size());
+
+        log.debug("Found {} concept types (explicit), skipped {} concepts without explicit type", conceptTypes.size(), skippedCount);
         return conceptTypes;
     }
 
@@ -341,12 +337,21 @@ public class SSPReader {
                     QuerySolution solution = results.nextSolution();
                     resultCount++;
 
-                    String childIRI = solution.getResource("child").getURI();
-                    String parentIRI = solution.getResource("parent").getURI();
+                    RDFNode childNode = solution.get("child");
+                    RDFNode parentNode = solution.get("parent");
+
+                    if (childNode == null || !childNode.isResource() || parentNode == null || !parentNode.isResource()) {
+                        log.debug("Skipping hierarchy result #{}: child or parent is not a resource (child={}, parent={})",
+                                resultCount, childNode, parentNode);
+                        continue;
+                    }
+
+                    String childIRI = childNode.asResource().getURI();
+                    String parentIRI = parentNode.asResource().getURI();
                     String childLabel = getStringValue(solution, "childLabel");
                     String parentLabel = getStringValue(solution, "parentLabel");
 
-                    log.debug("Hierarchy result #{}: childIRI='{}', parentIRI='{}', childLabel='{}', parentLabel='{}'", 
+                    log.debug("Hierarchy result #{}: childIRI='{}', parentIRI='{}', childLabel='{}', parentLabel='{}'",
                              resultCount, childIRI, parentIRI, childLabel, parentLabel);
 
                     String childName = childLabel != null ? childLabel : UtilityMethods.extractNameFromIRI(childIRI);
@@ -357,6 +362,7 @@ public class SSPReader {
                     HierarchyData hierarchyData = new HierarchyData();
                     hierarchyData.setSubClass(childName);
                     hierarchyData.setSuperClass(parentName);
+                    hierarchyData.setSuperClassIRI(parentIRI);
                     hierarchyData.setRelationshipId(childIRI);
                     hierarchyData.setRelationshipName("rdfs:subClassOf");
 
@@ -391,19 +397,6 @@ public class SSPReader {
             }
         }
         return null;
-    }
-
-    private boolean isRelationshipName(String name) {
-        return name.contains("vykonává") || name.contains("má") || name.contains("je") ||
-                name.contains("obsahuje") || name.contains("patří") || name.contains("souvisí") ||
-                name.matches(".*uje$") || Pattern.compile(".*ává$", CANON_EQ).matcher(name).matches() ||
-                Pattern.compile(".*í$", CANON_EQ).matcher(name).matches();
-    }
-
-    private boolean isPropertyName(String name) {
-        return name.startsWith("má-") || name.startsWith("má ") || name.contains("hodnota") || 
-               name.contains("vlastnost") ||
-                Pattern.compile(".*\\b(číslo|kód|název|datum|hodnota)\\b.*", CANON_EQ).matcher(name).matches();
     }
 
     private Map<String, ConceptData> executeSGovConceptsQuery(String namespace, String queryTemplate) {
@@ -528,7 +521,7 @@ public class SSPReader {
     }
 
     private Map<String, String> executeSGovModelElementsQuery(String namespace) {
-        String queryString = String.format(SGOV_MODEL_ELEMENTS_QUERY, namespace, namespace);
+        String queryString = String.format(SGOV_MODEL_ELEMENTS_QUERY, namespace);
         log.debug("Executing SGoV model elements query: {}", queryString);
         Map<String, String> conceptTypes = new HashMap<>();
 
@@ -640,92 +633,4 @@ public class SSPReader {
         return relationshipData;
     }
     
-    public void discoverSGovStructure(String namespace) {
-        log.info("=== DISCOVERING SGOV STRUCTURE FOR: {} ===", namespace);
-
-        testOwnershipQuery(namespace);
-        exploreRelationshipRestrictions(namespace);
-        explorePropertyRestrictions(namespace);
-        exploreDirectDomainRange(namespace);
-    }
-    
-    public void exploreRelationshipRestrictions(String namespace) {
-        log.info("--- Exploring Relationship Restrictions ---");
-        String queryString = String.format(EXPLORE_RELATIONSHIP_RESTRICTIONS_QUERY, namespace);
-        executeExploratoryQuery(queryString, "Relationship Restrictions");
-    }
-    
-    public void explorePropertyRestrictions(String namespace) {
-        log.info("--- Exploring Property Restrictions ---");
-        String queryString = String.format(EXPLORE_PROPERTY_RESTRICTIONS_QUERY, namespace);
-        executeExploratoryQuery(queryString, "Property Restrictions");
-    }
-    
-    public void exploreDirectDomainRange(String namespace) {
-        log.info("--- Exploring Direct Domain/Range ---");
-        String queryString = String.format(EXPLORE_DIRECT_DOMAIN_RANGE_QUERY, namespace);
-        executeExploratoryQuery(queryString, "Direct Domain/Range");
-    }
-
-    
-    public void testOwnershipQuery(String namespace) {
-        log.info("--- Testing SGoV Ownership Query ---");
-        String queryString = String.format(SGOV_ALL_CONCEPTS_WITH_OWNERSHIP_QUERY, namespace);
-        executeExploratoryQuery(queryString, "SGoV Ownership Test");
-    }
-
-    private void executeExploratoryQuery(String queryString, String queryName) {
-        log.debug("Executing exploratory query: {}", queryName);
-        log.debug("Query: {}", queryString);
-
-        try {
-            Query query = QueryFactory.create(queryString);
-
-            try (QueryExecution qexec = QueryExecutionHTTPBuilder
-                    .service(config.getSparqlEndpoint())
-                    .query(query)
-                    .sendMode(QuerySendMode.asPost)
-                    .build()) {
-
-                ResultSet results = qexec.execSelect();
-                int resultCount = 0;
-
-                while (results.hasNext()) {
-                    QuerySolution solution = results.nextSolution();
-                    resultCount++;
-
-                    StringBuilder resultLine = new StringBuilder();
-                    resultLine.append("Result #").append(resultCount).append(": ");
-
-                    List<String> varNamesList = new ArrayList<>();
-                    solution.varNames().forEachRemaining(varNamesList::add);
-                    for (String varName : varNamesList) {
-                        if (solution.contains(varName)) {
-                            RDFNode node = solution.get(varName);
-                            String value;
-                            if (node.isLiteral()) {
-                                value = node.asLiteral().getString();
-                            } else if (node.isResource()) {
-                                value = node.asResource().getURI();
-                            } else {
-                                value = node.toString();
-                            }
-                            resultLine.append(varName).append("='").append(value).append("' ");
-                        }
-                    }
-
-                    log.info("{}", resultLine);
-
-                    if (resultCount >= 50) {
-                        log.info("... (showing first 50 results)");
-                        break;
-                    }
-                }
-
-                log.info("Total results for {}: {}", queryName, resultCount);
-            }
-        } catch (Exception e) {
-            log.error("Error executing exploratory query: {}", queryName, e);
-        }
-    }
 }

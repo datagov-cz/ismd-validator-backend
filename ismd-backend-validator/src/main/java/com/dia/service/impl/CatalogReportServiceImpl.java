@@ -21,6 +21,7 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RiotException;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDFS;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Service
+@Profile("catalog-record")
 @RequiredArgsConstructor
 @Slf4j
 public class CatalogReportServiceImpl implements CatalogReportService {

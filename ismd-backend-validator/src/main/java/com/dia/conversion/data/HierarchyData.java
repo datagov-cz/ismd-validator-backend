@@ -10,6 +10,7 @@ import lombok.Setter;
 public class HierarchyData {
     private String subClass;
     private String superClass;
+    private String superClassIRI;
     private String relationshipId;
     private String relationshipName;
 

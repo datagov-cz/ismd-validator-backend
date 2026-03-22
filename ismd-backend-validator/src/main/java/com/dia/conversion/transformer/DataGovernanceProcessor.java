@@ -67,11 +67,17 @@ public class DataGovernanceProcessor {
     }
 
     private void handleClassNonPublicData(Resource classResource, ClassData classData, String privacyProvision) {
-        classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ));
-        log.debug("Added non-public data annotation and RDF type for class: {}", classData.getName());
-
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
-            validateAndAddClassPrivacyProvision(classResource, classData, privacyProvision);
+            if (validateAndAddClassPrivacyProvision(classResource, classData, privacyProvision)) {
+                classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ));
+                log.debug("Added non-public data annotation and RDF type for class: {}", classData.getName());
+            } else {
+                log.warn("Skipping public/non-public classification for class '{}' - invalid privacy provision: '{}'",
+                        classData.getName(), privacyProvision);
+            }
+        } else {
+            log.warn("Skipping public/non-public classification for class '{}' - marked as non-public but missing privacy provision",
+                    classData.getName());
         }
     }
 
@@ -97,7 +103,7 @@ public class DataGovernanceProcessor {
         }
     }
 
-    private void validateAndAddClassPrivacyProvision(Resource classResource, ClassData classData, String provision) {
+    private boolean validateAndAddClassPrivacyProvision(Resource classResource, ClassData classData, String provision) {
         String trimmedProvision = provision.trim();
 
         if (UtilityMethods.containsEliPattern(trimmedProvision)) {
@@ -115,13 +121,16 @@ public class DataGovernanceProcessor {
                     log.debug("Added privacy provision as literal for class '{}': {} -> {}",
                             classData.getName(), trimmedProvision, transformedProvision);
                 }
+                return true;
             } else {
                 log.warn("Failed to extract ELI part from privacy provision for class '{}': '{}'",
                         classData.getName(), trimmedProvision);
+                return false;
             }
         } else {
-            log.debug("Privacy provision does not contain ELI pattern for class '{}': '{}' - skipping",
+            log.warn("Privacy provision does not contain ELI pattern for class '{}': '{}' - skipping provision",
                     classData.getName(), trimmedProvision);
+            return false;
         }
     }
 
@@ -147,11 +156,17 @@ public class DataGovernanceProcessor {
     }
 
     private void handlePropertyNonPublicData(Resource propertyResource, PropertyData propertyData, String privacyProvision) {
-        propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ));
-        log.debug("Added non-public data annotation and RDF type for property: {}", propertyData.getName());
-
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
-            validateAndAddPropertyPrivacyProvision(propertyResource, propertyData, privacyProvision);
+            if (validateAndAddPropertyPrivacyProvision(propertyResource, propertyData, privacyProvision)) {
+                propertyResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ));
+                log.debug("Added non-public data annotation and RDF type for property: {}", propertyData.getName());
+            } else {
+                log.warn("Skipping public/non-public classification for property '{}' - invalid privacy provision: '{}'",
+                        propertyData.getName(), privacyProvision);
+            }
+        } else {
+            log.warn("Skipping public/non-public classification for property '{}' - marked as non-public but missing privacy provision",
+                    propertyData.getName());
         }
     }
 
@@ -177,7 +192,7 @@ public class DataGovernanceProcessor {
         }
     }
 
-    private void validateAndAddPropertyPrivacyProvision(Resource propertyResource, PropertyData propertyData, String provision) {
+    private boolean validateAndAddPropertyPrivacyProvision(Resource propertyResource, PropertyData propertyData, String provision) {
         String trimmedProvision = provision.trim();
 
         if (UtilityMethods.containsEliPattern(trimmedProvision)) {
@@ -195,13 +210,16 @@ public class DataGovernanceProcessor {
                     log.debug("Added privacy provision as literal for property '{}': {} -> {}",
                             propertyData.getName(), trimmedProvision, transformedProvision);
                 }
+                return true;
             } else {
                 log.warn("Failed to extract ELI part from privacy provision for property '{}': '{}'",
                         propertyData.getName(), trimmedProvision);
+                return false;
             }
         } else {
-            log.debug("Privacy provision does not contain ELI pattern for property '{}': '{}' - skipping",
+            log.warn("Privacy provision does not contain ELI pattern for property '{}': '{}' - skipping provision",
                     propertyData.getName(), trimmedProvision);
+            return false;
         }
     }
 
@@ -228,11 +246,17 @@ public class DataGovernanceProcessor {
     }
 
     private void handleRelationshipNonPublicData(Resource relationshipResource, RelationshipData relationshipData, String privacyProvision) {
-        relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ));
-        log.debug("Added non-public data annotation and RDF type for relationship: {}", relationshipData.getName());
-
         if (privacyProvision != null && !privacyProvision.trim().isEmpty()) {
-            validateAndAddRelationshipPrivacyProvision(relationshipResource, relationshipData, privacyProvision);
+            if (validateAndAddRelationshipPrivacyProvision(relationshipResource, relationshipData, privacyProvision)) {
+                relationshipResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ));
+                log.debug("Added non-public data annotation and RDF type for relationship: {}", relationshipData.getName());
+            } else {
+                log.warn("Skipping public/non-public classification for relationship '{}' - invalid privacy provision: '{}'",
+                        relationshipData.getName(), privacyProvision);
+            }
+        } else {
+            log.warn("Skipping public/non-public classification for relationship '{}' - marked as non-public but missing privacy provision",
+                    relationshipData.getName());
         }
     }
 
@@ -258,7 +282,7 @@ public class DataGovernanceProcessor {
         }
     }
 
-    private void validateAndAddRelationshipPrivacyProvision(Resource relationshipResource, RelationshipData relationshipData, String provision) {
+    private boolean validateAndAddRelationshipPrivacyProvision(Resource relationshipResource, RelationshipData relationshipData, String provision) {
         String trimmedProvision = provision.trim();
 
         if (UtilityMethods.containsEliPattern(trimmedProvision)) {
@@ -276,13 +300,16 @@ public class DataGovernanceProcessor {
                     log.debug("Added privacy provision as literal for relationship '{}': {} -> {}",
                             relationshipData.getName(), trimmedProvision, transformedProvision);
                 }
+                return true;
             } else {
                 log.warn("Failed to extract ELI part from privacy provision for relationship '{}': '{}'",
                         relationshipData.getName(), trimmedProvision);
+                return false;
             }
         } else {
-            log.debug("Privacy provision does not contain ELI pattern for relationship '{}': '{}' - skipping",
+            log.warn("Privacy provision does not contain ELI pattern for relationship '{}': '{}' - skipping provision",
                     relationshipData.getName(), trimmedProvision);
+            return false;
         }
     }
 
