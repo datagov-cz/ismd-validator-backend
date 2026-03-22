@@ -1,6 +1,5 @@
 package com.dia.controller.dto;
 
-import com.dia.dto.CatalogRecordDto;
 import com.dia.validation.data.DetailedValidationReportDto;
 import lombok.*;
 
@@ -13,15 +12,13 @@ public class ConversionResponseDto {
     private String errorMessage;
     private ValidationResultsDto validationResults;
     private DetailedValidationReportDto validationReport;
-    private CatalogRecordDto catalogReport;
     private String ontologyData;
 
-    public static ConversionResponseDto success(String output, ValidationResultsDto results, DetailedValidationReportDto validationReport, CatalogRecordDto catalogReport) {
+    public static ConversionResponseDto success(String output, ValidationResultsDto results, DetailedValidationReportDto validationReport) {
         return ConversionResponseDto.builder()
                 .output(output)
                 .validationResults(results)
                 .validationReport(validationReport)
-                .catalogReport(catalogReport)
                 .build();
     }
 
