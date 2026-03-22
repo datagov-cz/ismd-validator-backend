@@ -91,6 +91,8 @@ public class VocabularyConstants {
     public static final String ZPUSOB_SDILENI = "má-způsob-sdílení-údaje";
     public static final String ZPUSOB_ZISKANI = "má-způsob-získání-údaje";
     public static final String TYP_OBSAHU = "má-typ-obsahu-údaje";
+    public static final String MA_INSTANCE_DEFINOVANE_CISELNIKEM = "má-instance-definované-číselníkem";
+    public static final String MA_V_NKOD_ZASTRESUJICI_DATOVOU_SADU = "má-v-nkod-zastřešující-datovou-sadu";
 
     // Alternate forms from OFNJsonConstants
     public static final String ZPUSOBY_SDILENI_ALT = "způsoby-sdílení-údaje";
@@ -118,6 +120,11 @@ public class VocabularyConstants {
     public static final String TOP_JSON_LD = "Typ objektu práva";
     public static final String VEREJNY_UDAJ_JSON_LD = "Veřejný údaj";
     public static final String NEVEREJNY_UDAJ_JSON_LD = "Neveřejný údaj";
+    public static final String CISELNIK_JSON_LD = "Číselník";
+
+    // =============== CODE LIST DATASET JSON-LD FIELD NAMES ===============
+    public static final String INSTANCE_DEFINOVANY_CISELNIKEM = "instance-definovány-číselníkem";
+    public static final String DATOVA_SADA_V_NKOD = "datová-sada-v-nkod";
 
     // =============== JSON STRUCTURE CONSTANTS ===============
     public static final String JSON_CONTEXT = "@context";
@@ -134,7 +141,8 @@ public class VocabularyConstants {
             EKVIVALENTNI_POJEM, DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU, SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU,
             DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
             DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENY_VZTAH, NADRAZENA_VLASTNOST,
-            NADRAZENA_TRIDA, ZPUSOBY_SDILENI_ALT, ZPUSOB_ZISKANI_ALT, TYP_OBSAHU_ALT
+            NADRAZENA_TRIDA, INSTANCE_DEFINOVANY_CISELNIKEM,
+            ZPUSOBY_SDILENI_ALT, ZPUSOB_ZISKANI_ALT, TYP_OBSAHU_ALT
     };
 
     private VocabularyConstants() {
