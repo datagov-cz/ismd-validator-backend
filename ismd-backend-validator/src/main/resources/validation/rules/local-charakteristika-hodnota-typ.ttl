@@ -1,0 +1,58 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+@prefix a104: <https://slovník.gov.cz/agendový/104/pojem/> .
+
+# Error rule: Concept characteristic value must match expected OFN type
+<https://slovník.gov.cz/shacl/lokální/charakteristika-hodnota-typ>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Charakteristika pojmu dle typu OFN"@cs ;
+    sh:description "Validates that concept characteristics use correct data types from OFN" ;
+    sh:message "Charakteristika pojmu neobsahuje hodnotu dle typu z OFN"@cs ;
+    sh:severity sh:Violation ;
+
+    # je-sdílen-v-ppdf must be xsd:boolean
+    sh:property [
+        sh:path a104:je-sdílen-v-propojeném-datovém-fondu ;
+        sh:datatype xsd:boolean ;
+    ] ;
+
+    # alternativní-název must be language-tagged string
+    sh:property [
+        sh:path skos:altLabel ;
+        sh:datatype rdf:langString ;
+    ] ;
+
+    # definice must be language-tagged string
+    sh:property [
+        sh:path skos:definition ;
+        sh:datatype rdf:langString ;
+    ] ;
+
+    # popis must be language-tagged string
+    sh:property [
+        sh:path dct:description ;
+        sh:datatype rdf:langString ;
+    ] ;
+
+    # ekvivalentní pojem must be IRI
+    sh:property [
+        sh:path skos:exactMatch ;
+        sh:nodeKind sh:IRI ;
+    ] ;
+
+    # je v tezauru must be IRI
+    sh:property [
+        sh:path skos:inScheme ;
+        sh:nodeKind sh:IRI ;
+    ] ;
+
+    # nadřazený pojem must be IRI
+    sh:property [
+        sh:path skos:broader ;
+        sh:nodeKind sh:IRI ;
+    ] .

@@ -1,0 +1,44 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+
+# Warning rule: Concept is isolated (no connections to the rest of the model)
+<https://slovník.gov.cz/shacl/lokální/osamocené-pojmy>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Osamocené pojmy"@cs ;
+    sh:description "Reports concepts that have no connections to other concepts in the model (isolated islands)" ;
+    sh:message "Pojem nemá vazbu na model jako celek"@cs ;
+    sh:severity sh:Warning ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this
+            WHERE {
+                $this a slovníky:pojem .
+                FILTER(
+                    # No hierarchical connections (outgoing)
+                    NOT EXISTS { $this skos:broader ?b . } &&
+                    NOT EXISTS { $this rdfs:subClassOf ?sc . } &&
+                    NOT EXISTS { $this rdfs:subPropertyOf ?sp . } &&
+                    NOT EXISTS { $this rdfs:domain ?d . } &&
+                    NOT EXISTS { $this rdfs:range ?r . } &&
+                    NOT EXISTS { $this skos:exactMatch ?em . } &&
+                    # No hierarchical connections (incoming)
+                    NOT EXISTS { ?child skos:broader $this . } &&
+                    NOT EXISTS { ?child rdfs:subClassOf $this . } &&
+                    NOT EXISTS { ?child rdfs:subPropertyOf $this . } &&
+                    NOT EXISTS { ?prop rdfs:domain $this . } &&
+                    NOT EXISTS { ?prop rdfs:range $this . } &&
+                    NOT EXISTS { ?other skos:exactMatch $this . }
+                )
+            }
+        """ ;
+    ] .
