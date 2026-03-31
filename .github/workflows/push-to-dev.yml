@@ -28,7 +28,7 @@ jobs:
     outputs:
       needs_release: ${{ steps.check.outputs.needs_release }}
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 2
       
