@@ -5,6 +5,17 @@ permissions:
 
 on:
   workflow_call:
+    inputs:
+      enforce_coverage:
+        description: "Fail workflow when JaCoCo check is not met"
+        required: false
+        type: boolean
+        default: true
+      coverage_minimum:
+        description: "JaCoCo line coverage minimum ratio (0.00-1.00)"
+        required: false
+        type: string
+        default: "0.00"
 
 jobs:
   test:
@@ -37,10 +48,19 @@ jobs:
         working-directory: ismd-backend-validator
         run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
 
-      - name: Build with Maven
+      - name: Run tests with coverage
         working-directory: ismd-backend-validator
-        run: ./mvnw clean package -DskipTests=true
+        run: |
+          if [ "${{ inputs.enforce_coverage }}" = "true" ]; then
+            ./mvnw clean verify -Djacoco.line.minimum=${{ inputs.coverage_minimum }}
+          else
+            ./mvnw clean test jacoco:report -Djacoco.line.minimum=${{ inputs.coverage_minimum }}
+          fi
 
-      - name: Run tests
-        working-directory: ismd-backend-validator
-        run: ./mvnw test
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-report-${{ github.run_id }}
+          path: ismd-backend-validator/target/site/jacoco
+          if-no-files-found: warn

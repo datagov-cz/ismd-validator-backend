@@ -183,16 +183,16 @@ jobs:
             gh pr create \
               --title "Release v${{ steps.new-version.outputs.version }}" \
               --body "# Release v${{ steps.new-version.outputs.version }}
-          
-              This PR merges changes from dev into main for release v${{ steps.new-version.outputs.version }}.
-          
-              ## What happens after merge:
-              1. Git tag \`v${{ steps.new-version.outputs.version }}\` will be created automatically
-              2. Docker images will be built with version \`${{ steps.new-version.outputs.version }}\`
-              3. Deployment to TEST environment will be triggered
-              4. Dev branch will be synced with main (clean merge, no file changes)
-          
-              **Note:** Version is managed via Git tags, no pom.xml changes needed." \
+
+          This PR merges changes from dev into main for release v${{ steps.new-version.outputs.version }}.
+
+          ## What happens after merge:
+          1. Git tag \`v${{ steps.new-version.outputs.version }}\` will be created automatically
+          2. Docker images will be built with version \`${{ steps.new-version.outputs.version }}\`
+          3. Deployment to TEST environment will be triggered
+          4. Dev branch will be synced with main (clean merge, no file changes)
+
+          **Note:** Version is managed via Git tags, no pom.xml changes needed." \
               --base main \
               --head $BRANCH_NAME
           
@@ -204,18 +204,18 @@ jobs:
             gh pr edit $PR_NUMBER \
               --title "Release v${{ steps.new-version.outputs.version }}" \
               --body "# Release v${{ steps.new-version.outputs.version }}
-          
-              This PR merges changes from dev into main for release v${{ steps.new-version.outputs.version }}.
-          
-              ## What happens after merge:
-              1. Git tag \`v${{ steps.new-version.outputs.version }}\` will be created automatically
-              2. Docker images will be built with version \`${{ steps.new-version.outputs.version }}\`
-              3. Deployment to TEST environment will be triggered
-              4. Dev branch will be synced with main (clean merge, no file changes)
-          
-              **Note:** Version is managed via Git tags, no pom.xml changes needed.
-          
-              *Updated on $(date)*"
+
+          This PR merges changes from dev into main for release v${{ steps.new-version.outputs.version }}.
+
+          ## What happens after merge:
+          1. Git tag \`v${{ steps.new-version.outputs.version }}\` will be created automatically
+          2. Docker images will be built with version \`${{ steps.new-version.outputs.version }}\`
+          3. Deployment to TEST environment will be triggered
+          4. Dev branch will be synced with main (clean merge, no file changes)
+
+          **Note:** Version is managed via Git tags, no pom.xml changes needed.
+
+          *Updated on $(date)*"
           
             echo "Updated existing PR #$PR_NUMBER"
           fi

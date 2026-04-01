@@ -13,12 +13,6 @@ on:
         description: 'Version to release'
         required: false
         type: string
-  workflow_call:
-    inputs:
-      version:
-        description: 'Version to release (leave empty for auto-patch-increment from SNAPSHOT)'
-        required: false
-        type: string
 
 permissions:
   contents: write
@@ -71,7 +65,7 @@ jobs:
           echo "Updated pom.xml to version $NEW_VERSION"
 
       - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.8.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
       
