@@ -288,9 +288,6 @@ public class OFNDataTransformerNew {
         if (metadata.getDescription() != null) {
             properties.put(POPIS, metadata.getDescription());
         }
-        if (metadata.getNamespace() != null) {
-            properties.put(LOKALNI_KATALOG, metadata.getNamespace());
-        }
         return properties;
     }
 }

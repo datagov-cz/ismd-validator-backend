@@ -209,15 +209,6 @@ public class EnterpriseArchitectReader {
             metadata.setDescription(getTagValueByPattern(extensionElement, "POPIS_SLOVNIKU"));
         }
 
-        String namespace = getTagValueByPattern(extensionElement, "NAMESPACE");
-        if (namespace == null || namespace.trim().isEmpty()) {
-            String name = metadata.getName();
-            if (name != null && !name.trim().isEmpty()) {
-                namespace = DEFAULT_NS + name.toLowerCase();
-            }
-        }
-        metadata.setNamespace(namespace);
-
         return metadata;
     }
 
