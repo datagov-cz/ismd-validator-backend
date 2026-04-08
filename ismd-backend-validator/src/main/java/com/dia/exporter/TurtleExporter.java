@@ -345,14 +345,8 @@ public class TurtleExporter {
             return ontologyIRI;
         }
 
-        String catalogNamespace = modelProperties.get(LOKALNI_KATALOG);
-        if (catalogNamespace != null && !catalogNamespace.isEmpty()) {
-            log.debug("Using catalog namespace as ontology IRI: {}", catalogNamespace);
-            return catalogNamespace;
-        }
-
-        log.warn("Could not determine ontology IRI from any source");
-        return null;
+        log.debug("Using effective namespace as ontology IRI: {}", effectiveNamespace);
+        return effectiveNamespace;
     }
 
     private void createConceptScheme(OntModel transformedModel) {
