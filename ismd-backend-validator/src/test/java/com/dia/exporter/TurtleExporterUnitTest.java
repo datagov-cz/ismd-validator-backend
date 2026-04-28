@@ -39,6 +39,7 @@ class TurtleExporterUnitTest {
     private String modelName;
     private Map<String, String> modelProperties;
     private String effectiveNamespace;
+    private String localConceptPrefix;
     private TurtleExporter exporter;
 
     @BeforeEach
@@ -50,6 +51,9 @@ class TurtleExporterUnitTest {
 
         // Use a specific vocabulary namespace that won't be filtered
         effectiveNamespace = "https://slovník.gov.cz/legislativní/sbírka/test/2024/pojem/";
+        // Local-concept prefix follows the production rule: <ontologyIRI>/pojem/
+        // Ontology IRI in these tests is `effectiveNamespace + "test-vocabulary"`.
+        localConceptPrefix = effectiveNamespace + "test-vocabulary/pojem/";
 
         MDC.put(LOG_REQUEST_ID, "test-request-123");
         exporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
@@ -596,7 +600,7 @@ class TurtleExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
-        Resource testConcept = ontModel.createResource(namespace + "test-concept");
+        Resource testConcept = ontModel.createResource(namespace + "test-vocabulary/pojem/test-concept");
         testConcept.addProperty(RDF.type, ofnPojemType);
         testConcept.addProperty(RDFS.label, "Test Concept", "cs");
         resourceMap.put("test-concept", testConcept);
@@ -671,7 +675,7 @@ class TurtleExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "multilingual-concept");
+        Resource concept = ontModel.createResource(effectiveNamespace + "multilingual-vocab/pojem/multilingual-concept");
         concept.addProperty(RDF.type, ofnPojemType);
         concept.addProperty(RDFS.label, "Czech Concept", "cs");
         concept.addProperty(RDFS.label, "English Concept", "en");
@@ -707,11 +711,11 @@ class TurtleExporterUnitTest {
 
         Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
 
-        Resource concept1 = ontModel.createResource(effectiveNamespace + "concept-1");
+        Resource concept1 = ontModel.createResource(effectiveNamespace + "vocab-1/pojem/concept-1");
         concept1.addProperty(RDF.type, pojemClass);
         concept1.addProperty(RDFS.label, "Concept 1", "cs");
 
-        Resource concept2 = ontModel.createResource(effectiveNamespace + "concept-2");
+        Resource concept2 = ontModel.createResource(effectiveNamespace + "vocab-1/pojem/concept-2");
         concept2.addProperty(RDF.type, pojemClass);
         concept2.addProperty(RDFS.label, "Concept 2", "cs");
 
@@ -721,7 +725,7 @@ class TurtleExporterUnitTest {
     private void setupModelWithoutOntologyIRI() {
         // Create model without proper ontology setup
         Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "orphan-concept");
+        Resource concept = ontModel.createResource(effectiveNamespace + "orphan/pojem/orphan-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(RDFS.label, "Orphan Concept", "cs");
     }

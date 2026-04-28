@@ -50,7 +50,7 @@ class ArchiReaderUnitTest {
 
         assertNotNull(result);
         assertNotNull(result.getVocabularyMetadata());
-        assertEquals("Slovník dle metodiky dat Digitální a informační agentury", result.getVocabularyMetadata().getName());
+        assertEquals("Příkladový slovník z metodiky popisu dat", result.getVocabularyMetadata().getName());
         assertNull(result.getVocabularyMetadata().getNamespace());
 
         assertFalse(result.getClasses().isEmpty());
@@ -192,7 +192,7 @@ class ArchiReaderUnitTest {
 
         VocabularyMetadata metadata = result.getVocabularyMetadata();
         assertNotNull(metadata);
-        assertEquals("Slovník dle metodiky dat Digitální a informační agentury", metadata.getName());
+        assertEquals("Příkladový slovník z metodiky popisu dat", metadata.getName());
         assertNull(metadata.getNamespace());
     }
 

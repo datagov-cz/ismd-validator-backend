@@ -11,7 +11,6 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.vocabulary.*;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -64,7 +63,6 @@ class ConversionWorkflowEATurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL Output")
     @MethodSource("testConfigurationProvider")
-    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void eaConversionWorkflow_shouldProduceSemanticallySameTurtleOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("EA CONVERSION → TURTLE WORKFLOW TEST: " + config.getTestId());
@@ -146,7 +144,6 @@ class ConversionWorkflowEATurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL Data Preservation")
     @MethodSource("testConfigurationProvider")
-    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void eaConversionWorkflow_turtleShouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[EA TTL DATA PRESERVATION TEST] " + config.getTestId());
 

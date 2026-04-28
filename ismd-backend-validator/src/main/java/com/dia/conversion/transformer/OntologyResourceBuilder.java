@@ -53,6 +53,7 @@ public class OntologyResourceBuilder {
     private final DataGovernanceProcessor governanceProcessor;
     private final ConceptFilterUtil conceptFilterUtil;
     private Map<String, Resource> allClassResourcesForHierarchies;
+    private String localConceptPrefix;
 
     public OntologyResourceBuilder(OntModel ontModel, URIGenerator uriGenerator,
                                    DataGovernanceProcessor governanceProcessor,
@@ -65,6 +66,7 @@ public class OntologyResourceBuilder {
 
     public void createOntologyResourceWithTemporal(VocabularyMetadata metadata, Map<String, Resource> localResourceMap) {
         String ontologyIRI = uriGenerator.generateVocabularyURI(metadata.getName(), null);
+        this.localConceptPrefix = ontologyIRI + "/pojem/";
         log.debug("Creating ontology resource with temporal support and IRI: {}", ontologyIRI);
 
         ontModel.createOntology(ontologyIRI);
@@ -988,13 +990,13 @@ public class OntologyResourceBuilder {
     }
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
-        if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
+        if (conceptURI == null || localConceptPrefix == null) {
             return false;
         }
 
-        boolean belongs = conceptURI.startsWith(uriGenerator.getEffectiveNamespace());
-        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
-                conceptURI, belongs, uriGenerator.getEffectiveNamespace());
+        boolean belongs = conceptURI.startsWith(localConceptPrefix);
+        log.debug("Local-concept check for {}: belongs = {} (local prefix: {})",
+                conceptURI, belongs, localConceptPrefix);
         return belongs;
     }
 }

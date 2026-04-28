@@ -903,13 +903,17 @@ public class JsonExporter {
     }
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
-        if (conceptURI == null || effectiveNamespace == null) {
+        if (conceptURI == null) {
             return false;
         }
-
-        boolean belongs = conceptURI.startsWith(effectiveNamespace);
-        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
-                conceptURI, belongs, effectiveNamespace);
+        String ontologyIRI = getOntologyIRI();
+        if (ontologyIRI == null) {
+            return false;
+        }
+        String localPrefix = ontologyIRI + "/pojem/";
+        boolean belongs = conceptURI.startsWith(localPrefix);
+        log.debug("Local-concept check for {}: belongs = {} (local prefix: {})",
+                conceptURI, belongs, localPrefix);
         return belongs;
     }
 

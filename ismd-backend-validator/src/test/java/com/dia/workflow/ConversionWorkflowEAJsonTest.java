@@ -8,7 +8,6 @@ import com.dia.workflow.deviation.DeviationDetector;
 import com.dia.workflow.deviation.WorkflowDeviation;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -63,7 +62,6 @@ class ConversionWorkflowEAJsonTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("testConfigurationProvider")
-    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void eaConversionWorkflow_shouldProduceExpectedOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("EA CONVERSION WORKFLOW TEST: " + config.getTestId());
@@ -132,7 +130,6 @@ class ConversionWorkflowEAJsonTest {
 
     @ParameterizedTest(name = "{0} - No Data Loss")
     @MethodSource("testConfigurationProvider")
-    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void eaConversionWorkflow_shouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[EA DATA PRESERVATION TEST] " + config.getTestId());
 

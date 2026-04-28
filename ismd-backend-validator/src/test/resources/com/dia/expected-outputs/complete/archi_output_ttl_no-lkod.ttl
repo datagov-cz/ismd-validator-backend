@@ -259,12 +259,12 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         <https://slovník.gov.cz/nadřazená-vlastnost>
                 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/rodné-číslo-držitele-řidičského-průkazu>;
         <https://slovník.gov.cz/související-nelegislativní-zdroj>
-                [ rdf:type   <https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt>;
-                  dct:title  "Směrnice EU"@cs
-                ];
-        <https://slovník.gov.cz/související-nelegislativní-zdroj>
                 [ rdf:type    <https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt>;
                   schema:url  "https://ofn.gov.cz/slovníky/draft2/cs/#360-2023"^^xsd:anyURI
+                ];
+        <https://slovník.gov.cz/související-nelegislativní-zdroj>
+                [ rdf:type   <https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt>;
+                  dct:title  "Směrnice EU"@cs
                 ] .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/desetinné-číslo-p>
@@ -290,7 +290,7 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>
         rdf:type                        slovníky:třída , vsgov:typ-subjektu-práva , slovníky:pojem , skos:Concept;
-        dct:description                 "Úřad vydávající řidičský průkaz je vždy obecním úřadem obce s rozšířenou působností."@cs;
+        dct:description                 "Úřad vydávající řidičský průkaz je vždy obecním úřadem obce s rozšířenou působností."@cs;
         skos:exactMatch                 <https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce> , <https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
         skos:inScheme                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat>;
         skos:prefLabel                  "Obecní úřad obce s rozšířenou působností"@cs;
@@ -391,7 +391,7 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         rdf:type                        slovníky:pojem , l111-2009:veřejný-údaj , slovníky:vlastnost , owl:DatatypeProperty , skos:Concept;
         rdfs:domain                     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
         rdfs:range                      rdfs:Literal;
-        dct:description                 "Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností)."@cs;
+        dct:description                 "Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností)."@cs;
         skos:inScheme                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat>;
         skos:prefLabel                  "Název obecního úřadu obce s rozšířenou působností"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
