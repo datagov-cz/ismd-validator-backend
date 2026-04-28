@@ -145,28 +145,9 @@ public class ArchiReader {
             metadata.setDescription(description);
         }
 
-        String namespace = extractNamespaceFromProperties(modelProperties);
-        if (namespace != null) {
-            metadata.setNamespace(namespace);
-        }
-
-        log.debug("Extracted vocabulary metadata: name={}, namespace={}",
-                metadata.getName(), metadata.getNamespace());
+        log.debug("Extracted vocabulary metadata: name={}",
+                metadata.getName());
         return metadata;
-    }
-
-    private String extractNamespaceFromProperties(Map<String, String> properties) {
-        for (Map.Entry<String, String> entry : properties.entrySet()) {
-            String key = entry.getKey();
-            if (key.equals(LOKALNI_KATALOG) ||
-                    (key.contains("adresa") && (key.contains("lokální") || key.contains("lokálního")))) {
-                String ns = entry.getValue();
-                if (ns != null && !ns.isEmpty() && UtilityMethods.isValidUrl(ns)) {
-                    return ns;
-                }
-            }
-        }
-        return null;
     }
 
     private List<ClassData> extractClasses() {
@@ -622,8 +603,6 @@ public class ArchiReader {
         specificPatterns.put("způsob sdílení údaje", ZPUSOB_SDILENI);
         specificPatterns.put("způsob získání údaje", ZPUSOB_ZISKANI);
         specificPatterns.put("typ obsahu údaje", TYP_OBSAHU);
-        specificPatterns.put("adresa lokálního katalogu dat", LOKALNI_KATALOG);
-
         specificPatterns.put("zdroj", ZDROJ);
         specificPatterns.put("popis", POPIS);
         specificPatterns.put("definice", DEFINICE);

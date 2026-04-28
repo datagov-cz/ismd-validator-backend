@@ -27,7 +27,7 @@ class ExcelReaderUnitTest {
     @Test
     void readOntologyFromExcel_ShouldOnlyPreserveValidIRIIdentifiers() throws Exception {
         OntologyData result;
-        try (InputStream is = new ClassPathResource("com/dia/canonical/complete/testExcelProject.xlsx").getInputStream()) {
+        try (InputStream is = new ClassPathResource("com/dia/canonical/complete/testExcelProject_no-lkod.xlsx").getInputStream()) {
             result = reader.readOntologyFromExcel(is);
         }
 

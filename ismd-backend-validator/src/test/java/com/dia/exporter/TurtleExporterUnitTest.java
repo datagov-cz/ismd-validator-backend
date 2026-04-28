@@ -51,7 +51,6 @@ class TurtleExporterUnitTest {
         // Use a specific vocabulary namespace that won't be filtered
         effectiveNamespace = "https://slovník.gov.cz/legislativní/sbírka/test/2024/pojem/";
 
-        modelProperties.put(LOKALNI_KATALOG, effectiveNamespace);
         MDC.put(LOG_REQUEST_ID, "test-request-123");
         exporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
     }

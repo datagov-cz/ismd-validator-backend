@@ -353,8 +353,6 @@ public class ExcelReader {
         ColumnMapping<VocabularyMetadata> vocabMapping = ColumnMapping.<VocabularyMetadata>builder()
                 .withKeyValuePair("Název slovníku:", VocabularyMetadata::setName)
                 .withKeyValuePair("Popis slovníku:", VocabularyMetadata::setDescription)
-                .withKeyValuePair("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:",
-                        VocabularyMetadata::setNamespace)
                 .build();
 
         log.debug("Registering mapping for 'Slovník' sheet");

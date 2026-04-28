@@ -213,7 +213,7 @@ public class JsonExporter {
             return ontologyResource.getURI();
         }
 
-        return modelProperties.getOrDefault(LOKALNI_KATALOG, effectiveNamespace);
+        return effectiveNamespace;
     }
 
     private Map<String, Object> createOrderedModelMap(Map<String, Object> originalMap) {

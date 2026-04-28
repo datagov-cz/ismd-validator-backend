@@ -8,9 +8,6 @@ Verze šablony v1.1</documentation>
     <property propertyDefinitionRef="propid-18">
       <value xml:lang="en">Ukázkový slovník zákona o silničním provozu z metodiky. Jedná se o příklad popisu; není garantován soulad tohoto slovníku s aktuálními zákony a jinými zdroji z této oblasti.</value>
     </property>
-    <property propertyDefinitionRef="propid-19">
-      <value xml:lang="en">https://data.dia.gov.cz</value>
-    </property>
   </properties>
   <elements>
     <element identifier="id-3e68285870b44e3babb13cd1546c0e0d" xsi:type="BusinessObject">
@@ -941,7 +938,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en">test - má být literal</value>
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností-copy</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností-copy</value>
         </property>
         <property propertyDefinitionRef="propid-10">
           <value xml:lang="en">Ano</value>
@@ -1391,7 +1388,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en">Řetězec</value>
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/jméno-držitele-řidičského-průkazu</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/jméno-držitele-řidičského-průkazu</value>
         </property>
         <property propertyDefinitionRef="propid-10">
           <value xml:lang="en">Ano</value>
@@ -1441,7 +1438,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en">Text</value>
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností</value>
         </property>
         <property propertyDefinitionRef="propid-10">
           <value xml:lang="en">Ano</value>
@@ -1488,7 +1485,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en">https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce-s-rozšířenou-působností;https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce</value>
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností</value>
         </property>
         <property propertyDefinitionRef="propid-16">
           <value xml:lang="en" />
@@ -1535,7 +1532,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en">https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c</value>
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/příjmení-držitele-řidičského-průkazu</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/příjmení-držitele-řidičského-průkazu</value>
         </property>
         <property propertyDefinitionRef="propid-15">
           <value xml:lang="en" />
@@ -1573,7 +1570,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en" />
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz</value>
         </property>
         <property propertyDefinitionRef="propid-16">
           <value xml:lang="en" />
@@ -1608,7 +1605,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en" />
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích</value>
         </property>
         <property propertyDefinitionRef="propid-16">
           <value xml:lang="en">998</value>
@@ -1649,7 +1646,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en">https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/1234</value>
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič</value>
         </property>
       </properties>
     </element>
@@ -1678,7 +1675,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en" />
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů</value>
         </property>
         <property propertyDefinitionRef="propid-16">
           <value xml:lang="en">1234</value>
@@ -1713,7 +1710,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en" />
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo</value>
         </property>
         <property propertyDefinitionRef="propid-16">
           <value xml:lang="en" />
@@ -1830,7 +1827,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en">Vlastní</value>
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/drží-řidičský-průkaz</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/drží-řidičský-průkaz</value>
         </property>
       </properties>
     </relationship>
@@ -1865,7 +1862,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en" />
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řídí-vozidlo</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řídí-vozidlo</value>
         </property>
         <property propertyDefinitionRef="propid-15">
           <value xml:lang="en" />
@@ -1918,7 +1915,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en">Jiných agend</value>
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/sídlí-na-adrese</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/sídlí-na-adrese</value>
         </property>
       </properties>
     </relationship>
@@ -1964,7 +1961,7 @@ Verze šablony v1.1</documentation>
           <value xml:lang="en">Provozní</value>
         </property>
         <property propertyDefinitionRef="propid-9">
-          <value xml:lang="en">https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vydává-řidičský-průkaz</value>
+          <value xml:lang="en">https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vydává-řidičský-průkaz</value>
         </property>
       </properties>
     </relationship>
@@ -2124,9 +2121,6 @@ Verze šablony v1.1</documentation>
     </propertyDefinition>
     <propertyDefinition identifier="propid-14" type="string">
       <name>4. 360/2023 - způsob získání údaje</name>
-    </propertyDefinition>
-    <propertyDefinition identifier="propid-19" type="string">
-      <name>adresa lokálního katalogu dat, ve kterém bude slovník registrován</name>
     </propertyDefinition>
     <propertyDefinition identifier="propid-9" type="string">
       <name>identifikátor</name>

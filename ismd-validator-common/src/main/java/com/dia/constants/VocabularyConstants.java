@@ -72,8 +72,6 @@ public class VocabularyConstants {
     public static final String SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU = "související-ustanovení-právního-předpisu";
 
     // =============== STRUCTURAL PROPERTIES ===============
-    public static final String LOKALNI_KATALOG = "adresa-lokálního-katalogu-dat-ve-kterém-bude-slovník-registrován";
-    public static final String LOKALNI_KATALOG_SHORT = "lokální-katalog"; // Short form from OFNJsonConstants
     public static final String DEFINICNI_OBOR = "definiční-obor";
     public static final String OBOR_HODNOT = "obor-hodnot";
     public static final String NADRAZENA_TRIDA = "nadřazená-třída";
@@ -161,7 +159,7 @@ public class VocabularyConstants {
 
         public static final String[] DATA_GOVERNANCE = {
                 AIS, UDAJE_AIS, AGENDA, AGENDA_LONG, JE_PPDF, JE_PPDF_LONG,
-                JE_VEREJNY, USTANOVENI_NEVEREJNOST, LOKALNI_KATALOG,
+                JE_VEREJNY, USTANOVENI_NEVEREJNOST,
                 ZPUSOB_SDILENI, ZPUSOB_ZISKANI, TYP_OBSAHU, SUPP
         };
 
