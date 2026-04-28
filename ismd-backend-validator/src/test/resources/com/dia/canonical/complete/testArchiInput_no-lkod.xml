@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <model xmlns="http://www.opengroup.org/xsd/archimate/3.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengroup.org/xsd/archimate/3.0/ http://www.opengroup.org/xsd/archimate/3.1/archimate3_Diagram.xsd" identifier="id-63dbdc3529984029bb5d99c13bf1aa97">
-  <name xml:lang="en">Slovník dle metodiky dat Digitální a informační agentury</name>
+  <name xml:lang="en">Příkladový slovník z metodiky popisu dat</name>
   <documentation xml:lang="en">Slovník dle metodiky popisu dat Digitální a informační agentury.&#xD;
 Popis samotného slovníku pište do "Properties", položka "popis slovníku"&#xD;
 Verze šablony v1.1</documentation>
@@ -2135,7 +2135,7 @@ Verze šablony v1.1</documentation>
         <name xml:lang="en">Základní šablona</name>
       </view>
       <view identifier="id-36ce911e7b984104add6cf49578062a9" xsi:type="Diagram">
-        <name xml:lang="en">Slovník dle metodiky dat Digitální a informační agentury</name>
+        <name xml:lang="en">Příkladový slovník z metodiky popisu dat</name>
         <node identifier="id-7aa9783fb2644a3f923bcb103bfa9fb0" elementRef="id-1a64dced9df5425885186fe89890d5b6" xsi:type="Element" x="408" y="212" w="133" h="55">
           <style>
             <fillColor r="255" g="255" b="181" a="100" />

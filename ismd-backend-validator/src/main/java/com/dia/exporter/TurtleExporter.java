@@ -200,8 +200,11 @@ public class TurtleExporter {
         }
 
         String uri = resource.getURI();
-
-        return !uri.startsWith(effectiveNamespace);
+        String ontologyIRI = getOntologyIRI();
+        if (ontologyIRI == null) {
+            return true;
+        }
+        return !uri.startsWith(ontologyIRI + "/pojem/");
     }
 
     private boolean shouldFilterAsBaseSchema(String uri) {

@@ -43,6 +43,7 @@ class JsonExporterUnitTest {
     private String modelName;
     private Map<String, String> modelProperties;
     private String effectiveNamespace;
+    private String localConceptPrefix;
     private JsonExporter exporter;
 
     private ObjectMapper objectMapper;
@@ -55,6 +56,7 @@ class JsonExporterUnitTest {
         modelName = "Test Vocabulary";
         modelProperties = new HashMap<>();
         effectiveNamespace = DEFAULT_NS;
+        localConceptPrefix = effectiveNamespace + "test-vocabulary/pojem/";
         objectMapper = new ObjectMapper();
 
         // Set up MDC for logging
@@ -533,7 +535,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource testConcept = ontModel.createResource(effectiveNamespace + "test-concept");
+        Resource testConcept = ontModel.createResource(localConceptPrefix + "test-concept");
         testConcept.addProperty(RDF.type, pojemClass);
         testConcept.addProperty(SKOS.prefLabel, "Test Concept", "cs");
         resourceMap.put("test-concept", testConcept);
@@ -543,7 +545,7 @@ class JsonExporterUnitTest {
         setupMinimalOntologyModel();
 
         OntClass pojemClass = ontModel.getOntClass(OFN_NAMESPACE + POJEM);
-        Resource concept2 = ontModel.createResource(effectiveNamespace + "second-concept");
+        Resource concept2 = ontModel.createResource(localConceptPrefix + "second-concept");
         concept2.addProperty(RDF.type, pojemClass);
         concept2.addProperty(SKOS.prefLabel, "Second Concept", "cs");
         resourceMap.put("second-concept-id", concept2);
@@ -556,7 +558,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(customNamespace + "custom-concept");
+        Resource concept = ontModel.createResource(customNamespace + "test-vocabulary/pojem/custom-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "Custom Concept", "cs");
         resourceMap.put("custom-concept", concept);
@@ -568,7 +570,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "multilingual-concept");
+        Resource concept = ontModel.createResource(localConceptPrefix + "multilingual-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "Test Concept", "cs");
         concept.addProperty(SKOS.prefLabel, "Test Concept EN", "en");
@@ -581,7 +583,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "concept-with-alt-names");
+        Resource concept = ontModel.createResource(localConceptPrefix + "concept-with-alt-names");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "Main Concept", "cs");
 
@@ -597,7 +599,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "governance-concept");
+        Resource concept = ontModel.createResource(localConceptPrefix + "governance-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "Governance Concept", "cs");
 
@@ -621,7 +623,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "multi-value-concept");
+        Resource concept = ontModel.createResource(localConceptPrefix + "multi-value-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "Multi Value Concept", "cs");
 
@@ -638,7 +640,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "rpp-concept");
+        Resource concept = ontModel.createResource(localConceptPrefix + "rpp-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "RPP Concept", "cs");
 
@@ -654,7 +656,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "exact-match-concept");
+        Resource concept = ontModel.createResource(localConceptPrefix + "exact-match-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "Exact Match Concept", "cs");
 
@@ -670,7 +672,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "domain-range-concept");
+        Resource concept = ontModel.createResource(localConceptPrefix + "domain-range-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "Domain Range Concept", "cs");
 
@@ -690,7 +692,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "hierarchy-concept");
+        Resource concept = ontModel.createResource(localConceptPrefix + "hierarchy-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "Hierarchy Concept", "cs");
 
@@ -706,7 +708,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "test-concept");
+        Resource concept = ontModel.createResource(localConceptPrefix + "test-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "Test Concept", "cs");
         resourceMap.put("test-concept", concept);
@@ -721,12 +723,12 @@ class JsonExporterUnitTest {
         OntClass vlastnostClass = ontModel.createClass(OFN_NAMESPACE + VLASTNOST);
         OntClass vztahClass = ontModel.createClass(OFN_NAMESPACE + VZTAH);
 
-        Resource vlastnostConcept = ontModel.createResource(effectiveNamespace + "test-vlastnost");
+        Resource vlastnostConcept = ontModel.createResource(localConceptPrefix + "test-vlastnost");
         vlastnostConcept.addProperty(RDF.type, pojemClass);
         vlastnostConcept.addProperty(RDF.type, vlastnostClass);
         vlastnostConcept.addProperty(SKOS.prefLabel, "Test Property", "cs");
 
-        Resource vztahConcept = ontModel.createResource(effectiveNamespace + "test-vztah");
+        Resource vztahConcept = ontModel.createResource(localConceptPrefix + "test-vztah");
         vztahConcept.addProperty(RDF.type, pojemClass);
         vztahConcept.addProperty(RDF.type, vztahClass);
         vztahConcept.addProperty(SKOS.prefLabel, "Test Relationship", "cs");
@@ -741,7 +743,7 @@ class JsonExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "complex-concept");
+        Resource concept = ontModel.createResource(localConceptPrefix + "complex-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(SKOS.prefLabel, "Complex Concept", "cs");
 

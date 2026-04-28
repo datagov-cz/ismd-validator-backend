@@ -2,7 +2,7 @@
 <xmi:XMI xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmi:version="2.1" xmlns:uml="http://schema.omg.org/spec/UML/2.1" xmlns:thecustomprofile="http://www.sparxsystems.com/profiles/thecustomprofile/1.0" xmlns:Slovníky="http://www.sparxsystems.com/profiles/Slovníky/1.1.0">
 	<xmi:Documentation exporter="Enterprise Architect" exporterVersion="6.5" exporterID="1714"/>
 	<uml:Model xmi:type="uml:Model" name="EA_Model" visibility="public">
-		<packagedElement xmi:type="uml:Package" xmi:id="EAPK_4A089080_638E_4ff1_842A_FC0C7020E3B8" name="Slovník dle metodiky dat Digitální a informační agentury" visibility="public">
+		<packagedElement xmi:type="uml:Package" xmi:id="EAPK_4A089080_638E_4ff1_842A_FC0C7020E3B8" name="Příkladový slovník z metodiky popisu dat" visibility="public">
 			<packagedElement xmi:type="uml:Class" xmi:id="EAID_86274FA3_0689_448b_97BD_94289838568E" name="Adresa" visibility="public"/>
 			<packagedElement xmi:type="uml:Association" xmi:id="EAID_26B1D1F2_7CCA_48cd_8046_5F8BBA813AB6" name="sídlí na adrese" visibility="public">
 				<memberEnd xmi:idref="EAID_dstB1D1F2_7CCA_48cd_8046_5F8BBA813AB6"/>
@@ -453,7 +453,7 @@
 	</uml:Model>
 	<xmi:Extension extender="Enterprise Architect" extenderID="6.5">
 		<elements>
-			<element xmi:idref="EAPK_4A089080_638E_4ff1_842A_FC0C7020E3B8" xmi:type="uml:Package" name="Slovník dle metodiky dat Digitální a informační agentury" scope="public">
+			<element xmi:idref="EAPK_4A089080_638E_4ff1_842A_FC0C7020E3B8" xmi:type="uml:Package" name="Příkladový slovník z metodiky popisu dat" scope="public">
 				<model package2="EAID_4A089080_638E_4ff1_842A_FC0C7020E3B8" package="EAPK_3E26F3EC_0095_4dd6_A998_EAF191DC8ECA" tpos="0" ea_localid="2" ea_eleType="package"/>
 				<properties documentation="Uk&amp;#225;zkov&amp;#253; slovn&amp;#237;k z&amp;#225;kona o silničn&amp;#237;m provozu z metodiky. Jedn&amp;#225; se o př&amp;#237;klad popisu; nen&amp;#237; garantov&amp;#225;n soulad tohoto slovn&amp;#237;ku s aktu&amp;#225;ln&amp;#237;mi z&amp;#225;kony a jin&amp;#253;mi zdroji z t&amp;#233;to oblasti." isSpecification="false" sType="Package" nType="0" scope="public" stereotype="slovnikyPackage"/>
 				<project author="AliceBinderová" version="1.0" phase="1.0" created="2025-06-27 14:23:30" modified="2025-11-04 16:45:04" complexity="1" status="Proposed"/>
@@ -487,7 +487,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_C029_79c0_89ED_9DCBA62E73A5" name="identifikátor" value="https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/adresa" modelElement="EAID_86274FA3_0689_448b_97BD_94289838568E"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={A5F89184-93C2-4139-9F91-D3C7ED62076C}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typObjektu;FQName=Slovníky::typObjektu;@ENDSTEREO;$DES;$CLT={86274FA3-0689-448b-97BD-94289838568E}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Association xmi:id="EAID_26B1D1F2_7CCA_48cd_8046_5F8BBA813AB6" start="EAID_3FD908D9_916B_4554_8A6F_1E76C02DE21C" end="EAID_86274FA3_0689_448b_97BD_94289838568E"/>
 				</links>
@@ -515,7 +515,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_870C_25620493794B" name="identifikátor" modelElement="EAID_28E25519_7176_421f_88F8_63A64426E152"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={A6D94F24-5E2F-428a-A921-2F66F4839598}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={28E25519-7176-421f-88F8-63A64426E152}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_374F195E_76B6_4c67_9CAC_D6C2D7C14175" start="EAID_28E25519_7176_421f_88F8_63A64426E152" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -543,7 +543,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_8159_ECD6EBFD91E8" name="identifikátor" modelElement="EAID_40802072_AE17_45ae_B0D0_BEEEB4110097"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={B373A972-3F61-4236-972A-A68CF0A5AFBC}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={40802072-AE17-45ae-B0D0-BEEEB4110097}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_614C7CC6_3F07_4fe3_B2A7_4AF4200EA2DF" start="EAID_40802072_AE17_45ae_B0D0_BEEEB4110097" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -571,7 +571,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_90C6_51ADF618ACF9" name="identifikátor" modelElement="EAID_8465DB66_1FC8_4a16_A1FE_AFAE90A91FE7"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={97265DB6-DAEE-43e3-8F64-CED28CE2BFBE}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={8465DB66-1FC8-4a16-A1FE-AFAE90A91FE7}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_695882D0_D601_49c9_A1AC_A148BCE0092B" start="EAID_8465DB66_1FC8_4a16_A1FE_AFAE90A91FE7" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -599,7 +599,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_91AB_E748A80E87AF" name="identifikátor" modelElement="EAID_68E0567D_8C03_4e10_B5D6_593526D58B4F"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={ED4C49FF-2EAD-473f-B69B-C479434E9E2E}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={68E0567D-8C03-4e10-B5D6-593526D58B4F}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_CC6FEE21_BD3A_41fa_B5D1_E9CD53B0200B" start="EAID_68E0567D_8C03_4e10_B5D6_593526D58B4F" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -627,7 +627,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_A697_7917DA78621F" name="identifikátor" modelElement="EAID_123E262D_B7E1_484b_A66B_BF3FEBDF5F1E"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={39A33065-4A6A-46bd-90B0-956949908B2A}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={123E262D-B7E1-484b-A66B-BF3FEBDF5F1E}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_A799113C_4167_4f0e_889D_3A6CFF2BBE03" start="EAID_123E262D_B7E1_484b_A66B_BF3FEBDF5F1E" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -655,7 +655,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_A4AE_498D9751619A" name="identifikátor" modelElement="EAID_07DB4FEB_4591_442b_B990_4D386C768025"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={F658B58C-724D-4802-ABF4-32F6B4C0D2C3}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={07DB4FEB-4591-442b-B990-4D386C768025}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_8C941AEC_D95A_47ea_AC97_04158F5AFCA1" start="EAID_07DB4FEB_4591_442b_B990_4D386C768025" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -683,7 +683,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_A623_F02CC8A32501" name="identifikátor" modelElement="EAID_5EC151C0_A410_49d9_B21D_7D6C4653EECF"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={47E603F5-D1B4-4a68-9C91-43A70A64ACC0}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={5EC151C0-A410-49d9-B21D-7D6C4653EECF}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_4B1B519E_B909_4aa0_8C97_6E60410045AA" start="EAID_5EC151C0_A410_49d9_B21D_7D6C4653EECF" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -711,7 +711,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_9C5F_DABE316EF041" name="identifikátor" modelElement="EAID_E705D6F4_4046_4665_90AC_645747E0B238"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={2997B32E-0218-4282-8CAA-798914A3548C}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={E705D6F4-4046-4665-90AC-645747E0B238}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_571538C0_B403_4e5c_BDBE_87753E3D88F1" start="EAID_E705D6F4_4046_4665_90AC_645747E0B238" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -739,7 +739,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_8A04_BCD8D980CBBB" name="identifikátor" modelElement="EAID_BAC88B3B_0783_48a8_A622_0235E53786EE"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={50DCC826-C10F-46c9-9B2A-ACA03B4CC68B}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={BAC88B3B-0783-48a8-A622-0235E53786EE}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_D6E90237_AAEC_4696_BB5C_9D8065FFBE3A" start="EAID_BAC88B3B_0783_48a8_A622_0235E53786EE" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -767,7 +767,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_8597_1B094A5DD5EB" name="identifikátor" modelElement="EAID_D0EC841A_26AF_4a42_8BE2_1F78CAEC3DDB"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={D9E09207-6520-4ef8-81ED-B1566C4B7C76}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={D0EC841A-26AF-4a42-8BE2-1F78CAEC3DDB}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_304BC0B2_4A8B_43ee_81A7_8601AC328BCB" start="EAID_D0EC841A_26AF_4a42_8BE2_1F78CAEC3DDB" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -795,7 +795,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_9586_83A2F86C03A4" name="identifikátor" modelElement="EAID_5A07A89F_A827_4243_B8A5_4A9D33811887"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={78FA9CDC-FCA0-44bf-8547-9017E47A8A7E}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={5A07A89F-A827-4243-B8A5-4A9D33811887}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_766B2887_C6D3_4340_97FC_C3DDA25CEBE9" start="EAID_5A07A89F_A827_4243_B8A5_4A9D33811887" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -823,7 +823,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_B2F1_98D9CBA7BEE5" name="identifikátor" modelElement="EAID_CA7E2638_F4A0_413b_97CD_C86661C276BC"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={5BA85540-1F1D-4b37-8C9E-E35560C6EB39}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={CA7E2638-F4A0-413b-97CD-C86661C276BC}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_8EEEA308_1DC0_41ef_BD4A_6906544E069F" start="EAID_CA7E2638_F4A0_413b_97CD_C86661C276BC" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -851,7 +851,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_A3CA_4324DC087FC8" name="identifikátor" modelElement="EAID_46B416AE_160B_41db_9602_BF77D7F3C7AB"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={0D6F2BB9-9B8A-410b-92C9-039E04DC84D8}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={46B416AE-160B-41db-9602-BF77D7F3C7AB}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_7DC15842_A491_4592_89D1_B83F1850724C" start="EAID_46B416AE_160B_41db_9602_BF77D7F3C7AB" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -879,7 +879,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_8082_CF58A239E740" name="identifikátor" modelElement="EAID_F3FF0DCF_0A97_46f4_BAA0_ADAB7A1D6CC7"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={B5153FDD-A859-4807-9D29-CB4D144B8EBE}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={F3FF0DCF-0A97-46f4-BAA0-ADAB7A1D6CC7}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_B779BA8E_20BB_4079_92DB_D48D90E5ADEB" start="EAID_F3FF0DCF_0A97_46f4_BAA0_ADAB7A1D6CC7" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -907,7 +907,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_8B91_7AA2A7B6FCCB" name="identifikátor" modelElement="EAID_1DF6F451_2DC4_4b51_89DE_4FED787C40DD"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={D82C2CB9-9B93-41c4-A2E4-DFE81603BC07}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={1DF6F451-2DC4-4b51-89DE-4FED787C40DD}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_BFEB6E35_AA6E_48f6_9E18_76BE429A7755" start="EAID_1DF6F451_2DC4_4b51_89DE_4FED787C40DD" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -935,7 +935,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_BA23_441186F2AB93" name="identifikátor" value="https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/jméno-držitele-řidičského-průkazu" modelElement="EAID_8D4F153D_ED17_40fe_8DA3_8A872365CD71"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={FE85F90E-5141-41f9-A33F-EE0088C50358}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={8D4F153D-ED17-40fe-8DA3-8A872365CD71}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_6D893CE1_E742_4e59_8328_B60ACAE56BFC" start="EAID_8D4F153D_ED17_40fe_8DA3_8A872365CD71" end="EAID_5FCC5337_DE67_4b41_89DE_DEE3EE64509D"/>
 				</links>
@@ -963,7 +963,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_BE74_6513EA804382" name="identifikátor" value="https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností" modelElement="EAID_D809986A_0429_47a7_B651_C3DAB1FB97AB"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={8CD1F5AC-5D88-4318-8745-2E13BB02FB7A}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={D809986A-0429-47a7-B651-C3DAB1FB97AB}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_AAFB29D8_75CF_4c34_9893_9D825D7895DD" start="EAID_D809986A_0429_47a7_B651_C3DAB1FB97AB" end="EAID_3FD908D9_916B_4554_8A6F_1E76C02DE21C"/>
 				</links>
@@ -991,7 +991,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_9E5A_1A6DBBFB9075" name="identifikátor" value="https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností-copy" modelElement="EAID_A3AF8EA8_9CFA_4c5f_A005_EDA643222621"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={72BB86BF-845D-40ef-A647-462438C04623}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={A3AF8EA8-9CFA-4c5f-A005-EDA643222621}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_66393063_8C30_47e2_90C1_04C7013F633B" start="EAID_A3AF8EA8_9CFA_4c5f_A005_EDA643222621" end="EAID_3FD908D9_916B_4554_8A6F_1E76C02DE21C"/>
 				</links>
@@ -1014,7 +1014,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7722_3377_9CB6_49A1D368A90F" name="identifikátor" value="https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností" modelElement="EAID_3FD908D9_916B_4554_8A6F_1E76C02DE21C"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={F4660690-993C-4cd6-AF73-01B429499F87}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typSubjektu;FQName=Slovníky::typSubjektu;@ENDSTEREO;$DES;$CLT={3FD908D9-916B-4554-8A6F-1E76C02DE21C}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Association xmi:id="EAID_26B1D1F2_7CCA_48cd_8046_5F8BBA813AB6" start="EAID_3FD908D9_916B_4554_8A6F_1E76C02DE21C" end="EAID_86274FA3_0689_448b_97BD_94289838568E"/>
 					<Association xmi:id="EAID_4CAA7672_89DB_4c9f_8643_E8DE39EFA68A" start="EAID_3FD908D9_916B_4554_8A6F_1E76C02DE21C" end="EAID_5FCC5337_DE67_4b41_89DE_DEE3EE64509D"/>
@@ -1045,7 +1045,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_AA90_63C59F1B00F2" name="identifikátor" value="https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/příjmení-držitele-řidičského-průkazu" modelElement="EAID_90AD2177_426C_4e6d_BC95_F9545C074462"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={4C52921F-590C-4d10-8AD7-5A8A93761103}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={90AD2177-426C-4e6d-BC95-F9545C074462}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_EE7BC192_187B_42b5_9C1E_998BAA80450C" start="EAID_90AD2177_426C_4e6d_BC95_F9545C074462" end="EAID_5FCC5337_DE67_4b41_89DE_DEE3EE64509D"/>
 				</links>
@@ -1073,7 +1073,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_B343_E23980748F06" name="identifikátor" modelElement="EAID_3348CD53_EDF9_4d05_8C2E_E25832EEFD15"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={CB73E311-9B03-4fa4-AF35-29AD728253B9}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={3348CD53-EDF9-4d05-8C2E-E25832EEFD15}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_7FFF0FE7_0C50_46bc_9916_1D304F177046" start="EAID_3348CD53_EDF9_4d05_8C2E_E25832EEFD15" end="EAID_5FCC5337_DE67_4b41_89DE_DEE3EE64509D"/>
 					<Generalization xmi:id="EAID_D338685E_15FF_4b9d_924C_E78DBA3101CB" start="EAID_83C51A75_5595_4037_97CA_BF8C6D6E86B6" end="EAID_3348CD53_EDF9_4d05_8C2E_E25832EEFD15"/>
@@ -1102,7 +1102,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_A5EB_3B7B327AD1C5" name="identifikátor" modelElement="EAID_83C51A75_5595_4037_97CA_BF8C6D6E86B6"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={CBF24437-EC4E-4257-9FA0-0FDEE594AA56}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={83C51A75-5595-4037-97CA-BF8C6D6E86B6}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Generalization xmi:id="EAID_D338685E_15FF_4b9d_924C_E78DBA3101CB" start="EAID_83C51A75_5595_4037_97CA_BF8C6D6E86B6" end="EAID_3348CD53_EDF9_4d05_8C2E_E25832EEFD15"/>
 				</links>
@@ -1125,7 +1125,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7722_3377_86A1_BA3844F376A2" name="identifikátor" value="https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič" modelElement="EAID_F15B9931_0929_471a_998C_944B91698F1E"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={B94C618F-7101-4db6-A122-B0E80813995F}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typSubjektu;FQName=Slovníky::typSubjektu;@ENDSTEREO;$DES;$CLT={F15B9931-0929-471a-998C-944B91698F1E}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Association xmi:id="EAID_7C490C88_6AF7_422d_B2F6_550BB31C8243" start="EAID_F15B9931_0929_471a_998C_944B91698F1E" end="EAID_378D54D4_F5EC_4f96_813B_44DEC3EE8734"/>
 					<Generalization xmi:id="EAID_E9CCB669_D1A3_4e0c_86F5_70E6F419A20B" start="EAID_F15B9931_0929_471a_998C_944B91698F1E" end="EAID_70A9FD97_EE0A_4630_B818_6AD962543321"/>
@@ -1150,7 +1150,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7722_3377_9484_E9532D6100B0" name="identifikátor" value="https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů" modelElement="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={6B3F7D7E-BE82-45b2-A25C-77E5B56BEEAB}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typSubjektu;FQName=Slovníky::typSubjektu;@ENDSTEREO;$DES;$CLT={096472EC-F444-4a74-B2FA-6F99E1FD6FA0}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Association xmi:id="EAID_5D4F55E1_A5DB_4fd1_8DA2_3B61D3748FBF" start="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0" end="EAID_5FCC5337_DE67_4b41_89DE_DEE3EE64509D"/>
 					<Generalization xmi:id="EAID_FA4670D2_A8FF_4aa6_9FFF_C03B1D7CB861" start="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0" end="EAID_F15B9931_0929_471a_998C_944B91698F1E"/>
@@ -1198,7 +1198,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_C029_79c0_AD14_A3DB6A21956D" name="identifikátor" value="https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz" modelElement="EAID_5FCC5337_DE67_4b41_89DE_DEE3EE64509D"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={F5AE5A1C-AA90-45da-A877-3B8C9704FC88}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typObjektu;FQName=Slovníky::typObjektu;@ENDSTEREO;$DES;$CLT={5FCC5337-DE67-4b41-89DE-DEE3EE64509D}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Association xmi:id="EAID_4CAA7672_89DB_4c9f_8643_E8DE39EFA68A" start="EAID_3FD908D9_916B_4554_8A6F_1E76C02DE21C" end="EAID_5FCC5337_DE67_4b41_89DE_DEE3EE64509D"/>
 					<Association xmi:id="EAID_5D4F55E1_A5DB_4fd1_8DA2_3B61D3748FBF" start="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0" end="EAID_5FCC5337_DE67_4b41_89DE_DEE3EE64509D"/>
@@ -1230,7 +1230,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_B563_9310044593CE" name="identifikátor" modelElement="EAID_D2490C37_7C86_4a8c_B031_4B26DBEA7B10"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={E4644C3B-36F2-4c60-BD3A-1D17A9395F19}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={D2490C37-7C86-4a8c-B031-4B26DBEA7B10}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_941B7D27_8303_4abe_9850_AAD1B65D2D12" start="EAID_D2490C37_7C86_4a8c_B031_4B26DBEA7B10" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -1258,7 +1258,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_94F3_8EAC7183C00A" name="identifikátor" modelElement="EAID_38D0CFD8_3EE1_4a50_B840_7AC3692D2770"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={BA6012C0-A234-46a4-B92D-E1A9F927DCC1}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={38D0CFD8-3EE1-4a50-B840-7AC3692D2770}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_E0A58A58_7107_49da_9ED5_00E440595E83" start="EAID_38D0CFD8_3EE1_4a50_B840_7AC3692D2770" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -1286,7 +1286,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_B461_8F66D88956D2" name="identifikátor" modelElement="EAID_45A992E7_03DE_43b4_9930_393E71E7BECB"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={9F3751F4-FD3E-48d8-89D1-7E2A48E4BBEE}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={45A992E7-03DE-43b4-9930-393E71E7BECB}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_E16B67D0_6886_4232_AB6E_AFA2DE26017F" start="EAID_45A992E7_03DE_43b4_9930_393E71E7BECB" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -1309,7 +1309,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7722_3377_84A4_373CB5B9A9C3" name="identifikátor" value="https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích" modelElement="EAID_70A9FD97_EE0A_4630_B818_6AD962543321"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={53623136-B594-425b-B7BF-84F5E4FB0681}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typSubjektu;FQName=Slovníky::typSubjektu;@ENDSTEREO;$DES;$CLT={70A9FD97-EE0A-4630-B818-6AD962543321}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Generalization xmi:id="EAID_E9CCB669_D1A3_4e0c_86F5_70E6F419A20B" start="EAID_F15B9931_0929_471a_998C_944B91698F1E" end="EAID_70A9FD97_EE0A_4630_B818_6AD962543321"/>
 				</links>
@@ -1337,7 +1337,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_9E10_30D822745E32" name="identifikátor" modelElement="EAID_20D1CE41_A42A_48db_8C2F_13E62222B163"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={CC8C3033-F53B-4922-BC2F-29B3274390AB}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={20D1CE41-A42A-48db-8C2F-13E62222B163}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_55BFE46C_976D_4b94_BA60_BF83BC3BF726" start="EAID_20D1CE41_A42A_48db_8C2F_13E62222B163" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -1365,7 +1365,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_B66D_375DA5A83B45" name="identifikátor" modelElement="EAID_43DE19F5_1829_4ec5_8525_8BF0F2B81BB3"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={07557C64-9174-427f-A199-A66C63A24CBE}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={43DE19F5-1829-4ec5-8525-8BF0F2B81BB3}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_295798AA_0B04_4d8f_A560_6923D1BC3462" start="EAID_43DE19F5_1829_4ec5_8525_8BF0F2B81BB3" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -1393,7 +1393,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_B758_DB8EC11BE3DA" name="identifikátor" modelElement="EAID_BCAB8E4D_5761_46a7_A91D_24D5B77895D4"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={242268FA-70C1-4c81-960B-C4F12BB5D33C}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={BCAB8E4D-5761-46a7-A91D-24D5B77895D4}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_2B0DDEA9_9678_4af3_B11F_F7B05333DD49" start="EAID_BCAB8E4D_5761_46a7_A91D_24D5B77895D4" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -1421,7 +1421,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_9E62_F4F0A66A65DE" name="identifikátor" modelElement="EAID_05ED6FED_5F52_4536_8599_6BED1BD17C68"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={B1572D19-E9FA-4354-94E7-9B40D685E64E}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={05ED6FED-5F52-4536-8599-6BED1BD17C68}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_1B65E829_C2FF_4353_BF5E_10511359F8D8" start="EAID_05ED6FED_5F52_4536_8599_6BED1BD17C68" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -1449,7 +1449,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_8194_53D752C6CD9D" name="identifikátor" modelElement="EAID_EA45E072_1A26_4bb6_AFFE_BA314CF8A913"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={363B7168-48F2-473e-B132-242C54DC580E}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={EA45E072-1A26-4bb6-AFFE-BA314CF8A913}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_2B6304BF_7F51_4a1e_B8ED_751B77EDC997" start="EAID_EA45E072_1A26_4bb6_AFFE_BA314CF8A913" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -1477,7 +1477,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_7E4C_777e_BD6C_CBDE8BEC8ACF" name="identifikátor" modelElement="EAID_233B70FB_6471_49df_BEA5_A2D06A664DF2"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={5E2A0DC8-EA88-4d5b-8255-C744A673D430}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typVlastnosti;FQName=Slovníky::typVlastnosti;@ENDSTEREO;$DES;$CLT={233B70FB-6471-49df-BEA5-A2D06A664DF2}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Aggregation xmi:id="EAID_9C738ED2_7329_4e5d_8151_B1319A9B5EA6" start="EAID_233B70FB_6471_49df_BEA5_A2D06A664DF2" end="EAID_096472EC_F444_4a74_B2FA_6F99E1FD6FA0"/>
 				</links>
@@ -1500,7 +1500,7 @@
 					<tag xmi:id="EAID_5F3C3DAD_C029_79c0_864F_1D8FD9AB86B5" name="identifikátor" value="https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo" modelElement="EAID_378D54D4_F5EC_4f96_813B_44DEC3EE8734"/>
 				</tags>
 				<xrefs value="$XREFPROP=$XID={8A0BC860-F12E-418d-9761-261DBE2FC586}$XID;$NAM=Stereotypes$NAM;$TYP=element property$TYP;$VIS=Public$VIS;$PAR=0$PAR;$DES=@STEREO;Name=typObjektu;FQName=Slovníky::typObjektu;@ENDSTEREO;$DES;$CLT={378D54D4-F5EC-4f96-813B-44DEC3EE8734}$CLT;$SUP=&lt;none&gt;$SUP;$ENDXREF;"/>
-				<extendedProperties tagged="0" package_name="Slovník dle metodiky dat Digitální a informační agentury"/>
+				<extendedProperties tagged="0" package_name="Příkladový slovník z metodiky popisu dat"/>
 				<links>
 					<Association xmi:id="EAID_7C490C88_6AF7_422d_B2F6_550BB31C8243" start="EAID_F15B9931_0929_471a_998C_944B91698F1E" end="EAID_378D54D4_F5EC_4f96_813B_44DEC3EE8734"/>
 				</links>
@@ -3005,7 +3005,7 @@
 		<diagrams>
 			<diagram xmi:id="EAID_565863BA_2D22_4cb9_9451_1DDBC49B0234">
 				<model package="EAPK_4A089080_638E_4ff1_842A_FC0C7020E3B8" localID="1" owner="EAPK_4A089080_638E_4ff1_842A_FC0C7020E3B8"/>
-				<properties name="Slovník dle metodiky dat Digitální a informační agentury" type="Logical"/>
+				<properties name="Příkladový slovník z metodiky popisu dat" type="Logical"/>
 				<project author="AliceBinderová" version="1.0" created="2025-07-01 14:18:29" modified="2025-11-11 17:40:00"/>
 				<style1 value="ShowPrivate=1;ShowProtected=1;ShowPublic=1;HideRelationships=0;Locked=0;Border=1;HighlightForeign=1;PackageContents=1;SequenceNotes=0;ScalePrintImage=0;PPgs.cx=0;PPgs.cy=0;DocSize.cx=791;DocSize.cy=1134;ShowDetails=0;Orientation=P;Zoom=100;ShowTags=0;OpParams=1;VisibleAttributeDetail=0;ShowOpRetType=1;ShowIcons=1;CollabNums=0;HideProps=0;ShowReqs=0;ShowCons=0;PaperSize=9;HideParents=0;UseAlias=0;HideAtts=0;HideOps=0;HideStereo=0;HideElemStereo=0;ShowTests=0;ShowMaint=0;ConnectorNotation=UML 2.1;ExplicitNavigability=0;ShowShape=1;AllDockable=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;ShowNotes=0;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;"/>
 				<style2 value="ExcludeRTF=0;DocAll=0;HideQuals=0;AttPkg=1;ShowTests=0;ShowMaint=0;SuppressFOC=1;MatrixActive=0;SwimlanesActive=1;KanbanActive=0;MatrixLineWidth=1;MatrixLineClr=0;MatrixLocked=0;TConnectorNotation=UML 2.1;TExplicitNavigability=0;AdvancedElementProps=1;AdvancedFeatureProps=1;AdvancedConnectorProps=1;m_bElementClassifier=1;SPT=1;MDGDgm=Slovníky::Slovníky;STBLDgm=;ShowNotes=0;VisibleAttributeDetail=0;ShowOpRetType=1;SuppressBrackets=0;SuppConnectorLabels=0;PrintPageHeadFoot=0;ShowAsList=0;SuppressedCompartments=;Theme=:119;SaveTag=3F5049C0;"/>

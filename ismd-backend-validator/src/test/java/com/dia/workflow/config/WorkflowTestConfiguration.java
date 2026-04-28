@@ -111,7 +111,7 @@ public class WorkflowTestConfiguration {
                 .testId("complete-archi")
                 .description("Complete Archi XML ontology test - unified with Excel output")
                 .inputPath("com/dia/canonical/complete/testArchiInput_no-lkod.xml")
-                .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld_no-lkod.jsonld")
+                .expectedOutputPath("com/dia/expected-outputs/complete/archi_output_jsonld_no-lkod.jsonld")
                 .contextPath("com/dia/context/json_ld_context.jsonld")
                 .expectedCounts(EntityCounts.builder()
                         .classes(6)  // 6 local classes - Adresa is external reference and should not be counted

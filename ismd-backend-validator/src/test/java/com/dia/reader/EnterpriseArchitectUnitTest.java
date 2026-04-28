@@ -53,7 +53,7 @@ class EnterpriseArchitectUnitTest {
 
         assertNotNull(result);
         assertNotNull(result.getVocabularyMetadata());
-        assertEquals("Slovník dle metodiky dat Digitální a informační agentury", result.getVocabularyMetadata().getName());
+        assertEquals("Příkladový slovník z metodiky popisu dat", result.getVocabularyMetadata().getName());
 
         assertFalse(result.getClasses().isEmpty());
         assertFalse(result.getProperties().isEmpty());
@@ -121,7 +121,7 @@ class EnterpriseArchitectUnitTest {
 
         VocabularyMetadata metadata = result.getVocabularyMetadata();
         assertNotNull(metadata);
-        assertEquals("Slovník dle metodiky dat Digitální a informační agentury", metadata.getName());
+        assertEquals("Příkladový slovník z metodiky popisu dat", metadata.getName());
         assertNull(metadata.getNamespace());
     }
 
