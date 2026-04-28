@@ -1,77 +1,77 @@
-PREFIX a104:      <https://slovník.gov.cz/agendový/104/pojem/>
-PREFIX dct:       <http://purl.org/dc/terms/>
-PREFIX l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
-PREFIX owl:       <http://www.w3.org/2002/07/owl#>
-PREFIX rdf:       <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX rdfs:      <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX schema:    <http://schema.org/>
-PREFIX skos:      <http://www.w3.org/2004/02/skos/core#>
-PREFIX slovníky:  <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
-PREFIX vsgov:     <https://slovník.gov.cz/veřejný-sektor/pojem/>
-PREFIX xsd:       <http://www.w3.org/2001/XMLSchema#>
-PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
+@prefix a104: <https://slovník.gov.cz/agendový/104/pojem/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <http://schema.org/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+@prefix vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix čas: <https://slovník.gov.cz/generický/čas/pojem/> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/desetinné-číslo-p>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/desetinné-číslo-p>
         rdf:type                      slovníky:vlastnost , skos:Concept , owl:DatatypeProperty , slovníky:pojem;
-        rdfs:domain                   <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                    xsd:double;
-        skos:inScheme                 <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                 <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                "Desetinné číslo P"@cs;
         slovníky:má-typ-obsahu-údaje  <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/statistické>;
         slovníky:má-způsob-sdílení-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/zpřístupňované-pro-výkon-agendy> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-s>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-s>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:date;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Datum S"@cs;
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/základních-registrů> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-a-čas-p>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-a-čas-p>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:dateTimeStamp;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Datum a čas P"@cs .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností-copy>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností-copy>
         rdf:type                        owl:DatatypeProperty , slovníky:pojem , l111-2009:veřejný-údaj , slovníky:vlastnost , skos:Concept;
-        rdfs:domain                     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
+        rdfs:domain                     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
         rdfs:range                      rdfs:Literal;
         dct:description                 "Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností)."@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "Název obecního úřadu obce s rozšířenou působností (copy)"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 true;
         slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/test-s>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/test-s>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      rdfs:Literal;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Test S"@cs;
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/jiných-agend> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-i>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-i>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:date;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Datum I"@cs;
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/základních-registrů> .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řídí-vozidlo>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řídí-vozidlo>
         rdf:type                        owl:ObjectProperty , slovníky:pojem , l111-2009:veřejný-údaj , skos:Concept , slovníky:vztah;
-        rdfs:domain                     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič>;
-        rdfs:range                      <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo>;
+        rdfs:domain                     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič>;
+        rdfs:range                      <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo>;
         skos:definition                 "řidič je účastník provozu na pozemních komunikacích, který řídí motorové nebo nemotorové vozidlo anebo tramvaj; řidičem je i jezdec na zvířeti"@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "řídí vozidlo"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 false;
@@ -81,12 +81,12 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/základních-registrů> .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/sídlí-na-adrese>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/sídlí-na-adrese>
         rdf:type                        slovníky:vztah , skos:Concept , owl:ObjectProperty , slovníky:pojem;
-        rdfs:domain                     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
+        rdfs:domain                     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
         rdfs:range                      l111-2009:adresa;
         dct:description                 "Sídlo úřadu vydávajícího průkaz (obecním úřadem ORP) se nachází na nějaké adrese. Adresa je obecně definována v zákoně o základních registrech."@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "sídlí na adrese"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 true;
@@ -97,57 +97,57 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/jiných-agend> .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů>
         rdf:type                        vsgov:typ-subjektu-práva , skos:Concept , slovníky:pojem , slovníky:třída;
-        rdfs:subClassOf                 <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič>;
+        rdfs:subClassOf                 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič>;
         skos:definition                 "Registr řidičů obsahuje a) osobní údaje o řidiči motorového vozidla uvedené v řidičském průkazu a v mezinárodním řidičském průkazu, včetně digitalizované fotografie a digitalizovaného podpisu řidiče,"@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "Řidič evidovaný v registru řidičů"@cs;
         <https://data.dia.gov.cz/nadřazená-třída>
-                <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič>;
+                <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič>;
         a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy
                 <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A998>;
         a104:údaje-jsou-v-ais           <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/1234>;
         slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_4/par_119/odst_2/pism_a> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-p>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-p>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:date;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Datum P"@cs;
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/základních-registrů> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/url-s>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/url-s>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:anyURI;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "URL S"@cs;
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/vlastní> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>
         rdf:type         skos:ConceptScheme , slovníky:slovník , owl:Ontology;
         dct:description  "Ukázkový slovník zákona o silničním provozu z metodiky. Jedná se o příklad popisu; není garantován soulad tohoto slovníku s aktuálními zákony a jinými zdroji z této oblasti."@cs;
         skos:prefLabel   "Slovník dle metodiky dat Digitální a informační agentury"@cs .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>
         rdf:type                        slovníky:třída , vsgov:typ-objektu-práva , slovníky:pojem , skos:Concept;
         skos:altLabel                   "řidičák"@cs , "ŘP"@cs;
         skos:definition                 "Řidičský průkaz je veřejná listina, která osvědčuje řidičské oprávnění držitele a jeho rozsah a kterou držitel prokazuje své jméno, příjmení a podobu, jakož i další údaje v ní zapsané podle tohoto zákona."@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "Řidičský průkaz"@cs;
         slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1> .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vydává-řidičský-průkaz>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vydává-řidičský-průkaz>
         rdf:type                        skos:Concept , slovníky:vztah , owl:ObjectProperty , slovníky:pojem;
-        rdfs:domain                     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
-        rdfs:range                      <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
+        rdfs:range                      <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         dct:description                 "Z definice vyplývá, že řidiči, kteří jsou evidováni v registru řidičů, mohou být držiteli řidičského průkazu."@cs;
         skos:definition                 "Řidičský průkaz vydá příslušný obecní úřad obce s rozšířenou působností na žádost držitele řidičského oprávnění."@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "vydává řidičský průkaz"@cs;
         slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3>;
         slovníky:má-typ-obsahu-údaje    <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/identifikační>;
@@ -156,19 +156,19 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/provozní> .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>
         rdf:type                        skos:Concept , slovníky:třída , slovníky:pojem , vsgov:typ-subjektu-práva;
         dct:description                 "Úřad vydávající řidičský průkaz je vždy obecním úřadem obce s rozšířenou působností."@cs;
         skos:exactMatch                 <https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce-s-rozšířenou-působností> , <https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce>;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "Obecní úřad obce s rozšířenou působností"@cs;
         slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/věk-na-řp-s>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/věk-na-řp-s>
         rdf:type                      slovníky:pojem , owl:DatatypeProperty , l111-2009:neveřejný-údaj , slovníky:vlastnost , skos:Concept;
-        rdfs:domain                   <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                    xsd:integer;
-        skos:inScheme                 <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                 <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                "Věk na ŘP S"@cs;
         slovníky:má-typ-obsahu-údaje  <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/evidenční>;
         slovníky:má-způsob-sdílení-údaje
@@ -176,11 +176,11 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost
                 <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/rodné-číslo-držitele-řidičského-průkazu>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/rodné-číslo-držitele-řidičského-průkazu>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:date;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Rodné číslo držitele řidičského průkazu"@cs;
         <https://data.dia.gov.cz/definující-nelegislativní-zdroj>
                 [ rdf:type   <https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt>;
@@ -191,33 +191,33 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
                   schema:url  "https://ofn.gov.cz/slovníky/draft2/cs/#360-2023"^^xsd:anyURI
                 ] .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/text-i>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/text-i>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      rdfs:Literal;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Text I"@cs;
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/jiných-agend> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/url-i>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/url-i>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:anyURI;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "URL I"@cs;
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/vlastní> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/rodné-číslo-držitele-řidičského-průkazu-subclass>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/rodné-číslo-držitele-řidičského-průkazu-subclass>
         rdf:type            skos:Concept , owl:DatatypeProperty , slovníky:vlastnost , slovníky:pojem;
-        rdfs:domain         <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain         <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range          rdfs:Literal;
-        rdfs:subPropertyOf  <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/rodné-číslo-držitele-řidičského-průkazu>;
-        skos:inScheme       <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        rdfs:subPropertyOf  <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/rodné-číslo-držitele-řidičského-průkazu>;
+        skos:inScheme       <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel      "Rodné číslo držitele řidičského průkazu subclass"@cs;
         <https://data.dia.gov.cz/nadřazená-vlastnost>
-                <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/rodné-číslo-držitele-řidičského-průkazu>;
+                <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/rodné-číslo-držitele-řidičského-průkazu>;
         <https://data.dia.gov.cz/související-nelegislativní-zdroj>
                 [ rdf:type    <https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt>;
                   schema:url  "https://ofn.gov.cz/slovníky/draft2/cs/#360-2023"^^xsd:anyURI
@@ -227,11 +227,11 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
                   dct:title  "Směrnice EU"@cs
                 ] .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/je-věk-na-řp-nad-18-s>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/je-věk-na-řp-nad-18-s>
         rdf:type                      owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain                   <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                    xsd:boolean;
-        skos:inScheme                 <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                 <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                "Je věk na ŘP nad 18? S"@cs;
         slovníky:má-typ-obsahu-údaje  <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/identifikační>;
         slovníky:má-způsob-sdílení-údaje
@@ -239,31 +239,31 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/provozní> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/text-p>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/text-p>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      rdfs:Literal;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Text P"@cs;
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/jiných-agend> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/url-p>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/url-p>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:anyURI;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "URL P"@cs;
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/vlastní> .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/příjmení-držitele-řidičského-průkazu>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/příjmení-držitele-řidičského-průkazu>
         rdf:type                        slovníky:vlastnost , l111-2009:neveřejný-údaj , owl:DatatypeProperty , skos:Concept , slovníky:pojem;
-        rdfs:domain                     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                      rdfs:Literal;
         dct:description                 "Řidičský průkaz obsahuje mj. jméno a příjmení držitele."@cs;
         skos:altLabel                   "příjmení řidiče"@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "Příjmení držitele řidičského průkazu"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 true;
@@ -271,34 +271,34 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost
                 <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/věk-na-řp-i>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/věk-na-řp-i>
         rdf:type                      skos:Concept , owl:DatatypeProperty , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain                   <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                    xsd:integer;
-        skos:inScheme                 <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                 <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                "Věk na ŘP I"@cs;
         slovníky:má-typ-obsahu-údaje  <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/evidenční>;
         slovníky:má-způsob-sdílení-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/poskytované-na-žádost> .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/název-obecního-úřadu-obce-s-rozšířenou-působností>
         rdf:type                        l111-2009:veřejný-údaj , skos:Concept , slovníky:vlastnost , owl:DatatypeProperty , slovníky:pojem;
-        rdfs:domain                     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
+        rdfs:domain                     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
         rdfs:range                      rdfs:Literal;
         dct:description                 "Řidičský průkaz obsahuje název úřadu, který řidičský průkaz vydal (což je vždy obecní úřad obce s rozšířenou působností)."@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "Název obecního úřadu obce s rozšířenou působností"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 true;
         slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i> .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/drží-řidičský-průkaz>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/drží-řidičský-průkaz>
         rdf:type                        skos:Concept , slovníky:vztah , l111-2009:neveřejný-údaj , slovníky:pojem , owl:ObjectProperty;
-        rdfs:domain                     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů>;
-        rdfs:range                      <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů>;
+        rdfs:range                      <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         dct:description                 "Z definice vyplývá, že řidiči, kteří jsou evidováni v registru řidičů, mohou být držiteli řidičského průkazu."@cs;
         skos:definition                 "Registr řidičů obsahuje a) osobní údaje o řidiči motorového vozidla uvedené v řidičském průkazu a v mezinárodním řidičském průkazu, včetně digitalizované fotografie a digitalizovaného podpisu řidiče,"@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "drží řidičský průkaz"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 false;
@@ -311,20 +311,20 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost
                 <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/čas-s>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/čas-s>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:time;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Čas S"@cs;
         slovníky:má-způsob-sdílení-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/nesdílené> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/věk-na-řp-p>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/věk-na-řp-p>
         rdf:type                      l111-2009:neveřejný-údaj , skos:Concept , slovníky:vlastnost , slovníky:pojem , owl:DatatypeProperty;
-        rdfs:domain                   <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                    xsd:integer;
-        skos:inScheme                 <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                 <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                "Věk na ŘP P"@cs;
         slovníky:má-typ-obsahu-údaje  <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/evidenční>;
         slovníky:má-způsob-sdílení-údaje
@@ -332,11 +332,11 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost
                 <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/je-věk-na-řp-nad-18-i>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/je-věk-na-řp-nad-18-i>
         rdf:type                      skos:Concept , slovníky:pojem , slovníky:vlastnost , owl:DatatypeProperty;
-        rdfs:domain                   <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                    xsd:boolean;
-        skos:inScheme                 <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                 <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                "Je věk na ŘP nad 18? I"@cs;
         slovníky:má-typ-obsahu-údaje  <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/identifikační>;
         slovníky:má-způsob-sdílení-údaje
@@ -344,18 +344,18 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/provozní> .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo>
         rdf:type                        slovníky:pojem , vsgov:typ-objektu-práva , slovníky:třída , skos:Concept;
         skos:definition                 "motorové vozidlo, nemotorové vozidlo nebo tramvaj"@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "Vozidlo"@cs;
         slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_f> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/je-věk-na-řp-nad-18-p>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/je-věk-na-řp-nad-18-p>
         rdf:type                      skos:Concept , slovníky:pojem , slovníky:vlastnost , owl:DatatypeProperty;
-        rdfs:domain                   <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                    xsd:boolean;
-        skos:inScheme                 <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                 <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                "Je věk na ŘP nad 18? P"@cs;
         slovníky:má-typ-obsahu-údaje  <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/identifikační>;
         slovníky:má-způsob-sdílení-údaje
@@ -363,90 +363,90 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         slovníky:má-způsob-získání-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/provozní> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/čas-i>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/čas-i>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:time;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Čas I"@cs;
         slovníky:má-způsob-sdílení-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/nesdílené> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/desetinné-číslo-s>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/desetinné-číslo-s>
         rdf:type                      owl:DatatypeProperty , slovníky:pojem , skos:Concept , slovníky:vlastnost;
-        rdfs:domain                   <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                    xsd:double;
-        skos:inScheme                 <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                 <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                "Desetinné číslo S"@cs;
         slovníky:má-typ-obsahu-údaje  <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/statistické>;
         slovníky:má-způsob-sdílení-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/zpřístupňované-pro-výkon-agendy> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-a-čas-s>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-a-čas-s>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:dateTimeStamp;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Datum a čas S"@cs .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič>
         rdf:type                        slovníky:třída , skos:Concept , vsgov:typ-subjektu-práva , slovníky:pojem;
-        rdfs:subClassOf                 <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích>;
+        rdfs:subClassOf                 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích>;
         dct:description                 "Řidič je tedy i cyklista, nejen řidič motorových vozidel – neváže se na něj nutně řidičské oprávnění."@cs;
         skos:altLabel                   "řidič auta"@cs;
         skos:definition                 "účastník provozu na pozemních komunikacích, který řídí motorové nebo nemotorové vozidlo anebo tramvaj; řidičem je i jezdec na zvířeti"@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "Řidič"@cs;
         <https://data.dia.gov.cz/nadřazená-třída>
-                <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích>;
+                <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích>;
         a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy
                 <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A998>;
         a104:údaje-jsou-v-ais           <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/1234>;
         slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-04-01/dokument/norma/cast_1/hlava_1/par_2/pism_d> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/čas-p>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/čas-p>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:time;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Čas P"@cs;
         slovníky:má-způsob-sdílení-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/nesdílené> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/desetinné-číslo-i>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/desetinné-číslo-i>
         rdf:type                      owl:DatatypeProperty , slovníky:pojem , slovníky:vlastnost , skos:Concept;
-        rdfs:domain                   <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                    xsd:double;
-        skos:inScheme                 <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                 <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                "Desetinné číslo I"@cs;
         slovníky:má-typ-obsahu-údaje  <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/statistické>;
         slovníky:má-způsob-sdílení-údaje
                 <https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/zpřístupňované-pro-výkon-agendy> .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích>
         rdf:type                        vsgov:typ-subjektu-práva , slovníky:třída , skos:Concept , slovníky:pojem;
         skos:definition                 "každý, kdo se přímým způsobem účastní provozu na pozemních komunikacích"@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "Účastník provozu na pozemních komunikacích"@cs;
         a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy
                 <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A998>;
         a104:údaje-jsou-v-ais           <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/998>;
         slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_a> .
 
-<https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-a-čas-i>
+<https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury/pojem/datum-a-čas-i>
         rdf:type        owl:DatatypeProperty , skos:Concept , slovníky:pojem , slovníky:vlastnost;
-        rdfs:domain     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range      xsd:dateTimeStamp;
-        skos:inScheme   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel  "Datum a čas I"@cs .
 
-<https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/jméno-držitele-řidičského-průkazu>
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/jméno-držitele-řidičského-průkazu>
         rdf:type                        slovníky:vlastnost , skos:Concept , owl:DatatypeProperty , l111-2009:neveřejný-údaj , slovníky:pojem;
-        rdfs:domain                     <https://data.dia.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
+        rdfs:domain                     <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>;
         rdfs:range                      xsd:string;
         dct:description                 "Řidičský průkaz obsahuje mj. jméno a příjmení držitele."@cs;
         skos:altLabel                   "jméno řidiče"@cs;
-        skos:inScheme                   <https://data.dia.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
+        skos:inScheme                   <https://slovník.gov.cz/slovník-dle-metodiky-dat-digitální-a-informační-agentury>;
         skos:prefLabel                  "Jméno držitele řidičského průkazu"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 true;

@@ -5,7 +5,6 @@ import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.exceptions.FileParsingException;
 import com.dia.utility.UtilityMethods;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * @see ArchiReader
  */
 @ExtendWith(MockitoExtension.class)
-@Disabled("Ontology templates pending update — LOKALNI_KATALOG property removed")
 class ArchiReaderUnitTest {
 
     @InjectMocks
@@ -42,7 +40,7 @@ class ArchiReaderUnitTest {
         // Set up MDC for logging
         MDC.put(LOG_REQUEST_ID, "test-request-123");
 
-        ClassPathResource resource = new ClassPathResource("com/dia/minimal-archi.xml");
+        ClassPathResource resource = new ClassPathResource("com/dia/canonical/complete/testArchiInput_no-lkod.xml");
         validXmlContent = Files.readString(Paths.get(resource.getURI()));
     }
 
@@ -52,8 +50,8 @@ class ArchiReaderUnitTest {
 
         assertNotNull(result);
         assertNotNull(result.getVocabularyMetadata());
-        assertEquals("DEMO Šablona pro popis dat Archi v1", result.getVocabularyMetadata().getName());
-        assertEquals("https://data.dia.gov.cz", result.getVocabularyMetadata().getNamespace());
+        assertEquals("Slovník dle metodiky dat Digitální a informační agentury", result.getVocabularyMetadata().getName());
+        assertNull(result.getVocabularyMetadata().getNamespace());
 
         assertFalse(result.getClasses().isEmpty());
         assertFalse(result.getProperties().isEmpty());
@@ -194,8 +192,8 @@ class ArchiReaderUnitTest {
 
         VocabularyMetadata metadata = result.getVocabularyMetadata();
         assertNotNull(metadata);
-        assertEquals("DEMO Šablona pro popis dat Archi v1", metadata.getName());
-        assertEquals("https://data.dia.gov.cz", metadata.getNamespace());
+        assertEquals("Slovník dle metodiky dat Digitální a informační agentury", metadata.getName());
+        assertNull(metadata.getNamespace());
     }
 
     @Test

@@ -7,7 +7,6 @@ import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.vocabulary.*;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -33,7 +32,6 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
  * Test class for {@link TurtleExporter}.
  */
 @ExtendWith(MockitoExtension.class)
-@Disabled("Ontology templates pending update — LOKALNI_KATALOG property removed")
 class TurtleExporterUnitTest {
 
     private OntModel ontModel;

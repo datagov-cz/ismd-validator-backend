@@ -52,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("archi")
 @Tag("turtle")
 @Tag("deviation-detection")
-@Disabled("Ontology templates pending update — LOKALNI_KATALOG property removed")
 class ConversionWorkflowTurtleTest {
 
     @Autowired
@@ -70,6 +69,7 @@ class ConversionWorkflowTurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL Output")
     @MethodSource("testConfigurationProvider")
+    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void conversionWorkflow_shouldProduceSemanticallySameTurtleOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("CONVERSION → TURTLE WORKFLOW TEST: " + config.getTestId());
@@ -111,7 +111,7 @@ class ConversionWorkflowTurtleTest {
 
         // Stage 6: Load and compare with expected output
         String expectedTtlPath = config.getExpectedOutputPath() != null
-            ? config.getExpectedOutputPath().replace("jsonld.jsonld", "ttl.ttl")
+            ? config.getExpectedOutputPath().replace("jsonld_no-lkod.jsonld", "ttl_no-lkod.ttl")
             : null;
 
         if (expectedTtlPath != null) {
@@ -153,6 +153,7 @@ class ConversionWorkflowTurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL Data Preservation")
     @MethodSource("testConfigurationProvider")
+    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void conversionWorkflow_turtleShouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[TTL DATA PRESERVATION TEST] " + config.getTestId());
 

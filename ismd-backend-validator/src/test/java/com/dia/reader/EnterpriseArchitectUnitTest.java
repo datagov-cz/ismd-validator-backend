@@ -5,7 +5,6 @@ import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.exceptions.FileParsingException;
 import com.dia.utility.UtilityMethods;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * @see EnterpriseArchitectReader
  */
 @ExtendWith(MockitoExtension.class)
-@Disabled("Ontology templates pending update — LOKALNI_KATALOG property removed")
 class EnterpriseArchitectUnitTest {
 
     @InjectMocks
@@ -44,7 +42,7 @@ class EnterpriseArchitectUnitTest {
         MDC.put(LOG_REQUEST_ID, "test-request-123");
 
         // Load the valid XML content
-        ClassPathResource resource = new ClassPathResource("/com/dia/minimal-ea.xml");
+        ClassPathResource resource = new ClassPathResource("/com/dia/canonical/complete/testEAInput_no-lkod.xml");
         validXmlContent = Files.readString(Paths.get(resource.getURI()));
         validXmlBytes = validXmlContent.getBytes(StandardCharsets.UTF_8);
     }
@@ -55,7 +53,7 @@ class EnterpriseArchitectUnitTest {
 
         assertNotNull(result);
         assertNotNull(result.getVocabularyMetadata());
-        assertEquals("Příkladový slovník z metodiky popisu dat", result.getVocabularyMetadata().getName());
+        assertEquals("Slovník dle metodiky dat Digitální a informační agentury", result.getVocabularyMetadata().getName());
 
         assertFalse(result.getClasses().isEmpty());
         assertFalse(result.getProperties().isEmpty());
@@ -123,8 +121,8 @@ class EnterpriseArchitectUnitTest {
 
         VocabularyMetadata metadata = result.getVocabularyMetadata();
         assertNotNull(metadata);
-        assertEquals("Příkladový slovník z metodiky popisu dat", metadata.getName());
-        assertNotNull(metadata.getNamespace());
+        assertEquals("Slovník dle metodiky dat Digitální a informační agentury", metadata.getName());
+        assertNull(metadata.getNamespace());
     }
 
     // ========== CLASS EXTRACTION TESTS ==========

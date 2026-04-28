@@ -50,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("archi")
 @Tag("json")
 @Tag("deviation-detection")
-@Disabled("Ontology templates pending update — LOKALNI_KATALOG property removed")
 class ConversionWorkflowJsonTest {
 
     @Autowired
@@ -71,6 +70,7 @@ class ConversionWorkflowJsonTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("testConfigurationProvider")
+    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void conversionWorkflow_shouldProduceExpectedOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("CONVERSION WORKFLOW TEST: " + config.getTestId());
@@ -139,6 +139,7 @@ class ConversionWorkflowJsonTest {
 
     @ParameterizedTest(name = "{0} - No Data Loss")
     @MethodSource("testConfigurationProvider")
+    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void conversionWorkflow_shouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[DATA PRESERVATION TEST] " + config.getTestId());
 

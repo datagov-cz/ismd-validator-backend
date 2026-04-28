@@ -181,7 +181,7 @@ class ConverterControllerIntegrationTest {
     }
 
     private String loadTestFile() throws IOException {
-        ClassPathResource resource = new ClassPathResource("/com/dia/minimal-archi.xml", getClass());
+        ClassPathResource resource = new ClassPathResource("/com/dia/canonical/complete/testArchiInput_no-lkod.xml", getClass());
         return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     }
 

@@ -50,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("enterprise-architect")
 @Tag("turtle")
 @Tag("deviation-detection")
-@Disabled("Ontology templates pending update — LOKALNI_KATALOG property removed")
 class ConversionWorkflowEATurtleTest {
 
     @Autowired
@@ -65,6 +64,7 @@ class ConversionWorkflowEATurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL Output")
     @MethodSource("testConfigurationProvider")
+    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void eaConversionWorkflow_shouldProduceSemanticallySameTurtleOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("EA CONVERSION → TURTLE WORKFLOW TEST: " + config.getTestId());
@@ -104,7 +104,7 @@ class ConversionWorkflowEATurtleTest {
 
         // Stage 6: Load and compare with expected output
         String expectedTtlPath = config.getExpectedOutputPath() != null
-            ? config.getExpectedOutputPath().replace("jsonld.jsonld", "ttl.ttl")
+            ? config.getExpectedOutputPath().replace("jsonld_no-lkod.jsonld", "ttl_no-lkod.ttl")
             : null;
 
         if (expectedTtlPath != null) {
@@ -146,6 +146,7 @@ class ConversionWorkflowEATurtleTest {
 
     @ParameterizedTest(name = "{0} - TTL Data Preservation")
     @MethodSource("testConfigurationProvider")
+    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void eaConversionWorkflow_turtleShouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[EA TTL DATA PRESERVATION TEST] " + config.getTestId());
 

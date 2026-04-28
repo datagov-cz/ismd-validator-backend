@@ -46,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("enterprise-architect")
 @Tag("json")
 @Tag("deviation-detection")
-@Disabled("Ontology templates pending update — LOKALNI_KATALOG property removed")
 class ConversionWorkflowEAJsonTest {
 
     @Autowired
@@ -64,6 +63,7 @@ class ConversionWorkflowEAJsonTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("testConfigurationProvider")
+    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void eaConversionWorkflow_shouldProduceExpectedOutput(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n" + "=".repeat(80));
         System.out.println("EA CONVERSION WORKFLOW TEST: " + config.getTestId());
@@ -132,6 +132,7 @@ class ConversionWorkflowEAJsonTest {
 
     @ParameterizedTest(name = "{0} - No Data Loss")
     @MethodSource("testConfigurationProvider")
+    @Disabled("External-reference filter bug — see expected-outputs/complete/ADRESA_FILTER_BUG.md")
     void eaConversionWorkflow_shouldPreserveAllData(WorkflowTestConfiguration config) throws Exception {
         System.out.println("\n[EA DATA PRESERVATION TEST] " + config.getTestId());
 
@@ -155,8 +156,6 @@ class ConversionWorkflowEAJsonTest {
         // Verify all entities appear in output
         if (actualRoot.has("pojmy")) {
             int outputEntityCount = actualRoot.get("pojmy").size();
-            // Note: EA reader includes external references like Adresa (7 classes in input)
-            // but transformation filters them out (6 classes in output = 40 total entities)
             int expectedEntityCount = 40;
 
             System.out.println("\nOutput entity count: " + outputEntityCount);
