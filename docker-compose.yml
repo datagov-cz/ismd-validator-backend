@@ -7,7 +7,7 @@
 #                  -f docker-compose.build.yml up --build  # build from local source
 #
 # Aggregated use:
-#   See ../infrastructure/docker-compose.yml
+#   See ../ismd-infrastructure/docker-compose.yml
 #
 # Port mapping: host 8082 -> container 8080 (avoids conflict with Keycloak on 8080)
 # ==============================================
