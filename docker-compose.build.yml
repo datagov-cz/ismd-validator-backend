@@ -1,0 +1,21 @@
+# ==============================================
+# ISMD Validator Backend - Build Override
+# ==============================================
+# Use with the base file to build from local source instead of pulling:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up --build
+#
+# Requires GITHUB_TOKEN + GITHUB_ACTOR for Maven access to GitHub Packages
+# (only needed when USE_LOCAL_COMMON=false, kept for parity with prod build).
+# ==============================================
+
+services:
+  ismd-validator-backend:
+    image: ismd-validator-backend:local
+    pull_policy: never
+    build:
+      context: .
+      dockerfile: ismd-backend-validator/Dockerfile
+      args:
+        GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+        GITHUB_ACTOR: ${GITHUB_ACTOR:-}
+        USE_LOCAL_COMMON: "true"
