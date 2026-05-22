@@ -12,8 +12,8 @@ COPY ismd-validator-common/ ./ismd-validator-common
 # Switch to validator module root (contains mvnw)
 WORKDIR /app/ismd-backend-validator
 
-# Make mvnw executable
-RUN chmod +x mvnw
+# Normalize line endings (handle CRLF from Windows checkouts) and make mvnw executable
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 
 # Build arguments with defaults
 ARG MODULE_VERSION=unknown
