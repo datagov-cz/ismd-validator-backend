@@ -245,9 +245,23 @@ public class DataTypeConverter {
     }
 
     public static boolean isUri(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
         try {
-            java.net.URI uri = new java.net.URI(value);
-            return uri.getScheme() != null && uri.getHost() != null;
+            // Use Jena's IRI parser rather than java.net.URI: IRIs in the vocabulary
+            // routinely contain non-ASCII characters (e.g. https://slovník.gov.cz/...),
+            // which java.net.URI rejects with a URISyntaxException.
+            //
+            // Accept any IRI that carries a scheme and is not a relative reference. We
+            // deliberately do NOT use isAbsolute(): per RFC 3987 an "absolute" IRI excludes
+            // a fragment, so isAbsolute() returns false for fragment IRIs such as
+            // "http://www.w3.org/2000/01/rdf-schema#Literal" — which are legitimate range
+            // and reference values here. Requiring scheme + !relative still rejects bare
+            // names ("example.com", "not-a-uri") and scheme-only values ("https://", which
+            // throws).
+            org.apache.jena.irix.IRIx iri = org.apache.jena.irix.IRIx.create(value.trim());
+            return iri.scheme() != null && !iri.isRelative();
         } catch (Exception e) {
             return false;
         }

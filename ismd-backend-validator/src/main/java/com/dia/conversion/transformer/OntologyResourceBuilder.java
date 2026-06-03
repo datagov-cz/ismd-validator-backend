@@ -884,6 +884,9 @@ public class OntologyResourceBuilder {
         if (checkIfXsdType(trimmedDataType, rangeProperty, propertyResource)) {
             return;
         }
+        if (checkIfRdfsType(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
         if (checkIfFullXsdUri(trimmedDataType, rangeProperty, propertyResource)) {
             return;
         }
@@ -916,6 +919,20 @@ public class OntologyResourceBuilder {
                 log.warn("Invalid XSD type '{}' - falling back to rdfs:Literal", trimmedDataType);
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
             }
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkIfRdfsType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+        if (trimmedDataType.startsWith("rdfs:")) {
+            // Expand the rdfs: CURIE to its full IRI rather than letting checkIfValidUri keep it
+            // verbatim. Jena's IRI parser (used by isUri) accepts "rdfs:Literal" as an absolute
+            // IRI, so without this the raw CURIE would be emitted as the range resource.
+            String localName = trimmedDataType.substring("rdfs:".length());
+            propertyResource.addProperty(rangeProperty,
+                    ontModel.createResource(ExportConstants.Json.RDFS_NS + localName));
+            log.debug("Expanded rdfs CURIE range type: {}", trimmedDataType);
             return true;
         }
         return false;
