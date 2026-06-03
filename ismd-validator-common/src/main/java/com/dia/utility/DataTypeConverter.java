@@ -245,9 +245,16 @@ public class DataTypeConverter {
     }
 
     public static boolean isUri(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
         try {
-            java.net.URI uri = new java.net.URI(value);
-            return uri.getScheme() != null && uri.getHost() != null;
+            // Use Jena's IRI parser rather than java.net.URI: IRIs in the vocabulary
+            // routinely contain non-ASCII characters (e.g. https://slovník.gov.cz/...),
+            // which java.net.URI rejects with a URISyntaxException. isAbsolute() requires
+            // a scheme and authority, so bare names ("example.com", "not-a-uri") and
+            // scheme-only values ("https://", which throws) are still rejected.
+            return org.apache.jena.irix.IRIx.create(value.trim()).isAbsolute();
         } catch (Exception e) {
             return false;
         }

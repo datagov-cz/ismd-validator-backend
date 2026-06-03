@@ -245,6 +245,19 @@ class DataTypeConverterUnitTest {
         assertFalse(DataTypeConverter.isUri("https://")); // no host
     }
 
+    @Test
+    void testIsUri_withNonAsciiIris() {
+        // IRIs with non-ASCII characters (Czech diacritics) are valid and must be
+        // recognised as-is, not slugified. java.net.URI rejected these.
+        assertTrue(DataTypeConverter.isUri(
+                "https://slovník.gov.cz/a124-datový-slovník-iskn/pojem/právní-vztah"));
+        assertTrue(DataTypeConverter.isUri(
+                "https://slovník.gov.cz/datový/číselníky/pojem/položka-číselníku"));
+
+        assertFalse(DataTypeConverter.isUri(null));
+        assertFalse(DataTypeConverter.isUri("   "));
+    }
+
     // Date tests
     @Test
     void testIsDate_withValidDates() {
