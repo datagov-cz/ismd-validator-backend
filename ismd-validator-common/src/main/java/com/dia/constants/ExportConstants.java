@@ -64,6 +64,18 @@ public class ExportConstants {
 
         public static final String DEFAULT_PREFIX = "domain";
 
+        // Governance codelist namespaces (data governance: content type, sharing method, acquisition method).
+        // Prefix names match the codelist segment per OFN documentation.
+        public static final String PREFIX_TYPY_OBSAHU = "typy-obsahu-údajů";
+        public static final String NS_TYPY_OBSAHU =
+                "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/";
+        public static final String PREFIX_ZPUSOBY_SDILENI = "způsoby-sdílení-údajů";
+        public static final String NS_ZPUSOBY_SDILENI =
+                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/";
+        public static final String PREFIX_ZPUSOBY_ZISKANI = "způsoby-získání-údajů";
+        public static final String NS_ZPUSOBY_ZISKANI =
+                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/";
+
         private Turtle() {
         }
     }

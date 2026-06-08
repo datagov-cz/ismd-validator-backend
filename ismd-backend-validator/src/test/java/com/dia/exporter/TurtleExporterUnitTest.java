@@ -193,6 +193,33 @@ class TurtleExporterUnitTest {
                 "Should contain required prefix: " + expectedPrefix);
     }
 
+    @ParameterizedTest(name = "Governance codelist prefix: {0}")
+    @CsvSource({
+            "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/, typy-obsahu-údajů, evidenční",
+            "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/, způsoby-sdílení-údajů, veřejně-přístupné",
+            "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/, způsoby-získání-údajů, vlastní"
+    })
+    void exportToTurtle_WithGovernanceCodelistValues_EmitsCurieForm(String namespace, String prefix, String localName) {
+        // Arrange: attach a governance codelist value (full IRI resource) to a concept
+        setupMinimalOntologyModel();
+        Resource concept = resourceMap.get("test-concept");
+        Property governanceProp = ontModel.createProperty(OFN_NAMESPACE + "má-governance-property");
+        concept.addProperty(governanceProp, ontModel.createResource(namespace + localName));
+
+        // Act
+        String result = exporter.exportToTurtle();
+
+        // Assert: prefix is declared and the value appears in compact CURIE form, not as a full IRI
+        assertAll("Governance codelist CURIE export",
+                () -> assertTrue(result.contains("@prefix " + prefix + ":") || result.contains("PREFIX " + prefix + ":"),
+                        "Should declare prefix for codelist namespace: " + prefix),
+                () -> assertTrue(result.contains(prefix + ":" + localName),
+                        "Should emit codelist value in CURIE form: " + prefix + ":" + localName),
+                () -> assertFalse(result.contains("<" + namespace + localName + ">"),
+                        "Should NOT emit codelist value as a full IRI")
+        );
+    }
+
     @ParameterizedTest(name = "Language: {0}")
     @CsvSource({
             "cs, Czech Concept",
