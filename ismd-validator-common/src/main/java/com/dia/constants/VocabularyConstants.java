@@ -18,8 +18,7 @@ public class VocabularyConstants {
     public static final String DCT_NS = "http://purl.org/dc/terms/";
     public static final String SKOS_NS = "http://www.w3.org/2004/02/skos/core#";
     public static final String CAS_NS = "https://slovník.gov.cz/generický/čas/pojem/";
-    public static final String CONTEXT = "https://ofn.gov.cz/slovníky/draft2/kompletní/kontext.jsonld";
-    public static final String CONTEXT_JSONLD = "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld";
+    public static final String CONTEXT = "https://ofn.gov.cz/slovníky/2026-02-26/kompletní/kontext.jsonld";
     public static final String SCHEMA_URL = "http://schema.org/url";
     public static final String IDENT = "identifier";
     public static final String OFN_NAMESPACE_VS = "https://slovník.gov.cz/veřejný-sektor/pojem/";
