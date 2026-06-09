@@ -1,5 +1,5 @@
 {
-    "@context": "https://ofn.gov.cz/slovníky/draft2/kompletní/kontext.jsonld",
+    "@context": "https://ofn.gov.cz/slovníky/2026-02-26/kompletní/kontext.jsonld",
     "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat",
     "typ": [
         "Slovník",
