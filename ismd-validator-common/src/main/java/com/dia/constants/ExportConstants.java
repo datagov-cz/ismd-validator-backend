@@ -47,6 +47,13 @@ public class ExportConstants {
         public static final String NEVEREJNY_UDAJ_JSON_LD = "Neveřejný údaj";
         public static final String OBOR_HODNOT_JSON_LD = "obor-hodnot";
 
+        // Governance codelist CURIE prefixes. The namespace IRIs are shared with Turtle
+        // (see ExportConstants.Turtle.NS_*), but the prefix labels match the JSON-LD
+        // context (context.jsonld), which uses the shorter form without the "-údajů" suffix.
+        public static final String PREFIX_ZPUSOBY_ZISKANI = "způsoby-získání";
+        public static final String PREFIX_ZPUSOBY_SDILENI = "způsoby-sdílení";
+        public static final String PREFIX_TYPY_OBSAHU = "typy-obsahu";
+
         private Json() {
         }
     }

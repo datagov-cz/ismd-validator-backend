@@ -668,7 +668,11 @@ class ConversionWorkflowJsonTest {
         if (uri == null || uri.trim().isEmpty()) {
             return true;
         }
-        return !uri.matches("^https?://.*") && !uri.matches("^[a-zA-Z][a-zA-Z0-9+.-]*:.*");
+        // Accept absolute IRIs (http/https) and prefixed forms (scheme/CURIE such as
+        // "xsd:integer" or "způsoby-sdílení:vlastní"). CURIE prefixes defined in the
+        // JSON-LD context may contain Unicode letters, so the prefix class is not
+        // restricted to ASCII.
+        return !uri.matches("^https?://.*") && !uri.matches("^\\p{L}[\\p{L}\\p{N}+.-]*:.*");
     }
 
     private void collectDataTypeFields(JsonNode contextDef, Map<String, String> dataTypeFields, String prefix) {
