@@ -188,6 +188,32 @@ class JsonExporterUnitTest {
     }
 
     @Test
+    void exportToJson_WithGovernanceCodelistIris_CompactsToCurie() throws Exception {
+        // Arrange
+        setupModelWithGovernanceCodelistIris();
+        exporter = new JsonExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
+
+        // Act
+        String result = exporter.exportToJson();
+
+        // Assert
+        JsonNode rootNode = objectMapper.readTree(result);
+        JsonNode concept = rootNode.get("pojmy").get(0);
+
+        assertEquals("způsoby-získání:vlastní",
+                concept.get("způsob-získání-údaje").asText(),
+                "Acquisition method IRI should be compacted to a CURIE");
+        assertEquals("typy-obsahu:evidenční",
+                concept.get("typ-obsahu-údaje").asText(),
+                "Content type IRI should be compacted to a CURIE");
+
+        JsonNode sharing = concept.get("způsoby-sdílení-údaje");
+        assertTrue(sharing.isArray(), "Sharing method should be array");
+        assertEquals("způsoby-sdílení:veřejně-přístupné", sharing.get(0).asText(),
+                "Sharing method IRI should be compacted to a CURIE");
+    }
+
+    @Test
     void exportToJson_WithSplitMultipleValues_HandlesCorrectly() throws Exception {
         // Arrange
         setupModelWithMultipleValuesInGovernanceProperties();
@@ -615,6 +641,28 @@ class JsonExporterUnitTest {
         concept.addProperty(contentTypeProp, "Structured data");
 
         resourceMap.put("governance-concept-id", concept);
+    }
+
+    private void setupModelWithGovernanceCodelistIris() {
+        Resource ontology = ontModel.createOntology(effectiveNamespace + "test-vocabulary");
+        ontology.addProperty(RDF.type, OWL2.Ontology);
+        resourceMap.put("ontology", ontology);
+
+        OntClass pojemClass = ontModel.createClass(OFN_NAMESPACE + POJEM);
+        Resource concept = ontModel.createResource(localConceptPrefix + "codelist-concept");
+        concept.addProperty(RDF.type, pojemClass);
+        concept.addProperty(SKOS.prefLabel, "Codelist Concept", "cs");
+
+        Property sharingProp = ontModel.createProperty(OFN_NAMESPACE + ZPUSOB_SDILENI);
+        concept.addProperty(sharingProp, ExportConstants.Turtle.NS_ZPUSOBY_SDILENI + "veřejně-přístupné");
+
+        Property acquisitionProp = ontModel.createProperty(OFN_NAMESPACE + ZPUSOB_ZISKANI);
+        concept.addProperty(acquisitionProp, ExportConstants.Turtle.NS_ZPUSOBY_ZISKANI + "vlastní");
+
+        Property contentTypeProp = ontModel.createProperty(OFN_NAMESPACE + TYP_OBSAHU);
+        concept.addProperty(contentTypeProp, ExportConstants.Turtle.NS_TYPY_OBSAHU + "evidenční");
+
+        resourceMap.put("codelist-concept-id", concept);
     }
 
     private void setupModelWithMultipleValuesInGovernanceProperties() {

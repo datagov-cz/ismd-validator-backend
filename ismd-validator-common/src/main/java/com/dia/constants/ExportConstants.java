@@ -47,6 +47,13 @@ public class ExportConstants {
         public static final String NEVEREJNY_UDAJ_JSON_LD = "Neveřejný údaj";
         public static final String OBOR_HODNOT_JSON_LD = "obor-hodnot";
 
+        // Governance codelist CURIE prefixes. The namespace IRIs are shared with Turtle
+        // (see ExportConstants.Turtle.NS_*), but the prefix labels match the JSON-LD
+        // context (context.jsonld), which uses the shorter form without the "-údajů" suffix.
+        public static final String PREFIX_ZPUSOBY_ZISKANI = "způsoby-získání";
+        public static final String PREFIX_ZPUSOBY_SDILENI = "způsoby-sdílení";
+        public static final String PREFIX_TYPY_OBSAHU = "typy-obsahu";
+
         private Json() {
         }
     }
@@ -63,6 +70,18 @@ public class ExportConstants {
         public static final String PREFIX_XSD = "xsd";
 
         public static final String DEFAULT_PREFIX = "domain";
+
+        // Governance codelist namespaces (data governance: content type, sharing method, acquisition method).
+        // Prefix names match the codelist segment per OFN documentation.
+        public static final String PREFIX_TYPY_OBSAHU = "typy-obsahu-údajů";
+        public static final String NS_TYPY_OBSAHU =
+                "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/";
+        public static final String PREFIX_ZPUSOBY_SDILENI = "způsoby-sdílení-údajů";
+        public static final String NS_ZPUSOBY_SDILENI =
+                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/";
+        public static final String PREFIX_ZPUSOBY_ZISKANI = "způsoby-získání-údajů";
+        public static final String NS_ZPUSOBY_ZISKANI =
+                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/";
 
         private Turtle() {
         }

@@ -590,11 +590,37 @@ public class JsonExporter {
 
     private String extractStatementValue(Statement statement) {
         if (statement.getObject().isLiteral()) {
-            return statement.getString();
+            return toGovernanceCurie(statement.getString());
         } else if (statement.getObject().isResource()) {
-            return statement.getObject().asResource().getURI();
+            return toGovernanceCurie(statement.getObject().asResource().getURI());
         }
         return null;
+    }
+
+    /**
+     * Compacts a governance codelist IRI to its JSON-LD CURIE form
+     * (e.g. {@code https://data.dia.gov.cz/.../způsoby-získání-údajů/položky/vlastní}
+     * becomes {@code způsoby-získání:vlastní}). Prefixes match the JSON-LD context
+     * (kontext.jsonld). Values that do not start with a known governance namespace
+     * are returned unchanged.
+     */
+    private String toGovernanceCurie(String value) {
+        if (value == null) {
+            return null;
+        }
+        if (value.startsWith(ExportConstants.Turtle.NS_ZPUSOBY_ZISKANI)) {
+            return ExportConstants.Json.PREFIX_ZPUSOBY_ZISKANI + ":"
+                    + value.substring(ExportConstants.Turtle.NS_ZPUSOBY_ZISKANI.length());
+        }
+        if (value.startsWith(ExportConstants.Turtle.NS_ZPUSOBY_SDILENI)) {
+            return ExportConstants.Json.PREFIX_ZPUSOBY_SDILENI + ":"
+                    + value.substring(ExportConstants.Turtle.NS_ZPUSOBY_SDILENI.length());
+        }
+        if (value.startsWith(ExportConstants.Turtle.NS_TYPY_OBSAHU)) {
+            return ExportConstants.Json.PREFIX_TYPY_OBSAHU + ":"
+                    + value.substring(ExportConstants.Turtle.NS_TYPY_OBSAHU.length());
+        }
+        return value;
     }
 
     private List<String> splitMultipleValues(String value) {

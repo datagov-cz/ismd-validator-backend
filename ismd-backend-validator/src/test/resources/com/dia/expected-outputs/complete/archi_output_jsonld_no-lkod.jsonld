@@ -27,9 +27,9 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:integer",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/poskytované-na-žádost"
+                "způsoby-sdílení:poskytované-na-žádost"
             ],
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/evidenční",
+            "typ-obsahu-údaje": "typy-obsahu:evidenční",
             "ustanovení-dokládající-neveřejnost-údaje": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1"
             ]
@@ -47,10 +47,10 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:boolean",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/veřejně-přístupné"
+                "způsoby-sdílení:veřejně-přístupné"
             ],
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/provozní",
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/identifikační"
+            "způsob-získání-údaje": "způsoby-získání:provozní",
+            "typ-obsahu-údaje": "typy-obsahu:identifikační"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič",
@@ -116,7 +116,7 @@
             },
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:date",
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/základních-registrů"
+            "způsob-získání-údaje": "způsoby-získání:základních-registrů"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/účastník-provozu-na-pozemních-komunikacích",
@@ -150,7 +150,7 @@
             },
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:date",
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/základních-registrů"
+            "způsob-získání-údaje": "způsoby-získání:základních-registrů"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
@@ -189,10 +189,10 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:boolean",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/veřejně-přístupné"
+                "způsoby-sdílení:veřejně-přístupné"
             ],
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/provozní",
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/identifikační"
+            "způsob-získání-údaje": "způsoby-získání:provozní",
+            "typ-obsahu-údaje": "typy-obsahu:identifikační"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/desetinné-číslo-i",
@@ -207,9 +207,9 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:double",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/zpřístupňované-pro-výkon-agendy"
+                "způsoby-sdílení:zpřístupňované-pro-výkon-agendy"
             ],
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/statistické"
+            "typ-obsahu-údaje": "typy-obsahu:statistické"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/desetinné-číslo-p",
@@ -224,9 +224,9 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:double",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/zpřístupňované-pro-výkon-agendy"
+                "způsoby-sdílení:zpřístupňované-pro-výkon-agendy"
             ],
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/statistické"
+            "typ-obsahu-údaje": "typy-obsahu:statistické"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo",
@@ -269,10 +269,10 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
             "obor-hodnot": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/veřejně-přístupné"
+                "způsoby-sdílení:veřejně-přístupné"
             ],
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/vlastní",
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/statistické",
+            "způsob-získání-údaje": "způsoby-získání:vlastní",
+            "typ-obsahu-údaje": "typy-obsahu:statistické",
             "ustanovení-dokládající-neveřejnost-údaje": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c"
             ],
@@ -291,10 +291,10 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:boolean",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/veřejně-přístupné"
+                "způsoby-sdílení:veřejně-přístupné"
             ],
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/provozní",
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/identifikační"
+            "způsob-získání-údaje": "způsoby-získání:provozní",
+            "typ-obsahu-údaje": "typy-obsahu:identifikační"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/url-s",
@@ -308,7 +308,7 @@
             },
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:anyURI",
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/vlastní"
+            "způsob-získání-údaje": "způsoby-získání:vlastní"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/url-p",
@@ -322,7 +322,7 @@
             },
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:anyURI",
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/vlastní"
+            "způsob-získání-údaje": "způsoby-získání:vlastní"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/rodné-číslo-držitele-řidičského-průkazu-subclass",
@@ -415,7 +415,7 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:time",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/nesdílené"
+                "způsoby-sdílení:nesdílené"
             ]
         },
         {
@@ -430,7 +430,7 @@
             },
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:anyURI",
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/vlastní"
+            "způsob-získání-údaje": "způsoby-získání:vlastní"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/čas-p",
@@ -445,7 +445,7 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:time",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/nesdílené"
+                "způsoby-sdílení:nesdílené"
             ]
         },
         {
@@ -468,9 +468,9 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič",
             "obor-hodnot": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/zpřístupňované-pro-výkon-agendy"
+                "způsoby-sdílení:zpřístupňované-pro-výkon-agendy"
             ],
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/základních-registrů",
+            "způsob-získání-údaje": "způsoby-získání:základních-registrů",
             "je-sdílen-v-ppdf": false
         },
         {
@@ -485,7 +485,7 @@
             },
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "http://www.w3.org/2000/01/rdf-schema#Literal",
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/jiných-agend"
+            "způsob-získání-údaje": "způsoby-získání:jiných-agend"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
@@ -544,7 +544,7 @@
             },
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "http://www.w3.org/2000/01/rdf-schema#Literal",
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/jiných-agend"
+            "způsob-získání-údaje": "způsoby-získání:jiných-agend"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/desetinné-číslo-s",
@@ -559,9 +559,9 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:double",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/zpřístupňované-pro-výkon-agendy"
+                "způsoby-sdílení:zpřístupňované-pro-výkon-agendy"
             ],
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/statistické"
+            "typ-obsahu-údaje": "typy-obsahu:statistické"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/datum-a-čas-p",
@@ -601,7 +601,7 @@
             },
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "http://www.w3.org/2000/01/rdf-schema#Literal",
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/jiných-agend"
+            "způsob-získání-údaje": "způsoby-získání:jiných-agend"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/jméno-držitele-řidičského-průkazu",
@@ -645,9 +645,9 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:integer",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/poskytované-na-žádost"
+                "způsoby-sdílení:poskytované-na-žádost"
             ],
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/evidenční"
+            "typ-obsahu-údaje": "typy-obsahu:evidenční"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/datum-a-čas-i",
@@ -684,10 +684,10 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností",
             "obor-hodnot": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/poskytované-na-žádost"
+                "způsoby-sdílení:poskytované-na-žádost"
             ],
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/provozní",
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/identifikační"
+            "způsob-získání-údaje": "způsoby-získání:provozní",
+            "typ-obsahu-údaje": "typy-obsahu:identifikační"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/sídlí-na-adrese",
@@ -708,10 +708,10 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností",
             "obor-hodnot": "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/adresa",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/nesdílené"
+                "způsoby-sdílení:nesdílené"
             ],
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/jiných-agend",
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/evidenční",
+            "způsob-získání-údaje": "způsoby-získání:jiných-agend",
+            "typ-obsahu-údaje": "typy-obsahu:evidenční",
             "je-sdílen-v-ppdf": true
         },
         {
@@ -727,7 +727,7 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:time",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/nesdílené"
+                "způsoby-sdílení:nesdílené"
             ]
         },
         {
@@ -744,9 +744,9 @@
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:integer",
             "způsoby-sdílení-údaje": [
-                "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/poskytované-na-žádost"
+                "způsoby-sdílení:poskytované-na-žádost"
             ],
-            "typ-obsahu-údaje": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/evidenční",
+            "typ-obsahu-údaje": "typy-obsahu:evidenční",
             "ustanovení-dokládající-neveřejnost-údaje": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1"
             ]
@@ -763,7 +763,7 @@
             },
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:date",
-            "způsob-získání-údaje": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/základních-registrů"
+            "způsob-získání-údaje": "způsoby-získání:základních-registrů"
         },
         {
             "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/rodné-číslo-držitele-řidičského-průkazu",
