@@ -1,0 +1,30 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+@prefix z111: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/> .
+
+# Error rule: Concept characteristic value must match OFN regex pattern
+<https://slovník.gov.cz/shacl/lokální/charakteristika-hodnota-regex>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Charakteristika pojmu dle regexu OFN"@cs ;
+    sh:description "Validates that legislative source IRIs match expected patterns from OFN" ;
+    sh:message "Charakteristika pojmu neobsahuje hodnotu dle regexu z OFN (např. legislativní zdroje)"@cs ;
+    sh:severity sh:Violation ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this ?value
+            WHERE {
+                $this a slovníky:pojem .
+                {
+                    $this slovníky:definující-ustanovení ?value .
+                    FILTER(!REGEX(STR(?value), "^https://slovník\\.gov\\.cz/legislativní/"))
+                } UNION {
+                    $this slovníky:související-ustanovení ?value .
+                    FILTER(!REGEX(STR(?value), "^https://slovník\\.gov\\.cz/legislativní/"))
+                }
+            }
+        """ ;
+    ] .

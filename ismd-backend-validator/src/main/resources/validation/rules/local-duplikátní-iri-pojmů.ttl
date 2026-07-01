@@ -1,0 +1,27 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+
+# Error rule: Vocabulary contains multiple concepts with the same IRI
+<https://slovník.gov.cz/shacl/lokální/duplikátní-iri-pojmů>
+    a sh:NodeShape ;
+    sh:targetClass skos:ConceptScheme ;
+    sh:name "Duplikátní IRI pojmů"@cs ;
+    sh:description "Detects when a vocabulary contains multiple concepts with the same IRI" ;
+    sh:message "Slovník obsahuje více pojmů se stejným IRI"@cs ;
+    sh:severity sh:Violation ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+            SELECT $this ?concept (COUNT(?concept) AS ?count)
+            WHERE {
+                ?concept skos:inScheme $this .
+                ?concept2 skos:inScheme $this .
+                FILTER(STR(?concept) = STR(?concept2) && ?concept != ?concept2)
+            }
+            GROUP BY $this ?concept
+            HAVING (COUNT(?concept) > 1)
+        """ ;
+    ] .
