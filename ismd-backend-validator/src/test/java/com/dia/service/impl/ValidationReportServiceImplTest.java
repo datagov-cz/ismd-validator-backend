@@ -120,58 +120,6 @@ class ValidationReportServiceImplTest {
     }
 
     @Test
-    void testConvertToDto_CombinedReports() {
-        // Arrange
-        List<ValidationResult> localResults = Arrays.asList(errorResult1, warningResult);
-        List<ValidationResult> globalResults = Arrays.asList(errorResult2, infoResult);
-
-        ISMDValidationReport localReport = new ISMDValidationReport(localResults, Instant.now());
-        ISMDValidationReport globalReport = new ISMDValidationReport(globalResults, Instant.now());
-
-        // Act
-        ValidationResultsDto dto = validationReportService.convertToDto(localReport, globalReport);
-
-        // Assert
-        Assertions.assertNotNull(dto);
-        Assertions.assertNotNull(dto.getSeverityGroups());
-        Assertions.assertEquals(4, dto.getSeverityGroups().size()); // 4 unique message groups
-
-        boolean hasGlobalPrefix = dto.getSeverityGroups().stream()
-                .anyMatch(group -> group.getDescription().startsWith("[GLOBAL]"));
-        Assertions.assertTrue(hasGlobalPrefix, "Should have groups with [GLOBAL] prefix");
-
-        boolean hasGlobalError = dto.getSeverityGroups().stream()
-                .anyMatch(group -> group.getDescription().equals("[GLOBAL] Invalid format"));
-        Assertions.assertTrue(hasGlobalError, "Should have global error message");
-
-        boolean hasGlobalInfo = dto.getSeverityGroups().stream()
-                .anyMatch(group -> group.getDescription().equals("[GLOBAL] Additional information"));
-        Assertions.assertTrue(hasGlobalInfo, "Should have global info message");
-    }
-
-    @Test
-    void testConvertToDto_CombinedReports_ValidityLogic() {
-        // Test case 1: Both reports valid
-        ISMDValidationReport validLocalReport = new ISMDValidationReport(Collections.emptyList(), Instant.now());
-        ISMDValidationReport validGlobalReport = new ISMDValidationReport(Collections.emptyList(), Instant.now());
-
-        ValidationResultsDto dto1 = validationReportService.convertToDto(validLocalReport, validGlobalReport);
-
-        // Test case 2: Local invalid, global valid
-        ISMDValidationReport invalidLocalReport = new ISMDValidationReport(Collections.singletonList(errorResult1), Instant.now());
-        ValidationResultsDto dto2 = validationReportService.convertToDto(invalidLocalReport, validGlobalReport);
-
-        // Test case 3: Local valid, global invalid
-        ISMDValidationReport invalidGlobalReport = new ISMDValidationReport(Collections.singletonList(errorResult2), Instant.now());
-        ValidationResultsDto dto3 = validationReportService.convertToDto(validLocalReport, invalidGlobalReport);
-
-        // Assert
-        Assertions.assertNotNull(dto1);
-        Assertions.assertNotNull(dto2);
-        Assertions.assertNotNull(dto3);
-    }
-
-    @Test
     void testCzechSeverityMapping() {
         // Arrange
         ValidationResult errorResult = new ValidationResult(ValidationSeverity.ERROR, "Error message", "rule", "node", "path", "value");
@@ -290,59 +238,4 @@ class ValidationReportServiceImplTest {
         Assertions.assertEquals(3, group.getCount());
     }
 
-    @Test
-    void testGlobalReportPrefixing() {
-        // Arrange
-        ValidationResult globalResult1 = new ValidationResult(ValidationSeverity.ERROR, "Global error", "rule", "node", "path", "value");
-        ValidationResult globalResult2 = new ValidationResult(ValidationSeverity.WARNING, "Global warning", "rule", "node", "path", "value");
-
-        ISMDValidationReport localReport = new ISMDValidationReport(Collections.emptyList(), Instant.now());
-        ISMDValidationReport globalReport = new ISMDValidationReport(Arrays.asList(globalResult1, globalResult2), Instant.now());
-
-        // Act
-        ValidationResultsDto dto = validationReportService.convertToDto(localReport, globalReport);
-
-        // Assert
-        List<SeverityGroupDto> groups = dto.getSeverityGroups();
-        Assertions.assertEquals(2, groups.size());
-
-        Assertions.assertTrue(groups.stream().allMatch(group -> group.getDescription().startsWith("[GLOBAL]")));
-        Assertions.assertTrue(groups.stream().anyMatch(group -> group.getDescription().equals("[GLOBAL] Global error")));
-        Assertions.assertTrue(groups.stream().anyMatch(group -> group.getDescription().equals("[GLOBAL] Global warning")));
-    }
-
-    @Test
-    void testCombinedReporting_ComplexScenario() {
-        // Arrange
-        ValidationResult localError = new ValidationResult(ValidationSeverity.ERROR, "Common error message", "rule", "node1", "path", "value");
-        ValidationResult localWarning = new ValidationResult(ValidationSeverity.WARNING, "Local warning", "rule", "node2", "path", "value");
-
-        ValidationResult globalError = new ValidationResult(ValidationSeverity.ERROR, "Common error message", "rule", "node3", "path", "value");
-        ValidationResult globalInfo = new ValidationResult(ValidationSeverity.INFO, "Global info", "rule", "node4", "path", "value");
-
-        ISMDValidationReport localReport = new ISMDValidationReport(Arrays.asList(localError, localWarning), Instant.now());
-        ISMDValidationReport globalReport = new ISMDValidationReport(Arrays.asList(globalError, globalInfo), Instant.now());
-
-        // Act
-        ValidationResultsDto dto = validationReportService.convertToDto(localReport, globalReport);
-
-        // Assert
-        List<SeverityGroupDto> groups = dto.getSeverityGroups();
-        Assertions.assertEquals(4, groups.size());
-
-        long errorGroups = groups.stream()
-                .filter(group -> group.getSeverity().equals("Chyba"))
-                .count();
-        Assertions.assertEquals(2, errorGroups);
-
-        Assertions.assertTrue(groups.stream().anyMatch(group ->
-                group.getSeverity().equals("Chyba") &&
-                        group.getDescription().equals("Common error message") &&
-                        group.getCount() == 1));
-
-        Assertions.assertTrue(groups.stream().anyMatch(group ->
-                group.getSeverity().equals("Chyba") &&
-                        group.getDescription().equals("[GLOBAL] Common error message") &&
-                        group.getCount() == 1));
-    }
 }

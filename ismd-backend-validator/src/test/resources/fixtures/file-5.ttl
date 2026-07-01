@@ -1,0 +1,85 @@
+PREFIX a104:                  <https://slovník.gov.cz/agendový/104/pojem/>
+PREFIX dct:                   <http://purl.org/dc/terms/>
+PREFIX l111-2009:             <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
+PREFIX owl:                   <http://www.w3.org/2002/07/owl#>
+PREFIX rdf:                   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:                  <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema:                <http://schema.org/>
+PREFIX skos:                  <http://www.w3.org/2004/02/skos/core#>
+PREFIX slovníky:              <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+PREFIX typ-obsahu-údajů:      <https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje>
+PREFIX vsgov:                 <https://slovník.gov.cz/veřejný-sektor/pojem/>
+PREFIX xsd:                   <http://www.w3.org/2001/XMLSchema#>
+PREFIX způsoby-sdílení-údajů: <https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje>
+PREFIX způsoby-získání-údajů: <https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje>
+PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
+
+<https://slovník.gov.cz/testovací-slovník-test/pojem/test-jajsajajajajaja>
+        rdf:type                        l111-2009:veřejný-údaj , slovníky:typ-objektu-práva , slovníky:třída , slovníky:pojem , skos:Concept;
+        rdfs:subClassOf                 <https://slovník.gov.cz/a3791---registr-vysokých-škol/pojem/česká-vysoká-škola>;
+        dct:description                 "popis"@cs , "popis EN"@en;
+        skos:altLabel                   "Test"@cs , "test SKKKKKK"@sk;
+        skos:definition                 "definice EN"@en , "Definice"@cs , "definice SKKKKK"@sk;
+        skos:exactMatch                 <https://slovník.gov.cz/a3791---registr-vysokých-škol/pojem/evropská-zahraniční-vysoká-škola>;
+        skos:inScheme                   <https://slovník.gov.cz/testovací-slovník-změna-test-test-123>;
+        skos:prefLabel                  "test SKKKKKKKKK"@sk , "test EN"@en , "Test JAJSAJAJAJAJAJA"@cs;
+        a104:je-sdílen-v-propojeném-datovém-fondu
+                "true";
+        a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy
+                <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A1046>;
+        a104:údaje-jsou-v-ais           <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/198>;
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/1997/49/2025-11-01/dokument/norma/cast_3/hlava_1/par_18/odst_1>;
+        slovníky:má-typ-obsahu-údaje    <https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/identifikační>;
+        slovníky:má-způsob-získání-údaje
+                <https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/jiných-agend>;
+        slovníky:související-ustanovení
+                <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/1969/100/0000-00-00/dokument/norma/par_2/pism_a>;
+        <https://slovník.gov.cz/nadřazená-třída>
+                <https://slovník.gov.cz/a3791---registr-vysokých-škol/pojem/česká-vysoká-škola>;
+        <https://slovník.gov.cz/testovací-slovník-test/definující-nelegislativní-zdroj>
+                [ rdf:type         <https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt>;
+                  dct:description  "test"@cs;
+                  dct:title        "test"@cs;
+                  schema:url       <https://ofn.gov.cz/slovníky/2026-02-26/cs/#Pojem>
+                ];
+        <https://slovník.gov.cz/testovací-slovník-test/definující-nelegislativní-zdroj>
+                [ rdf:type         <https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt>;
+                  dct:description  "zreiuwzriuwezr"@cs;
+                  dct:title        "TESTTTT"@cs;
+                  schema:url       <https://ofn.gov.cz/slovníky/2026-02-26/cs/#Pojem>
+                ];
+        <https://slovník.gov.cz/testovací-slovník-test/inTezaurus>
+                "false";
+        <https://slovník.gov.cz/testovací-slovník-test/nadřazená-třída>
+                <https://slovník.gov.cz/a3791---registr-vysokých-škol/pojem/česká-vysoká-škola>;
+        <https://slovník.gov.cz/testovací-slovník-test/související-nelegislativní-zdroj>
+                [ rdf:type         <https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt>;
+                  dct:description  "test"@cs;
+                  dct:title        "test dvě"@cs;
+                  schema:url       <https://ofn.gov.cz/slovníky/2026-02-26/cs/#Pojem>
+                ];
+        <https://slovník.gov.cz/testovací-slovník-změn/inTezaurus>
+                "false" .
+
+<https://slovník.gov.cz/testovací-slovník-test>
+        rdf:type                    owl:Ontology , skos:ConceptScheme , slovníky:slovník;
+        dct:description             "testovací popis"@cs;
+        skos:prefLabel              "testovací slovník TEST"@cs;
+        slovníky:okamžik-vytvoření  <https://slovník.gov.cz/testovací-slovník/casovy-okamzik-vytvoreni> .
+
+<https://slovník.gov.cz/testovací-slovník/casovy-okamzik-vytvoreni>
+        rdf:type         čas:časový-okamžik;
+        čas:datum-a-čas  "2026-06-30T14:05:54.733258552" .
+
+<https://slovník.gov.cz/testovací-slovník-test/pojem/test>
+        rdf:type         slovníky:pojem , owl:ObjectProperty , slovníky:vztah , skos:Concept;
+        rdfs:domain      <https://slovník.gov.cz/testovací-slovník-test/pojem/test-jajsajajajajaja>;
+        rdfs:range       <https://slovník.gov.cz/testovací-slovník-cs/pojem/pojem-c.2>;
+        skos:definition  "test"@cs;
+        skos:inScheme    <https://slovník.gov.cz/testovací-slovník-test>;
+        skos:prefLabel   "test"@cs;
+        a104:je-sdílen-v-propojeném-datovém-fondu
+                false .
+
+<https://slovník.gov.cz/testovací-slovník-změna-test-test-123/pojem/test>
+        skos:inScheme  <https://slovník.gov.cz/testovací-slovník-test> .

@@ -21,6 +21,15 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class RuleManager {
 
+    /**
+     * Rules whose name starts with this prefix are cross-vocabulary corpus checks. They
+     * are NOT executed in-memory by Jena (their SHACL-SPARQL bodies self-join the uploaded
+     * graph and emit false positives); {@code GlobalValidationEngine} runs them against the
+     * published corpus instead. The {@code .ttl} files are retained purely as the source of
+     * rule metadata (name/message/severity/shape-IRI).
+     */
+    public static final String GLOBAL_PREFIX = "global-";
+
     private final ValidationConfiguration config;
     @Getter
     private final ResourceLoader resourceLoader;
@@ -104,11 +113,30 @@ public class RuleManager {
         return metadata;
     }
 
+    /**
+     * SHACL (local) rule models that are enabled. Global ({@code global-}) rules are
+     * excluded here so Jena never parses or executes their in-memory-broken SPARQL bodies;
+     * {@link #getEnabledGlobalRuleNames()} exposes them for the corpus engine instead.
+     */
     public List<Model> getEnabledRules() {
         return ruleModels.entrySet().stream()
+                .filter(entry -> !isGlobalRule(entry.getKey()))
                 .filter(entry -> config.isRuleEnabled(entry.getKey()))
                 .map(Map.Entry::getValue)
                 .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+    }
+
+    /** Whether a rule name denotes a global (corpus) rule rather than a local SHACL rule. */
+    public static boolean isGlobalRule(String ruleName) {
+        return ruleName != null && ruleName.startsWith(GLOBAL_PREFIX);
+    }
+
+    /** Names of enabled global (corpus) rules, in load order. */
+    public Set<String> getEnabledGlobalRuleNames() {
+        return ruleModels.keySet().stream()
+                .filter(RuleManager::isGlobalRule)
+                .filter(config::isRuleEnabled)
+                .collect(LinkedHashSet::new, Set::add, Set::addAll);
     }
 
     public Model getCombinedEnabledRules() {
@@ -122,8 +150,10 @@ public class RuleManager {
         return combinedModel;
     }
 
+    /** Names of enabled local SHACL rules (global rules excluded — they don't run in Jena). */
     public Set<String> getEnabledRuleNames() {
         return ruleModels.keySet().stream()
+                .filter(name -> !isGlobalRule(name))
                 .filter(config::isRuleEnabled)
                 .collect(LinkedHashSet::new, Set::add, Set::addAll);
     }
