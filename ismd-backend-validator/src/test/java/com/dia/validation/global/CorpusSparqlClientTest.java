@@ -58,10 +58,14 @@ class CorpusSparqlClientTest {
     }
 
     private CorpusSparqlClient clientFor(String endpoint, int timeoutMs) {
+        return clientFor(endpoint, timeoutMs, 5);
+    }
+
+    private CorpusSparqlClient clientFor(String endpoint, int timeoutMs, int failureThreshold) {
         GlobalValidationConfiguration cfg = new GlobalValidationConfiguration();
         cfg.getSparql().setEndpoint(endpoint);
         cfg.getSparql().setTimeout(timeoutMs);
-        cfg.getCircuitBreaker().setFailureThreshold(5);
+        cfg.getCircuitBreaker().setFailureThreshold(failureThreshold);
         cfg.getCircuitBreaker().setCooldownMs(30_000);
         return new CorpusSparqlClient(cfg);
     }
@@ -95,11 +99,83 @@ class CorpusSparqlClientTest {
     }
 
     @Test
+    void diffIriByLabel_batched_groupsMatchesPerLabel_andExcludesUploadedIris() throws IOException {
+        // One batched response with rows for two labels; one row is an uploaded IRI to be excluded.
+        String body = "{\"head\":{\"vars\":[\"name\",\"lang\",\"other\"]},\"results\":{\"bindings\":["
+                + "{\"name\":{\"type\":\"literal\",\"value\":\"Osoba\"},\"lang\":{\"type\":\"literal\",\"value\":\"cs\"},"
+                + "\"other\":{\"type\":\"uri\",\"value\":\"https://slovník.gov.cz/corpus-osoba\"}},"
+                + "{\"name\":{\"type\":\"literal\",\"value\":\"Person\"},\"lang\":{\"type\":\"literal\",\"value\":\"en\"},"
+                + "\"other\":{\"type\":\"uri\",\"value\":\"https://slovník.gov.cz/corpus-person\"}},"
+                + "{\"name\":{\"type\":\"literal\",\"value\":\"Osoba\"},\"lang\":{\"type\":\"literal\",\"value\":\"cs\"},"
+                + "\"other\":{\"type\":\"uri\",\"value\":\"" + IRI_A + "\"}}"  // uploaded → excluded
+                + "]}}";
+        String endpoint = startServer(200, body, 0);
+        CorpusSparqlClient client = clientFor(endpoint, 2000);
+
+        var byLabel = client.findOtherIrisByLabel(
+                java.util.Set.of(new CandidateNode.Label("cs", "Osoba"),
+                        new CandidateNode.Label("en", "Person")),
+                POJEM, Set.of(IRI_A));
+
+        assertThat(byLabel.get(new CandidateNode.Label("cs", "Osoba")))
+                .containsExactly("https://slovník.gov.cz/corpus-osoba"); // IRI_A excluded
+        assertThat(byLabel.get(new CandidateNode.Label("en", "Person")))
+                .containsExactly("https://slovník.gov.cz/corpus-person");
+    }
+
+    @Test
+    void diffIriByLabel_emptyLabelSet_issuesNoQuery() throws IOException {
+        AtomicInteger hits = new AtomicInteger();
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/sparql", exchange -> {
+            hits.incrementAndGet();
+            byte[] b = selectJson("other").getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, b.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(b);
+            }
+        });
+        server.start();
+        String endpoint = "http://127.0.0.1:" + server.getAddress().getPort() + "/sparql";
+        CorpusSparqlClient client = clientFor(endpoint, 2000);
+
+        assertThat(client.findOtherIrisByLabel(Set.of(), POJEM, Set.of())).isEmpty();
+        assertThat(hits.get()).isZero();
+    }
+
+    @Test
     void serverError_failsOpenToEmpty() throws IOException {
         String endpoint = startServer(500, "boom", 0);
         CorpusSparqlClient client = clientFor(endpoint, 2000);
 
         assertThat(client.findExistingIris(List.of(IRI_A), POJEM)).isEmpty();
+    }
+
+    @Test
+    void circuitBreaker_opensAfterThreshold_andStopsHittingTheEndpoint() throws IOException {
+        // Server always 500s and counts hits. With a failure threshold of 2, the breaker must
+        // open after 2 failed calls and fast-fail the rest without touching the endpoint —
+        // while still failing open (empty result) on every call.
+        AtomicInteger hits = new AtomicInteger();
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/sparql", exchange -> {
+            hits.incrementAndGet();
+            byte[] b = "boom".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(500, b.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(b);
+            }
+        });
+        server.start();
+        String endpoint = "http://127.0.0.1:" + server.getAddress().getPort() + "/sparql";
+        CorpusSparqlClient client = clientFor(endpoint, 2000, 2);
+
+        for (int i = 0; i < 6; i++) {
+            assertThat(client.findExistingIris(List.of(IRI_A), POJEM)).isEmpty(); // fail-open every time
+        }
+
+        // Only the first 2 calls reached the endpoint; the breaker fast-failed the remaining 4.
+        assertThat(hits.get()).isEqualTo(2);
     }
 
     @Test

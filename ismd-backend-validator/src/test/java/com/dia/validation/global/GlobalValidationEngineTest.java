@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -49,8 +50,8 @@ class GlobalValidationEngineTest {
         // default: no corpus hits unless a test overrides
         lenient().when(client.findExistingIris(any(), anyString())).thenReturn(Set.of());
         lenient().when(client.fetchCorpusLabels(any(), anyString())).thenReturn(List.of());
-        lenient().when(client.findOtherIrisWithLabel(anyString(), anyString(), anyString(), any()))
-                .thenReturn(List.of());
+        lenient().when(client.findOtherIrisByLabel(any(), anyString(), any()))
+                .thenReturn(Map.of());
     }
 
     /** Load a real global rule model and register it in the mocked RuleManager as enabled. */
@@ -116,8 +117,9 @@ class GlobalValidationEngineTest {
         // checked — this is the regression guard for the ~940 pojem-only corpus concepts.
         enableRealRule("global-pojem-s-jiným-iri-stejným-názvem");
         Model upload = uploadWith("https://slovník.gov.cz/only-pojem", POJEM_TYPE, "cs", "Osoba");
-        when(client.findOtherIrisWithLabel(eq("Osoba"), eq("cs"), eq(CorpusSparqlClient.TYPE_POJEM), any()))
-                .thenReturn(List.of("https://slovník.gov.cz/other"));
+        when(client.findOtherIrisByLabel(any(), eq(CorpusSparqlClient.TYPE_POJEM), any()))
+                .thenReturn(Map.of(new CandidateNode.Label("cs", "Osoba"),
+                        List.of("https://slovník.gov.cz/other")));
 
         ISMDValidationReport report = engine.validate(upload);
 
@@ -159,9 +161,9 @@ class GlobalValidationEngineTest {
     void vocabDiffIriSameName_firesWithViolationSeverity() {
         enableRealRule("global-slovník-s-jiným-iri-stejným-názvem");
         Model upload = uploadWith("https://slovník.gov.cz/voc", SKOS + "ConceptScheme", "cs", "Můj slovník");
-        when(client.findOtherIrisWithLabel(eq("Můj slovník"), eq("cs"),
-                eq(CorpusSparqlClient.TYPE_CONCEPT_SCHEME), any()))
-                .thenReturn(List.of("https://slovník.gov.cz/other-voc"));
+        when(client.findOtherIrisByLabel(any(), eq(CorpusSparqlClient.TYPE_CONCEPT_SCHEME), any()))
+                .thenReturn(Map.of(new CandidateNode.Label("cs", "Můj slovník"),
+                        List.of("https://slovník.gov.cz/other-voc")));
 
         ISMDValidationReport report = engine.validate(upload);
 

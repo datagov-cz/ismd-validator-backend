@@ -4,27 +4,21 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 /**
- * Binds {@code validation.global.*}. Two concerns:
- * <ul>
- *   <li>Per-rule enable flags ({@code validation.global.enabled.*}) — controls which
- *       global (corpus) rules run.</li>
- *   <li>External SPARQL corpus access ({@code validation.global.sparql.*} +
- *       {@code validation.global.circuit-breaker.*}). No retry/max-attempts
- *       config — resilience is timeout + lenient fail-open + circuit breaker.</li>
- * </ul>
+ * Binds {@code validation.global.*} — external SPARQL corpus access for the global
+ * (cross-vocabulary) validation rules: {@code validation.global.sparql.*} +
+ * {@code validation.global.circuit-breaker.*}.
+ *
+ * <p>There is no retry/max-attempts config — resilience is timeout + circuit breaker +
+ * lenient fail-open. Note that <em>which</em> global rules are enabled is NOT configured
+ * here: that is governed by {@code validation.rules.enabled.*} via
+ * {@link ValidationConfiguration#isRuleEnabled} (see
+ * {@link RuleManager#getEnabledGlobalRuleNames()}).
  */
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "validation.global")
 public class GlobalValidationConfiguration {
-
-    private Map<String, Boolean> enabled = new HashMap<>();
 
     private Sparql sparql = new Sparql();
 
@@ -36,8 +30,6 @@ public class GlobalValidationConfiguration {
         private String endpoint = "";
         /** Per-query timeout, milliseconds. */
         private int timeout = 10000;
-        /** Bound on concurrent corpus requests when a lookup is fanned out per node. */
-        private int maxConcurrentRequests = 4;
     }
 
     @Data
@@ -46,12 +38,5 @@ public class GlobalValidationConfiguration {
         private int failureThreshold = 5;
         /** How long the breaker stays open before a trial call, milliseconds. */
         private long cooldownMs = 30000;
-    }
-
-    public Set<String> getEnabledRuleNames() {
-        return enabled.entrySet().stream()
-                .filter(Map.Entry::getValue)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
     }
 }

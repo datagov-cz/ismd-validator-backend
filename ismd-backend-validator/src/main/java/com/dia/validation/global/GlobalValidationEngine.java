@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -156,12 +157,23 @@ public class GlobalValidationEngine {
                                                         String corpusType) {
         Set<String> uploadedIris = candidates.stream().map(CandidateNode::iri)
                 .collect(java.util.stream.Collectors.toSet());
+
+        // Collect the distinct labels across all candidates and resolve them in ONE batched
+        // query, rather than one round-trip per (node, label).
+        Set<CandidateNode.Label> allLabels = candidates.stream()
+                .flatMap(n -> n.labels().stream())
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        Map<CandidateNode.Label, List<String>> hitsByLabel =
+                client.findOtherIrisByLabel(allLabels, corpusType, uploadedIris);
+        if (hitsByLabel.isEmpty()) {
+            return List.of();
+        }
+
         List<ValidationResult> out = new ArrayList<>();
         for (CandidateNode node : candidates) {
             for (CandidateNode.Label label : node.labels()) {
-                List<String> others = client.findOtherIrisWithLabel(
-                        label.text(), label.lang(), corpusType, uploadedIris);
-                if (!others.isEmpty()) {
+                List<String> others = hitsByLabel.get(label);
+                if (others != null && !others.isEmpty()) {
                     out.add(result(meta, node.iri(), others.get(0)));
                     break; // one hit per node is enough
                 }

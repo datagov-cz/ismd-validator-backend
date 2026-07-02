@@ -13,17 +13,19 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Queries the published-vocabulary corpus (NKD) for the three uniqueness primitives the
  * global rules need: same-IRI, same-IRI-different-name, and different-IRI-same-name.
  *
- * <p>Aconcrete {@code @Component} that builds a plain {@link HttpSparqlExecutor}
+ * <p>A concrete {@code @Component} that builds a plain {@link HttpSparqlExecutor}
  * in its constructor and guards every call with a {@link SparqlCircuitBreaker}. All
- * lookups are lenient — a corpus outage returns empty (fail-open), never throws to the
- * caller (the breaker's fast-fail throw is swallowed here and treated as "no hits").
+ * lookups fail open — a corpus outage (or an open breaker) returns empty and never throws
+ * to the caller; see {@link #lenient} for how the breaker and fail-open compose.
  *
  * <p>Corpus concept lookups query {@code slovníky:pojem}. Vocabulary lookups query
  * {@code skos:ConceptScheme}.
@@ -134,47 +136,71 @@ public class CorpusSparqlClient {
     }
 
     /**
-     * DIFFERENT IRI, SAME NAME: corpus subjects (≠ the uploaded IRIs) typed
-     * {@code corpusType} carrying a label whose exact lexical form and language tag match
-     * {@code text}/{@code lang}. {@code excludeIris} are the uploaded IRIs to filter out.
+     * DIFFERENT IRI, SAME NAME (batched): for the whole set of uploaded labels, find corpus
+     * subjects (≠ the uploaded IRIs) typed {@code corpusType} carrying a label whose exact
+     * lexical form and language tag match one of the uploaded {@code (text, lang)} pairs.
+     *
+     * <p>Issues a single SPARQL round-trip using {@code VALUES (?name ?lang) { ... }} instead
+     * of one query per label — the older per-label form produced O(nodes × labels) sequential
+     * calls on large uploads. Returns a map keyed by the matched {@link CandidateNode.Label},
+     * whose values are the conflicting corpus IRIs (uploaded IRIs already filtered out).
+     * An empty {@code labels} set issues no query.
      */
-    public List<String> findOtherIrisWithLabel(String text, String lang, String corpusType,
-                                               Set<String> excludeIris) {
+    public Map<CandidateNode.Label, List<String>> findOtherIrisByLabel(
+            Set<CandidateNode.Label> labels, String corpusType, Set<String> excludeIris) {
+        if (labels.isEmpty()) {
+            return Map.of();
+        }
         ParameterizedSparqlString pss = new ParameterizedSparqlString();
-        pss.append("SELECT DISTINCT ?other WHERE { ?other a ");
+        pss.append("SELECT DISTINCT ?name ?lang ?other WHERE { VALUES (?name ?lang) { ");
+        for (CandidateNode.Label label : labels) {
+            pss.append("(");
+            pss.appendLiteral(label.text());
+            pss.append(" ");
+            pss.appendLiteral(label.lang());
+            pss.append(") ");
+        }
+        pss.append("} ?other a ");
         pss.appendIri(corpusType);
         pss.append(" ; ");
         pss.append(LABEL_PREDICATES);
-        pss.append(" ?l . FILTER(STR(?l) = ");
-        pss.appendLiteral(text);
-        if (lang != null && !lang.isEmpty()) {
-            pss.append(" && LANG(?l) = ");
-            pss.appendLiteral(lang);
-        } else {
-            pss.append(" && LANG(?l) = \"\"");
-        }
-        pss.append(") }");
+        pss.append(" ?l . FILTER(STR(?l) = ?name && LANG(?l) = ?lang) }");
 
         return lenient("corpus diff-IRI same-name", pss.toString(), rs -> {
-            List<String> out = new ArrayList<>();
+            Map<CandidateNode.Label, List<String>> out = new LinkedHashMap<>();
             while (rs.hasNext()) {
-                String other = SparqlSolutions.resourceUri(rs.next(), "other");
-                if (other != null && !excludeIris.contains(other)) {
-                    out.add(other);
+                QuerySolution sol = rs.next();
+                String name = SparqlSolutions.literalString(sol, "name");
+                String lang = SparqlSolutions.literalString(sol, "lang");
+                String other = SparqlSolutions.resourceUri(sol, "other");
+                if (name == null || other == null || excludeIris.contains(other)) {
+                    continue;
                 }
+                CandidateNode.Label key = new CandidateNode.Label(lang == null ? "" : lang, name);
+                out.computeIfAbsent(key, k -> new ArrayList<>()).add(other);
             }
             return out;
-        }, List.of());
+        }, Map.of());
     }
 
     /**
-     * Run a lenient SELECT through the circuit breaker. The breaker's fast-fail throw
-     * (when open) is swallowed and treated as an empty result, so corpus unavailability
-     * never propagates to validation — global checks are simply skipped.
+     * Run a SELECT through the circuit breaker, failing open to {@code fallback}.
+     *
+     * <p>The breaker must guard the <em>strict</em> {@link HttpSparqlExecutor#select}, which
+     * throws {@link com.dia.validation.sparql.SparqlEndpointUnavailableException} on an HTTP /
+     * timeout failure — that throw is what lets the breaker count failures and open. If we let
+     * the breaker guard a lenient executor call instead, every failure would already be
+     * swallowed inside the supplier, the breaker would only ever see success, and it could
+     * never open. The lenient behaviour is applied <em>here, outside</em> the breaker: both a
+     * query failure and the breaker's own fast-fail (when open) are caught and degrade to
+     * {@code fallback}, so corpus unavailability never propagates to validation.
      */
     private <T> T lenient(String op, String query, java.util.function.Function<ResultSet, T> mapper, T fallback) {
+        if (!executor.isConfigured()) {
+            return fallback;
+        }
         try {
-            return breaker.call(() -> executor.selectLenient(op, query, mapper, fallback));
+            return breaker.call(() -> executor.select(op, query, mapper));
         } catch (RuntimeException e) {
             log.warn("Corpus lookup '{}' skipped: {}", op, e.getMessage());
             return fallback;
