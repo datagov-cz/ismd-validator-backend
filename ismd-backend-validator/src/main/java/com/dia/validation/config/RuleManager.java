@@ -23,7 +23,7 @@ public class RuleManager {
 
     /**
      * Rules whose name starts with this prefix are cross-vocabulary corpus checks. They
-     * are NOT executed in-memory by Jena (their SHACL-SPARQL bodies self-join the uploaded
+     * are not executed in-memory by Jena (their SHACL-SPARQL bodies self-join the uploaded
      * graph and emit false positives); {@code GlobalValidationEngine} runs them against the
      * published corpus instead. The {@code .ttl} files are retained purely as the source of
      * rule metadata (name/message/severity/shape-IRI).

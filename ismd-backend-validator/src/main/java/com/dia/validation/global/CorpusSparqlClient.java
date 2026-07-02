@@ -20,15 +20,12 @@ import java.util.Set;
  * Queries the published-vocabulary corpus (NKD) for the three uniqueness primitives the
  * global rules need: same-IRI, same-IRI-different-name, and different-IRI-same-name.
  *
- * <p>Mirrors {@code ismd-tool-backend}'s {@code NkdSparqlClient}: a concrete
- * {@code @Component} (no interface seam) that builds a plain {@link HttpSparqlExecutor}
+ * <p>Aconcrete {@code @Component} that builds a plain {@link HttpSparqlExecutor}
  * in its constructor and guards every call with a {@link SparqlCircuitBreaker}. All
  * lookups are lenient — a corpus outage returns empty (fail-open), never throws to the
  * caller (the breaker's fast-fail throw is swallowed here and treated as "no hits").
  *
- * <p>Corpus concept lookups query {@code slovníky:pojem} (the superset: the corpus has
- * ~940 concepts typed only {@code slovníky:pojem} and not {@code skos:Concept}, so
- * querying {@code skos:Concept} would silently miss them). Vocabulary lookups query
+ * <p>Corpus concept lookups query {@code slovníky:pojem}. Vocabulary lookups query
  * {@code skos:ConceptScheme}.
  */
 @Slf4j
@@ -69,8 +66,8 @@ public class CorpusSparqlClient {
     }
 
     /**
-     * SAME IRI: which of the given uploaded IRIs already exist in the corpus typed
-     * {@code corpusType}. Returned set ⊆ input IRIs.
+     * Same IRI: which of the given uploaded IRIs already exist in the corpus typed
+     * {@code corpusType}. Returned set of input IRIs.
      */
     public Set<String> findExistingIris(List<String> uploadedIris, String corpusType) {
         List<String> safe = uploadedIris.stream().filter(SafeIri::isSafeHttpIri).toList();

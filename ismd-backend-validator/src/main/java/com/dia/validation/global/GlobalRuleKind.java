@@ -6,7 +6,7 @@ import java.util.Map;
  * The six global (corpus) rules, each mapped to the candidate kind it targets (concept vs
  * vocabulary) and the comparison primitive it performs. Dispatch is by the exact loaded
  * rule name (filename minus {@code .ttl}, lower-cased) — the {@code global-}/{@code local-}
- * prefix and the accented Czech names survive {@code sanitizeForIRI} unchanged.
+ * prefix and the accented names survive {@code sanitizeForIRI} unchanged.
  */
 public enum GlobalRuleKind {
 

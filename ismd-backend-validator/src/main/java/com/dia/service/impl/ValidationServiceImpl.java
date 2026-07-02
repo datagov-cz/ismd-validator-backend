@@ -39,7 +39,6 @@ import java.util.List;
 @Slf4j
 public class ValidationServiceImpl implements ValidationService {
 
-    /** Prefix marking results produced by the corpus (global) engine rather than local SHACL. */
     private static final String GLOBAL_MESSAGE_PREFIX = "[GLOBAL] ";
 
     private final SHACLRuleEngine shaclEngine;
@@ -174,7 +173,6 @@ public class ValidationServiceImpl implements ValidationService {
             case BEFORE_EXPORT -> result.getOntModel();
             case JSON_EXPORT -> convertFromJsonLd(result);
             case TTL_EXPORT -> convertFromTtl(result);
-            default -> throw new IllegalArgumentException("Unknown validation timing: " + timing);
         };
     }
 

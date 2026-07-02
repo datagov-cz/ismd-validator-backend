@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Runs the six cross-vocabulary "global" uniqueness rules against the published corpus,
+ * Runs the six cross-vocabulary global uniqueness rules against the published corpus,
  * app-side (SPARQL SELECTs via {@link CorpusSparqlClient}) rather than as in-memory SHACL.
  *
  * <p>Output mirrors {@code SHACLRuleEngine}: an {@link ISMDValidationReport} of

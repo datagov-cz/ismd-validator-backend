@@ -15,11 +15,10 @@ import java.util.function.Function;
  * corpus / NKD), applying an endpoint-empty pre-check, a configured per-call timeout,
  * and uniform exception handling via {@link SparqlExceptionMapper}.
  *
- * <p>Copied from {@code ismd-tool-backend}'s {@code HttpSparqlExecutor} (hard-rule:
- * mirror that module's external-SPARQL integration exactly). Plain Java class, not a
- * Spring bean — the corpus client injects its {@code @ConfigurationProperties} and
- * builds its executor in the constructor. There is intentionally <strong>no retry
- * loop</strong>; resilience is timeout + lenient fail-open + optional circuit breaker.
+ * <p>Plain Java class, not a Spring bean — the corpus client injects
+ * its {@code @ConfigurationProperties} and builds its executor in the constructor.
+ * There is intentionally <strong>no retry loop</strong>; resilience is
+ * timeout + lenient fail-open + optional circuit breaker.
  */
 @Slf4j
 public final class HttpSparqlExecutor {
@@ -29,7 +28,7 @@ public final class HttpSparqlExecutor {
     private final int timeoutMs;
 
     /**
-     * @param endpointLabel short human-readable name (e.g. {@code "NKD"}), surfaced in
+     * @param endpointLabel short readable name (e.g. {@code "NKD"}), surfaced in
      *                      log lines and exception messages.
      * @param endpointUrl   the SPARQL endpoint URL; may be blank/null (empty config), in
      *                      which case calls skip (lenient) or fail fast (strict).
@@ -106,10 +105,6 @@ public final class HttpSparqlExecutor {
 
     public boolean isConfigured() {
         return endpointUrl != null && !endpointUrl.trim().isEmpty();
-    }
-
-    public String endpointLabel() {
-        return endpointLabel;
     }
 
     private void requireConfigured() {

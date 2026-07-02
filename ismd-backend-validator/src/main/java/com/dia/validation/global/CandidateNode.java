@@ -13,8 +13,7 @@ public record CandidateNode(String iri, List<Label> labels) {
 
     /**
      * A single label with its language tag. {@code lang} is {@code ""} for an untagged
-     * literal; untagged labels only ever compare against other untagged labels
-     * (lang-scoped comparison), which is what kills the multilingual false-positive.
+     * literal.
      */
     public record Label(String lang, String text) {
     }

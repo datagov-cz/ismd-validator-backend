@@ -15,9 +15,7 @@ import java.util.stream.Collectors;
  *   <li>Per-rule enable flags ({@code validation.global.enabled.*}) — controls which
  *       global (corpus) rules run.</li>
  *   <li>External SPARQL corpus access ({@code validation.global.sparql.*} +
- *       {@code validation.global.circuit-breaker.*}) — shaped to mirror
- *       {@code ismd-tool-backend}'s {@code NkdConfig} (hard rule: follow that module's
- *       external-SPARQL integration exactly). There is deliberately no retry/max-attempts
+ *       {@code validation.global.circuit-breaker.*}). No retry/max-attempts
  *       config — resilience is timeout + lenient fail-open + circuit breaker.</li>
  * </ul>
  */
@@ -48,14 +46,6 @@ public class GlobalValidationConfiguration {
         private int failureThreshold = 5;
         /** How long the breaker stays open before a trial call, milliseconds. */
         private long cooldownMs = 30000;
-    }
-
-    public boolean isRuleEnabled(String ruleName) {
-        return enabled.getOrDefault(ruleName, true);
-    }
-
-    public void setRuleEnabled(String ruleName, boolean value) {
-        this.enabled.put(ruleName, value);
     }
 
     public Set<String> getEnabledRuleNames() {
