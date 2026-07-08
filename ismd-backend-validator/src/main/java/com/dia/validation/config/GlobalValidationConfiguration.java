@@ -4,36 +4,39 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.HashMap;
-import java.util.Map;
-
+/**
+ * Binds {@code validation.global.*} — external SPARQL corpus access for the global
+ * (cross-vocabulary) validation rules: {@code validation.global.sparql.*} +
+ * {@code validation.global.circuit-breaker.*}.
+ *
+ * <p>There is no retry/max-attempts config — resilience is timeout + circuit breaker +
+ * lenient fail-open. Note that <em>which</em> global rules are enabled is NOT configured
+ * here: that is governed by {@code validation.rules.enabled.*} via
+ * {@link ValidationConfiguration#isRuleEnabled} (see
+ * {@link RuleManager#getEnabledGlobalRuleNames()}).
+ */
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "validation.global")
 public class GlobalValidationConfiguration {
 
-    private Map<String, Boolean> enabled = new HashMap<>();
+    private Sparql sparql = new Sparql();
 
-    private String sparqlEndpoint;
+    private CircuitBreaker circuitBreaker = new CircuitBreaker();
 
-    private long timeoutMs = 10000; // 10 seconds
-
-    private int maxAttempts = 3;
-
-    private long retryDelayMs = 1000; // 1 second
-
-    public boolean isRuleEnabled(String ruleName) {
-        return enabled.getOrDefault(ruleName, true);
+    @Data
+    public static class Sparql {
+        /** Corpus SPARQL endpoint. Empty (default) disables all global checks (fail-open). */
+        private String endpoint = "";
+        /** Per-query timeout, milliseconds. */
+        private int timeout = 10000;
     }
 
-    public void setRuleEnabled(String ruleName, boolean enabled) {
-        this.enabled.put(ruleName, enabled);
-    }
-
-    public java.util.Set<String> getEnabledRuleNames() {
-        return enabled.entrySet().stream()
-                .filter(Map.Entry::getValue)
-                .map(Map.Entry::getKey)
-                .collect(java.util.stream.Collectors.toSet());
+    @Data
+    public static class CircuitBreaker {
+        /** Consecutive corpus failures before the breaker opens. */
+        private int failureThreshold = 5;
+        /** How long the breaker stays open before a trial call, milliseconds. */
+        private long cooldownMs = 30000;
     }
 }

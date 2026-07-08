@@ -9,9 +9,11 @@ import com.dia.service.ValidationService;
 import com.dia.service.record.ValidationConfigurationSummary;
 import com.dia.validation.config.RuleManager;
 import com.dia.validation.config.ValidationConfiguration;
+import com.dia.validation.ValidationResult;
 import com.dia.validation.data.ISMDValidationReport;
 import com.dia.enums.ValidationTiming;
 import com.dia.validation.engine.SHACLRuleEngine;
+import com.dia.validation.global.GlobalValidationEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.rdf.model.Model;
@@ -28,13 +30,19 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ValidationServiceImpl implements ValidationService {
 
+    private static final String GLOBAL_MESSAGE_PREFIX = "[GLOBAL] ";
+
     private final SHACLRuleEngine shaclEngine;
+    private final GlobalValidationEngine globalEngine;
     private final RuleManager ruleManager;
     private final ValidationConfiguration config;
 
@@ -49,7 +57,7 @@ public class ValidationServiceImpl implements ValidationService {
 
         try {
             Model dataModel = extractDataModel(result, timing);
-            return shaclEngine.validate(dataModel);
+            return validateWithGlobal(dataModel);
 
         } catch (Exception e) {
             log.error("Validation failed for timing: {}", timing, e);
@@ -60,7 +68,7 @@ public class ValidationServiceImpl implements ValidationService {
     @Override
     public ISMDValidationReport validateModel(Model model) {
         log.info("Starting direct model validation");
-        return shaclEngine.validate(model);
+        return validateWithGlobal(model);
     }
 
 
@@ -78,7 +86,7 @@ public class ValidationServiceImpl implements ValidationService {
 
         try {
             Model model = parseRdfString(rdfContent, format);
-            return shaclEngine.validate(model);
+            return validateWithGlobal(model);
 
         } catch (ValidationException | InvalidFormatException e) {
             throw e;
@@ -98,7 +106,7 @@ public class ValidationServiceImpl implements ValidationService {
 
         try {
             Model model = parseTtlString(ttlContent);
-            return shaclEngine.validate(model);
+            return validateWithGlobal(model);
 
         } catch (ValidationException e) {
             throw e;
@@ -132,12 +140,39 @@ public class ValidationServiceImpl implements ValidationService {
         }
     }
 
+    /**
+     * Run the local SHACL pass and the corpus (global) pass, merging both into one report.
+     * Global results are prefixed with {@value #GLOBAL_MESSAGE_PREFIX} so users can tell
+     * corpus findings apart from local ones. The global pass is fail-open: an unset or
+     * unreachable corpus endpoint yields an empty global report, so the local results
+     * always stand on their own.
+     */
+    private ISMDValidationReport validateWithGlobal(Model dataModel) {
+        ISMDValidationReport local = shaclEngine.validate(dataModel);
+        ISMDValidationReport global = globalEngine.validate(dataModel);
+
+        if (global.results().isEmpty()) {
+            return local;
+        }
+
+        List<ValidationResult> merged = new ArrayList<>(local.results());
+        for (ValidationResult r : global.results()) {
+            merged.add(new ValidationResult(
+                    r.severity(),
+                    GLOBAL_MESSAGE_PREFIX + r.message(),
+                    r.ruleName(),
+                    r.focusNodeUri(),
+                    r.resultPathUri(),
+                    r.value()));
+        }
+        return new ISMDValidationReport(merged, Instant.now());
+    }
+
     private Model extractDataModel(TransformationResult result, ValidationTiming timing) {
         return switch (timing) {
             case BEFORE_EXPORT -> result.getOntModel();
             case JSON_EXPORT -> convertFromJsonLd(result);
             case TTL_EXPORT -> convertFromTtl(result);
-            default -> throw new IllegalArgumentException("Unknown validation timing: " + timing);
         };
     }
 

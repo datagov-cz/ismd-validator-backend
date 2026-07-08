@@ -8,9 +8,12 @@ import com.dia.conversion.data.TransformationResult;
 import com.dia.service.record.ValidationConfigurationSummary;
 import com.dia.validation.config.RuleManager;
 import com.dia.validation.config.ValidationConfiguration;
+import com.dia.validation.ValidationResult;
+import com.dia.validation.ValidationSeverity;
 import com.dia.validation.data.ISMDValidationReport;
 import com.dia.enums.ValidationTiming;
 import com.dia.validation.engine.SHACLRuleEngine;
+import com.dia.validation.global.GlobalValidationEngine;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -48,6 +51,9 @@ class ValidationServiceImplTest {
     private SHACLRuleEngine shaclEngine;
 
     @Mock
+    private GlobalValidationEngine globalEngine;
+
+    @Mock
     private RuleManager ruleManager;
 
     @Mock
@@ -75,6 +81,8 @@ class ValidationServiceImplTest {
     void setUp() {
         when(config.getDefaultTiming()).thenReturn(ValidationTiming.BEFORE_EXPORT);
         when(shaclEngine.validate(any(Model.class))).thenReturn(validationReport);
+        // Global (corpus) pass is empty by default so tests observe only the SHACL report.
+        when(globalEngine.validate(any(Model.class))).thenReturn(ISMDValidationReport.empty());
     }
 
     @Test
@@ -90,6 +98,32 @@ class ValidationServiceImplTest {
         assertEquals(validationReport, result);
         verify(config).getDefaultTiming();
         verify(shaclEngine).validate(ontModel);
+    }
+
+    @Test
+    void testValidate_mergesGlobalResultsWithPrefix() {
+        // Arrange: a real local report + a real global report from the corpus engine.
+        when(transformationResult.getOntModel()).thenReturn(ontModel);
+        ValidationResult local = new ValidationResult(
+                ValidationSeverity.WARNING, "Local finding", "local-rule", "n1", null, null);
+        ValidationResult global = new ValidationResult(
+                ValidationSeverity.INFO, "Corpus finding", "global-rule", "n2", null, null);
+        when(shaclEngine.validate(any(Model.class)))
+                .thenReturn(new ISMDValidationReport(List.of(local), java.time.Instant.now()));
+        when(globalEngine.validate(any(Model.class)))
+                .thenReturn(new ISMDValidationReport(List.of(global), java.time.Instant.now()));
+
+        // Act
+        ISMDValidationReport result = validationService.validate(transformationResult);
+
+        // Assert: local kept as-is, global merged with the [GLOBAL] prefix.
+        assertEquals(2, result.results().size());
+        assertTrue(result.results().stream()
+                .anyMatch(r -> r.message().equals("Local finding")));
+        assertTrue(result.results().stream()
+                .anyMatch(r -> r.message().equals("[GLOBAL] Corpus finding")
+                        && r.severity() == ValidationSeverity.INFO
+                        && "n2".equals(r.focusNodeUri())));
     }
 
     @Test

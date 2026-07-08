@@ -5,6 +5,4 @@ import com.dia.validation.data.ISMDValidationReport;
 
 public interface ValidationReportService {
     ValidationResultsDto convertToDto(ISMDValidationReport report);
-
-    ValidationResultsDto convertToDto(ISMDValidationReport localReport, ISMDValidationReport globalReport);
 }
