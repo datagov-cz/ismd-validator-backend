@@ -163,7 +163,8 @@ public class ValidationServiceImpl implements ValidationService {
                     r.ruleName(),
                     r.focusNodeUri(),
                     r.resultPathUri(),
-                    r.value()));
+                    r.value(),
+                    r.nkdResource()));
         }
         return new ISMDValidationReport(merged, Instant.now());
     }
