@@ -1,5 +1,6 @@
 package com.dia.validation.global;
 
+import com.dia.validation.NkdResource;
 import com.dia.validation.ValidationResult;
 import com.dia.validation.ValidationSeverity;
 import com.dia.validation.config.RuleManager;
@@ -115,10 +116,15 @@ public class GlobalValidationEngine {
                                                 String corpusType) {
         List<String> iris = candidates.stream().map(CandidateNode::iri).toList();
         Set<String> existing = client.findExistingIris(iris, corpusType);
+        if (existing.isEmpty()) {
+            return List.of();
+        }
+        // The corpus resource IS the uploaded IRI; fetch its prefLabel for navigation.
+        Map<String, String> prefLabels = corpusPrefLabels(new ArrayList<>(existing), corpusType);
         List<ValidationResult> out = new ArrayList<>();
         for (String iri : iris) {
             if (existing.contains(iri)) {
-                out.add(result(meta, iri, null));
+                out.add(result(meta, iri, null, new NkdResource(iri, prefLabels.get(iri))));
             }
         }
         return out;
@@ -129,11 +135,15 @@ public class GlobalValidationEngine {
         List<String> iris = candidates.stream().map(CandidateNode::iri).toList();
         // corpus labels for the same IRIs, grouped by IRI then language
         Map<String, Map<String, Set<String>>> corpusByIriLang = new LinkedHashMap<>();
+        // best (cs-preferred) prefLabel per corpus IRI, for navigation
+        Map<String, String> prefLabelByIri = new LinkedHashMap<>();
         for (CorpusSparqlClient.IriLabel il : client.fetchCorpusLabels(iris, corpusType)) {
             corpusByIriLang
                     .computeIfAbsent(il.iri(), k -> new LinkedHashMap<>())
                     .computeIfAbsent(il.lang(), k -> new java.util.HashSet<>())
                     .add(il.text());
+            prefLabelByIri.merge(il.iri(), il.text(),
+                    (cur, next) -> preferLabel(cur, next, il.lang()));
         }
         List<ValidationResult> out = new ArrayList<>();
         for (CandidateNode node : candidates) {
@@ -145,7 +155,8 @@ public class GlobalValidationEngine {
                 Set<String> corpusTexts = corpusLangs.get(label.lang());
                 // hit when the corpus publishes a same-language label that the upload doesn't carry
                 if (corpusTexts != null && !corpusTexts.contains(label.text())) {
-                    out.add(result(meta, node.iri(), String.join(" / ", corpusTexts)));
+                    out.add(result(meta, node.iri(), String.join(" / ", corpusTexts),
+                            new NkdResource(node.iri(), prefLabelByIri.get(node.iri()))));
                     break; // one hit per node is enough
                 }
             }
@@ -169,12 +180,19 @@ public class GlobalValidationEngine {
             return List.of();
         }
 
+        // The conflicting corpus resources are DIFFERENT IRIs — fetch their prefLabels.
+        Set<String> otherIris = hitsByLabel.values().stream().flatMap(List::stream)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        Map<String, String> prefLabels = corpusPrefLabels(new ArrayList<>(otherIris), corpusType);
+
         List<ValidationResult> out = new ArrayList<>();
         for (CandidateNode node : candidates) {
             for (CandidateNode.Label label : node.labels()) {
                 List<String> others = hitsByLabel.get(label);
                 if (others != null && !others.isEmpty()) {
-                    out.add(result(meta, node.iri(), others.get(0)));
+                    String otherIri = others.get(0);
+                    out.add(result(meta, node.iri(), otherIri,
+                            new NkdResource(otherIri, prefLabels.get(otherIri))));
                     break; // one hit per node is enough
                 }
             }
@@ -182,14 +200,38 @@ public class GlobalValidationEngine {
         return out;
     }
 
-    private ValidationResult result(GlobalRuleMetadata meta, String focusIri, String value) {
+    /**
+     * Fetch the preferred label (Czech preferred, otherwise first seen) for each corpus IRI.
+     * Returns a map from IRI to its chosen prefLabel; IRIs with no published label are absent.
+     */
+    private Map<String, String> corpusPrefLabels(List<String> corpusIris, String corpusType) {
+        if (corpusIris.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, String> byIri = new LinkedHashMap<>();
+        for (CorpusSparqlClient.IriLabel il : client.fetchCorpusLabels(corpusIris, corpusType)) {
+            byIri.merge(il.iri(), il.text(), (cur, next) -> preferLabel(cur, next, il.lang()));
+        }
+        return byIri;
+    }
+
+    /**
+     * Prefer a Czech label over an already-chosen non-Czech one; otherwise keep the current
+     * choice. {@code candidateLang} is the language tag of {@code candidate}.
+     */
+    private String preferLabel(String current, String candidate, String candidateLang) {
+        return "cs".equals(candidateLang) ? candidate : current;
+    }
+
+    private ValidationResult result(GlobalRuleMetadata meta, String focusIri, String value, NkdResource nkd) {
         return new ValidationResult(
                 meta.severity() != null ? meta.severity() : ValidationSeverity.INFO,
                 meta.message(),
                 meta.shapeIri(),
                 focusIri,
                 null,
-                value);
+                value,
+                nkd);
     }
 
     /**

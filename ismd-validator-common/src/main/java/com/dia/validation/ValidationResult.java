@@ -2,8 +2,21 @@ package com.dia.validation;
 
 import com.dia.utility.UtilityMethods;
 
+/**
+ * A single validation finding.
+ *
+ * @param nkdResource for global (corpus) findings only: the published-corpus resource that
+ *                    triggered the finding, for consumer navigation. {@code null} on local
+ *                    (SHACL) findings.
+ */
 public record ValidationResult(ValidationSeverity severity, String message, String ruleName, String focusNodeUri,
-                               String resultPathUri, String value) {
+                               String resultPathUri, String value, NkdResource nkdResource) {
+
+    /** Local findings carry no corpus resource. */
+    public ValidationResult(ValidationSeverity severity, String message, String ruleName, String focusNodeUri,
+                            String resultPathUri, String value) {
+        this(severity, message, ruleName, focusNodeUri, resultPathUri, value, null);
+    }
 
     public boolean isError() {
         return severity == ValidationSeverity.ERROR;

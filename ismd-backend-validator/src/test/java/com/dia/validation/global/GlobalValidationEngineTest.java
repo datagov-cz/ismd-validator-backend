@@ -92,6 +92,9 @@ class GlobalValidationEngineTest {
         Model upload = uploadWith("https://slovník.gov.cz/x", POJEM_TYPE, "cs", "Osoba");
         when(client.findExistingIris(any(), eq(CorpusSparqlClient.TYPE_POJEM)))
                 .thenReturn(Set.of("https://slovník.gov.cz/x"));
+        // corpus prefLabel for navigation
+        when(client.fetchCorpusLabels(any(), eq(CorpusSparqlClient.TYPE_POJEM))).thenReturn(List.of(
+                new CorpusSparqlClient.IriLabel("https://slovník.gov.cz/x", "cs", "Osoba")));
 
         ISMDValidationReport report = engine.validate(upload);
 
@@ -100,6 +103,12 @@ class GlobalValidationEngineTest {
         assertThat(r.severity()).isEqualTo(ValidationSeverity.INFO);
         assertThat(r.focusNodeUri()).isEqualTo("https://slovník.gov.cz/x");
         assertThat(r.ruleName()).contains("pojem-se-stejným-iri");
+
+        // The NKD resource that triggered the finding is exposed for UI navigation: for the
+        // same-IRI check the corpus resource IS the uploaded IRI, with its corpus prefLabel.
+        assertThat(r.nkdResource()).isNotNull();
+        assertThat(r.nkdResource().iri()).isEqualTo("https://slovník.gov.cz/x");
+        assertThat(r.nkdResource().prefLabel()).isEqualTo("Osoba");
     }
 
     @Test
@@ -164,10 +173,20 @@ class GlobalValidationEngineTest {
         when(client.findOtherIrisByLabel(any(), eq(CorpusSparqlClient.TYPE_CONCEPT_SCHEME), any()))
                 .thenReturn(Map.of(new CandidateNode.Label("cs", "Můj slovník"),
                         List.of("https://slovník.gov.cz/other-voc")));
+        // prefLabel of the DIFFERENT conflicting corpus resource, fetched for navigation
+        when(client.fetchCorpusLabels(any(), eq(CorpusSparqlClient.TYPE_CONCEPT_SCHEME))).thenReturn(List.of(
+                new CorpusSparqlClient.IriLabel("https://slovník.gov.cz/other-voc", "cs", "Jiný slovník")));
 
         ISMDValidationReport report = engine.validate(upload);
 
         assertThat(report.results()).hasSize(1);
-        assertThat(report.results().get(0).severity()).isEqualTo(ValidationSeverity.ERROR);
+        ValidationResult r = report.results().get(0);
+        assertThat(r.severity()).isEqualTo(ValidationSeverity.ERROR);
+
+        // diff-IRI-same-name: the NKD resource is the OTHER (conflicting) corpus IRI, not the
+        // uploaded one, carrying that corpus resource's prefLabel.
+        assertThat(r.nkdResource()).isNotNull();
+        assertThat(r.nkdResource().iri()).isEqualTo("https://slovník.gov.cz/other-voc");
+        assertThat(r.nkdResource().prefLabel()).isEqualTo("Jiný slovník");
     }
 }
