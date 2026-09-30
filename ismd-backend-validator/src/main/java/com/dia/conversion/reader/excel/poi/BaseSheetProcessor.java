@@ -2,6 +2,7 @@ package com.dia.conversion.reader.excel.poi;
 
 import com.dia.conversion.reader.excel.mapper.ColumnMappingRegistry;
 import com.dia.exceptions.ExcelReadingException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
@@ -16,6 +17,7 @@ import java.util.Map;
  * This abstract class provides the foundation for processing different types of sheets
  * while allowing each sheet type to implement its own specific parsing logic.
  */
+@Slf4j
 public abstract class BaseSheetProcessor<T> {
     protected final ColumnMappingRegistry mappingRegistry;
 
@@ -30,26 +32,34 @@ public abstract class BaseSheetProcessor<T> {
             return "";
         }
 
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue().trim();
-            case NUMERIC:
-                if (DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue().toString();
-                } else {
-                    double numValue = cell.getNumericCellValue();
-                    if (numValue == Math.floor(numValue)) {
-                        return String.valueOf((long) numValue);
+        try {
+            switch (cell.getCellType()) {
+                case STRING:
+                    return cell.getStringCellValue().trim();
+                case NUMERIC:
+                    if (DateUtil.isCellDateFormatted(cell)) {
+                        return cell.getDateCellValue().toString();
                     } else {
-                        return String.valueOf(numValue);
+                        double numValue = cell.getNumericCellValue();
+                        if (numValue == Math.floor(numValue)) {
+                            return String.valueOf((long) numValue);
+                        } else {
+                            return String.valueOf(numValue);
+                        }
                     }
-                }
-            case BOOLEAN:
-                return String.valueOf(cell.getBooleanCellValue());
-            case FORMULA:
-                return cell.getCellFormula();
-            default:
-                return "";
+                case BOOLEAN:
+                    return String.valueOf(cell.getBooleanCellValue());
+                case FORMULA:
+                    return cell.getCellFormula();
+                default:
+                    log.debug("Blank or unknown cell type at row={}, column={}",
+                            cell.getRowIndex(), cell.getColumnIndex());
+                    return "";
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract cell value at row={}, column={}: {}",
+                    cell.getRowIndex(), cell.getColumnIndex(), e.getMessage());
+            return "";
         }
     }
 
@@ -68,12 +78,17 @@ public abstract class BaseSheetProcessor<T> {
         Map<String, Integer> columnMap = new HashMap<>();
 
         if (headerRow != null) {
+            log.debug("Creating column index map from header row at row={}", headerRow.getRowNum());
             for (Cell cell : headerRow) {
                 String columnName = getCellValueAsString(cell);
                 if (!columnName.isEmpty()) {
                     columnMap.put(columnName, cell.getColumnIndex());
+                    log.debug("Mapped column '{}' to index {}", columnName, cell.getColumnIndex());
                 }
             }
+            log.debug("Column mapping created: {} columns mapped", columnMap.size());
+        } else {
+            log.warn("Header row is null, returning empty column map");
         }
 
         return columnMap;

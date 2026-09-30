@@ -53,6 +53,7 @@ public class OntologyResourceBuilder {
     private final DataGovernanceProcessor governanceProcessor;
     private final ConceptFilterUtil conceptFilterUtil;
     private Map<String, Resource> allClassResourcesForHierarchies;
+    private String localConceptPrefix;
 
     public OntologyResourceBuilder(OntModel ontModel, URIGenerator uriGenerator,
                                    DataGovernanceProcessor governanceProcessor,
@@ -65,6 +66,7 @@ public class OntologyResourceBuilder {
 
     public void createOntologyResourceWithTemporal(VocabularyMetadata metadata, Map<String, Resource> localResourceMap) {
         String ontologyIRI = uriGenerator.generateVocabularyURI(metadata.getName(), null);
+        this.localConceptPrefix = ontologyIRI + "/pojem/";
         log.debug("Creating ontology resource with temporal support and IRI: {}", ontologyIRI);
 
         ontModel.createOntology(ontologyIRI);
@@ -249,9 +251,9 @@ public class OntologyResourceBuilder {
         String excelType = classData.getType();
 
         if ("Subjekt práva".equals(excelType)) {
-            classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + TSP));
+            classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_VS + TSP));
         } else if ("Objekt práva".equals(excelType)) {
-            classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + TOP));
+            classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_VS + TOP));
         }
         classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + TRIDA));
     }
@@ -351,6 +353,7 @@ public class OntologyResourceBuilder {
             addResourceMetadata(propertyResource, ResourceMetadata.from(propertyData));
             addPropertySpecificMetadata(propertyResource, propertyData, localResourceMap, filterStatistics);
             addPropertySuperPropertyRelationship(propertyResource, propertyData);
+            addSchemeRelationship(propertyResource, localResourceMap);
         }
 
         return propertyResource;
@@ -479,6 +482,7 @@ public class OntologyResourceBuilder {
             addResourceMetadata(relationshipResource, ResourceMetadata.from(relationshipData));
             addRelationshipSpecificMetadata(relationshipResource, relationshipData, filterStatistics);
             addRelationshipSuperPropertyRelationship(relationshipResource, relationshipData);
+            addSchemeRelationship(relationshipResource, localResourceMap);
             log.debug("Added full metadata for local relationship: {}", relationshipURI);
         } else {
             log.debug("Skipped full metadata for external relationship (different namespace): {}", relationshipURI);
@@ -607,6 +611,11 @@ public class OntologyResourceBuilder {
         if (subClassResource == null) {
             log.warn("Subclass resource not found: {}", subClassName);
             return false;
+        }
+
+        if (superClassResource == null && hierarchyData.getSuperClassIRI() != null) {
+            log.debug("Superclass '{}' not found locally, using external IRI: {}", superClassName, hierarchyData.getSuperClassIRI());
+            superClassResource = ontModel.createResource(hierarchyData.getSuperClassIRI());
         }
 
         if (superClassResource == null) {
@@ -875,6 +884,9 @@ public class OntologyResourceBuilder {
         if (checkIfXsdType(trimmedDataType, rangeProperty, propertyResource)) {
             return;
         }
+        if (checkIfRdfsType(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
         if (checkIfFullXsdUri(trimmedDataType, rangeProperty, propertyResource)) {
             return;
         }
@@ -907,6 +919,20 @@ public class OntologyResourceBuilder {
                 log.warn("Invalid XSD type '{}' - falling back to rdfs:Literal", trimmedDataType);
                 propertyResource.addProperty(rangeProperty, ontModel.createResource(DataTypeConstants.RDFS_LITERAL));
             }
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkIfRdfsType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+        if (trimmedDataType.startsWith("rdfs:")) {
+            // Expand the rdfs: CURIE to its full IRI rather than letting checkIfValidUri keep it
+            // verbatim. Jena's IRI parser (used by isUri) accepts "rdfs:Literal" as an absolute
+            // IRI, so without this the raw CURIE would be emitted as the range resource.
+            String localName = trimmedDataType.substring("rdfs:".length());
+            propertyResource.addProperty(rangeProperty,
+                    ontModel.createResource(ExportConstants.Json.RDFS_NS + localName));
+            log.debug("Expanded rdfs CURIE range type: {}", trimmedDataType);
             return true;
         }
         return false;
@@ -981,13 +1007,13 @@ public class OntologyResourceBuilder {
     }
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
-        if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
+        if (conceptURI == null || localConceptPrefix == null) {
             return false;
         }
 
-        boolean belongs = conceptURI.startsWith(uriGenerator.getEffectiveNamespace());
-        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
-                conceptURI, belongs, uriGenerator.getEffectiveNamespace());
+        boolean belongs = conceptURI.startsWith(localConceptPrefix);
+        log.debug("Local-concept check for {}: belongs = {} (local prefix: {})",
+                conceptURI, belongs, localConceptPrefix);
         return belongs;
     }
 }

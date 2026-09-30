@@ -67,8 +67,8 @@ public class WorkflowTestConfiguration {
         return WorkflowTestConfiguration.builder()
                 .testId("complete-excel")
                 .description("Complete Excel ontology test with all characteristics")
-                .inputPath("com/dia/canonical/complete/testExcelProject.xlsx")
-                .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld.jsonld")
+                .inputPath("com/dia/canonical/complete/testExcelProject_no-lkod.xlsx")
+                .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld_no-lkod.jsonld")
                 .contextPath("com/dia/context/json_ld_context.jsonld")
                 .expectedCounts(EntityCounts.builder()
                         .classes(6)  // 6 local classes - Adresa is external reference and should not be counted
@@ -84,9 +84,9 @@ public class WorkflowTestConfiguration {
                         DEFINICE,
                         DEFINICNI_OBOR,
                         OBOR_HODNOT,
-                        DEFINUJICI_USTANOVENI,
+                        DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU,
                         NADRAZENA_TRIDA,
-                        ZPUSOB_SDILENI_ALT,
+                        ZPUSOBY_SDILENI_ALT,
                         ZPUSOB_ZISKANI_ALT,
                         TYP_OBSAHU_ALT,
                         JE_PPDF,
@@ -110,8 +110,8 @@ public class WorkflowTestConfiguration {
         return WorkflowTestConfiguration.builder()
                 .testId("complete-archi")
                 .description("Complete Archi XML ontology test - unified with Excel output")
-                .inputPath("com/dia/canonical/complete/testArchiInput.xml")
-                .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld.jsonld")
+                .inputPath("com/dia/canonical/complete/testArchiInput_no-lkod.xml")
+                .expectedOutputPath("com/dia/expected-outputs/complete/archi_output_jsonld_no-lkod.jsonld")
                 .contextPath("com/dia/context/json_ld_context.jsonld")
                 .expectedCounts(EntityCounts.builder()
                         .classes(6)  // 6 local classes - Adresa is external reference and should not be counted
@@ -127,9 +127,9 @@ public class WorkflowTestConfiguration {
                         DEFINICE,
                         DEFINICNI_OBOR,
                         OBOR_HODNOT,
-                        DEFINUJICI_USTANOVENI,
+                        DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU,
                         NADRAZENA_TRIDA,
-                        ZPUSOB_SDILENI_ALT,
+                        ZPUSOBY_SDILENI_ALT,
                         ZPUSOB_ZISKANI_ALT,
                         TYP_OBSAHU_ALT,
                         JE_PPDF,
@@ -152,8 +152,8 @@ public class WorkflowTestConfiguration {
         return WorkflowTestConfiguration.builder()
                 .testId("complete-ea")
                 .description("Complete Enterprise Architect ontology test with all characteristics")
-                .inputPath("com/dia/canonical/complete/testEAInput.xml")
-                .expectedOutputPath("com/dia/expected-outputs/complete/ea_output_jsonld.jsonld")
+                .inputPath("com/dia/canonical/complete/testEAInput_no-lkod.xml")
+                .expectedOutputPath("com/dia/expected-outputs/complete/ea_output_jsonld_no-lkod.jsonld")
                 .contextPath("com/dia/context/json_ld_context.jsonld")
                 .expectedCounts(EntityCounts.builder()
                         .classes(6)
@@ -169,9 +169,10 @@ public class WorkflowTestConfiguration {
                         DEFINICE,
                         DEFINICNI_OBOR,
                         OBOR_HODNOT,
-                        DEFINUJICI_USTANOVENI,
+                        DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU,
+                        SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU,
                         NADRAZENA_TRIDA,
-                        ZPUSOB_SDILENI_ALT,
+                        ZPUSOBY_SDILENI_ALT,
                         ZPUSOB_ZISKANI_ALT,
                         TYP_OBSAHU_ALT,
                         JE_PPDF,

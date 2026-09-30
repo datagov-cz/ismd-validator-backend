@@ -125,39 +125,6 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
     }
 
     @Override
-    public DetailedValidationReportDto generateCombinedDetailedReport(
-            ISMDValidationReport localReport,
-            ISMDValidationReport globalReport,
-            Model ontologyModel,
-            Model shaclRulesModel) {
-
-        log.info("Generating combined detailed report (local: {}, global: {})",
-                localReport.getTotalResultCount(), globalReport.getTotalResultCount());
-
-        List<ValidationResult> combinedResults = new ArrayList<>(localReport.results());
-
-        List<ValidationResult> globalResults = globalReport.results().stream()
-                .map(result -> new ValidationResult(
-                        result.severity(),
-                        "[GLOBAL] " + result.message(),
-                        result.ruleName(),
-                        result.focusNodeUri(),
-                        result.resultPathUri(),
-                        result.value()
-                ))
-                .toList();
-
-        combinedResults.addAll(globalResults);
-
-        ISMDValidationReport combinedReport = new ISMDValidationReport(
-                combinedResults,
-                Instant.now()
-        );
-
-        return generateDetailedReport(combinedReport, ontologyModel);
-    }
-
-    @Override
     public DetailedValidationReportDto generateDetailedReportFromTtlFile(ISMDValidationReport report, MultipartFile ttlFile) {
         log.info("Generating detailed validation report from TTL file: {} with {} results", ttlFile.getOriginalFilename(), report.getTotalResultCount());
 

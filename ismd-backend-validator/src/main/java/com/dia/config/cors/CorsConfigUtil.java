@@ -1,9 +1,11 @@
 package com.dia.config.cors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 
+@Slf4j
 public class CorsConfigUtil {
 
     private static final List<String> DEV_PATTERNS = List.of(
@@ -40,10 +42,6 @@ public class CorsConfigUtil {
         config.setAllowCredentials(true);
 
         // TODO: switch to 1 day when this setting is verified
-        // 1 day
-        // config.setMaxAge(86400L);
-
-        // 10 minutes
         config.setMaxAge(600L);
 
         return config;
@@ -64,22 +62,21 @@ public class CorsConfigUtil {
 
     public CorsConfiguration createLocalCorsConfiguration() {
         var config = new CorsConfiguration();
-        
+
         // Get allowed origins from environment variable
         String corsAllowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
         if (corsAllowedOrigins != null && !corsAllowedOrigins.isEmpty()) {
             // Split comma-separated origins to support multiple origins
-            System.out.println("CORS allowed origins set from environment: " + corsAllowedOrigins);
+            log.info("CORS allowed origins set from environment: {}", corsAllowedOrigins);
             config.setAllowedOrigins(List.of(corsAllowedOrigins.split(",")));
         }
-        
+
         // Always include development patterns for local environment
         config.setAllowedOriginPatterns(DEV_PATTERNS);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
-        // 10 minutes
         config.setMaxAge(600L);
 
         return config;

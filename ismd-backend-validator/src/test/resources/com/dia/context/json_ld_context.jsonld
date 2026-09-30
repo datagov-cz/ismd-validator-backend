@@ -1,4 +1,3 @@
-"//comment": "This version of json-ld context from https://ofn.gov.cz/slovníky/draft2/kompletní/kontext.jsonld purposefully lacks způsoby-sdílení-údaje, způsoby-získání-údaje, and typ-obsahu-údaje, as they're incorrectly defined compared to OFN Slovník definitions"
 {
   "@context": {
     "@version": 1.1,
@@ -10,11 +9,11 @@
     "skos": "http://www.w3.org/2004/02/skos/core#",
     "slovníky": "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/",
     "vsgov": "https://slovník.gov.cz/veřejný-sektor/pojem/",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "způsoby-získání": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/",
     "způsoby-sdílení": "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/",
     "typy-obsahu": "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/",
-    "owl": "http://www.w3.org/2002/07/owl#",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "iri": "@id",
     "typ": "@type",
     "název": {
@@ -160,6 +159,19 @@
         "je-sdílen-v-ppdf": {
           "@id": "a104:je-sdílen-v-propojeném-datovém-fondu",
           "@type": "xsd:boolean"
+        },
+        "způsob-získání-údaje": {
+          "@id": "slovníky:má-způsob-získání-údaje",
+          "@type": "@id"
+        },
+        "typ-obsahu-údaje": {
+          "@id": "slovníky:má-typ-obsahu-údaje",
+          "@type": "@id"
+        },
+        "způsoby-sdílení-údaje": {
+          "@id": "slovníky:má-způsob-sdílení-údaje",
+          "@type": "@id",
+          "@container": "@set"
         },
         "agenda": {
           "@id": "a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy",

@@ -213,7 +213,7 @@ public class JsonExporter {
             return ontologyResource.getURI();
         }
 
-        return modelProperties.getOrDefault(LOKALNI_KATALOG, effectiveNamespace);
+        return effectiveNamespace;
     }
 
     private Map<String, Object> createOrderedModelMap(Map<String, Object> originalMap) {
@@ -404,10 +404,10 @@ public class JsonExporter {
 
     private void addNewSourceProperties(Resource concept, JSONObject pojemObj) throws JSONException {
         addSourcePropertyFromEitherNamespace(concept, pojemObj, effectiveNamespace,
-                DEFINUJICI_USTANOVENI, DEFINUJICI_USTANOVENI);
+                DEFINUJICI_USTANOVENI, DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU);
 
         addSourcePropertyFromEitherNamespace(concept, pojemObj, effectiveNamespace,
-                SOUVISEJICI_USTANOVENI, SOUVISEJICI_USTANOVENI);
+                SOUVISEJICI_USTANOVENI, SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU);
 
         addNonLegislativeSourceProperty(concept, pojemObj, effectiveNamespace,
                 DEFINUJICI_NELEGISLATIVNI_ZDROJ, DEFINUJICI_NELEGISLATIVNI_ZDROJ);
@@ -486,7 +486,7 @@ public class JsonExporter {
     }
 
     private void addDigitalObjectType(Resource digitalDoc, JSONObject docObj) {
-        Resource digitalObjectType = ontModel.createResource("https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt");
+        Resource digitalObjectType = ontModel.createResource(DIGITALNI_OBJEKT);
         if (digitalDoc.hasProperty(RDF.type, digitalObjectType)) {
             docObj.put(VocabularyConstants.TYP, "Digitální objekt");
         }
@@ -531,14 +531,14 @@ public class JsonExporter {
     private void addGovernanceProperties(Resource concept, JSONObject pojemObj) throws JSONException {
         addGovernancePropertyArrayWithFallback(concept, pojemObj);
 
-        addGovernancePropertySingleWithFallback(concept, pojemObj, "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje", ZPUSOB_ZISKANI_ALT);
+        addGovernancePropertySingleWithFallback(concept, pojemObj, OFN_NAMESPACE + ZPUSOB_ZISKANI, ZPUSOB_ZISKANI_ALT);
 
-        addGovernancePropertySingleWithFallback(concept, pojemObj, "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje", TYP_OBSAHU_ALT);
+        addGovernancePropertySingleWithFallback(concept, pojemObj, OFN_NAMESPACE + TYP_OBSAHU, TYP_OBSAHU_ALT);
     }
 
     private void addGovernancePropertyArrayWithFallback(Resource concept, JSONObject pojemObj) throws JSONException {
 
-        Property excelProperty = ontModel.getProperty("https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
+        Property excelProperty = ontModel.getProperty(OFN_NAMESPACE + ZPUSOB_SDILENI);
         if (concept.hasProperty(excelProperty)) {
             addGovernancePropertyArray(concept, excelProperty, pojemObj);
         }
@@ -557,7 +557,7 @@ public class JsonExporter {
 
         if (!allValues.isEmpty()) {
             JSONArray propArray = createJsonArray(allValues);
-            pojemObj.put(ZPUSOB_SDILENI_ALT, propArray);
+            pojemObj.put(ZPUSOBY_SDILENI_ALT, propArray);
         }
     }
 
@@ -590,11 +590,37 @@ public class JsonExporter {
 
     private String extractStatementValue(Statement statement) {
         if (statement.getObject().isLiteral()) {
-            return statement.getString();
+            return toGovernanceCurie(statement.getString());
         } else if (statement.getObject().isResource()) {
-            return statement.getObject().asResource().getURI();
+            return toGovernanceCurie(statement.getObject().asResource().getURI());
         }
         return null;
+    }
+
+    /**
+     * Compacts a governance codelist IRI to its JSON-LD CURIE form
+     * (e.g. {@code https://data.dia.gov.cz/.../způsoby-získání-údajů/položky/vlastní}
+     * becomes {@code způsoby-získání:vlastní}). Prefixes match the JSON-LD context
+     * (kontext.jsonld). Values that do not start with a known governance namespace
+     * are returned unchanged.
+     */
+    private String toGovernanceCurie(String value) {
+        if (value == null) {
+            return null;
+        }
+        if (value.startsWith(ExportConstants.Turtle.NS_ZPUSOBY_ZISKANI)) {
+            return ExportConstants.Json.PREFIX_ZPUSOBY_ZISKANI + ":"
+                    + value.substring(ExportConstants.Turtle.NS_ZPUSOBY_ZISKANI.length());
+        }
+        if (value.startsWith(ExportConstants.Turtle.NS_ZPUSOBY_SDILENI)) {
+            return ExportConstants.Json.PREFIX_ZPUSOBY_SDILENI + ":"
+                    + value.substring(ExportConstants.Turtle.NS_ZPUSOBY_SDILENI.length());
+        }
+        if (value.startsWith(ExportConstants.Turtle.NS_TYPY_OBSAHU)) {
+            return ExportConstants.Json.PREFIX_TYPY_OBSAHU + ":"
+                    + value.substring(ExportConstants.Turtle.NS_TYPY_OBSAHU.length());
+        }
+        return value;
     }
 
     private List<String> splitMultipleValues(String value) {
@@ -646,15 +672,11 @@ public class JsonExporter {
                 Statement exactMatchStmt = exactMatchIter.next();
 
                 if (exactMatchStmt.getObject().isResource()) {
-                    JSONObject exactMatchObj = new JSONObject();
-                    exactMatchObj.put("id", exactMatchStmt.getObject().asResource().getURI());
-                    exactMatchArray.put(exactMatchObj);
+                    exactMatchArray.put(exactMatchStmt.getObject().asResource().getURI());
                 } else if (exactMatchStmt.getObject().isLiteral()) {
                     String literalValue = exactMatchStmt.getString();
                     if (literalValue != null && !literalValue.trim().isEmpty()) {
-                        JSONObject exactMatchObj = new JSONObject();
-                        exactMatchObj.put("id", literalValue);
-                        exactMatchArray.put(exactMatchObj);
+                        exactMatchArray.put(literalValue);
                     }
                 }
             }
@@ -771,18 +793,15 @@ public class JsonExporter {
 
     private void addValueToAltNamesObject(JSONObject altNamesObj, String lang, String value) throws JSONException {
         if (!altNamesObj.has(lang)) {
-            altNamesObj.put(lang, value);
+            JSONArray langArray = new JSONArray();
+            langArray.put(value);
+            altNamesObj.put(lang, langArray);
             return;
         }
 
         Object existingValue = altNamesObj.get(lang);
         if (existingValue instanceof JSONArray jsonArray) {
             jsonArray.put(value);
-        } else {
-            JSONArray langArray = new JSONArray();
-            langArray.put(existingValue);
-            langArray.put(value);
-            altNamesObj.put(lang, langArray);
         }
     }
 
@@ -823,6 +842,7 @@ public class JsonExporter {
     private JSONArray getConceptTypes(Resource concept) {
         JSONArray types = new JSONArray();
         types.put(ExportConstants.Json.POJEM_JSON_LD);
+        types.put(ExportConstants.Json.KONCEPT_JSON_LD);
 
         String[][] typeMapping = {
                 {TRIDA, ExportConstants.Json.TRIDA_JSON_LD},
@@ -836,6 +856,12 @@ public class JsonExporter {
 
         for (String[] mapping : typeMapping) {
             if (concept.hasProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + mapping[0]))) {
+                types.put(mapping[1]);
+            }
+            if (concept.hasProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_VS + mapping[0]))) {
+                types.put(mapping[1]);
+            }
+            if (concept.hasProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE_LEGAL + mapping[0]))) {
                 types.put(mapping[1]);
             }
         }
@@ -903,13 +929,17 @@ public class JsonExporter {
     }
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
-        if (conceptURI == null || effectiveNamespace == null) {
+        if (conceptURI == null) {
             return false;
         }
-
-        boolean belongs = conceptURI.startsWith(effectiveNamespace);
-        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
-                conceptURI, belongs, effectiveNamespace);
+        String ontologyIRI = getOntologyIRI();
+        if (ontologyIRI == null) {
+            return false;
+        }
+        String localPrefix = ontologyIRI + "/pojem/";
+        boolean belongs = conceptURI.startsWith(localPrefix);
+        log.debug("Local-concept check for {}: belongs = {} (local prefix: {})",
+                conceptURI, belongs, localPrefix);
         return belongs;
     }
 

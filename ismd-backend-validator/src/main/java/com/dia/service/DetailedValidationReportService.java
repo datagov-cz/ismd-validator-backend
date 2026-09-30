@@ -9,13 +9,6 @@ public interface DetailedValidationReportService {
 
     DetailedValidationReportDto generateDetailedReport(ISMDValidationReport report, Model ontologyModel);
 
-    DetailedValidationReportDto generateCombinedDetailedReport(
-            ISMDValidationReport localReport,
-            ISMDValidationReport globalReport,
-            Model ontologyModel,
-            Model shaclRulesModel
-    );
-
     DetailedValidationReportDto generateDetailedReportFromTtlFile(ISMDValidationReport report, MultipartFile ttlFile);
 
     String generateCSV(DetailedValidationReportDto report);

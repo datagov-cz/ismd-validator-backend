@@ -153,8 +153,6 @@ class ConversionWorkflowEAJsonTest {
         // Verify all entities appear in output
         if (actualRoot.has("pojmy")) {
             int outputEntityCount = actualRoot.get("pojmy").size();
-            // Note: EA reader includes external references like Adresa (7 classes in input)
-            // but transformation filters them out (6 classes in output = 40 total entities)
             int expectedEntityCount = 40;
 
             System.out.println("\nOutput entity count: " + outputEntityCount);

@@ -68,6 +68,9 @@ class ConverterControllerIntegrationTest {
     @MockitoBean
     private CatalogReportService catalogReportService;
 
+    @MockitoBean
+    private com.dia.validation.config.ValidationConfiguration validationConfiguration;
+
     private String minimalArchiXML;
     private ObjectMapper objectMapper;
     private ConversionResult mockConversionResult;
@@ -86,7 +89,7 @@ class ConverterControllerIntegrationTest {
                         400, "Nebyl vložen žádný soubor."),
                 Arguments.of("Oversized file",
                         new MockMultipartFile("file", "large.xml", "application/xml", new byte[5_242_881]),
-                        413, "Soubor je příliš velký. Maximální povolená velikost je 5 MB."),
+                        415, "Nepodporovaný formát souboru."), // Springboot has global file size limit that throws 415
                 Arguments.of("Unsupported format",
                         new MockMultipartFile("file", "test.pdf", "application/pdf", "PDF content".getBytes()),
                         415, "Nepodporovaný formát souboru.")
@@ -178,7 +181,7 @@ class ConverterControllerIntegrationTest {
     }
 
     private String loadTestFile() throws IOException {
-        ClassPathResource resource = new ClassPathResource("/com/dia/minimal-archi.xml", getClass());
+        ClassPathResource resource = new ClassPathResource("/com/dia/canonical/complete/testArchiInput_no-lkod.xml", getClass());
         return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     }
 

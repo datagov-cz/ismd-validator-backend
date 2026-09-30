@@ -314,6 +314,11 @@ public class DeviationDetector {
             return name1.equals(name2);
         }
 
+        // Try matching plain value nodes (e.g. strings in an array)
+        if (element1.isValueNode() && element2.isValueNode()) {
+            return element1.asText().equals(element2.asText());
+        }
+
         // If structure differs significantly, they don't match
         return false;
     }

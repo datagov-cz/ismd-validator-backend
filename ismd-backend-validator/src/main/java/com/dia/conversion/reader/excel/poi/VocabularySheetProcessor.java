@@ -27,21 +27,29 @@ public class VocabularySheetProcessor extends BaseSheetProcessor<VocabularyMetad
 
     @Override
     public VocabularyMetadata process(Sheet sheet) throws ExcelReadingException {
+        log.info("Processing Vocabulary metadata sheet: sheetName={}", sheet.getSheetName());
         VocabularyMetadata metadata = new VocabularyMetadata();
 
         ColumnMapping<VocabularyMetadata> mapping = mappingRegistry.getMapping(SLOVNIK);
 
         if (mapping == null) {
-            log.error("Mapping for vocabulary sheet Slovník not found. ");
+            log.error("Mapping for vocabulary sheet Slovník not found");
             throw new ExcelReadingException(
                     "Mapping for vocabulary sheet Slovník not found. "
             );
         }
 
-        log.debug("Successfully found mapping for Slovník sheet.");
+        log.debug("Successfully found mapping for Slovník sheet");
+
+        int processedPairs = 0;
+        int emptyRows = 0;
+        int unmappedKeys = 0;
 
         for (Row row : sheet) {
-            if (isRowEmpty(row)) continue;
+            if (isRowEmpty(row)) {
+                emptyRows++;
+                continue;
+            }
 
             Cell keyCell = row.getCell(0);
             Cell valueCell = row.getCell(1);
@@ -55,14 +63,17 @@ public class VocabularySheetProcessor extends BaseSheetProcessor<VocabularyMetad
                 PropertySetter<VocabularyMetadata> setter = mapping.getKeyValueMapping(key);
                 if (setter != null && !value.isEmpty()) {
                     setter.setProperty(metadata, value);
+                    processedPairs++;
                     log.debug("Successfully set property for key: {}", key);
-                } else if (setter == null) {
+                } else if (setter == null && !key.isEmpty()) {
+                    unmappedKeys++;
                     log.debug("No setter found for key: '{}'", key);
-                    log.debug("Available keys in mapping: {}", mapping.getKeyNames());
                 }
             }
         }
 
+        log.info("Vocabulary sheet processing completed: sheetName={}, processedPairs={}, unmappedKeys={}, emptyRows={}",
+                sheet.getSheetName(), processedPairs, unmappedKeys, emptyRows);
         return metadata;
     }
 }

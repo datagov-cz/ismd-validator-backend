@@ -245,6 +245,30 @@ class DataTypeConverterUnitTest {
         assertFalse(DataTypeConverter.isUri("https://")); // no host
     }
 
+    @Test
+    void testIsUri_withNonAsciiIris() {
+        // IRIs with non-ASCII characters (Czech diacritics) are valid and must be
+        // recognised as-is, not slugified. java.net.URI rejected these.
+        assertTrue(DataTypeConverter.isUri(
+                "https://slovník.gov.cz/a124-datový-slovník-iskn/pojem/právní-vztah"));
+        assertTrue(DataTypeConverter.isUri(
+                "https://slovník.gov.cz/datový/číselníky/pojem/položka-číselníku"));
+
+        assertFalse(DataTypeConverter.isUri(null));
+        assertFalse(DataTypeConverter.isUri("   "));
+    }
+
+    @Test
+    void testIsUri_withFragmentIris() {
+        // Fragment IRIs are valid URIs here (used as range/reference values). Jena's
+        // isAbsolute() returns false for these because RFC 3987 absolute IRIs exclude a
+        // fragment, so isUri must not rely on isAbsolute().
+        assertTrue(DataTypeConverter.isUri("http://www.w3.org/2000/01/rdf-schema#Literal"));
+        assertTrue(DataTypeConverter.isUri("http://www.w3.org/2001/XMLSchema#string"));
+        assertTrue(DataTypeConverter.isUri(
+                "https://slovník.gov.cz/příkladový-slovník/pojem/text-p#fragment"));
+    }
+
     // Date tests
     @Test
     void testIsDate_withValidDates() {

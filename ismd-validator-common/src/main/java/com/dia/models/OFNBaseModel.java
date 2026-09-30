@@ -115,9 +115,9 @@ public class OFNBaseModel {
             neverejnyUdajClass.addSuperClass(udajClass);
         }
 
-        if (requiredBaseClasses.contains(ZPUSOB_SDILENI_UDAJE) && polozkaClass != null) {
-            OntClass zpusobSdileniClass = ontModel.createClass(DEFAULT_NS + ZPUSOB_SDILENI_UDAJE);
-            zpusobSdileniClass.addLabel(ZPUSOB_SDILENI_UDAJE, "cs");
+        if (requiredBaseClasses.contains(ZPUSOBY_SDILENI_UDAJE) && polozkaClass != null) {
+            OntClass zpusobSdileniClass = ontModel.createClass(DEFAULT_NS + ZPUSOBY_SDILENI_UDAJE);
+            zpusobSdileniClass.addLabel(ZPUSOBY_SDILENI_UDAJE, "cs");
             zpusobSdileniClass.addSuperClass(polozkaClass);
         }
 

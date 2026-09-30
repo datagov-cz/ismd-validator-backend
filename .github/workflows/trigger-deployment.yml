@@ -1,5 +1,9 @@
 name: Trigger Deployment
 
+concurrency:
+  group: deploy-validator-backend-${{ github.event.workflow_run.head_branch || github.event.inputs.environment }}
+  cancel-in-progress: false
+
 on:
   # Triggered when a new image is published
   workflow_run:
@@ -48,12 +52,12 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Fetch all history including tags
       
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -227,7 +231,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       
       - name: Create GitHub Deployment
         id: create_deployment
@@ -305,7 +309,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       
       - name: Create GitHub Deployment
         id: create_deployment
@@ -382,7 +386,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       
       - name: Create GitHub Deployment
         id: create_deployment

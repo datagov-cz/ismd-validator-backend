@@ -2,6 +2,7 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+@prefix a104: <https://slovník.gov.cz/agendový/104/pojem/> .
 
 # Info rule: RPP characteristics - Complete RPP information available
 <https://slovník.gov.cz/shacl/lokální/pojem-má-kompletní-údaje-charakteristiky-rpp>
@@ -15,12 +16,13 @@
     sh:sparql [
         sh:select """
             PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+            PREFIX a104: <https://slovník.gov.cz/agendový/104/pojem/>
 
             SELECT $this
             WHERE {
-                # 1. Must be shared in PPDF
-                $this ?ppdfProp true .
-                FILTER(CONTAINS(STR(?ppdfProp), "je-sdílen-v-ppdf"))
+                # 1. Must be shared in PPDF (value may be typed boolean true or the string "true")
+                $this a104:je-sdílen-v-propojeném-datovém-fondu ?ppdfValue .
+                FILTER(STR(?ppdfValue) = "true")
 
                 # 2. Must be typ-subjektu-práva OR typ-objektu-práva
                 {
@@ -54,6 +56,7 @@
     sh:sparql [
         sh:select """
             PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+            PREFIX a104: <https://slovník.gov.cz/agendový/104/pojem/>
 
             SELECT $this
             WHERE {
@@ -68,11 +71,11 @@
                     $this a slovníky:neveřejný-údaj .
                 }
 
-                # But is NOT shared in PPDF
+                # But is not shared in PPDF (value may be typed boolean true or the string "true")
                 FILTER (
                     NOT EXISTS {
-                        $this ?ppdfProp true .
-                        FILTER(CONTAINS(STR(?ppdfProp), "je-sdílen-v-ppdf"))
+                        $this a104:je-sdílen-v-propojeném-datovém-fondu ?ppdfValue .
+                        FILTER(STR(?ppdfValue) = "true")
                     }
                 )
             }
@@ -97,7 +100,7 @@
                 # Is neveřejný údaj
                 $this a slovníky:neveřejný-údaj .
 
-                # But does NOT have ustanovení dokládající neveřejnost
+                # But does not have ustanovení dokládající neveřejnost
                 FILTER (
                     NOT EXISTS {
                         $this ?ustanoveniProp ?ustanoveni .
@@ -120,22 +123,19 @@
     sh:sparql [
         sh:select """
             PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+            PREFIX a104: <https://slovník.gov.cz/agendový/104/pojem/>
 
             SELECT $this
             WHERE {
                 $this a slovníky:pojem .
 
-                # Check if concept lacks both agenda and AIS relationships
-                FILTER (
-                    NOT EXISTS {
-                        $this ?agendaProp ?agenda .
-                        FILTER(CONTAINS(STR(?agendaProp), "agenda"))
-                    } ||
-                    NOT EXISTS {
-                        $this ?aisProp ?ais .
-                        FILTER(CONTAINS(STR(?aisProp), "agendový-informační-systém"))
-                    }
-                )
+                # Flag only when the concept lacks both an agenda and an AIS relationship.
+                FILTER NOT EXISTS {
+                    $this a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy ?agenda .
+                }
+                FILTER NOT EXISTS {
+                    $this a104:údaje-jsou-v-ais ?ais .
+                }
             }
         """ ;
     ] .

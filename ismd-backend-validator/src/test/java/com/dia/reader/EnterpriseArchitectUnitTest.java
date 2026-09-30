@@ -3,6 +3,7 @@ package com.dia.reader;
 import com.dia.conversion.data.*;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.exceptions.FileParsingException;
+import com.dia.utility.UtilityMethods;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,7 +42,7 @@ class EnterpriseArchitectUnitTest {
         MDC.put(LOG_REQUEST_ID, "test-request-123");
 
         // Load the valid XML content
-        ClassPathResource resource = new ClassPathResource("/com/dia/minimal-ea.xml");
+        ClassPathResource resource = new ClassPathResource("/com/dia/canonical/complete/testEAInput_no-lkod.xml");
         validXmlContent = Files.readString(Paths.get(resource.getURI()));
         validXmlBytes = validXmlContent.getBytes(StandardCharsets.UTF_8);
     }
@@ -121,7 +122,7 @@ class EnterpriseArchitectUnitTest {
         VocabularyMetadata metadata = result.getVocabularyMetadata();
         assertNotNull(metadata);
         assertEquals("Příkladový slovník z metodiky popisu dat", metadata.getName());
-        assertNotNull(metadata.getNamespace());
+        assertNull(metadata.getNamespace());
     }
 
     // ========== CLASS EXTRACTION TESTS ==========
@@ -387,6 +388,37 @@ class EnterpriseArchitectUnitTest {
             assertNotNull(relationship.getName(), "Valid relationship should have name");
             assertNotNull(relationship.getDomain(), "Valid relationship should have domain");
             assertNotNull(relationship.getRange(), "Valid relationship should have range");
+        });
+    }
+
+    // ========== IDENTIFIER VALIDATION TESTS ==========
+
+    @Test
+    void testIdentifierValidation_ShouldOnlyPreserveValidIRIs() throws FileParsingException {
+        OntologyData result = reader.readXmiFromBytes(validXmlBytes);
+
+        result.getClasses().forEach(classData -> {
+            if (classData.getIdentifier() != null) {
+                assertTrue(UtilityMethods.isValidIRI(classData.getIdentifier()),
+                        "Class identifier should be a valid IRI: '" + classData.getIdentifier()
+                                + "' for class '" + classData.getName() + "'");
+            }
+        });
+
+        result.getProperties().forEach(property -> {
+            if (property.getIdentifier() != null) {
+                assertTrue(UtilityMethods.isValidIRI(property.getIdentifier()),
+                        "Property identifier should be a valid IRI: '" + property.getIdentifier()
+                                + "' for property '" + property.getName() + "'");
+            }
+        });
+
+        result.getRelationships().forEach(relationship -> {
+            if (relationship.getIdentifier() != null) {
+                assertTrue(UtilityMethods.isValidIRI(relationship.getIdentifier()),
+                        "Relationship identifier should be a valid IRI: '" + relationship.getIdentifier()
+                                + "' for relationship '" + relationship.getName() + "'");
+            }
         });
     }
 

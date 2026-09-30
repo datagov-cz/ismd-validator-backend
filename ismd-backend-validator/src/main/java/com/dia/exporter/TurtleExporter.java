@@ -41,15 +41,15 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put(PREFIX_RDFS, RDFS.getURI());
         STANDARD_PREFIXES.put(PREFIX_SKOS, SKOS.getURI());
         STANDARD_PREFIXES.put(PREFIX_XSD, XSD);
-        STANDARD_PREFIXES.put("vsgov", "https://slovník.gov.cz/veřejný-sektor/pojem/");
-        STANDARD_PREFIXES.put("l111-2009", "https://slovník.gov.cz/legislativním/sbírka/111/2009/pojem/");
+        STANDARD_PREFIXES.put("vsgov", OFN_NAMESPACE_VS);
+        STANDARD_PREFIXES.put("l111-2009", OFN_NAMESPACE_LEGAL);
         STANDARD_PREFIXES.put("a104", "https://slovník.gov.cz/agendový/104/pojem/");
         STANDARD_PREFIXES.put("slovníky", "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/");
         STANDARD_PREFIXES.put("čas", CAS_NS);
         STANDARD_PREFIXES.put("schema", "http://schema.org/");
-        STANDARD_PREFIXES.put("typ-obsahu-údajů", "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-typ-obsahu-údaje");
-        STANDARD_PREFIXES.put("způsoby-sdílení-údajů", "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-sdílení-údaje");
-        STANDARD_PREFIXES.put("způsoby-získání-údajů", "https://slovník.gov.cz/legislativní/sbírka/360/2023/pojem/má-způsob-získání-údaje");
+        STANDARD_PREFIXES.put(PREFIX_TYPY_OBSAHU, NS_TYPY_OBSAHU);
+        STANDARD_PREFIXES.put(PREFIX_ZPUSOBY_SDILENI, NS_ZPUSOBY_SDILENI);
+        STANDARD_PREFIXES.put(PREFIX_ZPUSOBY_ZISKANI, NS_ZPUSOBY_ZISKANI);
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
@@ -203,8 +203,11 @@ public class TurtleExporter {
         }
 
         String uri = resource.getURI();
-
-        return !uri.startsWith(effectiveNamespace);
+        String ontologyIRI = getOntologyIRI();
+        if (ontologyIRI == null) {
+            return true;
+        }
+        return !uri.startsWith(ontologyIRI + "/pojem/");
     }
 
     private boolean shouldFilterAsBaseSchema(String uri) {
@@ -319,8 +322,6 @@ public class TurtleExporter {
 
         transformSourceProperties(transformedModel);
 
-        addInSchemeRelationships(transformedModel);
-
         cleanupSKOSProperties(transformedModel);
 
         cleanupNamespaceProperties(transformedModel);
@@ -350,14 +351,8 @@ public class TurtleExporter {
             return ontologyIRI;
         }
 
-        String catalogNamespace = modelProperties.get(LOKALNI_KATALOG);
-        if (catalogNamespace != null && !catalogNamespace.isEmpty()) {
-            log.debug("Using catalog namespace as ontology IRI: {}", catalogNamespace);
-            return catalogNamespace;
-        }
-
-        log.warn("Could not determine ontology IRI from any source");
-        return null;
+        log.debug("Using effective namespace as ontology IRI: {}", effectiveNamespace);
+        return effectiveNamespace;
     }
 
     private void createConceptScheme(OntModel transformedModel) {
@@ -383,7 +378,7 @@ public class TurtleExporter {
             ontologyResource.addProperty(RDF.type, SKOS.ConceptScheme);
         }
 
-        Resource slovnikType = transformedModel.createResource("https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/slovník");
+        Resource slovnikType = transformedModel.createResource("https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/slovník");
         if (!ontologyResource.hasProperty(RDF.type, slovnikType)) {
             ontologyResource.addProperty(RDF.type, slovnikType);
         }
@@ -483,10 +478,10 @@ public class TurtleExporter {
                 OFN_NAMESPACE + VLASTNOST,
                 OFN_NAMESPACE + VZTAH,
                 OFN_NAMESPACE + TRIDA,
-                OFN_NAMESPACE + TSP,
-                OFN_NAMESPACE + TOP,
-                OFN_NAMESPACE + VEREJNY_UDAJ,
-                OFN_NAMESPACE + NEVEREJNY_UDAJ
+                OFN_NAMESPACE_VS + TSP,
+                OFN_NAMESPACE_VS + TOP,
+                OFN_NAMESPACE_LEGAL + VEREJNY_UDAJ,
+                OFN_NAMESPACE_LEGAL + NEVEREJNY_UDAJ
         );
 
         ResIterator classResources = transformedModel.listSubjectsWithProperty(RDF.type,
@@ -868,31 +863,6 @@ public class TurtleExporter {
 
         transformedModel.remove(toRemove);
         transformedModel.add(toAdd);
-    }
-
-    private void addInSchemeRelationships(OntModel transformedModel) {
-        String ontologyIRI = getOntologyIRI();
-        if (ontologyIRI == null) {
-            log.warn("Cannot add skos:inScheme relationships without ontology IRI");
-            return;
-        }
-
-        Resource conceptScheme = transformedModel.getResource(ontologyIRI);
-        if (conceptScheme == null) {
-            log.warn("ConceptScheme resource not found: {}", ontologyIRI);
-            return;
-        }
-
-        ResIterator conceptIter = transformedModel.listSubjectsWithProperty(RDF.type, SKOS.Concept);
-        while (conceptIter.hasNext()) {
-            Resource concept = conceptIter.next();
-
-            if (!concept.hasProperty(RDF.type, OWL2.ObjectProperty) &&
-                    !concept.hasProperty(RDF.type, OWL2.DatatypeProperty)) {
-                concept.removeAll(SKOS.inScheme);
-                concept.addProperty(SKOS.inScheme, conceptScheme);
-            }
-        }
     }
 
     private <T> T handleTurtleOperation(TurtleSupplier<T> operation) throws TurtleExportException {

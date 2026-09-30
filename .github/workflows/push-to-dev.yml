@@ -1,5 +1,9 @@
 name: Build Dev Branch
 
+concurrency:
+  group: build-dev-validator-backend
+  cancel-in-progress: false
+
 on:
   push:
     branches:
@@ -28,7 +32,7 @@ jobs:
     outputs:
       needs_release: ${{ steps.check.outputs.needs_release }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
       
