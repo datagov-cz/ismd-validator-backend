@@ -1,0 +1,5 @@
+name: ISMD validator backend CodeQL config
+
+query-filters:
+  - exclude:
+      id: java/log-injection
