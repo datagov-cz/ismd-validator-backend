@@ -50,6 +50,23 @@ public class UtilityMethods {
         return namespace;
     }
 
+    /**
+     * Removes trailing slashes from an IRI, e.g. ".../par_2/odst_1/" becomes ".../par_2/odst_1".
+     * The "//" following the scheme is never touched.
+     */
+    public String removeTrailingSlash(String iri) {
+        if (iri == null) {
+            return null;
+        }
+
+        String result = iri;
+        while (result.endsWith("/") && !result.endsWith("://")) {
+            result = result.substring(0, result.length() - 1);
+        }
+
+        return result;
+    }
+
     public boolean looksLikeId(String name) {
         return name != null &&
                 (name.matches("id-[0-9a-f]{8}.*") ||
@@ -169,7 +186,7 @@ public class UtilityMethods {
         if (value == null || value.trim().isEmpty()) {
             return false;
         }
-        value = value.trim();
+        value = removeTrailingSlash(value.trim());
 
         if (value.matches("^(\\d+)$")) {
             return true;
@@ -186,7 +203,7 @@ public class UtilityMethods {
         if (value == null || value.trim().isEmpty()) {
             return value;
         }
-        value = value.trim();
+        value = removeTrailingSlash(value.trim());
 
         if (value.matches("^(\\d+)$")) {
             return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A" + value;
@@ -208,7 +225,7 @@ public class UtilityMethods {
         if (value == null || value.trim().isEmpty()) {
             return false;
         }
-        value = value.trim();
+        value = removeTrailingSlash(value.trim());
 
         if (value.matches("^(\\d+)$")) {
             return true;
@@ -221,7 +238,7 @@ public class UtilityMethods {
         if (value == null || value.trim().isEmpty()) {
             return value;
         }
-        value = value.trim();
+        value = removeTrailingSlash(value.trim());
 
         if (value.matches("^(\\d+)$")) {
             return "https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/" + value;
@@ -250,7 +267,7 @@ public class UtilityMethods {
             if (eliPart.startsWith("/")) {
                 eliPart = eliPart.substring(1);
             }
-            return eliPart;
+            return removeTrailingSlash(eliPart);
         }
 
         return null;

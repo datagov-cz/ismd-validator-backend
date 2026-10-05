@@ -398,4 +398,50 @@ class UtilityMethodsUnitTest {
         // Test empty list
         assertNull(UtilityMethods.filterValue(Arrays.asList(null, "")));
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "https://e-sbirka.gov.cz/eli/cz/sb/2005/348/2026-01-01/dokument/norma/cast_1/par_2/odst_1/, https://e-sbirka.gov.cz/eli/cz/sb/2005/348/2026-01-01/dokument/norma/cast_1/par_2/odst_1",
+            "https://e-sbirka.gov.cz/eli/cz/sb/2005/348/2026-01-01/dokument/norma/cast_1/par_2/odst_1, https://e-sbirka.gov.cz/eli/cz/sb/2005/348/2026-01-01/dokument/norma/cast_1/par_2/odst_1",
+            "https://slovník.gov.cz/agendový/104/pojem/adresa//, https://slovník.gov.cz/agendový/104/pojem/adresa",
+            "http://www.w3.org/2000/01/rdf-schema#Literal, http://www.w3.org/2000/01/rdf-schema#Literal",
+            "https://, https://",
+            "'', ''"
+    })
+    void testRemoveTrailingSlash(String input, String expected) {
+        assertEquals(expected, UtilityMethods.removeTrailingSlash(input));
+    }
+
+    @Test
+    void testRemoveTrailingSlash_Null() {
+        assertNull(UtilityMethods.removeTrailingSlash(null));
+    }
+
+    @Test
+    void testTrailingSlashIsRemovedFromDerivedIRIs() {
+        assertEquals("eli/cz/sb/2005/348/2026-01-01/dokument/norma/cast_1/par_2/odst_1",
+                UtilityMethods.extractEliPart("https://e-sbirka.gov.cz/eli/cz/sb/2005/348/2026-01-01/dokument/norma/cast_1/par_2/odst_1/"));
+
+        assertTrue(UtilityMethods.isValidAgendaValue("https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A104/"));
+        assertEquals("https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A104",
+                UtilityMethods.transformAgendaValue("https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A104/"));
+
+        assertTrue(UtilityMethods.isValidAISValue("https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/326/"));
+        assertEquals("https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/326",
+                UtilityMethods.transformAISValue("https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/326/"));
+    }
+
+    @Test
+    void testTrailingSlashIsRemovedFromConceptIdentifier() {
+        URIGenerator uriGenerator = new URIGenerator();
+        uriGenerator.setEffectiveNamespace("https://example.com/");
+        uriGenerator.setVocabularyName("slovnik");
+
+        assertEquals("https://example.com/slovnik/pojem/adresa",
+                uriGenerator.generateConceptURI("Adresa", "https://example.com/slovnik/pojem/adresa/"));
+        assertEquals("https://example.com/slovnik/pojem/adresa",
+                uriGenerator.generateConceptURI("Adresa", "https://example.com/slovnik/pojem/adresa"));
+        assertEquals("https://example.com/slovnik/pojem/adresa",
+                uriGenerator.generateConceptURI("Adresa", "https://jinde.cz/adresa/"));
+    }
 }

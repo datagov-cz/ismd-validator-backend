@@ -21,7 +21,7 @@ public class URIGenerator {
 
     public String generateConceptURI(String conceptName, String identifier) {
         if (identifier != null && !identifier.trim().isEmpty()) {
-            String trimmedIdentifier = identifier.trim();
+            String trimmedIdentifier = UtilityMethods.removeTrailingSlash(identifier.trim());
 
             if (UtilityMethods.isValidIRI(trimmedIdentifier)) {
                 if (trimmedIdentifier.contains("/pojem/")) {
@@ -63,7 +63,7 @@ public class URIGenerator {
 
     public String generateVocabularyURI(String vocabularyName, String identifier) {
         if (identifier != null && !identifier.trim().isEmpty()) {
-            String trimmedIdentifier = identifier.trim();
+            String trimmedIdentifier = UtilityMethods.removeTrailingSlash(identifier.trim());
 
             if (UtilityMethods.isValidIRI(trimmedIdentifier)) {
                 return trimmedIdentifier;
