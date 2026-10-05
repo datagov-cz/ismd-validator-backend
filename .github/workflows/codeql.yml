@@ -53,6 +53,7 @@ jobs:
         with:
           languages: java-kotlin
           queries: security-extended
+          config-file: ./.github/codeql/codeql-config.yml
           build-mode: manual
 
       - name: Install common library
