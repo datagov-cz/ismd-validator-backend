@@ -522,7 +522,7 @@ public class OntologyResourceBuilder {
 
     private void addSubPropertyOf(Resource resource, String superPropertyName) {
         String superPropertyURI = DataTypeConverter.isUri(superPropertyName)
-                ? superPropertyName
+                ? UtilityMethods.removeTrailingSlash(superPropertyName)
                 : uriGenerator.generateConceptURI(superPropertyName, null);
 
         resource.addProperty(RDFS.subPropertyOf, ontModel.createResource(superPropertyURI));
@@ -615,7 +615,8 @@ public class OntologyResourceBuilder {
 
         if (superClassResource == null && hierarchyData.getSuperClassIRI() != null) {
             log.debug("Superclass '{}' not found locally, using external IRI: {}", superClassName, hierarchyData.getSuperClassIRI());
-            superClassResource = ontModel.createResource(hierarchyData.getSuperClassIRI());
+            superClassResource = ontModel.createResource(
+                    UtilityMethods.removeTrailingSlash(hierarchyData.getSuperClassIRI()));
         }
 
         if (superClassResource == null) {
@@ -759,7 +760,7 @@ public class OntologyResourceBuilder {
         Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
 
         for (String concept : concepts) {
-            String trimmedConcept = concept.trim();
+            String trimmedConcept = UtilityMethods.removeTrailingSlash(concept.trim());
 
             if (trimmedConcept.isEmpty()) {
                 continue;
@@ -845,8 +846,9 @@ public class OntologyResourceBuilder {
     private void addResourceReference(Resource subject, Property property, String referenceName,
                                       Map<String, Resource> resourceMap) {
         if (DataTypeConverter.isUri(referenceName)) {
-            subject.addProperty(property, ontModel.createResource(referenceName));
-            log.debug("Added URI resource reference: {} -> {}", property.getLocalName(), referenceName);
+            String referenceIRI = UtilityMethods.removeTrailingSlash(referenceName);
+            subject.addProperty(property, ontModel.createResource(referenceIRI));
+            log.debug("Added URI resource reference: {} -> {}", property.getLocalName(), referenceIRI);
         } else {
             if (property.equals(RDFS.domain) || property.equals(RDFS.range)) {
                 Resource existingResource = resourceMap.get(referenceName);
@@ -955,7 +957,8 @@ public class OntologyResourceBuilder {
 
     private boolean checkIfValidUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         if (DataTypeConverter.isUri(trimmedDataType)) {
-            propertyResource.addProperty(rangeProperty, ontModel.createResource(trimmedDataType));
+            propertyResource.addProperty(rangeProperty,
+                    ontModel.createResource(UtilityMethods.removeTrailingSlash(trimmedDataType)));
             log.debug("Added URI range type: {}", trimmedDataType);
             return true;
         }
