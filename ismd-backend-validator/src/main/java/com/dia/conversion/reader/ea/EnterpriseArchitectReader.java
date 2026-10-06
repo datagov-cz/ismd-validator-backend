@@ -60,7 +60,9 @@ public class EnterpriseArchitectReader {
     }
 
     private OntologyData parseDocument(Document document) throws FileParsingException {
-        Element vocabularyPackage = findVocabularyPackageInMainModel(document);
+        XmiIndex index = new XmiIndex(document);
+
+        Element vocabularyPackage = findVocabularyPackageInMainModel(index);
         if (vocabularyPackage == null) {
             throw new FileParsingException("No package with stereotype 'slovnikyPackage' found in the document");
         }
@@ -68,21 +70,23 @@ public class EnterpriseArchitectReader {
         String vocabularyPackageId = vocabularyPackage.getAttribute(XMI_ID);
         log.info("Found vocabulary package: {} with ID: {}", vocabularyPackage.getAttribute("name"), vocabularyPackageId);
 
-        VocabularyMetadata vocabularyMetadata = extractVocabularyMetadata(document, vocabularyPackageId);
+        VocabularyMetadata vocabularyMetadata = extractVocabularyMetadata(index, vocabularyPackageId);
 
-        Set<String> vocabularyPackageIds = getVocabularyPackageIds(document, vocabularyPackageId);
+        Set<String> vocabularyPackageIds = getVocabularyPackageIds(index, vocabularyPackageId);
         log.info("Vocabulary package IDs: {}", vocabularyPackageIds);
 
         List<ClassData> classes = new ArrayList<>();
         List<PropertyData> properties = new ArrayList<>();
         List<RelationshipData> relationships = new ArrayList<>();
 
-        parseElements(document, vocabularyPackageIds, classes, properties);
-        parseConnectors(document, vocabularyPackageIds, relationships, classes, properties);
+        parseElements(index, vocabularyPackageIds, classes, properties);
+        parseConnectors(index, vocabularyPackageIds, relationships, classes, properties);
+
+        List<Element> generalizations = findGeneralizationConnectors(index, vocabularyPackageIds);
 
         List<HierarchyData> hierarchies = new ArrayList<>();
-        hierarchies.addAll(extractHierarchiesFromClasses(classes, document, vocabularyPackageIds));
-        hierarchies.addAll(extractHierarchiesFromProperties(properties, document, vocabularyPackageIds));
+        hierarchies.addAll(extractHierarchiesFromClasses(classes, index, generalizations));
+        hierarchies.addAll(extractHierarchiesFromProperties(properties, index, generalizations));
 
         inferSubPropertyDomains(properties, hierarchies);
 
@@ -98,15 +102,12 @@ public class EnterpriseArchitectReader {
                 .build();
     }
 
-    private Element findVocabularyPackageInMainModel(Document document) {
-        NodeList umlPackages = document.getElementsByTagName(PACKAGED_ELEMENT);
-
-        for (int i = 0; i < umlPackages.getLength(); i++) {
-            Element umlPackage = (Element) umlPackages.item(i);
+    private Element findVocabularyPackageInMainModel(XmiIndex index) {
+        for (Element umlPackage : index.packagedElements) {
             if (UML_PACKAGE.equals(umlPackage.getAttribute(XMI_TYPE))) {
                 String packageId = umlPackage.getAttribute(XMI_ID);
 
-                Element extensionElement = findExtensionElement(document, packageId);
+                Element extensionElement = findExtensionElement(index, packageId);
                 if (extensionElement != null) {
                     String stereotype = getStereotype(extensionElement);
                     if (STEREOTYPE_SLOVNIKY_PACKAGE.equals(stereotype)) {
@@ -114,7 +115,7 @@ public class EnterpriseArchitectReader {
                     }
                 }
 
-                if (hasNamespacePrefixedStereotype(document, packageId)) {
+                if (hasNamespacePrefixedStereotype(index, packageId)) {
                     return umlPackage;
                 }
             }
@@ -122,89 +123,43 @@ public class EnterpriseArchitectReader {
         return null;
     }
 
-    private Element findExtensionElement(Document document, String elementId) {
-        NodeList extensionElements = document.getElementsByTagName("element");
-
-        for (int i = 0; i < extensionElements.getLength(); i++) {
-            Element element = (Element) extensionElements.item(i);
-            if (elementId.equals(element.getAttribute(XMI_IDREF))) {
-                return element;
-            }
-        }
-        return null;
+    private Element findExtensionElement(XmiIndex index, String elementId) {
+        return index.extensionsByIdRef.get(elementId);
     }
 
-    private boolean hasNamespacePrefixedStereotype(Document document, String elementId) {
-        NodeList allElements = document.getElementsByTagName("*");
-
-        for (int i = 0; i < allElements.getLength(); i++) {
-            Element element = (Element) allElements.item(i);
-            String localName = element.getLocalName();
-
-            if (localName != null && localName.equals(com.dia.constants.FormatConstants.EnterpriseArchitect.STEREOTYPE_SLOVNIKY_PACKAGE)) {
-                String basePackage = element.getAttribute("base_Package");
-                String baseClass = element.getAttribute("base_Class");
-                String baseAssociation = element.getAttribute("base_Association");
-
-                if (elementId.equals(basePackage) || elementId.equals(baseClass) || elementId.equals(baseAssociation)) {
-                    log.debug("Found namespace-prefixed stereotype '{}' for element ID: {}", com.dia.constants.FormatConstants.EnterpriseArchitect.STEREOTYPE_SLOVNIKY_PACKAGE, elementId);
-                    return true;
-                }
-            }
+    private boolean hasNamespacePrefixedStereotype(XmiIndex index, String elementId) {
+        if (index.vocabularyPackageBaseIds.contains(elementId)) {
+            log.debug("Found namespace-prefixed stereotype '{}' for element ID: {}", STEREOTYPE_SLOVNIKY_PACKAGE, elementId);
+            return true;
         }
 
         return false;
     }
 
-    private String getNamespacePrefixedStereotype(Document document, String elementId) {
-        NodeList allElements = document.getElementsByTagName("*");
-
-        for (int i = 0; i < allElements.getLength(); i++) {
-            Element element = (Element) allElements.item(i);
-            String localName = element.getLocalName();
-
-            if (localName != null) {
-                String basePackage = element.getAttribute("base_Package");
-                String baseClass = element.getAttribute("base_Class");
-                String baseAssociation = element.getAttribute("base_Association");
-
-                if (elementId.equals(basePackage) || elementId.equals(baseClass) || elementId.equals(baseAssociation)) {
-                    log.debug("Found namespace-prefixed stereotype '{}' for element ID: {}", localName, elementId);
-                    return localName;
-                }
-            }
+    private String getNamespacePrefixedStereotype(XmiIndex index, String elementId) {
+        Element element = index.namedStereotypesByBaseId.get(elementId);
+        if (element == null) {
+            return null;
         }
 
-        return null;
+        String localName = element.getLocalName();
+        log.debug("Found namespace-prefixed stereotype '{}' for element ID: {}", localName, elementId);
+        return localName;
     }
 
-    private Element findNamespacePrefixedStereotypeElement(Document document, String elementId) {
-        NodeList allElements = document.getElementsByTagName("*");
-
-        for (int i = 0; i < allElements.getLength(); i++) {
-            Element element = (Element) allElements.item(i);
-
-            String basePackage = element.getAttribute("base_Package");
-            String baseClass = element.getAttribute("base_Class");
-            String baseAssociation = element.getAttribute("base_Association");
-
-            if (elementId.equals(basePackage) || elementId.equals(baseClass) || elementId.equals(baseAssociation)) {
-                return element;
-            }
-        }
-
-        return null;
+    private Element findNamespacePrefixedStereotypeElement(XmiIndex index, String elementId) {
+        return index.stereotypesByBaseId.get(elementId);
     }
 
-    private VocabularyMetadata extractVocabularyMetadata(Document document, String vocabularyPackageId) {
+    private VocabularyMetadata extractVocabularyMetadata(XmiIndex index, String vocabularyPackageId) {
         VocabularyMetadata metadata = new VocabularyMetadata();
 
-        Element mainPackage = findMainModelElement(document, vocabularyPackageId);
+        Element mainPackage = findMainModelElement(index, vocabularyPackageId);
         if (mainPackage != null) {
             metadata.setName(mainPackage.getAttribute("name"));
         }
 
-        Element extensionElement = findExtensionElement(document, vocabularyPackageId);
+        Element extensionElement = findExtensionElement(index, vocabularyPackageId);
         if (extensionElement != null) {
             metadata.setDescription(getTagValueByPattern(extensionElement, "POPIS_SLOVNIKU"));
         }
@@ -212,38 +167,27 @@ public class EnterpriseArchitectReader {
         return metadata;
     }
 
-    private Element findMainModelElement(Document document, String elementId) {
-        NodeList elements = document.getElementsByTagName("*");
-
-        for (int i = 0; i < elements.getLength(); i++) {
-            Element element = (Element) elements.item(i);
-            if (elementId.equals(element.getAttribute(XMI_ID))) {
-                return element;
-            }
-        }
-        return null;
+    private Element findMainModelElement(XmiIndex index, String elementId) {
+        return index.elementsById.get(elementId);
     }
 
-    private Set<String> getVocabularyPackageIds(Document document, String mainPackageId) {
+    private Set<String> getVocabularyPackageIds(XmiIndex index, String mainPackageId) {
         Set<String> packageIds = new HashSet<>();
         packageIds.add(mainPackageId);
 
-        addSubPackages(document, mainPackageId, packageIds);
+        addSubPackages(index, mainPackageId, packageIds);
 
         return packageIds;
     }
 
-    private void addSubPackages(Document document, String parentPackageId, Set<String> packageIds) {
-        NodeList packages = document.getElementsByTagName(PACKAGED_ELEMENT);
-
-        for (int i = 0; i < packages.getLength(); i++) {
-            Element packageElement = (Element) packages.item(i);
+    private void addSubPackages(XmiIndex index, String parentPackageId, Set<String> packageIds) {
+        for (Element packageElement : index.packagedElements) {
             if (UML_PACKAGE.equals(packageElement.getAttribute(XMI_TYPE))) {
                 Element parent = (Element) packageElement.getParentNode();
                 if (parent != null && parentPackageId.equals(parent.getAttribute(XMI_ID))) {
                     String subPackageId = packageElement.getAttribute(XMI_ID);
 
-                    Element extensionElement = findExtensionElement(document, subPackageId);
+                    Element extensionElement = findExtensionElement(index, subPackageId);
                     String stereotype = null;
                     if (extensionElement != null) {
                         stereotype = getStereotype(extensionElement);
@@ -251,27 +195,23 @@ public class EnterpriseArchitectReader {
 
                     if (!STEREOTYPE_SLOVNIKY_PACKAGE.equals(stereotype)) {
                         packageIds.add(subPackageId);
-                        addSubPackages(document, subPackageId, packageIds);
+                        addSubPackages(index, subPackageId, packageIds);
                     }
                 }
             }
         }
     }
 
-    private void parseElements(Document document, Set<String> vocabularyPackageIds,
+    private void parseElements(XmiIndex index, Set<String> vocabularyPackageIds,
                                List<ClassData> classes, List<PropertyData> properties) {
-        NodeList umlClasses = document.getElementsByTagName(PACKAGED_ELEMENT);
-
-        for (int i = 0; i < umlClasses.getLength(); i++) {
-            Element umlClass = (Element) umlClasses.item(i);
-
+        for (Element umlClass : index.packagedElements) {
             if (!isValidElementToProcess(umlClass, vocabularyPackageIds)) {
                 continue;
             }
 
             String elementId = umlClass.getAttribute(XMI_ID);
 
-            parseExtensions(document, elementId, classes, properties, umlClass);
+            parseExtensions(index, elementId, classes, properties, umlClass);
         }
     }
 
@@ -284,9 +224,9 @@ public class EnterpriseArchitectReader {
         return vocabularyPackageIds.contains(packageId);
     }
 
-    private void parseExtensions(Document document, String elementId, List<ClassData> classes,
+    private void parseExtensions(XmiIndex index, String elementId, List<ClassData> classes,
                                  List<PropertyData> properties, Element umlClass) {
-        Element extensionElement = findExtensionElement(document, elementId);
+        Element extensionElement = findExtensionElement(index, elementId);
         String stereotype = null;
 
         if (extensionElement != null) {
@@ -294,8 +234,8 @@ public class EnterpriseArchitectReader {
         }
 
         if (stereotype == null) {
-            stereotype = getNamespacePrefixedStereotype(document, elementId);
-            extensionElement = findNamespacePrefixedStereotypeElement(document, elementId);
+            stereotype = getNamespacePrefixedStereotype(index, elementId);
+            extensionElement = findNamespacePrefixedStereotypeElement(index, elementId);
         }
 
         if (stereotype != null) {
@@ -406,18 +346,14 @@ public class EnterpriseArchitectReader {
         return propertyData;
     }
 
-    private void parseConnectors(Document document, Set<String> vocabularyPackageIds,
+    private void parseConnectors(XmiIndex index, Set<String> vocabularyPackageIds,
                                  List<RelationshipData> relationships, List<ClassData> classes,
                                  List<PropertyData> properties) {
-        NodeList connectors = document.getElementsByTagName("connector");
-
         Map<String, ClassData> classMap = createClassMap(classes);
         Map<String, PropertyData> propertyMap = createPropertyMap(properties);
 
-        for (int i = 0; i < connectors.getLength(); i++) {
-            Element connector = (Element) connectors.item(i);
-
-            if (isConnectorInVocabulary(document, connector, vocabularyPackageIds)) {
+        for (Element connector : index.connectors) {
+            if (isConnectorInVocabulary(index, connector, vocabularyPackageIds)) {
                 continue;
             }
 
@@ -427,16 +363,16 @@ public class EnterpriseArchitectReader {
             switch (connectorType) {
                 case "Association":
                     if (isValidAssociationConnector(connector)) {
-                        RelationshipData relationshipData = parseRelationshipData(document, connector);
+                        RelationshipData relationshipData = parseRelationshipData(index, connector);
                         relationships.add(relationshipData);
                         log.debug("Added association: {}", relationshipData.getName());
                     }
                     break;
                 case "Generalization":
-                    processGeneralizationConnector(document, connector, classMap, propertyMap);
+                    processGeneralizationConnector(index, connector, classMap, propertyMap);
                     break;
                 case "Aggregation":
-                    processAggregationConnector(document, connector, propertyMap, classMap);
+                    processAggregationConnector(index, connector, propertyMap, classMap);
                     break;
                 default:
                     log.debug("Skipping connector type: {}", connectorType);
@@ -483,7 +419,7 @@ public class EnterpriseArchitectReader {
         return STEREOTYPE_TYP_VZTAHU.equals(stereotype);
     }
 
-    private void processGeneralizationConnector(Document document, Element connector,
+    private void processGeneralizationConnector(XmiIndex index, Element connector,
                                                Map<String, ClassData> classMap,
                                                Map<String, PropertyData> propertyMap) {
         NodeList sources = connector.getElementsByTagName(SOURCE);
@@ -496,8 +432,8 @@ public class EnterpriseArchitectReader {
             String childId = source.getAttribute(XMI_IDREF);
             String parentId = target.getAttribute(XMI_IDREF);
 
-            String childName = getElementName(document, childId);
-            String parentName = getElementName(document, parentId);
+            String childName = getElementName(index, childId);
+            String parentName = getElementName(index, parentId);
 
             if (childName != null && parentName != null) {
                 ClassData childClass = classMap != null ? classMap.get(childName) : null;
@@ -521,7 +457,7 @@ public class EnterpriseArchitectReader {
         }
     }
 
-    private void processAggregationConnector(Document document, Element connector,
+    private void processAggregationConnector(XmiIndex index, Element connector,
                                              Map<String, PropertyData> propertyMap,
                                              Map<String, ClassData> classMap) {
         NodeList sources = connector.getElementsByTagName(SOURCE);
@@ -534,8 +470,8 @@ public class EnterpriseArchitectReader {
             String propertyId = source.getAttribute(XMI_IDREF);
             String classId = target.getAttribute(XMI_IDREF);
 
-            String propertyName = getElementName(document, propertyId);
-            String className = getElementName(document, classId);
+            String propertyName = getElementName(index, propertyId);
+            String className = getElementName(index, classId);
 
             if (propertyName != null && className != null) {
                 PropertyData property = propertyMap.get(propertyName);
@@ -551,7 +487,7 @@ public class EnterpriseArchitectReader {
         }
     }
 
-    private boolean isConnectorInVocabulary(Document document, Element connector, Set<String> vocabularyPackageIds) {
+    private boolean isConnectorInVocabulary(XmiIndex index, Element connector, Set<String> vocabularyPackageIds) {
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);
 
@@ -565,8 +501,8 @@ public class EnterpriseArchitectReader {
         String sourceId = source.getAttribute(XMI_IDREF);
         String targetId = target.getAttribute(XMI_IDREF);
 
-        boolean sourceInVocab = isElementInVocabulary(document, sourceId, vocabularyPackageIds);
-        boolean targetInVocab = isElementInVocabulary(document, targetId, vocabularyPackageIds);
+        boolean sourceInVocab = isElementInVocabulary(index, sourceId, vocabularyPackageIds);
+        boolean targetInVocab = isElementInVocabulary(index, targetId, vocabularyPackageIds);
 
         log.debug("Connector {} - source {} in vocab: {}, target {} in vocab: {}",
                 connector.getAttribute("name"), sourceId, sourceInVocab, targetId, targetInVocab);
@@ -574,8 +510,8 @@ public class EnterpriseArchitectReader {
         return !sourceInVocab || !targetInVocab;
     }
 
-    private boolean isElementInVocabulary(Document document, String elementId, Set<String> vocabularyPackageIds) {
-        Element mainElement = findMainModelElement(document, elementId);
+    private boolean isElementInVocabulary(XmiIndex index, String elementId, Set<String> vocabularyPackageIds) {
+        Element mainElement = findMainModelElement(index, elementId);
         if (mainElement != null) {
             String packageId = getElementPackageId(mainElement);
             boolean inVocab = vocabularyPackageIds.contains(packageId);
@@ -586,8 +522,24 @@ public class EnterpriseArchitectReader {
         return false;
     }
 
-    private List<HierarchyData> extractHierarchiesFromClasses(List<ClassData> classes, Document document,
-                                                              Set<String> vocabularyPackageIds) {
+    private List<Element> findGeneralizationConnectors(XmiIndex index, Set<String> vocabularyPackageIds) {
+        List<Element> generalizations = new ArrayList<>();
+
+        for (Element connector : index.connectors) {
+            if (isConnectorInVocabulary(index, connector, vocabularyPackageIds)) {
+                continue;
+            }
+
+            if ("Generalization".equals(getConnectorType(connector))) {
+                generalizations.add(connector);
+            }
+        }
+
+        return generalizations;
+    }
+
+    private List<HierarchyData> extractHierarchiesFromClasses(List<ClassData> classes, XmiIndex index,
+                                                              List<Element> generalizations) {
         List<HierarchyData> hierarchies = new ArrayList<>();
 
         log.debug("Extracting hierarchies from {} classes", classes.size());
@@ -598,7 +550,7 @@ public class EnterpriseArchitectReader {
                 hierarchy.setSubClass(classData.getName());
                 hierarchy.setSuperClass(classData.getSuperClass());
 
-                enrichHierarchyWithConnectorData(hierarchy, document, vocabularyPackageIds);
+                enrichHierarchyWithConnectorData(hierarchy, index, generalizations);
 
                 hierarchies.add(hierarchy);
                 log.debug("Created hierarchy: {} -> {}", classData.getName(), classData.getSuperClass());
@@ -609,8 +561,8 @@ public class EnterpriseArchitectReader {
         return hierarchies;
     }
 
-    private List<HierarchyData> extractHierarchiesFromProperties(List<PropertyData> properties, Document document,
-                                                                 Set<String> vocabularyPackageIds) {
+    private List<HierarchyData> extractHierarchiesFromProperties(List<PropertyData> properties, XmiIndex index,
+                                                                 List<Element> generalizations) {
         List<HierarchyData> hierarchies = new ArrayList<>();
 
         log.debug("Extracting hierarchies from {} properties", properties.size());
@@ -621,7 +573,7 @@ public class EnterpriseArchitectReader {
                 hierarchy.setSubClass(propertyData.getName());
                 hierarchy.setSuperClass(propertyData.getSuperProperty());
 
-                enrichHierarchyWithConnectorData(hierarchy, document, vocabularyPackageIds);
+                enrichHierarchyWithConnectorData(hierarchy, index, generalizations);
 
                 hierarchies.add(hierarchy);
                 log.debug("Created property hierarchy: {} -> {}", propertyData.getName(), propertyData.getSuperProperty());
@@ -632,28 +584,15 @@ public class EnterpriseArchitectReader {
         return hierarchies;
     }
 
-    private void enrichHierarchyWithConnectorData(HierarchyData hierarchy, Document document,
-                                                  Set<String> vocabularyPackageIds) {
-        NodeList connectors = document.getElementsByTagName("connector");
-
-        for (int i = 0; i < connectors.getLength(); i++) {
-            Element connector = (Element) connectors.item(i);
-
-            if (isConnectorInVocabulary(document, connector, vocabularyPackageIds)) {
-                continue;
-            }
-
-            String connectorType = getConnectorType(connector);
-            if (!"Generalization".equals(connectorType)) {
-                continue;
-            }
-
-            if (isConnectorMatchingHierarchy(connector, hierarchy, document)) {
+    private void enrichHierarchyWithConnectorData(HierarchyData hierarchy, XmiIndex index,
+                                                  List<Element> generalizations) {
+        for (Element connector : generalizations) {
+            if (isConnectorMatchingHierarchy(connector, hierarchy, index)) {
                 String connectorName = connector.getAttribute("name");
                 if (!connectorName.trim().isEmpty()) {
                     hierarchy.setRelationshipName(connectorName);
                 } else {
-                    String defaultRelName = isPropertyHierarchy(hierarchy, document)
+                    String defaultRelName = isPropertyHierarchy(hierarchy, index)
                             ? "rdfs:subPropertyOf"
                             : "rdfs:subClassOf";
                     hierarchy.setRelationshipName(defaultRelName);
@@ -686,7 +625,7 @@ public class EnterpriseArchitectReader {
         }
     }
 
-    private boolean isConnectorMatchingHierarchy(Element connector, HierarchyData hierarchy, Document document) {
+    private boolean isConnectorMatchingHierarchy(Element connector, HierarchyData hierarchy, XmiIndex index) {
         NodeList sources = connector.getElementsByTagName(SOURCE);
         NodeList targets = connector.getElementsByTagName(TARGET);
 
@@ -700,23 +639,20 @@ public class EnterpriseArchitectReader {
         String childId = source.getAttribute(XMI_IDREF);
         String parentId = target.getAttribute(XMI_IDREF);
 
-        String childName = getElementName(document, childId);
-        String parentName = getElementName(document, parentId);
+        String childName = getElementName(index, childId);
+        String parentName = getElementName(index, parentId);
 
         return hierarchy.getSubClass().equals(childName) && hierarchy.getSuperClass().equals(parentName);
     }
 
-    private boolean isPropertyHierarchy(HierarchyData hierarchy, Document document) {
+    private boolean isPropertyHierarchy(HierarchyData hierarchy, XmiIndex index) {
         // Check if the subClass element is a property by looking for its stereotype
-        NodeList elements = document.getElementsByTagName(PACKAGED_ELEMENT);
-
-        for (int i = 0; i < elements.getLength(); i++) {
-            Element element = (Element) elements.item(i);
+        for (Element element : index.packagedElements) {
             String name = element.getAttribute("name");
 
             if (hierarchy.getSubClass().equals(name)) {
                 String elementId = element.getAttribute(XMI_ID);
-                Element extensionElement = findExtensionElement(document, elementId);
+                Element extensionElement = findExtensionElement(index, elementId);
 
                 if (extensionElement != null) {
                     String stereotype = getStereotype(extensionElement);
@@ -728,7 +664,7 @@ public class EnterpriseArchitectReader {
         return false;
     }
 
-    private RelationshipData parseRelationshipData(Document document, Element connector) {
+    private RelationshipData parseRelationshipData(XmiIndex index, Element connector) {
         RelationshipData relationshipData = new RelationshipData();
 
         relationshipData.setName(connector.getAttribute("name").trim());
@@ -758,8 +694,8 @@ public class EnterpriseArchitectReader {
             String sourceId = source.getAttribute(XMI_IDREF);
             String targetId = target.getAttribute(XMI_IDREF);
 
-            relationshipData.setDomain(getElementName(document, sourceId));
-            relationshipData.setRange(getElementName(document, targetId));
+            relationshipData.setDomain(getElementName(index, sourceId));
+            relationshipData.setRange(getElementName(index, targetId));
 
             log.debug("Relationship {} connects {} -> {}",
                     relationshipData.getName(), relationshipData.getDomain(), relationshipData.getRange());
@@ -768,8 +704,8 @@ public class EnterpriseArchitectReader {
         return relationshipData;
     }
 
-    private String getElementName(Document document, String elementId) {
-        Element mainElement = findMainModelElement(document, elementId);
+    private String getElementName(XmiIndex index, String elementId) {
+        Element mainElement = findMainModelElement(index, elementId);
         if (mainElement != null) {
             String name = mainElement.getAttribute("name").trim();
             log.debug("Resolved element {} to name: {}", elementId, name);
@@ -1009,6 +945,54 @@ public class EnterpriseArchitectReader {
                     subProperty.setDomain(superDomain);
                     log.debug("Inferred domain '{}' for sub-property '{}' from super-property '{}'",
                             superDomain, subPropertyName, superPropertyName);
+                }
+            }
+        }
+    }
+
+    /**
+     * Lookup tables built in one pass over the document, so that resolving an element by ID
+     * does not rescan the whole DOM. Every lookup keeps the first match in document order.
+     */
+    private static final class XmiIndex {
+        private static final String[] BASE_ATTRIBUTES = {"base_Package", "base_Class", "base_Association"};
+
+        private final Map<String, Element> elementsById = new HashMap<>();
+        private final Map<String, Element> extensionsByIdRef = new HashMap<>();
+        private final Map<String, Element> stereotypesByBaseId = new HashMap<>();
+        private final Map<String, Element> namedStereotypesByBaseId = new HashMap<>();
+        private final Set<String> vocabularyPackageBaseIds = new HashSet<>();
+        private final List<Element> packagedElements = new ArrayList<>();
+        private final List<Element> connectors = new ArrayList<>();
+
+        private XmiIndex(Document xmi) {
+            NodeList allElements = xmi.getElementsByTagName("*");
+
+            for (int i = 0; i < allElements.getLength(); i++) {
+                Element element = (Element) allElements.item(i);
+                String tagName = element.getTagName();
+                String localName = element.getLocalName();
+
+                elementsById.putIfAbsent(element.getAttribute(XMI_ID), element);
+
+                if ("element".equals(tagName)) {
+                    extensionsByIdRef.putIfAbsent(element.getAttribute(XMI_IDREF), element);
+                } else if (PACKAGED_ELEMENT.equals(tagName)) {
+                    packagedElements.add(element);
+                } else if ("connector".equals(tagName)) {
+                    connectors.add(element);
+                }
+
+                for (String baseAttribute : BASE_ATTRIBUTES) {
+                    String baseId = element.getAttribute(baseAttribute);
+
+                    stereotypesByBaseId.putIfAbsent(baseId, element);
+                    if (localName != null) {
+                        namedStereotypesByBaseId.putIfAbsent(baseId, element);
+                        if (STEREOTYPE_SLOVNIKY_PACKAGE.equals(localName)) {
+                            vocabularyPackageBaseIds.add(baseId);
+                        }
+                    }
                 }
             }
         }
