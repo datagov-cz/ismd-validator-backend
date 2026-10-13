@@ -65,7 +65,7 @@ public class OntologyResourceBuilder {
     }
 
     public void createOntologyResourceWithTemporal(VocabularyMetadata metadata, Map<String, Resource> localResourceMap) {
-        String ontologyIRI = uriGenerator.generateVocabularyURI(metadata.getName(), null);
+        String ontologyIRI = uriGenerator.generateVocabularyURI(metadata.getName(), metadata.getIdentifier());
         this.localConceptPrefix = ontologyIRI + "/pojem/";
         log.debug("Creating ontology resource with temporal support and IRI: {}", ontologyIRI);
 
