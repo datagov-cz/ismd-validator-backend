@@ -166,9 +166,10 @@ public class SPARQLQueries {
                 ?restriction a owl:Restriction ;
                              owl:allValuesFrom ?domain .
                 FILTER(isIRI(?domain))
+                # Kept inside the domain block: with ?domain unbound this pattern would
+                # match every labelled resource in the endpoint.
+                OPTIONAL { ?domain skos:prefLabel ?domainLabel }
             }
-           \s
-            OPTIONAL { ?domain skos:prefLabel ?domainLabel }
         }
         ORDER BY ?property
        \s""";

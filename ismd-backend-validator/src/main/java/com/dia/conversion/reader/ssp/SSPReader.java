@@ -133,6 +133,7 @@ public class SSPReader {
         log.debug("Reading vocabulary metadata for: {}", ontologyIRI);
 
         VocabularyMetadata metadata = new VocabularyMetadata();
+        metadata.setIdentifier(ontologyIRI);
         
         String queryString = String.format("""
             PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -591,7 +592,7 @@ public class SSPReader {
 
         if (domainInfo != null) {
             if (domainInfo.getDomain() != null) {
-                propertyData.setDomain(UtilityMethods.extractNameFromIRI(domainInfo.getDomain()));
+                propertyData.setDomain(domainInfo.getDomain());
                 log.debug("Set property domain: {} -> {}", conceptIRI, domainInfo.getDomain());
             }
             if (domainInfo.getDomainLabel() != null) {
@@ -617,12 +618,12 @@ public class SSPReader {
             log.info("PROCESSING DOMAIN/RANGE: {} -> domainRange.domain={}, domainRange.range={}",
                     conceptIRI, domainRange.getDomain(), domainRange.getRange());
             if (domainRange.getDomain() != null) {
-                String extractedDomain = UtilityMethods.extractNameFromIRI(domainRange.getDomain());
+                String extractedDomain = domainRange.getDomain();
                 relationshipData.setDomain(extractedDomain);
                 log.info("SET DOMAIN: {} -> '{}' (from {})", conceptIRI, extractedDomain, domainRange.getDomain());
             }
             if (domainRange.getRange() != null) {
-                String extractedRange = UtilityMethods.extractNameFromIRI(domainRange.getRange());
+                String extractedRange = domainRange.getRange();
                 relationshipData.setRange(extractedRange);
                 log.info("SET RANGE: {} -> '{}' (from {})", conceptIRI, extractedRange, domainRange.getRange());
             }
