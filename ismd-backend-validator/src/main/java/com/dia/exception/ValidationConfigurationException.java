@@ -1,4 +1,4 @@
-package com.dia.exceptions;
+package com.dia.exception;
 
 public class ValidationConfigurationException extends RuntimeException {
     public ValidationConfigurationException(String message) {

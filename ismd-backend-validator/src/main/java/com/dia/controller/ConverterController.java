@@ -1,13 +1,13 @@
 package com.dia.controller;
 
 import com.dia.controller.data.UrlMultipartFile;
+import com.dia.controller.dto.ApiResponseDto;
 import com.dia.controller.dto.ConversionResponseDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
+import com.dia.enums.ErrorCode;
 import com.dia.enums.FileFormat;
-import com.dia.exceptions.JsonExportException;
-import com.dia.exceptions.SecurityException;
-import com.dia.exceptions.UnsupportedFormatException;
+import com.dia.exception.*;
 import com.dia.service.*;
 import com.dia.utility.UtilityMethods;
 import com.dia.validation.ValidationSeverity;
@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -70,16 +69,15 @@ public class ConverterController {
             description = "Konverze slovníku ze souboru nebo URL do formátu dle OFN a jeho export dle parametrů. Podporuje vstup v Archi xml, EA xmi, Excel xlsx, a SSP. Podporuje vložení pouze jednoho souboru. Podporuje slovníky v url dle OFN. Formát výstupu konverze podporuje json-ld a ttl. Podporuje validaci dle SHACL. Podporuje generaci výpisu z validace."
     )
     @PostMapping("/convert")
-    public ResponseEntity<ConversionResponseDto> convertFile(
+    public ResponseEntity<ApiResponseDto<ConversionResponseDto>> convertFile(
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam(value = "fileUrl", required = false) String fileUrl,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
             @RequestHeader(value = "Accept", required = false) String acceptHeader,
             HttpServletRequest request
-    ) {
-        String requestId = UUID.randomUUID().toString();
-        MDC.put(LOG_REQUEST_ID, requestId);
+    ) throws Exception {
+        String requestId = MDC.get(LOG_REQUEST_ID);
 
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
@@ -93,114 +91,97 @@ public class ConverterController {
                     fileUrl, output, includeDetailedReport);
         }
 
-        try {
-            if (file != null && fileUrl != null) {
-                return ResponseEntity.badRequest()
-                        .body(ConversionResponseDto.error("Můžete zvolit pouze jeden způsob nahrání slovníků."));
-            }
-
-            if (!validateSingleFileUpload(request, requestId)) {
-                return ResponseEntity.badRequest()
-                        .body(ConversionResponseDto.error("Můžete nahrát pouze jeden soubor."));
-            }
-
-            MultipartFile processedFile = file;
-
-            if (fileUrl != null) {
-                processedFile = downloadAsMultipartFile(fileUrl);
-            }
-
-            if (processedFile == null || processedFile.isEmpty()) {
-                log.warn("Empty file upload attempt");
-                return ResponseEntity.badRequest()
-                        .body(ConversionResponseDto.error("Nebyl vložen žádný soubor."));
-            }
-
-            FileFormat fileFormat = checkFileFormat(processedFile);
-            if (fileFormat == UNSUPPORTED) {
-                log.warn("Unsupported file type upload attempt");
-                return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                        .body(ConversionResponseDto.error("Nepodporovaný formát souboru."));
-            }
-
-            log.info("File format determined: requestId={}, format={}", requestId, fileFormat);
-
-            return switch (fileFormat) {
-                case ARCHI_XML -> {
-                    log.debug("Processing Archi XML file: requestId={}", requestId);
-                    String xmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
-                    ConversionResult conversionResult = converterService.processArchiFile(xmlContent);
-
-                    ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
-                    ValidationResultsDto results = convertReportToDto(report);
-                    DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                            generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
-
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport
-                    );
-                    log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
-                            requestId, fileFormat, output, results, includeDetailedReport);
-                    yield response;
-                }
-                case XMI -> {
-                    log.debug("Processing XMI file: requestId={}", requestId);
-                    ConversionResult conversionResult = converterService.processEAFile(file);
-
-                    ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
-                    ValidationResultsDto results = convertReportToDto(report);
-                    DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                            generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
-
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport
-                    );
-                    log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
-                            requestId, fileFormat, output, results, includeDetailedReport);
-                    yield response;
-                }
-                case XLSX -> {
-                    log.debug("Processing XLSX file: requestId={}", requestId);
-                    ConversionResult conversionResult = converterService.processExcelFile(file);
-
-                    ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
-                    ValidationResultsDto results = convertReportToDto(report);
-                    DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                            generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
-
-                    ResponseEntity<ConversionResponseDto> response = getResponseEntity(
-                            outputFormat, fileFormat, conversionResult, results, detailedReport
-                    );
-                    log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
-                            requestId, fileFormat, output, results, includeDetailedReport);
-                    yield response;
-                }
-                case TURTLE -> {
-                    log.debug("Processing TTL file: requestId={}", requestId);
-
-                    ISMDValidationReport report = validationService.validateTtlFile(processedFile);
-                    ValidationResultsDto results = convertReportToDto(report);
-                    DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                            generateDetailedValidationReportFromTtl(report, processedFile, requestId) : null;
-
-                    yield ResponseEntity.ok()
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(ConversionResponseDto.success(null, results, detailedReport));
-                }
-                default -> ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(ConversionResponseDto.error("Nepodporovaný formát souboru."));
-            };
-        } catch (UnsupportedFormatException e) {
-            log.error("Unsupported format exception: requestId={}, message={}", requestId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                    .body(ConversionResponseDto.error(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Error processing file conversion: requestId={}", requestId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ConversionResponseDto.error(e.getMessage()));
-        } finally {
-            MDC.remove(LOG_REQUEST_ID);
+        if (file != null && fileUrl != null) {
+            throw new UploadRequestException(ErrorCode.UPLOAD_SOURCE_AMBIGUOUS);
         }
+
+        if (!validateSingleFileUpload(request, requestId)) {
+            throw new UploadRequestException(ErrorCode.UPLOAD_MULTIPLE_FILES);
+        }
+
+        MultipartFile processedFile = file;
+
+        if (fileUrl != null) {
+            processedFile = downloadAsMultipartFile(fileUrl);
+        }
+
+        if (processedFile == null || processedFile.isEmpty()) {
+            log.warn("Empty file upload attempt");
+            throw new UploadRequestException(ErrorCode.UPLOAD_FILE_MISSING);
+        }
+
+        FileFormat fileFormat = checkFileFormat(processedFile);
+        if (fileFormat == UNSUPPORTED) {
+            log.warn("Unsupported file type upload attempt");
+            throw new UnsupportedFormatException(ErrorCode.UNSUPPORTED_FORMAT.getDefaultMessage());
+        }
+
+        log.info("File format determined: requestId={}, format={}", requestId, fileFormat);
+
+        return switch (fileFormat) {
+            case ARCHI_XML -> {
+                log.debug("Processing Archi XML file: requestId={}", requestId);
+                String xmlContent = new String(processedFile.getBytes(), StandardCharsets.UTF_8);
+                ConversionResult conversionResult = converterService.processArchiFile(xmlContent);
+
+                ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
+                ValidationResultsDto results = convertReportToDto(report);
+                DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
+                        generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
+
+                ResponseEntity<ApiResponseDto<ConversionResponseDto>> response = getResponseEntity(
+                        outputFormat, fileFormat, conversionResult, results, detailedReport
+                );
+                log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
+                        requestId, fileFormat, output, results, includeDetailedReport);
+                yield response;
+            }
+            case XMI -> {
+                log.debug("Processing XMI file: requestId={}", requestId);
+                ConversionResult conversionResult = converterService.processEAFile(processedFile);
+
+                ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
+                ValidationResultsDto results = convertReportToDto(report);
+                DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
+                        generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
+
+                ResponseEntity<ApiResponseDto<ConversionResponseDto>> response = getResponseEntity(
+                        outputFormat, fileFormat, conversionResult, results, detailedReport
+                );
+                log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
+                        requestId, fileFormat, output, results, includeDetailedReport);
+                yield response;
+            }
+            case XLSX -> {
+                log.debug("Processing XLSX file: requestId={}", requestId);
+                ConversionResult conversionResult = converterService.processExcelFile(processedFile);
+
+                ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
+                ValidationResultsDto results = convertReportToDto(report);
+                DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
+                        generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
+
+                ResponseEntity<ApiResponseDto<ConversionResponseDto>> response = getResponseEntity(
+                        outputFormat, fileFormat, conversionResult, results, detailedReport
+                );
+                log.info("File successfully converted: requestId={}, inputFormat={}, outputFormat={}, validationResults={}, detailedReportIncluded={}",
+                        requestId, fileFormat, output, results, includeDetailedReport);
+                yield response;
+            }
+            case TURTLE -> {
+                log.debug("Processing TTL file: requestId={}", requestId);
+
+                ISMDValidationReport report = validationService.validateTtlFile(processedFile);
+                ValidationResultsDto results = convertReportToDto(report);
+                DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
+                        generateDetailedValidationReportFromTtl(report, processedFile, requestId) : null;
+
+                yield ResponseEntity.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(ApiResponseDto.success(ConversionResponseDto.success(null, results, detailedReport), null));
+            }
+            default -> throw new UnsupportedFormatException(ErrorCode.UNSUPPORTED_FORMAT.getDefaultMessage());
+        };
     }
 
     @Operation(
@@ -208,46 +189,31 @@ public class ConverterController {
             description = "Konverze slovníku vyhledaného přes SPARQL do formátu dle OFN a jeho export dle parametrů. Podporuje vyhedávání dle IRI. Formát výstupu konverze podporuje json-ld a ttl. Podporuje validaci dle SHACL. Podporuje generaci výpisu z validace."
     )
     @PostMapping("/ssp/convert")
-    public ResponseEntity<ConversionResponseDto> convertSSPFromIRI(
+    public ResponseEntity<ApiResponseDto<ConversionResponseDto>> convertSSPFromIRI(
             @RequestParam(value = "iri") String iri,
             @RequestParam(value = "output", required = false) String output,
             @RequestParam(value = "includeDetailedReport", required = false, defaultValue = "true") Boolean includeDetailedReport,
             @RequestHeader(value = "Accept", required = false) String acceptHeader
-    ) {
-        String requestId = UUID.randomUUID().toString();
-        MDC.put(LOG_REQUEST_ID, requestId);
+    ) throws Exception {
+        String requestId = MDC.get(LOG_REQUEST_ID);
 
         String outputFormat = determineOutputFormat(output, acceptHeader);
 
-        try {
-            if (iri.isEmpty()) {
-                log.warn("Empty IRI conversion attempt");
-                return ResponseEntity.badRequest().body(
-                        ConversionResponseDto.error("Nebylo vloženo IRI slovníku určeného k převodu.")
-                );
-            }
-            ConversionResult conversionResult = converterService.processSSPOntology(iri);
-
-            ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
-            ValidationResultsDto results = convertReportToDto(report);
-            DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
-                    generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
-
-            ResponseEntity<ConversionResponseDto> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport);
-            log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
-                    requestId, SSP, output);
-            return response;
-        } catch (UnsupportedFormatException e) {
-            log.error("Unsupported format exception: requestId={}, message={}", requestId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                    .body(ConversionResponseDto.error(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Error processing SSP ontology conversion: requestId={}", requestId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ConversionResponseDto.error(e.getMessage()));
-        } finally {
-            MDC.remove(LOG_REQUEST_ID);
+        if (iri.isEmpty()) {
+            log.warn("Empty IRI conversion attempt");
+            throw new IllegalArgumentException("Nebylo vloženo IRI slovníku určeného k převodu.");
         }
+        ConversionResult conversionResult = converterService.processSSPOntology(iri);
+
+        ISMDValidationReport report = validationService.validate(conversionResult.getTransformationResult());
+        ValidationResultsDto results = convertReportToDto(report);
+        DetailedValidationReportDto detailedReport = Boolean.TRUE.equals(includeDetailedReport) ?
+                generateDetailedValidationReport(report, conversionResult.getTransformationResult().getOntModel(), requestId) : null;
+
+        ResponseEntity<ApiResponseDto<ConversionResponseDto>> response = getResponseEntity(outputFormat, SSP, conversionResult, results, detailedReport);
+        log.info("SSP ontology successfully converted: requestId={}, inputFormat={}, outputFormat={}",
+                requestId, SSP, output);
+        return response;
     }
 
     @Operation(
@@ -259,50 +225,40 @@ public class ConverterController {
             @RequestPart (value = "detailedReport") DetailedValidationReportDto detailedReport,
             @RequestParam(value = "filename", required = false, defaultValue = "validation-report") String filename
     ) {
-        String requestId = UUID.randomUUID().toString();
-        MDC.put(LOG_REQUEST_ID, requestId);
+        String requestId = MDC.get(LOG_REQUEST_ID);
 
         log.info("CSV download requested from existing conversion response, filename={}", filename);
 
-        try {
-            if (detailedReport == null) {
-                log.warn("No detailed validation report found in conversion response: requestId={}", requestId);
-                return ResponseEntity.badRequest()
-                        .body("No detailed validation report available. Please ensure the conversion was performed with includeDetailedReport=true.".getBytes(StandardCharsets.UTF_8));
-            }
-            String csvContent = detailedValidationReportService.generateCSV(detailedReport);
-
-            byte[] csvBytes = csvContent.getBytes(StandardCharsets.UTF_8);
-
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-            String finalFilename = filename + "_" + timestamp + ".csv";
-
-            HttpHeaders headers = new HttpHeaders();
-
-            headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
-            headers.setContentDispositionFormData("attachment", finalFilename);
-            headers.setContentLength(csvBytes.length);
-
-            headers.add("Content-Transfer-Encoding", "binary");
-            headers.add("Accept-Ranges", "bytes");
-
-            headers.setCacheControl("no-cache, no-store, must-revalidate");
-            headers.setPragma("no-cache");
-            headers.setExpires(0);
-
-            log.info("CSV report generated successfully: requestId={}, filename={}, size={} bytes",
-                    requestId, finalFilename, csvBytes.length);
-
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(csvBytes);
-        } catch (Exception e) {
-            log.error("Error generating CSV from conversion response: requestId={}", requestId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(("Failed to generate CSV report: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
-        } finally {
-            MDC.remove(LOG_REQUEST_ID);
+        if (detailedReport == null) {
+            log.warn("No detailed validation report found in conversion response: requestId={}", requestId);
+            throw new IllegalArgumentException("Validační zpráva chybí. Převod je nutné spustit s includeDetailedReport=true.");
         }
+        String csvContent = detailedValidationReportService.generateCSV(detailedReport);
+
+        byte[] csvBytes = csvContent.getBytes(StandardCharsets.UTF_8);
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+        String finalFilename = filename + "_" + timestamp + ".csv";
+
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
+        headers.setContentDispositionFormData("attachment", finalFilename);
+        headers.setContentLength(csvBytes.length);
+
+        headers.add("Content-Transfer-Encoding", "binary");
+        headers.add("Accept-Ranges", "bytes");
+
+        headers.setCacheControl("no-cache, no-store, must-revalidate");
+        headers.setPragma("no-cache");
+        headers.setExpires(0);
+
+        log.info("CSV report generated successfully: requestId={}, filename={}, size={} bytes",
+                requestId, finalFilename, csvBytes.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(csvBytes);
     }
 
     private boolean validateSingleFileUpload(HttpServletRequest request, String requestId) {
@@ -402,7 +358,7 @@ public class ConverterController {
         return UNSUPPORTED;
     }
 
-    private ResponseEntity<ConversionResponseDto> getResponseEntity(
+    private ResponseEntity<ApiResponseDto<ConversionResponseDto>> getResponseEntity(
             String outputFormat, FileFormat fileFormat, ConversionResult conversionResult,
             ValidationResultsDto results, DetailedValidationReportDto detailedReport) throws JsonExportException {
         String requestId = MDC.get(LOG_REQUEST_ID);
@@ -413,7 +369,8 @@ public class ConverterController {
             log.debug("Including ontology data due to validation violations: requestId={}", requestId);
             ontologyData = converterService.exportToTurtle(fileFormat, conversionResult.getTransformationResult());
         } else if (results.getSeverityGroups().stream().anyMatch(r -> r.getSeverity().equalsIgnoreCase(ValidationSeverity.ERROR.getDisplayName()))) {
-            return ResponseEntity.badRequest().body(ConversionResponseDto.error("Validační zpráva obsahuje chyby"));
+            throw new ValidationReportHasErrorsException(
+                    ConversionResponseDto.success(null, results, detailedReport));
         }
 
         return switch (outputFormat.toLowerCase()) {
@@ -423,13 +380,12 @@ public class ConverterController {
                 log.debug("JSON export completed: requestId={}, outputSize={}", requestId, jsonOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.builder()
+                        .body(ApiResponseDto.success(ConversionResponseDto.builder()
                                 .output(jsonOutput)
                                 .validationResults(results)
                                 .validationReport(detailedReport)
-
                                 .ontologyData(ontologyData)
-                                .build());
+                                .build(), null));
             }
             case "ttl" -> {
                 log.debug("Exporting to Turtle: requestId={}", requestId);
@@ -437,13 +393,12 @@ public class ConverterController {
                 log.debug("Turtle export completed: requestId={}, outputSize={}", requestId, ttlOutput.length());
                 yield ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(ConversionResponseDto.builder()
+                        .body(ApiResponseDto.success(ConversionResponseDto.builder()
                                 .output(ttlOutput)
                                 .validationResults(results)
                                 .validationReport(detailedReport)
-
                                 .ontologyData(ontologyData)
-                                .build());
+                                .build(), null));
             }
             default -> {
                 log.warn("Unsupported output format requested: requestId={}, format={}", requestId, outputFormat);
@@ -538,13 +493,13 @@ public class ConverterController {
                 HttpResponse.BodyHandlers.ofByteArray());
 
         if (response.statusCode() != 200) {
-            throw new SecurityException("Chyba při stahování souboru z URL. HTTP " + response.statusCode());
+            throw new UrlDownloadException("Chyba při stahování souboru z URL. HTTP " + response.statusCode());
         }
 
         byte[] fileContent = response.body();
 
         if (fileContent.length == 0) {
-            throw new SecurityException("Stažený soubor je prázdný.");
+            throw new UrlDownloadException("Stažený soubor je prázdný.");
         }
 
         String filename = UtilityMethods.extractFilenameFromUrl(url);
@@ -554,18 +509,18 @@ public class ConverterController {
         return new UrlMultipartFile(fileContent, filename, UtilityMethods.extractContentType(response, filename));
     }
 
-    private void performSecurityChecks(URL url) throws SecurityException, UnknownHostException {
+    private void performSecurityChecks(URL url) throws UnknownHostException {
         InetAddress address = InetAddress.getByName(url.getHost());
         String hostAddress = address.getHostAddress();
 
         if (PRIVATE_IP_PATTERN.matcher(hostAddress).find()) {
-            throw new SecurityException("Přístup k privátním IP adresám není povolen.");
+            throw new UrlDownloadException("Přístup k privátním IP adresám není povolen.");
         }
 
         if ("localhost".equalsIgnoreCase(url.getHost()) ||
                 "127.0.0.1".equals(url.getHost()) ||
                 "0.0.0.0".equals(url.getHost())) {
-            throw new SecurityException("Přístup k localhost není povolen.");
+            throw new UrlDownloadException("Přístup k localhost není povolen.");
         }
 
         int port = url.getPort() == -1 ? url.getDefaultPort() : url.getPort();

@@ -1,4 +1,4 @@
-package com.dia.controller.exception;
+package com.dia.exception;
 
 public class EmptyContentException extends RuntimeException {
     public EmptyContentException(String message) {

@@ -1,6 +1,6 @@
 package com.dia.exporter;
 
-import com.dia.exceptions.TurtleExportException;
+import com.dia.exception.TurtleExportException;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;

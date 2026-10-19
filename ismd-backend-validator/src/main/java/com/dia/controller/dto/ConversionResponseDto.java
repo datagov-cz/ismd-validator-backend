@@ -3,13 +3,13 @@ package com.dia.controller.dto;
 import com.dia.validation.data.DetailedValidationReportDto;
 import lombok.*;
 
+/** Conversion result, returned as the {@code data} of an {@link ApiResponseDto}. */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ConversionResponseDto {
     private String output;
-    private String errorMessage;
     private ValidationResultsDto validationResults;
     private DetailedValidationReportDto validationReport;
     private String ontologyData;
@@ -19,12 +19,6 @@ public class ConversionResponseDto {
                 .output(output)
                 .validationResults(results)
                 .validationReport(validationReport)
-                .build();
-    }
-
-    public static ConversionResponseDto error(String errorMessage) {
-        return ConversionResponseDto.builder()
-                .errorMessage(errorMessage)
                 .build();
     }
 }

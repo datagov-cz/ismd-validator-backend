@@ -1,8 +1,8 @@
 package com.dia.conversion.reader.archi;
 
 import com.dia.conversion.data.*;
-import com.dia.exceptions.ConversionException;
-import com.dia.exceptions.FileParsingException;
+import com.dia.exception.ConversionException;
+import com.dia.exception.FileParsingException;
 import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

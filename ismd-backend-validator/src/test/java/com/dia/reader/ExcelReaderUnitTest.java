@@ -2,7 +2,7 @@ package com.dia.reader;
 
 import com.dia.conversion.data.OntologyData;
 import com.dia.conversion.reader.excel.ExcelReader;
-import com.dia.exceptions.ExcelReadingException;
+import com.dia.exception.ExcelReadingException;
 import com.dia.utility.UtilityMethods;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

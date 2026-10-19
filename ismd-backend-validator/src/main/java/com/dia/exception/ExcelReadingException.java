@@ -1,4 +1,4 @@
-package com.dia.exceptions;
+package com.dia.exception;
 
 public class ExcelReadingException extends Exception {
     public ExcelReadingException(String message, Throwable cause) {

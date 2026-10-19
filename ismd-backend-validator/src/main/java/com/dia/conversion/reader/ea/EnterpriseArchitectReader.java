@@ -1,7 +1,7 @@
 package com.dia.conversion.reader.ea;
 
 import com.dia.conversion.data.*;
-import com.dia.exceptions.FileParsingException;
+import com.dia.exception.FileParsingException;
 import com.dia.utility.UtilityMethods;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

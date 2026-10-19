@@ -1,9 +1,9 @@
 package com.dia.conversion.transformer;
 
 import com.dia.conversion.data.*;
-import com.dia.exceptions.ConversionException;
-import com.dia.exceptions.JsonExportException;
-import com.dia.exceptions.TurtleExportException;
+import com.dia.exception.ConversionException;
+import com.dia.exception.JsonExportException;
+import com.dia.exception.TurtleExportException;
 import com.dia.exporter.JsonExporter;
 import com.dia.exporter.TurtleExporter;
 import com.dia.models.OFNBaseModel;

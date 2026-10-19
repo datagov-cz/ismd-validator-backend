@@ -1,4 +1,4 @@
-package com.dia.controller.exception;
+package com.dia.exception;
 
 public class InvalidFileException extends RuntimeException {
     public InvalidFileException(String message) {
