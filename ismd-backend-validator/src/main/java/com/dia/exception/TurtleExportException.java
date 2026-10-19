@@ -1,4 +1,4 @@
-package com.dia.exceptions;
+package com.dia.exception;
 
 public class TurtleExportException extends RuntimeException {
     public TurtleExportException(String message) {

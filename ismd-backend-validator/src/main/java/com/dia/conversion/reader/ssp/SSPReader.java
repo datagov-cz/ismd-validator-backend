@@ -5,7 +5,7 @@ import com.dia.conversion.reader.ssp.config.SPARQLConfiguration;
 import com.dia.conversion.reader.ssp.data.ConceptData;
 import com.dia.conversion.reader.ssp.data.DomainRangeInfo;
 import com.dia.conversion.reader.ssp.data.PropertyDomainInfo;
-import com.dia.exceptions.ConversionException;
+import com.dia.exception.ConversionException;
 import com.dia.utility.UtilityMethods;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;

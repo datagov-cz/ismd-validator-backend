@@ -1,6 +1,6 @@
 package com.dia.exporter;
 
-import com.dia.exceptions.TurtleExportException;
+import com.dia.exception.TurtleExportException;
 import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

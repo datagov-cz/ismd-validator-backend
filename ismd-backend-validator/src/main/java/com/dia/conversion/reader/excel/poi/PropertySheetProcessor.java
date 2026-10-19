@@ -4,7 +4,7 @@ import com.dia.conversion.data.PropertyData;
 import com.dia.conversion.reader.excel.mapper.ColumnMapping;
 import com.dia.conversion.reader.excel.mapper.ColumnMappingRegistry;
 import com.dia.conversion.reader.excel.mapper.PropertySetter;
-import com.dia.exceptions.ExcelReadingException;
+import com.dia.exception.ExcelReadingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;

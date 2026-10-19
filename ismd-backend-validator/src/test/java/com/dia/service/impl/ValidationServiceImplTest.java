@@ -1,9 +1,9 @@
 package com.dia.service.impl;
 
-import com.dia.controller.exception.EmptyContentException;
-import com.dia.controller.exception.InvalidFileException;
-import com.dia.controller.exception.InvalidFormatException;
-import com.dia.controller.exception.ValidationException;
+import com.dia.exception.EmptyContentException;
+import com.dia.exception.InvalidFileException;
+import com.dia.exception.InvalidFormatException;
+import com.dia.exception.ValidationException;
 import com.dia.conversion.data.TransformationResult;
 import com.dia.service.record.ValidationConfigurationSummary;
 import com.dia.validation.config.RuleManager;

@@ -1,4 +1,4 @@
-package com.dia.exceptions;
+package com.dia.exception;
 
 public class FileParsingException extends Exception {
     public FileParsingException(String message) {
