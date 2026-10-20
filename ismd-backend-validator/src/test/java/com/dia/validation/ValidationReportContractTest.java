@@ -1,5 +1,7 @@
 package com.dia.validation;
 
+import com.dia.controller.dto.ApiResponseDto;
+import com.dia.enums.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.Customization;
@@ -16,9 +18,9 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Pins the JSON body of {@code /validate} — the API contract with the tool backend, which keeps its own
- * copy of {@code contract/validation-report.json}. If this test fails, the response shape changed:
- * update the fixture here AND the tool backend's copy (and its DTOs) in the same release.
+ * Pins the JSON bodies of {@code /validate} (success and error) — the API contract with the tool
+ * backend, which keeps its own copies of {@code contract/*.json}. If this test fails, the response
+ * shape changed: update the fixtures here AND the tool backend's copies (and its DTOs) together.
  */
 @JsonTest
 class ValidationReportContractTest {
@@ -44,8 +46,22 @@ class ValidationReportContractTest {
                 new Customization("id", (expected, value) -> value instanceof Number)));
     }
 
+    /** Every 4xx/5xx body; the tool reads {@code message} (and {@code errorCode}) from it. */
+    @Test
+    void errorResponseMatchesContractFixture() throws Exception {
+        ApiResponseDto<Void> error = ApiResponseDto.error(ErrorCode.UNSUPPORTED_FORMAT,
+                "Nepodporovaný typ souboru: slovnik.txt");
+
+        JSONAssert.assertEquals(fixture("error-response.json"), objectMapper.writeValueAsString(error),
+                JSONCompareMode.STRICT);
+    }
+
     private static String fixture() throws IOException {
-        try (InputStream in = ValidationReportContractTest.class.getResourceAsStream("/contract/validation-report.json")) {
+        return fixture("validation-report.json");
+    }
+
+    private static String fixture(String name) throws IOException {
+        try (InputStream in = ValidationReportContractTest.class.getResourceAsStream("/contract/" + name)) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
