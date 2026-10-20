@@ -4,8 +4,7 @@
 # Use with the base file to build from local source instead of pulling:
 #   docker compose -f docker-compose.yml -f docker-compose.build.yml up --build
 #
-# Requires GITHUB_TOKEN + GITHUB_ACTOR for Maven access to GitHub Packages
-# (only needed when USE_LOCAL_COMMON=false, kept for parity with prod build).
+# No credentials needed: the build pulls only public Maven Central dependencies.
 # ==============================================
 
 services:
@@ -18,7 +17,3 @@ services:
       # to the path of this repo (e.g. ../ismd-validator-backend).
       context: ${VALIDATOR_BACKEND_PATH:-.}
       dockerfile: ismd-backend-validator/Dockerfile
-      args:
-        GITHUB_TOKEN: ${GITHUB_TOKEN:-}
-        GITHUB_ACTOR: ${GITHUB_ACTOR:-}
-        USE_LOCAL_COMMON: "true"

@@ -22,50 +22,12 @@ on:
         default: "0.00"
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
 jobs:
-  check-common-lib-changes:
-    name: Check for Common Library Changes
-    runs-on: ubuntu-latest
-    outputs:
-      needs_release: ${{ steps.check.outputs.needs_release }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 2
-      
-      - name: Check if common library changed
-        id: check
-        run: |
-          # Check if common lib source files changed (exclude pom.xml version changes)
-          if git diff --name-only HEAD^ HEAD | grep "^ismd-validator-common/" | grep -v "pom.xml" | grep -q .; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "needs_release=true" >> $GITHUB_OUTPUT
-            echo "📦 Common library source files changed - will release new version"
-          elif git log -1 --pretty=%B | grep -q "Update validator to use common library"; then
-            # This is the auto-commit from release workflow, skip
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "needs_release=false" >> $GITHUB_OUTPUT
-            echo "⏭️  Skipping: This is a version update commit from release workflow"
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "needs_release=false" >> $GITHUB_OUTPUT
-            echo "ℹ️  No common library source changes"
-          fi
-
-  release-common-lib:
-    name: Auto-Release Common Library
-    needs: check-common-lib-changes
-    if: needs.check-common-lib-changes.outputs.needs_release == 'true'
-    uses: ./.github/workflows/release-common-library.yml
-    secrets: inherit
-
   test:
     name: Run Tests
-    needs: [check-common-lib-changes, release-common-lib]
-    if: always() && !cancelled() && !failure()
     uses: ./.github/workflows/reusable-test.yml
     with:
       enforce_coverage: ${{ github.event_name == 'workflow_dispatch' && inputs.enforce_coverage || false }}

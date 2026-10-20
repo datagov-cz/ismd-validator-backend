@@ -22,10 +22,6 @@
         <revision>1.0.0</revision>
         <jacoco.version>0.8.13</jacoco.version>
         <jacoco.line.minimum>0.00</jacoco.line.minimum>
-        <!-- Common library version - update explicitly when upgrading -->
-        <ismd-validator-common.version>1.0.21</ismd-validator-common.version>
-        <!-- GitHub repository for common library packages -->
-        <github.repository>datagov-cz/ismd-validator-backend</github.repository>
     </properties>
 
     <dependencies>
@@ -107,12 +103,6 @@
             <version>1.8</version>
         </dependency>
         <dependency>
-            <groupId>com.dia</groupId>
-            <artifactId>ismd-validator-common</artifactId>
-            <version>${ismd-validator-common.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
@@ -128,17 +118,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <repositories>
-        <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/${github.repository}</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 
     <build>
         <plugins>
