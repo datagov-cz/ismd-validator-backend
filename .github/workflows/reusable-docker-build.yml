@@ -95,15 +95,6 @@ jobs:
           echo "  - $IMAGE_TAG"
           echo "  - $LATEST_TAG"
           
-          # Determine if we should use local common library or GitHub Packages
-          if [ "${{ inputs.branch }}" = "main" ]; then
-            USE_LOCAL_COMMON="false"
-            echo "Production build: Will download common library from GitHub Packages"
-          else
-            USE_LOCAL_COMMON="true"
-            echo "Dev build: Will use local common library"
-          fi
-          
           # Build and push the image using Dockerfile in ismd-backend-validator with repo root as build context
           # Pass version to Maven via -Drevision build arg
           docker build \
@@ -112,10 +103,6 @@ jobs:
             --build-arg REVISION="${{ steps.version.outputs.version }}" \
             --build-arg MODULE_VERSION="${{ steps.version.outputs.version }}" \
             --build-arg GIT_COMMIT="${{ steps.version.outputs.git_sha }}" \
-            --build-arg USE_LOCAL_COMMON="$USE_LOCAL_COMMON" \
-            --build-arg GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
-            --build-arg GITHUB_ACTOR="${{ github.actor }}" \
-            --build-arg GITHUB_REPOSITORY="${{ github.repository }}" \
             -t $IMAGE_TAG \
             -t $LATEST_TAG \
             .
