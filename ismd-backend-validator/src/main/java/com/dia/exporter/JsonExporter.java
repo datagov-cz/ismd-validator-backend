@@ -11,6 +11,7 @@ import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
+import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
@@ -487,7 +488,8 @@ public class JsonExporter {
         JSONObject docObj = new JSONObject();
 
         addDigitalObjectType(digitalDoc, docObj);
-        addDocumentTitle(digitalDoc, docObj);
+        addDocumentText(digitalDoc, DCTerms.title, ExportConstants.Json.NAZEV, docObj);
+        addDocumentText(digitalDoc, DCTerms.description, ExportConstants.Json.POPIS, docObj);
         addDocumentUrl(digitalDoc, docObj);
 
         return docObj;
@@ -500,24 +502,22 @@ public class JsonExporter {
         }
     }
 
-    private void addDocumentTitle(Resource digitalDoc, JSONObject docObj) {
-        Property nazevProperty = ontModel.createProperty("http://purl.org/dc/terms/title");
-        Statement nazevStmt = digitalDoc.getProperty(nazevProperty);
-
-        if (nazevStmt == null || !nazevStmt.getObject().isLiteral()) {
-            return;
-        }
-
-        String nazevValue = nazevStmt.getString();
-        if (nazevValue != null && !nazevValue.trim().isEmpty()) {
-            JSONObject langMap = new JSONObject();
-            String lang = nazevStmt.getLanguage();
-            if (lang != null && !lang.isEmpty()) {
-                langMap.put(lang, nazevValue);
-            } else {
-                langMap.put("cs", nazevValue);
+    /**
+     * Writes a digital object's title (název) or description (popis) as a language map;
+     * values without a language tag are taken as Czech. A document without a URL is
+     * described by these alone (see the OFN slovníky tezaurus example).
+     */
+    private void addDocumentText(Resource digitalDoc, Property property, String jsonKey, JSONObject docObj) {
+        JSONObject langMap = new JSONObject();
+        digitalDoc.listProperties(property).forEach(stmt -> {
+            if (!stmt.getObject().isLiteral() || stmt.getString().isBlank()) {
+                return;
             }
-            docObj.put(ExportConstants.Json.NAZEV, langMap);
+            String lang = stmt.getLanguage();
+            langMap.put(lang == null || lang.isEmpty() ? "cs" : lang, stmt.getString());
+        });
+        if (langMap.length() > 0) {
+            docObj.put(jsonKey, langMap);
         }
     }
 

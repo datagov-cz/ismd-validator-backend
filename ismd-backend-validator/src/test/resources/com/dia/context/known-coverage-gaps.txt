@@ -2,20 +2,28 @@
 # JsonLdContextConformanceTest fails if a term is missing from both the outputs and this list,
 # and also if a term listed here becomes covered — so remove lines as support lands.
 
-# Vocabulary dates: readers and the conversion-time fallback always give a full timestamp
-# (datum_a_čas); no input format provides a date-only or "unspecified" instant
+# ---- Not applicable (by design) --------------------------------------------------------------
+
+# Every converted concept is a Třída, Vlastnost or Vztah, whose hierarchy is exported as
+# nadřazená-třída / nadřazená-vlastnost / nadřazený-vztah. Like the official OFN
+# konceptuální-model example, skos:broader (nadřazený-pojem) is not added on top of that.
+pojmy/nadřazený-pojem
+
+# ---- No input field: exporter supports it, no reader can supply the value -------------------
+
+# Readers and the conversion-time fallback always give a full timestamp (datum_a_čas);
+# no input format provides a date-only or "unspecified" instant.
 vytvořeno/Časový okamžik/je_nespecifikovaný
 vytvořeno/Časový okamžik/datum
 aktualizováno/Časový okamžik/je_nespecifikovaný
 aktualizováno/Časový okamžik/datum
 
-# skos:broader is never exported
-pojmy/nadřazený-pojem
-
-# Exported, but no fixture has the data
-pojmy/nadřazený-vztah
-pojmy/definující-nelegislativní-zdroj/Digitální objekt/url
-
-# Digitální objekt description is never exported
+# Source cells become either url or název; templates have no description column/tag.
+# Export is covered by DigitalObjectDescriptionExportTest.
 pojmy/definující-nelegislativní-zdroj/Digitální objekt/popis
 pojmy/související-nelegislativní-zdroj/Digitální objekt/popis
+
+# ---- Missing fixture data: supported end to end, no fixture has the value --------------------
+
+pojmy/nadřazený-vztah
+pojmy/definující-nelegislativní-zdroj/Digitální objekt/url
