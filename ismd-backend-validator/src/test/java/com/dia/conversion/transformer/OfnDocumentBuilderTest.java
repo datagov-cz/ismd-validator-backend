@@ -116,6 +116,20 @@ class OfnDocumentBuilderTest {
     }
 
     @Test
+    void propertyAgendaAndAis_areExported() {
+        cls("Doména");
+        PropertyData a = prop("a", "Doména", null);
+        a.setAgendaCode("998");
+        a.setAgendaSystemCode("https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/1234/");
+
+        JsonNode concept = concept(build(), "a");
+
+        assertThat(concept.get("agenda").asText()).isEqualTo("https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A998");
+        assertThat(concept.get("agendový-informační-systém").asText())
+                .isEqualTo("https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/1234");
+    }
+
+    @Test
     void governanceValues_becomeCodelistCuries_unknownValuesAreReported() {
         ClassData a = cls("A");
         a.setAcquisitionMethod("vlastní");

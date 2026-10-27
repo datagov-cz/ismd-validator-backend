@@ -91,6 +91,7 @@ public class EnterpriseArchitectReader {
         hierarchies.addAll(extractHierarchiesFromProperties(properties, index, generalizations));
 
         inferSubPropertyDomains(properties, hierarchies);
+        warnUnknownTags(document);
 
         log.info("Parsed {} classes, {} properties, {} relationships, {} hierarchies",
                 classes.size(), properties.size(), relationships.size(), hierarchies.size());
@@ -845,6 +846,36 @@ public class EnterpriseArchitectReader {
 
         log.debug("Boolean field '{}': raw='{}' -> converted='{}'", logicalAttributeName, value, value);
         return value;
+    }
+
+    /**
+     * Warns about tagged values whose name matches no known template attribute: their values are
+     * not converted. One warning per tag name, with the number of values found.
+     */
+    private void warnUnknownTags(Document document) {
+        Map<String, Integer> unknown = new TreeMap<>();
+        NodeList tags = document.getElementsByTagName("tag");
+        for (int i = 0; i < tags.getLength(); i++) {
+            Element tag = (Element) tags.item(i);
+            String name = tag.getAttribute("name").trim();
+            if (name.isEmpty() || tag.getAttribute("value").trim().isEmpty() || isKnownTag(name)) {
+                continue;
+            }
+            unknown.merge(name, 1, Integer::sum);
+        }
+        unknown.forEach((name, count) -> log.warn(
+                "EA tag '{}' is not a known template attribute; its {} value(s) are ignored", name, count));
+    }
+
+    private static boolean isKnownTag(String tagName) {
+        for (Pattern[] patterns : ATTRIBUTE_PATTERNS.values()) {
+            for (Pattern pattern : patterns) {
+                if (pattern.matcher(tagName).matches()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private List<String> getAllTagNames(Element element) {

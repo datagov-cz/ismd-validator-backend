@@ -1,5 +1,6 @@
 package com.dia.conversion.reader.archi;
 
+import org.w3c.dom.Node;
 import com.dia.conversion.data.*;
 import com.dia.exception.ConversionException;
 import com.dia.exception.FileParsingException;
@@ -34,6 +35,10 @@ import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 public class ArchiReader {
 
     private final Map<String, String> propertyMapping = new HashMap<>();
+    /** Property definitions that map to no known template property: id → name. */
+    private final Map<String, String> unknownPropertyDefinitions = new HashMap<>();
+    /** Values found for unknown properties, by property name (distinct property nodes). */
+    private final Map<String, Set<Node>> unknownPropertyValues = new LinkedHashMap<>();
 
     private Document archiDoc;
     private String modelName;
@@ -110,6 +115,7 @@ public class ArchiReader {
         List<HierarchyData> hierarchies = extractHierarchies();
 
         inferSubPropertyDomains(properties, hierarchies);
+        warnUnknownPropertyValues();
 
         log.info("Extracted {} classes, {} properties, {} relationships",
                 classes.size(), properties.size(), relationships.size());
@@ -576,6 +582,8 @@ public class ArchiReader {
 
     private void buildPropertyMapping() {
         propertyMapping.clear();
+        unknownPropertyDefinitions.clear();
+        unknownPropertyValues.clear();
         NodeList propertyDefs = archiDoc.getElementsByTagNameNS(ARCHI_NS, "propertyDefinition");
 
         for (int i = 0; i < propertyDefs.getLength(); i++) {
@@ -625,7 +633,16 @@ public class ArchiReader {
         if (propName.contains("typ")) {
             propertyMapping.put(propId, TYP);
             log.debug("Mapped propId '{}' with name '{}' to TYP constant", propId, propName);
+            return;
         }
+        unknownPropertyDefinitions.put(propId, propName);
+    }
+
+    /** Warns about properties that are not template properties but carry values: those are not converted. */
+    private void warnUnknownPropertyValues() {
+        unknownPropertyValues.forEach((name, nodes) -> log.warn(
+                "Archi property '{}' is not a known template property; its values on {} element(s) are ignored",
+                name, nodes.size()));
     }
 
     private void logPropertyMappings() {
@@ -681,6 +698,12 @@ public class ArchiReader {
 
         if (value != null && !value.isEmpty()) {
             modelProperties.put(propName, value);
+            String unknownName = unknownPropertyDefinitions.get(propRef);
+            if (unknownName != null) {
+                unknownPropertyValues
+                        .computeIfAbsent(unknownName, k -> Collections.newSetFromMap(new IdentityHashMap<>()))
+                        .add(property);
+            }
         }
     }
 

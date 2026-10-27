@@ -735,6 +735,8 @@ class ConverterControllerIntegrationTest {
         ValidationResultsDto resultsWithErrors = new ValidationResultsDto(List.of(
                 new SeverityGroupDto(ValidationSeverity.ERROR.getDisplayName(), 1, "chyba")));
         when(validationReportService.convertToDto(any(ISMDValidationReport.class))).thenReturn(resultsWithErrors);
+        when(mockConversionResult.getTransformationResult().conformanceIssues()).thenReturn(List.of(
+                new ConformanceIssue(ConformanceIssue.Kind.VOCABULARY_INVALID, null, "", "required property 'název' not found")));
 
         MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
                 .andExpect(status().isBadRequest())
@@ -745,6 +747,7 @@ class ConverterControllerIntegrationTest {
         assertEquals(ErrorCode.VALIDATION_REPORT_HAS_ERRORS.name(), body.get("errorCode").asText());
         assertEquals(1, body.at("/data/validationResults/severityGroups").size());
         assertTrue(body.at("/data/output").isNull());
+        assertEquals("VOCABULARY_INVALID", body.at("/data/conformanceIssues/0/kind").asText());
         verify(converterService, never()).exportToJson(any(), any());
     }
 

@@ -236,6 +236,8 @@ public class OfnDocumentBuilder {
                 concept.put(DEFINICNI_OBOR, resolveReference(propertyData.getDomain()));
             }
             addPpdf(concept, propertyData.getSharedInPPDF());
+            addAgenda(concept, propertyData.getAgendaCode());
+            addAgendaSystem(concept, propertyData.getAgendaSystemCode());
             concept.put(OBOR_HODNOT, range(propertyData.getDataType()));
             addGovernance(concept, propertyData.getIsPublic(), propertyData.getPrivacyProvision(),
                     propertyData.getSharingMethod(), propertyData.getAcquisitionMethod(),
