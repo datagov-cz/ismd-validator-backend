@@ -10,6 +10,11 @@ import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SchemaValidatorsConfig;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -34,10 +39,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  * <ul>
  *   <li>every key and every {@code typ} value is a term defined in the context,</li>
  *   <li>every value has the shape its term definition requires,</li>
- *   <li>the fixtures together exercise every term of the context.</li>
+ *   <li>the fixtures together exercise every term of the context,</li>
+ *   <li>every output is valid against the official OFN JSON Schema (required fields, formats).</li>
  * </ul>
- * All rules are read from the context file, so a new context version only needs the
- * file replaced (and {@code known-coverage-gaps.txt} updated) — no test code changes.
+ * All rules are read from the context and schema files, so a new OFN version only needs those
+ * files replaced (and {@code known-coverage-gaps.txt} updated) — no test code changes.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -47,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 class JsonLdContextConformanceTest {
 
     private static final String CONTEXT_PATH = "com/dia/context/json_ld_context.jsonld";
+    private static final String SCHEMA_PATH = "com/dia/context/json_ld_schema.json";
     private static final String KNOWN_GAPS_PATH = "com/dia/context/known-coverage-gaps.txt";
     private static final String FIXTURES = "com/dia/canonical/complete/";
 
@@ -72,11 +79,21 @@ class JsonLdContextConformanceTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private JsonLdContextIndex context;
+    private JsonSchema schema;
+    /** Concept variants of the schema (pojmy.items.anyOf), keyed by their title, e.g. "Třída". */
+    private final Map<String, JsonSchema> conceptSchemasByType = new HashMap<>();
     private final Map<String, JsonNode> outputs = new LinkedHashMap<>();
 
     @BeforeAll
     void setUp() throws Exception {
         context = new JsonLdContextIndex(objectMapper.readTree(read(CONTEXT_PATH)));
+        JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
+        SchemaValidatorsConfig config = SchemaValidatorsConfig.builder().formatAssertionsEnabled(true).build();
+        JsonNode schemaNode = objectMapper.readTree(read(SCHEMA_PATH));
+        schema = factory.getSchema(schemaNode, config);
+        for (JsonNode variant : schemaNode.path("properties").path("pojmy").path("items").path("anyOf")) {
+            conceptSchemasByType.put(variant.path("title").asText(), factory.getSchema(variant, config));
+        }
         for (String fixture : fixtures()) {
             outputs.put(fixture, objectMapper.readTree(convert(fixture)));
         }
@@ -91,6 +108,32 @@ class JsonLdContextConformanceTest {
         if (!violations.isEmpty()) {
             fail(violations.size() + " context violation(s) in " + fixture + ":\n  "
                     + String.join("\n  ", violations));
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("fixtures")
+    void output_isValidAgainstOfnJsonSchema(String fixture) {
+        JsonNode output = outputs.get(fixture);
+        List<String> errors = new ArrayList<>(
+                schema.validate(output).stream().map(ValidationMessage::getMessage).toList());
+
+        // The schema lists concept variants in an open anyOf, so any concept passes as a plain "Pojem".
+        // Its intent is that a concept of each type satisfies that type's variant: check that too.
+        for (JsonNode concept : output.path("pojmy")) {
+            for (JsonNode type : concept.path("typ")) {
+                JsonSchema variant = conceptSchemasByType.get(type.asText());
+                if (variant == null) {
+                    continue;
+                }
+                variant.validate(concept).forEach(error -> errors.add(
+                        "[" + concept.path("iri").asText() + " as " + type.asText() + "] " + error.getMessage()));
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            fail(errors.size() + " OFN JSON Schema violation(s) in " + fixture + ":\n  "
+                    + errors.stream().sorted().collect(Collectors.joining("\n  ")));
         }
     }
 

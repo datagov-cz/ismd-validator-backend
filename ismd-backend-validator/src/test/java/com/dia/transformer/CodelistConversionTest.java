@@ -55,10 +55,8 @@ class CodelistConversionTest {
                     "https://data.gov.cz/zdroj/datové-sady/17651921/075f0ac2a20db0a1a89638c7ed88d974"),
             "Vozidlo", new Codelist(
                     "https://data.mvcr.gov.cz/zdroj/číselníky/typy-turistických-cílů",
-                    "https://data.gov.cz/zdroj/datové-sady/17651921/ff931872553062c9890157ce8615af03"),
-            // codelist without an NKOD dataset
-            "Řidič evidovaný v registru řidičů", new Codelist(
-                    "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů", null)
+                    "https://data.gov.cz/zdroj/datové-sady/17651921/ff931872553062c9890157ce8615af03")
+            // "Řidič evidovaný v registru řidičů": codelist without the required NKOD dataset → nothing
             // "Účastník provozu na pozemních komunikacích": NKOD dataset without a codelist → nothing
             // "Obecní úřad obce s rozšířenou působností": codelist is not an IRI → nothing
     );

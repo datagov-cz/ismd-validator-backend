@@ -220,11 +220,7 @@ public class TurtleExporter {
             return true;
         }
 
-        if (!effectiveNamespace.equals(DEFAULT_NS) && uri.startsWith(DEFAULT_NS) && !uri.startsWith(effectiveNamespace)) {
-            return !uri.contains("digitální-dokument-") || isDigitalDocumentInUse(uri);
-        }
-
-        return false;
+        return !effectiveNamespace.equals(DEFAULT_NS) && uri.startsWith(DEFAULT_NS) && !uri.startsWith(effectiveNamespace);
     }
 
     private boolean isBaseSchemaResource(String uri) {
@@ -272,22 +268,7 @@ public class TurtleExporter {
             }
         }
 
-        if (shouldFilterAsBaseSchema(uri)) {
-            return true;
-        }
-
-        return uri.contains("digitální-dokument-") && isDigitalDocumentInUse(uri);
-    }
-
-    private boolean isDigitalDocumentInUse(String uri) {
-        Resource document = ontModel.getResource(uri);
-        if (document == null) return true;
-
-        Property definingNonLegProp = ontModel.getProperty(DEFAULT_NS + DEFINUJICI_NELEGISLATIVNI_ZDROJ);
-        Property relatedNonLegProp = ontModel.getProperty(DEFAULT_NS + SOUVISEJICI_NELEGISLATIVNI_ZDROJ);
-
-        return !ontModel.contains(null, definingNonLegProp, document) &&
-                !ontModel.contains(null, relatedNonLegProp, document);
+        return shouldFilterAsBaseSchema(uri);
     }
 
     private void applyTransformations(OntModel transformedModel) {
@@ -313,7 +294,27 @@ public class TurtleExporter {
 
         cleanupNamespaceProperties(transformedModel);
 
+        removeInternalTypes(transformedModel);
+
         removeEmptyLiterals(transformedModel);
+    }
+
+    /**
+     * slovníky:třída / vlastnost / vztah only mark concept kinds inside the converter. The OFN context maps
+     * Třída / Vlastnost / Vztah to owl:Class / owl:DatatypeProperty / owl:ObjectProperty, so each marker is
+     * replaced by its OWL type.
+     */
+    private void removeInternalTypes(OntModel transformedModel) {
+        Map<String, Resource> owlTypeByMarker = Map.of(
+                TRIDA, OWL2.Class,
+                VLASTNOST, OWL2.DatatypeProperty,
+                VZTAH, OWL2.ObjectProperty);
+        owlTypeByMarker.forEach((marker, owlType) -> {
+            Resource markerType = transformedModel.createResource(OFN_NAMESPACE + marker);
+            transformedModel.listSubjectsWithProperty(RDF.type, markerType).toList()
+                    .forEach(subject -> subject.addProperty(RDF.type, owlType));
+            transformedModel.removeAll(null, RDF.type, markerType);
+        });
     }
 
     private void setupPrefixes(OntModel transformedModel) {
@@ -780,30 +781,12 @@ public class TurtleExporter {
         };
 
         for (String propName : nonLegislativeProperties) {
-            Property customProp = transformedModel.createProperty(effectiveNamespace + propName);
-            Property defaultProp = transformedModel.createProperty(DEFAULT_NS + propName);
-
-            ensureDigitalDocumentUrls(transformedModel, customProp);
-            ensureDigitalDocumentUrls(transformedModel, defaultProp);
+            Property slovnikyProp = transformedModel.createProperty(SLOVNIKY_NS + propName);
+            mapProperty(transformedModel, transformedModel.createProperty(effectiveNamespace + propName), slovnikyProp);
+            mapProperty(transformedModel, transformedModel.createProperty(DEFAULT_NS + propName), slovnikyProp);
         }
 
-        log.debug("Processed non-legislative source properties and digital documents");
-    }
-
-    private void ensureDigitalDocumentUrls(OntModel transformedModel, Property sourceProperty) {
-        StmtIterator stmts = transformedModel.listStatements(null, sourceProperty, (RDFNode) null);
-
-        while (stmts.hasNext()) {
-            Statement stmt = stmts.next();
-            if (stmt.getObject().isResource()) {
-                Resource digitalDoc = stmt.getObject().asResource();
-
-                Property schemaUrlProp = transformedModel.createProperty("http://schema.org/url");
-                if (!digitalDoc.hasProperty(schemaUrlProp)) {
-                    log.warn("Digital document missing schema:url property: {}", digitalDoc.getURI());
-                }
-            }
-        }
+        log.debug("Transformed non-legislative source properties to OFN slovníky namespace");
     }
 
     private void mapBooleanProperty(OntModel model, Property sourceProperty, Property targetProperty) {

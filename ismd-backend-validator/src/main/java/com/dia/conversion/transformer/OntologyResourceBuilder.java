@@ -38,6 +38,7 @@ public class OntologyResourceBuilder {
 
     private static final String CLASS = "class";
     private static final String RELATIONSHIP = "relationship";
+    private static final String PROPERTY = "property";
     private static final Map<String, String> CZECH_TO_XSD_MAPPING = Map.of(
             "Ano či ne", DataTypeConstants.XSD_BOOLEAN,
             "Datum", DataTypeConstants.XSD_DATE,
@@ -55,6 +56,8 @@ public class OntologyResourceBuilder {
     private final ConceptFilterUtil conceptFilterUtil;
     private Map<String, Resource> allClassResourcesForHierarchies;
     private String localConceptPrefix;
+    /** Concept IRI → the input element that produced it, to report elements that collapse into one IRI. */
+    private final Map<String, String> conceptIriOwners = new HashMap<>();
 
     public OntologyResourceBuilder(OntModel ontModel, URIGenerator uriGenerator,
                                    DataGovernanceProcessor governanceProcessor,
@@ -232,6 +235,7 @@ public class OntologyResourceBuilder {
     public Resource createClassResource(ClassData classData, Map<String, Resource> localResourceMap,
                                         ConceptFilterUtil.FilterStatistics filterStatistics) {
         String classURI = uriGenerator.generateConceptURI(classData.getName(), classData.getIdentifier());
+        registerConceptIri(classURI, CLASS, classData.getName());
         Resource classResource = ontModel.createResource(classURI);
 
         classResource.addProperty(RDF.type, SKOS.Concept);
@@ -261,6 +265,19 @@ public class OntologyResourceBuilder {
         classResource.addProperty(RDF.type, ontModel.getResource(OFN_NAMESPACE + TRIDA));
     }
 
+    /**
+     * Warns when two different input elements get the same IRI (e.g. a copied identifier):
+     * their data would be silently merged into one concept.
+     */
+    private void registerConceptIri(String iri, String kind, String name) {
+        String element = kind + " '" + name + "'";
+        String previous = conceptIriOwners.putIfAbsent(iri, element);
+        if (previous != null && !previous.equals(element)) {
+            log.warn("IRI collision: {} and {} both map to {}; their data is merged into one concept",
+                    previous, element, iri);
+        }
+    }
+
     private void addClassSpecificMetadata(Resource classResource, ClassData classData,
                                           ConceptFilterUtil.FilterStatistics filterStatistics) {
         addAlternativeName(classResource, classData);
@@ -277,7 +294,8 @@ public class OntologyResourceBuilder {
      * &lt;class&gt; slovníky:má-instance-definované-číselníkem &lt;codelist&gt; .
      * &lt;codelist&gt; a l111-2009:číselník ; l111-2009:má-v-nkod-zastřešující-datovou-sadu &lt;dataset&gt; .
      * </pre>
-     * Values that are not http(s) IRIs are skipped with a warning. An NKOD dataset needs a codelist to attach to.
+     * Both values are required (the OFN schema requires datová-sada-v-nkod) and must be http(s) IRIs;
+     * otherwise the codelist is skipped with a warning.
      */
     private void addCodelist(Resource classResource, ClassData classData) {
         String codelistIri = trimToNull(classData.getCodelistIri());
@@ -291,22 +309,22 @@ public class OntologyResourceBuilder {
             return;
         }
         if (!isHttpIri(codelistIri)) {
-            log.warn("Class '{}': codelist '{}' is not an http(s) IRI, ignoring the codelist{}",
-                    classData.getName(), codelistIri, datasetIri != null ? " and its NKOD dataset" : "");
+            log.warn("Class '{}': codelist '{}' is not an http(s) IRI, ignoring the codelist", classData.getName(), codelistIri);
+            return;
+        }
+        if (datasetIri == null) {
+            log.warn("Class '{}': codelist '{}' has no NKOD dataset (datová sada v NKOD is required), ignoring the codelist",
+                    classData.getName(), codelistIri);
+            return;
+        }
+        if (!isHttpIri(datasetIri)) {
+            log.warn("Class '{}': NKOD dataset '{}' is not an http(s) IRI, ignoring the codelist", classData.getName(), datasetIri);
             return;
         }
 
         Resource codelist = ontModel.createResource(codelistIri);
         classResource.addProperty(ontModel.createProperty(SLOVNIKY_NS + MA_INSTANCE_DEFINOVANE_CISELNIKEM), codelist);
         codelist.addProperty(RDF.type, ontModel.createResource(OFN_NAMESPACE_LEGAL + CISELNIK));
-
-        if (datasetIri == null) {
-            return;
-        }
-        if (!isHttpIri(datasetIri)) {
-            log.warn("Class '{}': NKOD dataset '{}' is not an http(s) IRI, ignoring it", classData.getName(), datasetIri);
-            return;
-        }
         codelist.addProperty(ontModel.createProperty(OFN_NAMESPACE_LEGAL + MA_V_NKOD_ZASTRESUJICI_DATOVOU_SADU),
                 ontModel.createResource(datasetIri));
     }
@@ -388,6 +406,7 @@ public class OntologyResourceBuilder {
     public Resource createPropertyResource(PropertyData propertyData, Map<String, Resource> localResourceMap,
                                            ConceptFilterUtil.FilterStatistics filterStatistics) {
         String propertyURI = uriGenerator.generateConceptURI(propertyData.getName(), propertyData.getIdentifier());
+        registerConceptIri(propertyURI, PROPERTY, propertyData.getName());
 
         OntProperty propertyResource;
         if (isObjectProperty(propertyData)) {
@@ -423,7 +442,7 @@ public class OntologyResourceBuilder {
 
         if (propertyData.getEquivalentConcept() != null && !propertyData.getEquivalentConcept().trim().isEmpty()) {
             log.debug("Processing equivalent concept for property {}: '{}'", propertyData.getName(), propertyData.getEquivalentConcept());
-            addEquivalentConcept(propertyResource, propertyData.getEquivalentConcept(), "property", filterStatistics);
+            addEquivalentConcept(propertyResource, propertyData.getEquivalentConcept(), PROPERTY, filterStatistics);
         }
 
         if (propertyData.getDomain() != null && !propertyData.getDomain().trim().isEmpty()) {
@@ -521,6 +540,7 @@ public class OntologyResourceBuilder {
                                                ConceptFilterUtil.FilterStatistics filterStatistics) {
         String relationshipURI = uriGenerator.generateConceptURI(relationshipData.getName(),
                 relationshipData.getIdentifier());
+        registerConceptIri(relationshipURI, RELATIONSHIP, relationshipData.getName());
 
         OntProperty relationshipResource = ontModel.createObjectProperty(relationshipURI);
         relationshipResource.addProperty(RDF.type, SKOS.Concept);
@@ -678,18 +698,12 @@ public class OntologyResourceBuilder {
 
         boolean isPropertyHierarchy = localPropertyResources.containsKey(subClassName);
 
-        String namespace = uriGenerator.getEffectiveNamespace();
-
         if (isPropertyHierarchy) {
             subClassResource.addProperty(RDFS.subPropertyOf, superClassResource);
-            Property hierarchyProperty = ontModel.createProperty(namespace + "nadřazená-vlastnost");
-            subClassResource.addProperty(hierarchyProperty, superClassResource);
             log.debug("Created property hierarchy relationship: {} rdfs:subPropertyOf {}",
                     subClassResource.getURI(), superClassResource.getURI());
         } else {
             subClassResource.addProperty(RDFS.subClassOf, superClassResource);
-            Property hierarchyProperty = ontModel.createProperty(namespace + "nadřazená-třída");
-            subClassResource.addProperty(hierarchyProperty, superClassResource);
             log.debug("Created class hierarchy relationship: {} rdfs:subClassOf {}",
                     subClassResource.getURI(), superClassResource.getURI());
         }

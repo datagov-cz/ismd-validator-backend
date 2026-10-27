@@ -45,6 +45,13 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <!-- Validates JSON-LD output against the official OFN slovníky JSON Schema (draft 2020-12) -->
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>1.5.9</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
