@@ -2,11 +2,10 @@
 # JsonLdContextConformanceTest fails if a term is missing from both the outputs and this list,
 # and also if a term listed here becomes covered — so remove lines as support lands.
 
-# ---- Not applicable (by design) --------------------------------------------------------------
+# ---- Supported, but no offline fixture can supply it -----------------------------------------
 
-# Every converted concept is a Třída, Vlastnost or Vztah, whose hierarchy is exported as
-# nadřazená-třída / nadřazená-vlastnost / nadřazený-vztah. Like the official OFN
-# konceptuální-model example, skos:broader (nadřazený-pojem) is not added on top of that.
+# skos:broader is read only from SSP (SPARQL endpoint, no offline fixture). Builder support is
+# covered by OfnDocumentBuilderTest and SSPReaderBroaderTest. Excel/Archi/EA have no such field.
 pojmy/nadřazený-pojem
 
 # ---- No input field: exporter supports it, no reader can supply the value -------------------

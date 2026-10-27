@@ -413,7 +413,9 @@ public class ArchiReader {
 
             log.debug("Found relationship with type: {}", type);
 
-            if ("Association".equals(type) || "Composition".equals(type) || "Specialization".equals(type)) {
+            // Vztahy are associations. Composition attaches a property to its class and
+            // Specialization is a hierarchy; both are read elsewhere.
+            if ("Association".equals(type)) {
                 RelationshipData relationshipData = createRelationshipData(relationship, idToNameMap);
                 if (relationshipData != null) {
                     relationships.add(relationshipData);

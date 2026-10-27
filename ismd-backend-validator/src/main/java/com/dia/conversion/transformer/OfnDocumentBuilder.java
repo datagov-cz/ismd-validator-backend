@@ -170,7 +170,7 @@ public class OfnDocumentBuilder {
 
             addCommon(concept, classData.getName(), classData.getDescription(), classData.getDefinition(),
                     classData.getSource(), classData.getRelatedSource(), classData.getAlternativeName(),
-                    classData.getEquivalentConcept());
+                    classData.getEquivalentConcept(), classData.getBroaderConcepts());
             addAgenda(concept, classData.getAgendaCode());
             addAgendaSystem(concept, classData.getAgendaSystemCode());
             addCodelist(concept, classData);
@@ -231,7 +231,7 @@ public class OfnDocumentBuilder {
             concept.putArray(TYP).add(POJEM).add(KONCEPT).add(VLASTNOST);
             addCommon(concept, propertyData.getName(), propertyData.getDescription(), propertyData.getDefinition(),
                     propertyData.getSource(), propertyData.getRelatedSource(), propertyData.getAlternativeName(),
-                    propertyData.getEquivalentConcept());
+                    propertyData.getEquivalentConcept(), propertyData.getBroaderConcepts());
             if (!isBlank(propertyData.getDomain())) {
                 concept.put(DEFINICNI_OBOR, resolveReference(propertyData.getDomain()));
             }
@@ -283,7 +283,8 @@ public class OfnDocumentBuilder {
             concept.putArray(TYP).add(POJEM).add(KONCEPT).add(VZTAH);
             addCommon(concept, name, relationshipData.getDescription(), relationshipData.getDefinition(),
                     relationshipData.getSource(), relationshipData.getRelatedSource(),
-                    relationshipData.getAlternativeName(), relationshipData.getEquivalentConcept());
+                    relationshipData.getAlternativeName(), relationshipData.getEquivalentConcept(),
+                    relationshipData.getBroaderConcepts());
             addPpdf(concept, relationshipData.getSharedInPPDF());
             addAgenda(concept, relationshipData.getAgendaCode());
             addAgendaSystem(concept, relationshipData.getAgendaSystemCode());
@@ -364,7 +365,7 @@ public class OfnDocumentBuilder {
 
         private void addCommon(ObjectNode concept, String name, String description, String definition,
                                String source, String relatedSource, String alternativeNames,
-                               String equivalentConcepts) {
+                               String equivalentConcepts, List<String> broaderConcepts) {
             putText(concept, NAZEV, name);
             putText(concept, POPIS, description);
             putText(concept, DEFINICE, definition);
@@ -372,6 +373,27 @@ public class OfnDocumentBuilder {
             addSources(concept, relatedSource, false);
             addAlternativeNames(concept, alternativeNames);
             addEquivalents(concept, equivalentConcepts);
+            addBroader(concept, broaderConcepts);
+        }
+
+        /** Broader concepts (skos:broader), valid for every concept type. */
+        private void addBroader(ObjectNode concept, List<String> broaderConcepts) {
+            if (broaderConcepts == null) {
+                return;
+            }
+            for (String value : broaderConcepts) {
+                String iri = value == null ? "" : UtilityMethods.removeTrailingSlash(value.trim());
+                if (iri.isEmpty()) {
+                    continue;
+                }
+                if (!UtilityMethods.isValidIRI(iri)) {
+                    dropped(concept, NADRAZENY_POJEM, "'" + iri + "' není platné IRI");
+                } else if (conceptFilterUtil.shouldFilterConcept(iri)) {
+                    log.info("OMITTED: broader concept '{}' (it is filtered)", iri);
+                } else {
+                    addToSet(concept, NADRAZENY_POJEM, iri);
+                }
+            }
         }
 
         private void addAlternativeNames(ObjectNode concept, String value) {

@@ -25,6 +25,7 @@ public final class OfnTerms {
     public static final String SOUVISEJICI_NELEGISLATIVNI_ZDROJ = "související-nelegislativní-zdroj";
     public static final String URL = "url";
     public static final String EKVIVALENTNI_POJEM = "ekvivalentní-pojem";
+    public static final String NADRAZENY_POJEM = "nadřazený-pojem";
     public static final String JE_SDILEN_V_PPDF = "je-sdílen-v-ppdf";
     public static final String ZPUSOB_ZISKANI_UDAJE = "způsob-získání-údaje";
     public static final String TYP_OBSAHU_UDAJE = "typ-obsahu-údaje";

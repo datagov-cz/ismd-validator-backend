@@ -130,6 +130,26 @@ class OfnDocumentBuilderTest {
     }
 
     @Test
+    void broaderConcepts_becomeNadrazenyPojem_forEveryConceptKind() {
+        String broader = "https://slovník.gov.cz/jiný/pojem/obecný";
+        cls("Doména").setBroaderConcepts(List.of(broader + "/", "není iri"));
+        prop("vlastnost", "Doména", null).setBroaderConcepts(List.of(broader));
+        RelationshipData relationship = new RelationshipData();
+        relationship.setName("vztah");
+        relationship.setDomain("Doména");
+        relationship.setRange("Doména");
+        relationship.setBroaderConcepts(List.of(broader));
+        relationships.add(relationship);
+
+        OfnDocumentBuilder.Result result = build();
+
+        for (String name : List.of("doména", "vlastnost", "vztah")) {
+            assertThat(texts(concept(result, name).get("nadřazený-pojem"))).as(name).containsExactly(broader);
+        }
+        assertThat(only(result, Kind.VALUE_DROPPED).location()).isEqualTo("pojmy[doména]/nadřazený-pojem");
+    }
+
+    @Test
     void governanceValues_becomeCodelistCuries_unknownValuesAreReported() {
         ClassData a = cls("A");
         a.setAcquisitionMethod("vlastní");
