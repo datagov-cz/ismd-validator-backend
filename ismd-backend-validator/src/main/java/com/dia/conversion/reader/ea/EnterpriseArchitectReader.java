@@ -2,6 +2,7 @@ package com.dia.conversion.reader.ea;
 
 import com.dia.conversion.data.*;
 import com.dia.exception.FileParsingException;
+import com.dia.utility.TemporalValues;
 import com.dia.utility.UtilityMethods;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -162,9 +164,38 @@ public class EnterpriseArchitectReader {
         Element extensionElement = findExtensionElement(index, vocabularyPackageId);
         if (extensionElement != null) {
             metadata.setDescription(getTagValueByPattern(extensionElement, "POPIS_SLOVNIKU"));
+            firstProjectAttribute(extensionElement, "created")
+                    .flatMap(TemporalValues::parseEaTimestamp)
+                    .ifPresent(created -> metadata.setDateOfCreation(TemporalValues.toDateTimeStamp(created)));
         }
 
+        latestModification(index)
+                .ifPresent(modified -> metadata.setDateOfModification(TemporalValues.toDateTimeStamp(modified)));
+
         return metadata;
+    }
+
+    /** Reads an attribute of the {@code <project>} child EA writes into each extension element. */
+    private Optional<String> firstProjectAttribute(Element extensionElement, String attribute) {
+        NodeList projects = extensionElement.getElementsByTagName("project");
+        if (projects.getLength() == 0) {
+            return Optional.empty();
+        }
+        String value = ((Element) projects.item(0)).getAttribute(attribute);
+        return value.isBlank() ? Optional.empty() : Optional.of(value);
+    }
+
+    /**
+     * EA does not bump the package's own {@code modified} when its elements change,
+     * so the last change is the latest {@code modified} of any element in the export.
+     */
+    private Optional<Instant> latestModification(XmiIndex index) {
+        return index.extensionsByIdRef.values().stream()
+                .map(extension -> firstProjectAttribute(extension, "modified"))
+                .flatMap(Optional::stream)
+                .map(TemporalValues::parseEaTimestamp)
+                .flatMap(Optional::stream)
+                .max(Comparator.naturalOrder());
     }
 
     private Element findMainModelElement(XmiIndex index, String elementId) {

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +39,7 @@ class VocabularyIdentifierExportTest {
                 .hierarchies(List.of())
                 .build();
 
-        OFNDataTransformerNew transformer = new OFNDataTransformerNew(new ConceptFilterUtil());
+        OFNDataTransformerNew transformer = new OFNDataTransformerNew(new ConceptFilterUtil(), Clock.systemUTC());
         TransformationResult result = transformer.transform(ontologyData);
         JsonNode json = new ObjectMapper().readTree(transformer.exportToJson(result));
 

@@ -16,6 +16,13 @@ public class ExportConstants {
         public static final String POPIS = "popis";
         public static final String POJMY = "pojmy";
 
+        // Vocabulary dates: nested "Časový okamžik" nodes
+        public static final String VYTVORENO = "vytvořeno";
+        public static final String AKTUALIZOVANO = "aktualizováno";
+        public static final String CASOVY_OKAMZIK_JSON_LD = "Časový okamžik";
+        public static final String DATUM_A_CAS = "datum_a_čas";
+        public static final String DATUM = "datum";
+
         public static final String TYPE_SLOVNIK = "Slovník";
         public static final String TYPE_TEZAURUS = "Tezaurus";
         public static final String TYPE_KM = "Konceptuální model";

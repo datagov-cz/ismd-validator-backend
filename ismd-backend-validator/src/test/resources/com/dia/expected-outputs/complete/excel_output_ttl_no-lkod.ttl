@@ -453,3 +453,13 @@ PREFIX čas:       <https://slovník.gov.cz/generický/čas/pojem/>
         slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_a>;
         l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost
                 <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c> .
+
+<https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat>
+        <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/okamžik-vytvoření> [
+            a <https://slovník.gov.cz/generický/čas/pojem/časový-okamžik> ;
+            <https://slovník.gov.cz/generický/čas/pojem/datum-a-čas> "2026-01-15T10:30:00+01:00"^^<http://www.w3.org/2001/XMLSchema#dateTimeStamp>
+        ] ;
+        <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/okamžik-poslední-změny> [
+            a <https://slovník.gov.cz/generický/čas/pojem/časový-okamžik> ;
+            <https://slovník.gov.cz/generický/čas/pojem/datum-a-čas> "2026-01-15T10:30:00+01:00"^^<http://www.w3.org/2001/XMLSchema#dateTimeStamp>
+        ] .

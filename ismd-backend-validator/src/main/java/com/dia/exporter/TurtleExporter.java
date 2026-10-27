@@ -216,9 +216,6 @@ public class TurtleExporter {
         }
 
         if (!effectiveNamespace.equals(DEFAULT_NS) && uri.startsWith(DEFAULT_NS) && !uri.startsWith(effectiveNamespace)) {
-            if (uri.contains("časový-okamžik-") && isTemporalInstantInUse(uri)) {
-                return false;
-            }
             return !uri.contains("digitální-dokument-") || isDigitalDocumentInUse(uri);
         }
 
@@ -274,22 +271,7 @@ public class TurtleExporter {
             return true;
         }
 
-        if (uri.contains("časový-okamžik-")) {
-            return !isTemporalInstantInUse(uri);
-        }
-
         return uri.contains("digitální-dokument-") && isDigitalDocumentInUse(uri);
-    }
-
-    private boolean isTemporalInstantInUse(String uri) {
-        Resource instant = ontModel.getResource(uri);
-        if (instant == null) return false;
-
-        Property creationProp = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
-        Property modificationProp = ontModel.getProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
-
-        return ontModel.contains(null, creationProp, instant) ||
-                ontModel.contains(null, modificationProp, instant);
     }
 
     private boolean isDigitalDocumentInUse(String uri) {
@@ -429,7 +411,7 @@ public class TurtleExporter {
             copyTemporalInstant(temporalInstant, transformedModel);
 
             Property newCreationProperty = transformedModel.createProperty(SLOVNIKY_NS + OKAMZIK_VYTVORENI);
-            Resource newTemporalInstant = transformedModel.getResource(temporalInstant.getURI());
+            Resource newTemporalInstant = sameResourceIn(temporalInstant, transformedModel);
             if (newTemporalInstant != null) {
                 ontologyResource.addProperty(newCreationProperty, newTemporalInstant);
                 log.debug("Added creation temporal metadata to concept scheme");
@@ -444,7 +426,7 @@ public class TurtleExporter {
             copyTemporalInstant(temporalInstant, transformedModel);
 
             Property newModificationProperty = transformedModel.createProperty(SLOVNIKY_NS + OKAMZIK_POSLEDNI_ZMENY);
-            Resource newTemporalInstant = transformedModel.getResource(temporalInstant.getURI());
+            Resource newTemporalInstant = sameResourceIn(temporalInstant, transformedModel);
             if (newTemporalInstant != null) {
                 ontologyResource.addProperty(newModificationProperty, newTemporalInstant);
                 log.debug("Added modification temporal metadata to concept scheme");
@@ -452,8 +434,13 @@ public class TurtleExporter {
         }
     }
 
+    /** The same node in another model; blank nodes keep their identity, so copying twice adds nothing. */
+    private static Resource sameResourceIn(Resource resource, OntModel model) {
+        return resource.isAnon() ? model.createResource(resource.getId()) : model.createResource(resource.getURI());
+    }
+
     private void copyTemporalInstant(Resource temporalInstant, OntModel transformedModel) {
-        Resource newInstant = transformedModel.createResource(temporalInstant.getURI());
+        Resource newInstant = sameResourceIn(temporalInstant, transformedModel);
 
         newInstant.addProperty(RDF.type, transformedModel.createResource(CAS_NS + CASOVY_OKAMZIK));
 

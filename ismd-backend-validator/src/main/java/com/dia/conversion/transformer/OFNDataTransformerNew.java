@@ -6,6 +6,7 @@ import com.dia.exception.JsonExportException;
 import com.dia.exception.TurtleExportException;
 import com.dia.exporter.JsonExporter;
 import com.dia.exporter.TurtleExporter;
+import com.dia.utility.TemporalValues;
 import com.dia.utility.URIGenerator;
 import com.dia.utility.UtilityMethods;
 import lombok.Getter;
@@ -17,6 +18,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.util.*;
 
 import static com.dia.constants.VocabularyConstants.*;
@@ -47,10 +49,12 @@ public class OFNDataTransformerNew {
     private OntModel ontModel;
     private final URIGenerator uriGenerator;
     private final ConceptFilterUtil conceptFilterUtil;
+    private final Clock clock;
 
-    public OFNDataTransformerNew(ConceptFilterUtil conceptFilterUtil) {
+    public OFNDataTransformerNew(ConceptFilterUtil conceptFilterUtil, Clock clock) {
         this.uriGenerator = new URIGenerator();
         this.conceptFilterUtil = conceptFilterUtil;
+        this.clock = clock;
     }
 
     /**
@@ -67,6 +71,8 @@ public class OFNDataTransformerNew {
             if (ontologyData == null || ontologyData.getVocabularyMetadata() == null) {
                 throw new ConversionException("Invalid ontology data");
             }
+
+            applyConversionTimeFallback(ontologyData.getVocabularyMetadata());
 
             ConceptFilterUtil.FilterStatistics filterStatistics = new ConceptFilterUtil.FilterStatistics();
             Map<String, String> nameToIdentifierMap = conceptFilterUtil.buildNameToIdentifierMap(ontologyData);
@@ -169,6 +175,19 @@ public class OFNDataTransformerNew {
         } catch (Exception e) {
             log.error("Unexpected error during Turtle export: requestId={}", requestId, e);
             throw new TurtleExportException("Neočekávaná chyba při exportu do Turtle.", e);
+        }
+    }
+
+    /**
+     * Fills vocabulary dates the input file does not provide with the conversion start time.
+     */
+    private void applyConversionTimeFallback(VocabularyMetadata metadata) {
+        String conversionStart = TemporalValues.toDateTimeStamp(clock.instant());
+        if (metadata.getDateOfCreation() == null || metadata.getDateOfCreation().isBlank()) {
+            metadata.setDateOfCreation(conversionStart);
+        }
+        if (metadata.getDateOfModification() == null || metadata.getDateOfModification().isBlank()) {
+            metadata.setDateOfModification(conversionStart);
         }
     }
 

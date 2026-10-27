@@ -107,45 +107,32 @@ public class JsonExporter {
     }
 
     private void handleCreationDate(Resource vocabularyResource, Property creationProperty, JSONObject root) {
-        Statement creationStmt = vocabularyResource.getProperty(creationProperty);
-        if (creationStmt.getObject().isResource()) {
-            Resource instantResource = creationStmt.getObject().asResource();
-            String dateValue = extractTemporalValue(instantResource);
-            if (dateValue != null) {
-                root.put(OKAMZIK_VYTVORENI, dateValue);
-            }
-        }
+        putTemporalNode(vocabularyResource.getProperty(creationProperty), ExportConstants.Json.VYTVORENO, root);
     }
 
     private void handleModificationDate(Resource vocabularyResource, Property modificationProperty, JSONObject root) {
-        Statement modificationStmt = vocabularyResource.getProperty(modificationProperty);
-        if (modificationStmt.getObject().isResource()) {
-            Resource instantResource = modificationStmt.getObject().asResource();
-            String dateValue = extractTemporalValue(instantResource);
-            if (dateValue != null) {
-                root.put(OKAMZIK_POSLEDNI_ZMENY, dateValue);
-            }
-        }
+        putTemporalNode(vocabularyResource.getProperty(modificationProperty), ExportConstants.Json.AKTUALIZOVANO, root);
     }
 
-    private String extractTemporalValue(Resource instantResource) {
-        Property dateTimeProperty = ontModel.getProperty(CAS_NS + DATUM_A_CAS);
-        if (instantResource.hasProperty(dateTimeProperty)) {
-            Statement dateTimeStmt = instantResource.getProperty(dateTimeProperty);
-            if (dateTimeStmt.getObject().isLiteral()) {
-                return dateTimeStmt.getString();
-            }
+    /** Writes {"typ": "Časový okamžik", "datum_a_čas" | "datum": value}, as the context defines it. */
+    private void putTemporalNode(Statement statement, String jsonKey, JSONObject root) {
+        if (statement == null || !statement.getObject().isResource()) {
+            return;
         }
+        Resource instant = statement.getObject().asResource();
+        JSONObject node = new JSONObject();
+        node.put(ExportConstants.Json.TYP, ExportConstants.Json.CASOVY_OKAMZIK_JSON_LD);
 
-        Property dateProperty = ontModel.getProperty(CAS_NS + DATUM);
-        if (instantResource.hasProperty(dateProperty)) {
-            Statement dateStmt = instantResource.getProperty(dateProperty);
-            if (dateStmt.getObject().isLiteral()) {
-                return dateStmt.getString();
-            }
+        Statement dateTime = instant.getProperty(ontModel.getProperty(CAS_NS + VocabularyConstants.DATUM_A_CAS));
+        Statement date = instant.getProperty(ontModel.getProperty(CAS_NS + VocabularyConstants.DATUM));
+        if (dateTime != null && dateTime.getObject().isLiteral()) {
+            node.put(ExportConstants.Json.DATUM_A_CAS, dateTime.getLiteral().getLexicalForm());
+        } else if (date != null && date.getObject().isLiteral()) {
+            node.put(ExportConstants.Json.DATUM, date.getLiteral().getLexicalForm());
+        } else {
+            return;
         }
-
-        return null;
+        root.put(jsonKey, node);
     }
 
     private void addMultilingualModelProperty(JSONObject root, String propertyName,
@@ -226,8 +213,8 @@ public class JsonExporter {
         addFieldWithDefault(originalMap, orderedMap, ExportConstants.Json.NAZEV, createEmptyMultilingualField());
         addFieldWithDefault(originalMap, orderedMap, POPIS, createEmptyMultilingualField());
 
-        addFieldIfExists(originalMap, orderedMap, OKAMZIK_VYTVORENI);
-        addFieldIfExists(originalMap, orderedMap, OKAMZIK_POSLEDNI_ZMENY);
+        addFieldIfExists(originalMap, orderedMap, ExportConstants.Json.VYTVORENO);
+        addFieldIfExists(originalMap, orderedMap, ExportConstants.Json.AKTUALIZOVANO);
 
         return orderedMap;
     }

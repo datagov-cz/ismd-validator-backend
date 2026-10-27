@@ -8,6 +8,7 @@ import com.dia.utility.DataTypeConverter;
 import com.dia.utility.URIGenerator;
 import com.dia.utility.UtilityMethods;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntProperty;
 import org.apache.jena.rdf.model.Property;
@@ -121,18 +122,20 @@ public class OntologyResourceBuilder {
             }
 
             String trimmedValue = dateTimeValue.trim();
-            String instantURI = uriGenerator.getEffectiveNamespace() + "časový-okamžik-" + purpose + "-" + System.currentTimeMillis();
-            Resource instantResource = ontModel.createResource(instantURI);
+            // A blank node, as in the OFN slovníky examples: [ a čas:časový-okamžik ; čas:datum-a-čas "…" ]
+            Resource instantResource = ontModel.createResource();
 
             instantResource.addProperty(RDF.type, ontModel.getResource(CAS_NS + CASOVY_OKAMZIK));
 
             if (trimmedValue.contains("T")) {
                 Property dateTimeProperty = ontModel.createProperty(CAS_NS + DATUM_A_CAS);
-                DataTypeConverter.addTypedProperty(instantResource, dateTimeProperty, trimmedValue, null, ontModel);
+                instantResource.addProperty(dateTimeProperty,
+                        ontModel.createTypedLiteral(trimmedValue, XSDDatatype.XSDdateTimeStamp));
                 log.debug("Added dateTime property to temporal instant for purpose '{}': {}", purpose, trimmedValue);
             } else {
                 Property dateProperty = ontModel.createProperty(CAS_NS + DATUM);
-                DataTypeConverter.addTypedProperty(instantResource, dateProperty, trimmedValue, null, ontModel);
+                instantResource.addProperty(dateProperty,
+                        ontModel.createTypedLiteral(trimmedValue, XSDDatatype.XSDdate));
                 log.debug("Added date property to temporal instant for purpose '{}': {}", purpose, trimmedValue);
             }
 
