@@ -3,6 +3,7 @@ package com.dia.controller;
 import com.dia.controller.data.UrlMultipartFile;
 import com.dia.controller.dto.ApiResponseDto;
 import com.dia.controller.dto.ConversionResponseDto;
+import com.dia.controller.dto.DetailedReportCsvRequestDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
 import com.dia.enums.ErrorCode;
@@ -220,12 +221,13 @@ public class ConverterController {
             summary = "Stažení validační zprávy.",
             description = "Stažení validační zprávy z kontroly slovníku dle SHACL. Soubor je ve formátu csv."
     )
-    @PostMapping("/convert/detailed-report/csv")
+    @PostMapping(value = "/convert/detailed-report/csv", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<byte[]> downloadDetailedValidationReportCSV(
-            @RequestPart (value = "detailedReport") DetailedValidationReportDto detailedReport,
+            @RequestBody DetailedReportCsvRequestDto body,
             @RequestParam(value = "filename", required = false, defaultValue = "validation-report") String filename
     ) {
         String requestId = MDC.get(LOG_REQUEST_ID);
+        DetailedValidationReportDto detailedReport = body.getDetailedReport();
 
         log.info("CSV download requested from existing conversion response, filename={}", filename);
 
