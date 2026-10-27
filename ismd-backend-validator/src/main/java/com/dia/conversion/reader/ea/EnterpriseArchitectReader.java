@@ -334,6 +334,8 @@ public class EnterpriseArchitectReader {
         classData.setSharedInPPDF(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_SDILEN_V_PPDF"));
         classData.setAgendaCode(getTagValueByPattern(extensionElement, "AGENDA"));
         classData.setAgendaSystemCode(getTagValueByPattern(extensionElement, "AGENDOVY_INFORMACNI_SYSTEM"));
+        classData.setCodelistIri(getTagValueByPattern(extensionElement, "INSTANCE_DEFINOVANY_CISELNIKEM"));
+        classData.setCodelistNkodDataset(getTagValueByPattern(extensionElement, "DATOVA_SADA_V_NKOD"));
 
         classData.setIsPublic(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_VEREJNY"));
         classData.setPrivacyProvision(getTagValueByPattern(extensionElement, "USTANOVENI_DOKLADAJICI_NEVEREJNOST"));

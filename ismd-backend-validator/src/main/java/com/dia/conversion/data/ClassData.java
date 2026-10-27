@@ -27,6 +27,10 @@ public class ClassData {
     private String sharingMethod;
     private String acquisitionMethod;
     private String contentType;
+    /** IRI of the codelist whose items are the instances of this class. */
+    private String codelistIri;
+    /** IRI of the codelist's umbrella dataset in NKOD. */
+    private String codelistNkodDataset;
 
     public boolean hasValidData() {
         return name != null && !name.trim().isEmpty();

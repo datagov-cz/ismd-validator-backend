@@ -9,11 +9,6 @@ vytvořeno/Časový okamžik/datum
 aktualizováno/Časový okamžik/je_nespecifikovaný
 aktualizováno/Časový okamžik/datum
 
-# Codelists: not read from any input format, not exported
-pojmy/instance-definovány-číselníkem
-pojmy/instance-definovány-číselníkem/Číselník
-pojmy/instance-definovány-číselníkem/Číselník/datová-sada-v-nkod
-
 # skos:broader is never exported
 pojmy/nadřazený-pojem
 

@@ -386,7 +386,28 @@ public class JsonExporter {
 
         addRppMetadataWithBothNamespaces(concept, pojemObj, effectiveNamespace);
 
+        addCodelist(concept, pojemObj);
+
         return pojemObj;
+    }
+
+    /** "instance-definovány-číselníkem": {"iri": …, "typ": "Číselník", "datová-sada-v-nkod": …} */
+    private void addCodelist(Resource concept, JSONObject pojemObj) throws JSONException {
+        Statement codelistStmt = concept.getProperty(ontModel.createProperty(SLOVNIKY_NS + MA_INSTANCE_DEFINOVANE_CISELNIKEM));
+        if (codelistStmt == null || !codelistStmt.getObject().isURIResource()) {
+            return;
+        }
+        Resource codelist = codelistStmt.getObject().asResource();
+        JSONObject codelistObj = new JSONObject();
+        codelistObj.put(ExportConstants.Json.IRI, codelist.getURI());
+        codelistObj.put(ExportConstants.Json.TYP, CISELNIK_JSON_LD);
+
+        Statement datasetStmt = codelist.getProperty(
+                ontModel.createProperty(OFN_NAMESPACE_LEGAL + MA_V_NKOD_ZASTRESUJICI_DATOVOU_SADU));
+        if (datasetStmt != null && datasetStmt.getObject().isURIResource()) {
+            codelistObj.put(VocabularyConstants.DATOVA_SADA_V_NKOD, datasetStmt.getObject().asResource().getURI());
+        }
+        pojemObj.put(VocabularyConstants.INSTANCE_DEFINOVANY_CISELNIKEM, codelistObj);
     }
 
     private void addNewSourceProperties(Resource concept, JSONObject pojemObj) throws JSONException {

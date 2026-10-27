@@ -207,7 +207,12 @@ public class TurtleExporter {
         if (ontologyIRI == null) {
             return true;
         }
-        return !uri.startsWith(ontologyIRI + "/pojem/");
+        return !uri.startsWith(ontologyIRI + "/pojem/") && !isCodelist(resource);
+    }
+
+    /** Codelists live outside the vocabulary, but their description (type, NKOD dataset) belongs in the export. */
+    private boolean isCodelist(Resource resource) {
+        return ontModel.contains(resource, RDF.type, ontModel.createResource(OFN_NAMESPACE_LEGAL + CISELNIK));
     }
 
     private boolean shouldFilterAsBaseSchema(String uri) {

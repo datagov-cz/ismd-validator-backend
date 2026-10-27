@@ -267,7 +267,56 @@ public class OntologyResourceBuilder {
         addEquivalentConcept(classResource, classData, filterStatistics);
         addAgenda(classResource, classData);
         addAgendaInformationSystem(classResource, classData);
+        addCodelist(classResource, classData);
         governanceProcessor.addClassDataGovernanceMetadata(classResource, classData);
+    }
+
+    /**
+     * Links a class to the codelist defining its instances, as OFN slovníky models it:
+     * <pre>
+     * &lt;class&gt; slovníky:má-instance-definované-číselníkem &lt;codelist&gt; .
+     * &lt;codelist&gt; a l111-2009:číselník ; l111-2009:má-v-nkod-zastřešující-datovou-sadu &lt;dataset&gt; .
+     * </pre>
+     * Values that are not http(s) IRIs are skipped with a warning. An NKOD dataset needs a codelist to attach to.
+     */
+    private void addCodelist(Resource classResource, ClassData classData) {
+        String codelistIri = trimToNull(classData.getCodelistIri());
+        String datasetIri = trimToNull(classData.getCodelistNkodDataset());
+
+        if (codelistIri == null) {
+            if (datasetIri != null) {
+                log.warn("Class '{}': NKOD dataset '{}' has no codelist to belong to, ignoring it",
+                        classData.getName(), datasetIri);
+            }
+            return;
+        }
+        if (!isHttpIri(codelistIri)) {
+            log.warn("Class '{}': codelist '{}' is not an http(s) IRI, ignoring the codelist{}",
+                    classData.getName(), codelistIri, datasetIri != null ? " and its NKOD dataset" : "");
+            return;
+        }
+
+        Resource codelist = ontModel.createResource(codelistIri);
+        classResource.addProperty(ontModel.createProperty(SLOVNIKY_NS + MA_INSTANCE_DEFINOVANE_CISELNIKEM), codelist);
+        codelist.addProperty(RDF.type, ontModel.createResource(OFN_NAMESPACE_LEGAL + CISELNIK));
+
+        if (datasetIri == null) {
+            return;
+        }
+        if (!isHttpIri(datasetIri)) {
+            log.warn("Class '{}': NKOD dataset '{}' is not an http(s) IRI, ignoring it", classData.getName(), datasetIri);
+            return;
+        }
+        codelist.addProperty(ontModel.createProperty(OFN_NAMESPACE_LEGAL + MA_V_NKOD_ZASTRESUJICI_DATOVOU_SADU),
+                ontModel.createResource(datasetIri));
+    }
+
+    private static String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static boolean isHttpIri(String value) {
+        return (value.startsWith("https://") || value.startsWith("http://")) && UtilityMethods.isValidIRI(value);
     }
 
     private void addAlternativeName(Resource classResource, ClassData classData) {

@@ -304,6 +304,8 @@ public class ExcelReader {
                 .withColumn(IDENTIFIKATOR, (data, value) -> setValidatedIdentifier(data::setIdentifier, data::getName, value))
                 .withColumn(AGENDA, ClassData::setAgendaCode)
                 .withColumn(AIS, ClassData::setAgendaSystemCode)
+                .withColumn(INSTANCE_DEFINOVANY_CISELNIKEM, ClassData::setCodelistIri)
+                .withColumn(DATOVA_SADA_V_NKOD, ClassData::setCodelistNkodDataset)
                 .withColumn(JE_VEREJNY, ClassData::setIsPublic)
                 .withColumn(USTANOVENI_DOKLADAJICI_NEVEREJNOST, ClassData::setPrivacyProvision)
                 .withColumn(ZPUSOB_SDILENI_UDEJE, ClassData::setSharingMethod)

@@ -219,6 +219,8 @@ public class ArchiReader {
         classData.setSharedInPPDF(properties.get(JE_PPDF));
         classData.setAgendaCode(properties.get(AGENDA));
         classData.setAgendaSystemCode(properties.get(AIS));
+        classData.setCodelistIri(properties.get(INSTANCE_DEFINOVANY_CISELNIKEM));
+        classData.setCodelistNkodDataset(properties.get(DATOVA_SADA_V_NKOD));
 
         extractAndValidateClassPublicityData(classData, properties, name);
 
@@ -592,6 +594,8 @@ public class ArchiReader {
 
     private void mapStandardizedLabel(String propId, String propName) {
         Map<String, String> specificPatterns = new LinkedHashMap<>();
+        specificPatterns.put("instance definovány číselníkem", INSTANCE_DEFINOVANY_CISELNIKEM);
+        specificPatterns.put("datová sada v NKOD", DATOVA_SADA_V_NKOD);
         specificPatterns.put("ekvivalentní pojem", EKVIVALENTNI_POJEM);
         specificPatterns.put("související zdroj", SOUVISEJICI_ZDROJ);
         specificPatterns.put("ustanovení dokládající neveřejnost", USTANOVENI_NEVEREJNOST);
