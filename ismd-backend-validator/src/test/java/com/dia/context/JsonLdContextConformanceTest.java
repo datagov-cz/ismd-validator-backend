@@ -1,19 +1,21 @@
 package com.dia.context;
 
-import com.dia.context.JsonLdContextIndex.Scope;
-import com.dia.context.JsonLdContextIndex.Term;
+import com.dia.ofn.OfnContextIndex;
+import com.dia.ofn.OfnContextIndex.Scope;
+import com.dia.ofn.GateResult;
+import com.dia.ofn.OfnConformanceGate;
+import com.dia.ofn.OfnSpecification;
+import com.dia.ofn.OfnContextIndex.Term;
 import com.dia.conversion.data.OntologyData;
 import com.dia.conversion.data.TransformationResult;
 import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
-import com.dia.conversion.transformer.OFNDataTransformerNew;
+import com.dia.conversion.transformer.OFNDataTransformer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SchemaValidatorsConfig;
-import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -32,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -52,8 +55,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JsonLdContextConformanceTest {
 
-    private static final String CONTEXT_PATH = "com/dia/context/json_ld_context.jsonld";
-    private static final String SCHEMA_PATH = "com/dia/context/json_ld_schema.json";
     private static final String KNOWN_GAPS_PATH = "com/dia/context/known-coverage-gaps.txt";
     private static final String FIXTURES = "com/dia/canonical/complete/";
 
@@ -75,25 +76,21 @@ class JsonLdContextConformanceTest {
     @Autowired
     private EnterpriseArchitectReader eaReader;
     @Autowired
-    private OFNDataTransformerNew transformer;
+    private OFNDataTransformer transformer;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private JsonLdContextIndex context;
+    private OfnContextIndex context;
     private JsonSchema schema;
     /** Concept variants of the schema (pojmy.items.anyOf), keyed by their title, e.g. "Třída". */
-    private final Map<String, JsonSchema> conceptSchemasByType = new HashMap<>();
+    private Map<String, JsonSchema> conceptSchemasByType;
     private final Map<String, JsonNode> outputs = new LinkedHashMap<>();
 
     @BeforeAll
     void setUp() throws Exception {
-        context = new JsonLdContextIndex(objectMapper.readTree(read(CONTEXT_PATH)));
-        JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
-        SchemaValidatorsConfig config = SchemaValidatorsConfig.builder().formatAssertionsEnabled(true).build();
-        JsonNode schemaNode = objectMapper.readTree(read(SCHEMA_PATH));
-        schema = factory.getSchema(schemaNode, config);
-        for (JsonNode variant : schemaNode.path("properties").path("pojmy").path("items").path("anyOf")) {
-            conceptSchemasByType.put(variant.path("title").asText(), factory.getSchema(variant, config));
-        }
+        OfnSpecification specification = OfnSpecification.bundled();
+        context = specification.contextIndex();
+        schema = specification.schema();
+        conceptSchemasByType = specification.conceptSchemasByType();
         for (String fixture : fixtures()) {
             outputs.put(fixture, objectMapper.readTree(convert(fixture)));
         }
@@ -135,6 +132,19 @@ class JsonLdContextConformanceTest {
             fail(errors.size() + " OFN JSON Schema violation(s) in " + fixture + ":\n  "
                     + errors.stream().sorted().collect(Collectors.joining("\n  ")));
         }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("fixtures")
+    void output_passesConformanceGateUnchanged(String fixture) {
+        JsonNode output = outputs.get(fixture);
+        GateResult result = new OfnConformanceGate(OfnSpecification.bundled()).apply((ObjectNode) output);
+
+        if (!result.issues().isEmpty()) {
+            fail(result.issues().size() + " conformance gate issue(s) in " + fixture + ":\n  "
+                    + result.issues().stream().map(Object::toString).collect(Collectors.joining("\n  ")));
+        }
+        assertEquals(output, result.document());
     }
 
     @Test
@@ -195,7 +205,7 @@ class JsonLdContextConformanceTest {
             if (key.equals("@context")) {
                 return;
             }
-            Optional<Term> term = JsonLdContextIndex.resolve(nodeScopes, key);
+            Optional<Term> term = OfnContextIndex.resolve(nodeScopes, key);
             if (term.isEmpty()) {
                 violations.add(at(keyLocation) + "key is not defined in the context");
                 return;
@@ -218,8 +228,8 @@ class JsonLdContextConformanceTest {
                 violations.add(at(location + "/typ") + "type must be a string, got " + type.getNodeType());
                 continue;
             }
-            Optional<Term> typeTerm = JsonLdContextIndex.resolve(scopes, type.asText());
-            if (typeTerm.isEmpty() || !typeTerm.get().isTypeTerm()) {
+            Optional<Term> typeTerm = OfnContextIndex.resolve(scopes, type.asText());
+            if (typeTerm.isEmpty() || typeTerm.get().isTypeTerm()) {
                 violations.add(at(location + "/typ") + "type '" + type.asText() + "' is not defined in the context");
                 continue;
             }

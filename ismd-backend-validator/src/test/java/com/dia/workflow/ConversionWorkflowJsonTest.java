@@ -3,7 +3,7 @@ package com.dia.workflow;
 import com.dia.conversion.data.*;
 import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.excel.ExcelReader;
-import com.dia.conversion.transformer.OFNDataTransformerNew;
+import com.dia.conversion.transformer.OFNDataTransformer;
 import com.dia.workflow.config.WorkflowTestConfiguration;
 import com.dia.workflow.deviation.DeviationDetector;
 import com.dia.workflow.deviation.WorkflowDeviation;
@@ -58,7 +58,7 @@ class ConversionWorkflowJsonTest {
     private ArchiReader archiReader;
 
     @Autowired
-    private OFNDataTransformerNew transformer;
+    private OFNDataTransformer transformer;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final DeviationDetector deviationDetector = new DeviationDetector();

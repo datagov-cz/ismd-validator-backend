@@ -5,7 +5,7 @@ import com.dia.conversion.data.TransformationResult;
 import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
-import com.dia.conversion.transformer.OFNDataTransformerNew;
+import com.dia.conversion.transformer.OFNDataTransformer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.jena.rdf.model.Model;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ActiveProfiles("test")
 class TurtleMatchesJsonLdTest {
 
-    private static final String CONTEXT_PATH = "com/dia/context/json_ld_context.jsonld";
+    private static final String CONTEXT_PATH = "ofn/slovniky/kontext.jsonld";
 
     @Autowired
     private ExcelReader excelReader;
@@ -44,7 +44,7 @@ class TurtleMatchesJsonLdTest {
     @Autowired
     private EnterpriseArchitectReader eaReader;
     @Autowired
-    private OFNDataTransformerNew transformer;
+    private OFNDataTransformer transformer;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

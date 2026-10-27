@@ -2,9 +2,13 @@ package com.dia.exporter;
 
 import com.dia.conversion.data.TransformationResult;
 import com.dia.conversion.reader.excel.ExcelReader;
-import com.dia.conversion.transformer.OFNDataTransformerNew;
+import com.dia.conversion.transformer.OFNDataTransformer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.dia.ofn.GateResult;
+import com.dia.ofn.OfnConformanceGate;
+import com.dia.ofn.OfnRdf;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFParser;
@@ -17,15 +21,14 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * A digital object without a URL is described by název and popis (OFN slovníky tezaurus example).
- * No input format has a description field yet, so the test adds dcterms:description to a
- * converted model, as a future reader would, and checks both exports keep it.
+ * No input format has a description field yet, so the test adds popis to the converted document,
+ * as a future reader would, and checks the gate and both exports keep it.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -39,30 +42,43 @@ class DigitalObjectDescriptionExportTest {
     @Autowired
     private ExcelReader excelReader;
     @Autowired
-    private OFNDataTransformerNew transformer;
+    private OFNDataTransformer transformer;
+
+    @Autowired
+    private OfnConformanceGate gate;
+    @Autowired
+    private OfnRdf rdf;
 
     @Test
     void descriptionOfDigitalObject_isExportedToJsonLdAndTurtle() throws Exception {
-        TransformationResult result;
+        TransformationResult converted;
         try (InputStream is = new ClassPathResource(FIXTURE).getInputStream()) {
-            result = transformer.transform(excelReader.readOntologyFromExcel(is));
+            converted = transformer.transform(excelReader.readOntologyFromExcel(is));
         }
-        int described = addDescriptionToTitledDocuments(result.getOntModel());
+        ObjectNode document = converted.document().deepCopy();
+        int described = addDescriptionToTitledDocuments(document);
         assertTrue(described > 0, "fixture should contain a digital object titled '" + TITLE + "'");
 
-        assertJsonLdHasDescription(transformer.exportToJson(result), described);
-        assertTurtleHasDescription(transformer.exportToTurtle(result), described);
+        GateResult gated = gate.apply(document);
+        assertTrue(gated.issues().isEmpty(), "popis is a context term: " + gated.issues());
+
+        assertJsonLdHasDescription(rdf.toJsonLd(gated.document()), described);
+        assertTurtleHasDescription(rdf.toTurtle(rdf.toModel(gated.document())), described);
     }
 
-    private int addDescriptionToTitledDocuments(Model model) {
-        List<Resource> documents = new ArrayList<>();
-        model.listSubjectsWithProperty(RDF.type, model.createResource(DIGITAL_OBJECT)).forEachRemaining(doc -> {
-            if (doc.hasProperty(DCTerms.title, model.createLiteral(TITLE, "cs"))) {
-                documents.add(doc);
+    private int addDescriptionToTitledDocuments(ObjectNode document) {
+        int described = 0;
+        for (JsonNode concept : document.path("pojmy")) {
+            for (String key : List.of("definující-nelegislativní-zdroj", "související-nelegislativní-zdroj")) {
+                for (JsonNode doc : concept.path(key)) {
+                    if (TITLE.equals(doc.path("název").path("cs").asText())) {
+                        ((ObjectNode) doc).putObject("popis").put("cs", DESCRIPTION);
+                        described++;
+                    }
+                }
             }
-        });
-        documents.forEach(doc -> doc.addProperty(DCTerms.description, DESCRIPTION, "cs"));
-        return documents.size();
+        }
+        return described;
     }
 
     private void assertJsonLdHasDescription(String json, int expectedCount) throws Exception {

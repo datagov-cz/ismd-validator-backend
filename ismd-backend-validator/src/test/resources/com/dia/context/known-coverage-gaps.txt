@@ -1,4 +1,4 @@
-# Context terms (paths into json_ld_context.jsonld) that no fixture produces yet.
+# Context terms (paths into src/main/resources/ofn/slovniky/kontext.jsonld) that no fixture produces yet.
 # JsonLdContextConformanceTest fails if a term is missing from both the outputs and this list,
 # and also if a term listed here becomes covered — so remove lines as support lands.
 

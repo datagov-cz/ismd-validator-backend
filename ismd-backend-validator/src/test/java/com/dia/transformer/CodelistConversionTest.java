@@ -5,7 +5,7 @@ import com.dia.conversion.data.TransformationResult;
 import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
-import com.dia.conversion.transformer.OFNDataTransformerNew;
+import com.dia.conversion.transformer.OFNDataTransformer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.jena.rdf.model.*;
@@ -68,7 +68,7 @@ class CodelistConversionTest {
     @Autowired
     private EnterpriseArchitectReader eaReader;
     @Autowired
-    private OFNDataTransformerNew transformer;
+    private OFNDataTransformer transformer;
 
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"ciselniky-test-excel.xlsx", "ciselniky-test-Archi.xml", "ciselniky-test-ea.xml"})

@@ -2,7 +2,7 @@ package com.dia.workflow;
 
 import com.dia.conversion.data.*;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
-import com.dia.conversion.transformer.OFNDataTransformerNew;
+import com.dia.conversion.transformer.OFNDataTransformer;
 import com.dia.workflow.config.WorkflowTestConfiguration;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -55,7 +55,7 @@ class ConversionWorkflowEATurtleTest {
     private EnterpriseArchitectReader eaReader;
 
     @Autowired
-    private OFNDataTransformerNew transformer;
+    private OFNDataTransformer transformer;
 
     static Stream<WorkflowTestConfiguration> testConfigurationProvider() {
         return WorkflowTestConfiguration.eaConfigurations().stream();
