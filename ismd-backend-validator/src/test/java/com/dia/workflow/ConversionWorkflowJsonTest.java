@@ -159,7 +159,9 @@ class ConversionWorkflowJsonTest {
         // Verify all entities appear in output
         if (actualRoot.has("pojmy")) {
             int outputEntityCount = actualRoot.get("pojmy").size();
-            int expectedEntityCount = 40;
+            // Same number of concepts as the expected output (external references such as Adresa are filtered out)
+            int expectedEntityCount = objectMapper.readTree(loadResourceAsString(config.getExpectedOutputPath()))
+                    .get("pojmy").size();
 
             if (expectedEntityCount != outputEntityCount) {
                 System.out.println("\nEntity count mismatch detected!");
@@ -169,7 +171,7 @@ class ConversionWorkflowJsonTest {
 
                 findMissingConcepts(ontologyData, actualRoot);
 
-                fail(String.format("Output should contain %d entities (adresa concept filtered due to IRI mismatch), but found %d",
+                fail(String.format("Output should contain %d entities, as the expected output does, but found %d",
                     expectedEntityCount, outputEntityCount));
             }
 

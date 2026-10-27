@@ -22,8 +22,3 @@ aktualizováno/Časový okamžik/datum
 # Export is covered by DigitalObjectDescriptionExportTest.
 pojmy/definující-nelegislativní-zdroj/Digitální objekt/popis
 pojmy/související-nelegislativní-zdroj/Digitální objekt/popis
-
-# ---- Missing fixture data: supported end to end, no fixture has the value --------------------
-
-pojmy/nadřazený-vztah
-pojmy/definující-nelegislativní-zdroj/Digitální objekt/url

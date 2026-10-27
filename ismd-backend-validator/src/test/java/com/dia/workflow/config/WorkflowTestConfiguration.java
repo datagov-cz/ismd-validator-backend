@@ -73,7 +73,7 @@ public class WorkflowTestConfiguration {
                 .expectedCounts(EntityCounts.builder()
                         .classes(6)  // 6 local classes - Adresa is external reference and should not be counted
                         .properties(30)
-                        .relationships(4)
+                        .relationships(5)
                         .hierarchies(3)
                         .build())
                 .requiredCharacteristics(List.of(
@@ -97,7 +97,8 @@ public class WorkflowTestConfiguration {
                         ALTERNATIVNI_NAZEV,
                         DEFINUJICI_NELEGISLATIVNI_ZDROJ,
                         SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
-                        NADRAZENA_VLASTNOST
+                        NADRAZENA_VLASTNOST,
+                        NADRAZENY_VZTAH
                 ))
                 .build();
     }

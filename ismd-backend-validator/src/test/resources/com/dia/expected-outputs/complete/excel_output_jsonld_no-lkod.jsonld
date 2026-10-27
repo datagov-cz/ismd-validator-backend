@@ -252,6 +252,12 @@
             },
             "definující-ustanovení-právního-předpisu": [
                 "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_f"
+            ],
+            "definující-nelegislativní-zdroj": [
+                {
+                    "typ": "Digitální objekt",
+                    "url": "https://www.mdcr.cz/"
+                }
             ]
         },
         {
@@ -799,6 +805,24 @@
             ],
             "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz",
             "obor-hodnot": "xsd:date"
+        },
+        {
+            "iri": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řídí-vozidlo-s-řidičským-průkazem",
+            "typ": [
+                "Pojem",
+                "Koncept",
+                "Vztah",
+                "Veřejný údaj"
+            ],
+            "název": {
+                "cs": "řídí vozidlo s řidičským průkazem"
+            },
+            "definiční-obor": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič-evidovaný-v-registru-řidičů",
+            "obor-hodnot": "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/vozidlo",
+            "nadřazený-vztah": [
+                "https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řídí-vozidlo"
+            ],
+            "je-sdílen-v-ppdf": false
         }
     ]
 }
