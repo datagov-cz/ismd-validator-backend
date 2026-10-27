@@ -24,7 +24,7 @@ class OfnDocumentBuilderTest {
     private static final String P = VOCABULARY + "/pojem/";
     private static final String ELI_SOURCE = "https://www.e-sbirka.cz/eli/cz/sb/2000/361/2024-07-01/dokument/norma/par_2";
     private static final String ELI_PROVISION =
-            "https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/par_2";
+            "https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/par_2";
 
     private final OfnDocumentBuilder builder =
             new OfnDocumentBuilder(new ConceptFilterUtil(), OfnSpecification.bundled());

@@ -22,7 +22,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy
                 <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A998>;
         a104:údaje-jsou-v-ais           <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/998>;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_a> .
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_a> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/jméno-držitele-řidičského-průkazu>
         rdf:type                        skos:Concept , l111-2009:neveřejný-údaj , slovníky:pojem , owl:DatatypeProperty;
@@ -34,9 +34,9 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         skos:prefLabel                  "Jméno držitele řidičského průkazu"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 true;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_a>;
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_a>;
         l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost
-                <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c> .
+                <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/url-s>
         rdf:type        skos:Concept , slovníky:pojem , owl:DatatypeProperty;
@@ -55,7 +55,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         skos:definition                 "Řidičský průkaz vydá příslušný obecní úřad obce s rozšířenou působností na žádost držitele řidičského oprávnění."@cs;
         skos:inScheme                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat>;
         skos:prefLabel                  "vydává řidičský průkaz"@cs;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3>;
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3>;
         slovníky:má-typ-obsahu-údaje    typy-obsahu-údajů:identifikační;
         slovníky:má-způsob-sdílení-údaje
                 způsoby-sdílení-údajů:poskytované-na-žádost;
@@ -71,7 +71,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy
                 <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A998>;
         a104:údaje-jsou-v-ais           <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/1234>;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_4/par_119/odst_2/pism_a> .
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_4/par_119/odst_2/pism_a> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/url-i>
         rdf:type        skos:Concept , slovníky:pojem , owl:DatatypeProperty;
@@ -92,7 +92,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         slovníky:má-způsob-sdílení-údaje
                 způsoby-sdílení-údajů:poskytované-na-žádost;
         l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost
-                <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1> .
+                <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/datum-a-čas-s>
         rdf:type        skos:Concept , slovníky:pojem , owl:DatatypeProperty;
@@ -232,7 +232,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         slovníky:má-způsob-sdílení-údaje
                 způsoby-sdílení-údajů:poskytované-na-žádost;
         l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost
-                <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1> .
+                <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/datum-a-čas-p>
         rdf:type        skos:Concept , slovníky:pojem , owl:DatatypeProperty;
@@ -295,7 +295,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         skos:prefLabel                  "Název obecního úřadu obce s rozšířenou působností (copy)"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 true;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i> .
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/obecní-úřad-obce-s-rozšířenou-působností>
         rdf:type                        vsgov:typ-subjektu-práva , slovníky:pojem , owl:Class , skos:Concept;
@@ -303,7 +303,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         skos:exactMatch                 <https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce> , <https://slovník.gov.cz/legislativní/sbírka/128/2000/pojem/obecní-úřad-obce-s-rozšířenou-působností>;
         skos:inScheme                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat>;
         skos:prefLabel                  "Obecní úřad obce s rozšířenou působností"@cs;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3> .
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_109/odst_3> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/čas-i>
         rdf:type        skos:Concept , slovníky:pojem , owl:DatatypeProperty;
@@ -323,7 +323,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         skos:prefLabel                  "řídí vozidlo"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 false;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-04-01/dokument/norma/cast_1/hlava_1/par_2/pism_d>;
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-04-01/dokument/norma/cast_1/hlava_1/par_2/pism_d>;
         slovníky:má-způsob-sdílení-údaje
                 způsoby-sdílení-údajů:zpřístupňované-pro-výkon-agendy;
         slovníky:má-způsob-získání-údaje
@@ -350,7 +350,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
                 [ rdf:type    <https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt>;
                   schema:url  "https://www.mdcr.cz/"^^xsd:anyURI
                 ];
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_f> .
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_1/par_2/pism_f> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/text-i>
         rdf:type        skos:Concept , slovníky:pojem , owl:DatatypeProperty;
@@ -370,7 +370,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         skos:prefLabel                  "sídlí na adrese"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 true;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i>;
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i>;
         slovníky:má-typ-obsahu-údaje    typy-obsahu-údajů:evidenční;
         slovníky:má-způsob-sdílení-údaje
                 způsoby-sdílení-údajů:nesdílené;
@@ -416,7 +416,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         skos:prefLabel                  "Název obecního úřadu obce s rozšířenou působností"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 true;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i> .
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-10-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_i> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/drží-řidičský-průkaz>
         rdf:type                        owl:ObjectProperty , slovníky:pojem , skos:Concept , l111-2009:neveřejný-údaj;
@@ -428,14 +428,14 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         skos:prefLabel                  "drží řidičský průkaz"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 false;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_4/par_119/odst_2/pism_a>;
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_4/par_119/odst_2/pism_a>;
         slovníky:má-typ-obsahu-údaje    typy-obsahu-údajů:statistické;
         slovníky:má-způsob-sdílení-údaje
                 způsoby-sdílení-údajů:veřejně-přístupné;
         slovníky:má-způsob-získání-údaje
                 způsoby-získání-údajů:vlastní;
         l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost
-                <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c> .
+                <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidičský-průkaz>
         rdf:type                        slovníky:pojem , owl:Class , skos:Concept , vsgov:typ-objektu-práva;
@@ -443,7 +443,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         skos:definition                 "Řidičský průkaz je veřejná listina, která osvědčuje řidičské oprávnění držitele a jeho rozsah a kterou držitel prokazuje své jméno, příjmení a podobu, jakož i další údaje v ní zapsané podle tohoto zákona."@cs;
         skos:inScheme                   <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat>;
         skos:prefLabel                  "Řidičský průkaz"@cs;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1> .
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_103/odst_1> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/řidič>
         rdf:type                        vsgov:typ-subjektu-práva , skos:Concept , owl:Class , slovníky:pojem;
@@ -456,7 +456,7 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy
                 <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/agenda/A998>;
         a104:údaje-jsou-v-ais           <https://rpp-opendata.egon.gov.cz/odrpp/zdroj/isvs/1234>;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-04-01/dokument/norma/cast_1/hlava_1/par_2/pism_d> .
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-04-01/dokument/norma/cast_1/hlava_1/par_2/pism_d> .
 
 <https://slovník.gov.cz/příkladový-slovník-z-metodiky-popisu-dat/pojem/příjmení-držitele-řidičského-průkazu>
         rdf:type                        l111-2009:neveřejný-údaj , skos:Concept , owl:DatatypeProperty , slovníky:pojem;
@@ -468,6 +468,6 @@ PREFIX čas:                   <https://slovník.gov.cz/generický/čas/pojem/>
         skos:prefLabel                  "Příjmení držitele řidičského průkazu"@cs;
         a104:je-sdílen-v-propojeném-datovém-fondu
                 true;
-        slovníky:definující-ustanovení  <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_a>;
+        slovníky:definující-ustanovení  <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_a>;
         l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost
-                <https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c> .
+                <https://opendata.eselpoint.gov.cz/esel-esb/eli/cz/sb/2000/361/2024-07-01/dokument/norma/cast_1/hlava_3/dil_2/par_105/odst_1/pism_c> .

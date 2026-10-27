@@ -34,7 +34,7 @@ import static com.dia.ofn.OfnTerms.*;
 @Component
 public class OfnDocumentBuilder {
 
-    private static final String OPENDATA_ESEL = "https://opendata.eselpoint.cz/esel-esb/";
+    private static final String OPENDATA_ESEL = "https://opendata.eselpoint.gov.cz/esel-esb/";
     private static final String LANG = "cs";
     private static final List<String> GOVERNANCE_VALUES = List.of(
             "veřejně přístupné", "poskytované na žádost", "nesdílené", "zpřístupňované pro výkon agendy",
