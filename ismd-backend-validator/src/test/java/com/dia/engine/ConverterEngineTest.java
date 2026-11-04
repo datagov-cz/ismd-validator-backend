@@ -147,6 +147,19 @@ class ConverterEngineTest {
         }
 
         @Test
+        void testProcessArchiFile_missingVocabularyName_notWrapped() throws Exception {
+            String content = "<xml>content</xml>";
+            OntologyData mockOntologyData = mock(OntologyData.class);
+            MissingVocabularyNameException missing = new MissingVocabularyNameException("Slovník nemá vyplněný název.");
+
+            when(archiReader.readArchiFromString(content)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(missing);
+
+            assertSame(missing, assertThrows(MissingVocabularyNameException.class,
+                    () -> converterEngine.processArchiFile(content)));
+        }
+
+        @Test
         void testProcessArchiFile_conversionException_propagated() throws Exception {
             // Setup with conversion exception
             MDC.put(LOG_REQUEST_ID, "req-4");

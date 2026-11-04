@@ -2,21 +2,21 @@ package com.dia.validation;
 
 import com.dia.conversion.data.*;
 import com.dia.conversion.transformer.OFNDataTransformer;
-import com.dia.ofn.ConformanceIssue;
-import com.dia.service.ValidationService;
-import com.dia.validation.data.ISMDValidationReport;
-import org.junit.jupiter.api.Test;
+import com.dia.exception.MissingVocabularyNameException;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * A vocabulary that fails the OFN schema itself (here: no name) is still converted, but is reported
- * both as a conformance issue and as a SHACL violation, so the controller withholds the download.
+ * A vocabulary without a name is an invalid request: it is rejected before conversion, for every
+ * input format, instead of producing an output with no concepts.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -24,25 +24,23 @@ class InvalidVocabularyTest {
 
     @Autowired
     private OFNDataTransformer transformer;
-    @Autowired
-    private ValidationService validationService;
 
-    @Test
-    void vocabularyWithoutName_isReportedAsViolation() throws Exception {
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "   "})
+    void vocabularyWithoutName_isRejected(String name) {
+        VocabularyMetadata metadata = new VocabularyMetadata();
+        metadata.setName(name);
         OntologyData data = OntologyData.builder()
-                .vocabularyMetadata(new VocabularyMetadata())
+                .vocabularyMetadata(metadata)
                 .classes(List.of())
                 .properties(List.of())
                 .relationships(List.of())
                 .hierarchies(List.of())
                 .build();
 
-        TransformationResult result = transformer.transform(data);
-        ISMDValidationReport report = validationService.validate(result);
-
-        assertThat(result.conformanceIssues())
-                .anyMatch(issue -> issue.kind() == ConformanceIssue.Kind.VOCABULARY_INVALID);
-        assertThat(report.results())
-                .anyMatch(r -> r.isError() && r.ruleName().endsWith("/název-slovníku"));
+        assertThatThrownBy(() -> transformer.transform(data))
+                .isInstanceOf(MissingVocabularyNameException.class)
+                .hasMessage("Slovník nemá vyplněný název.");
     }
 }

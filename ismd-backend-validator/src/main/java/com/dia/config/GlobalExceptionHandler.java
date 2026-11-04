@@ -128,6 +128,12 @@ public class GlobalExceptionHandler {
         return error(ErrorCode.EXCEL_READ_FAILED, e.getMessage());
     }
 
+    @ExceptionHandler(MissingVocabularyNameException.class)
+    public ResponseEntity<ApiResponseDto<Void>> handleMissingVocabularyName(MissingVocabularyNameException e) {
+        log.warn("Vocabulary has no name: {}", e.getMessage());
+        return error(ErrorCode.VOCABULARY_NAME_MISSING, e.getMessage());
+    }
+
     @ExceptionHandler(ConversionException.class)
     public ResponseEntity<ApiResponseDto<Void>> handleConversion(ConversionException e) {
         log.error("Conversion failed: {}", e.getMessage(), e);

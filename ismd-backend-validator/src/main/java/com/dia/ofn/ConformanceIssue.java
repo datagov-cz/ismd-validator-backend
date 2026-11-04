@@ -17,6 +17,11 @@ public record ConformanceIssue(Kind kind, String conceptIri, String location, St
         CONCEPT_EXCLUDED,
         /** A reference to an excluded concept was removed. */
         REFERENCE_REMOVED,
+        /**
+         * An input element whose IRI belongs to another vocabulary: it is only referenced, so its own
+         * data (name, definition, …) is not part of the output.
+         */
+        EXTERNAL_CONCEPT,
         /** The vocabulary itself fails the OFN JSON Schema. */
         VOCABULARY_INVALID
     }

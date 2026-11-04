@@ -346,7 +346,10 @@ public class OfnDocumentBuilder {
          */
         private ObjectNode newConcept(String iri, ConceptKind kind, String element) {
             if (localPrefix == null || !iri.startsWith(localPrefix)) {
-                log.debug("External concept (referenced only): {} -> {}", element, iri);
+                log.info("External concept (referenced only): {} -> {}", element, iri);
+                issues.add(new ConformanceIssue(Kind.EXTERNAL_CONCEPT, iri, location(iri),
+                        element + " má IRI mimo tento slovník (" + localPrefix + "…); je jen odkazován,"
+                                + " jeho údaje nejsou součástí výstupu"));
                 return null;
             }
             String previous = owners.putIfAbsent(iri, element);

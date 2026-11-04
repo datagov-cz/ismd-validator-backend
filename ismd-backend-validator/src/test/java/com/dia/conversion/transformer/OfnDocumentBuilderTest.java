@@ -225,6 +225,13 @@ class OfnDocumentBuilderTest {
         assertThat(concept.get("definiční-obor").asText()).isEqualTo(P + "řidič");
         assertThat(concept.get("obor-hodnot").asText()).isEqualTo("https://slovník.gov.cz/jiný/pojem/adresa");
         assertThat(iris(result)).doesNotContain("https://slovník.gov.cz/jiný/pojem/adresa");
+        assertThat(result.issues())
+                .filteredOn(issue -> issue.kind() == ConformanceIssue.Kind.EXTERNAL_CONCEPT)
+                .singleElement()
+                .satisfies(issue -> {
+                    assertThat(issue.conceptIri()).isEqualTo("https://slovník.gov.cz/jiný/pojem/adresa");
+                    assertThat(issue.message()).contains("třída 'Adresa'");
+                });
     }
 
     @Test

@@ -5,6 +5,7 @@ import com.dia.conversion.data.TransformationResult;
 import com.dia.conversion.data.VocabularyMetadata;
 import com.dia.exception.ConversionException;
 import com.dia.exception.JsonExportException;
+import com.dia.exception.MissingVocabularyNameException;
 import com.dia.exception.TurtleExportException;
 import com.dia.ofn.ConformanceIssue;
 import com.dia.ofn.GateResult;
@@ -53,6 +54,10 @@ public class OFNDataTransformer {
     public TransformationResult transform(OntologyData ontologyData) throws ConversionException {
         if (ontologyData == null || ontologyData.getVocabularyMetadata() == null) {
             throw new ConversionException("Invalid ontology data");
+        }
+        String name = ontologyData.getVocabularyMetadata().getName();
+        if (name == null || name.isBlank()) {
+            throw new MissingVocabularyNameException("Slovník nemá vyplněný název.");
         }
         try {
             VocabularyMetadata metadata = ontologyData.getVocabularyMetadata();
