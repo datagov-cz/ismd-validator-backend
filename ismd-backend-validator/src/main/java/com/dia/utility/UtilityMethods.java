@@ -1,7 +1,7 @@
 package com.dia.utility;
 
-import com.dia.exceptions.ConversionException;
-import com.dia.exceptions.UnsupportedFormatException;
+import com.dia.exception.ConversionException;
+import com.dia.exception.UnsupportedFormatException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import java.net.MalformedURLException;

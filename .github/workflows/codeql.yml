@@ -2,7 +2,7 @@ name: CodeQL
 
 # GitHub-native SAST for Java. CodeQL needs to observe a real Maven build to
 # build its database, so we replicate the same prerequisites as reusable-test.yml
-# (JDK 17, common library install via mvnw).
+# (JDK 17, build via mvnw).
 # Findings appear in Security -> Code scanning.
 
 on:
@@ -17,15 +17,11 @@ permissions:
   contents: read
   security-events: write
   actions: read
-  packages: read
 
 jobs:
   analyze:
     name: Analyze (java)
     runs-on: ubuntu-latest
-    env:
-      GITHUB_ACTOR: ${{ github.actor }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout
@@ -36,15 +32,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          server-id: github
-          server-username: GITHUB_ACTOR
-          server-password: GITHUB_TOKEN
 
       - name: Cache Maven packages
         uses: actions/cache@v6
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-codeql-${{ hashFiles('**/pom.xml', 'ismd-validator-common/src/**') }}
+          key: ${{ runner.os }}-maven-codeql-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
@@ -55,10 +48,6 @@ jobs:
           queries: security-extended
           config-file: ./.github/codeql/codeql-config.yml
           build-mode: manual
-
-      - name: Install common library
-        working-directory: ismd-backend-validator
-        run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
 
       - name: Build validator backend
         working-directory: ismd-backend-validator

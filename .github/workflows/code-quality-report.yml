@@ -7,16 +7,12 @@ on:
 
 permissions:
   contents: read
-  packages: read
 
 jobs:
   quality-report:
     name: Static Analysis (Report Only)
     runs-on: ubuntu-latest
     continue-on-error: true
-    env:
-      GITHUB_ACTOR: ${{ github.actor }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout
@@ -27,21 +23,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          server-id: github
-          server-username: GITHUB_ACTOR
-          server-password: GITHUB_TOKEN
 
       - name: Cache Maven packages
         uses: actions/cache@v6
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-quality-${{ hashFiles('**/pom.xml', 'ismd-validator-common/src/**') }}
+          key: ${{ runner.os }}-maven-quality-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-quality-
-
-      - name: Install common library locally
-        working-directory: ismd-backend-validator
-        run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
 
       - name: Run SpotBugs (report only)
         working-directory: ismd-backend-validator

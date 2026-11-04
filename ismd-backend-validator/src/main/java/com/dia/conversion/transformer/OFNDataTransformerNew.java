@@ -6,12 +6,13 @@ import com.dia.exception.JsonExportException;
 import com.dia.exception.TurtleExportException;
 import com.dia.exporter.JsonExporter;
 import com.dia.exporter.TurtleExporter;
-import com.dia.models.OFNBaseModel;
 import com.dia.utility.URIGenerator;
 import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
+import org.apache.jena.ontology.OntModelSpec;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
@@ -71,14 +72,7 @@ public class OFNDataTransformerNew {
             Map<String, String> nameToIdentifierMap = conceptFilterUtil.buildNameToIdentifierMap(ontologyData);
             conceptFilterUtil.buildFilteredConceptSet(ontologyData, filterStatistics);
 
-            Set<String> requiredBaseClasses = analyzeRequiredBaseClasses(ontologyData);
-            Set<String> requiredProperties = analyzeRequiredProperties(ontologyData);
-
-            log.debug("Required base classes: {}", requiredBaseClasses);
-            log.debug("Required properties: {}", requiredProperties);
-
-            OFNBaseModel dynamicBaseModel = new OFNBaseModel(requiredBaseClasses, requiredProperties);
-            this.ontModel = dynamicBaseModel.getOntModel();
+            this.ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM);
 
             String effectiveNamespace = determineEffectiveNamespace(ontologyData.getVocabularyMetadata());
             uriGenerator.setEffectiveNamespace(effectiveNamespace);
@@ -176,93 +170,6 @@ public class OFNDataTransformerNew {
             log.error("Unexpected error during Turtle export: requestId={}", requestId, e);
             throw new TurtleExportException("Neočekávaná chyba při exportu do Turtle.", e);
         }
-    }
-
-    /**
-     * Analyzes ontology data to determine which base classes are required.
-     * This enables dynamic model creation with only necessary components.
-     */
-    private Set<String> analyzeRequiredBaseClasses(OntologyData ontologyData) {
-        Set<String> requiredClasses = new HashSet<>();
-
-        if (hasAnyContent(ontologyData)) {
-            requiredClasses.add(POJEM);
-        }
-
-        addClassSpecificRequirements(ontologyData, requiredClasses);
-
-        log.debug("Analysis found {} required base classes", requiredClasses.size());
-        return requiredClasses;
-    }
-
-    private boolean hasAnyContent(OntologyData ontologyData) {
-        return !ontologyData.getClasses().isEmpty() ||
-                !ontologyData.getProperties().isEmpty() ||
-                !ontologyData.getRelationships().isEmpty();
-    }
-
-    private void addClassSpecificRequirements(OntologyData ontologyData, Set<String> requiredClasses) {
-        if (ontologyData.getClasses().isEmpty()) {
-            return;
-        }
-
-        requiredClasses.add(TRIDA);
-
-        for (ClassData classData : ontologyData.getClasses()) {
-            String type = classData.getType();
-            if (type != null) {
-                if (isSubjectType(type)) {
-                    requiredClasses.add(TSP);
-                } else if (isObjectType(type)) {
-                    requiredClasses.add(TOP);
-                }
-            }
-        }
-
-        for (ClassData classData : ontologyData.getClasses()) {
-            if (hasPublicDataClassification(classData)) {
-                requiredClasses.add(VEREJNY_UDAJ);
-            }
-            if (hasPrivateDataClassification(classData)) {
-                requiredClasses.add(NEVEREJNY_UDAJ);
-            }
-        }
-    }
-
-    private boolean isSubjectType(String type) {
-        return type.contains("subjekt") ||
-                type.equalsIgnoreCase("typ subjektu") ||
-                type.equalsIgnoreCase("Subjekt práva");
-    }
-
-    private boolean isObjectType(String type) {
-        return type.contains("objekt") ||
-                type.equalsIgnoreCase("typ objektu") ||
-                type.equalsIgnoreCase("Objekt práva");
-    }
-
-    /**
-     * Analyzes ontology data to determine which properties are required.
-     * Delegates to RequiredPropertiesAnalyzer for detailed analysis.
-     */
-    private Set<String> analyzeRequiredProperties(OntologyData ontologyData) {
-        RequiredPropertiesAnalyzer analyzer = new RequiredPropertiesAnalyzer(ontologyData);
-        return analyzer.analyze();
-    }
-
-    private boolean hasPublicDataClassification(ClassData classData) {
-        return classData.getIsPublic() != null &&
-                (classData.getIsPublic().toLowerCase().contains("ano") ||
-                        classData.getIsPublic().toLowerCase().contains("true") ||
-                        classData.getIsPublic().equalsIgnoreCase("yes"));
-    }
-
-    private boolean hasPrivateDataClassification(ClassData classData) {
-        return (classData.getIsPublic() != null &&
-                (classData.getIsPublic().toLowerCase().contains("ne") ||
-                        classData.getIsPublic().toLowerCase().contains("false") ||
-                        classData.getIsPublic().equalsIgnoreCase("no"))) ||
-                (classData.getPrivacyProvision() != null && !classData.getPrivacyProvision().trim().isEmpty());
     }
 
     /**

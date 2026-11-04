@@ -1,19 +1,9 @@
-# Dependabot — watches Maven dependencies across the two backend modules.
-# The validator-common library is consumed from GitHub Packages, so Dependabot
-# needs an authenticated registry to read its metadata.
+# Dependabot — watches the validator's Maven dependencies (all public, Maven Central).
 version: 2
-registries:
-  validator-packages:
-    type: maven-repository
-    url: https://maven.pkg.github.com/datagov-cz/ismd-validator-backend
-    username: x-access-token
-    password: ${{ secrets.PACKAGES_READ_TOKEN }}
 
 updates:
   - package-ecosystem: maven
-    directories:
-      - /ismd-backend-validator
-      - /ismd-validator-common
+    directory: /ismd-backend-validator
     schedule:
       interval: weekly
     # Scheduled version-update PRs open against dev for review before reaching main.
@@ -22,9 +12,7 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: chore
-    registries:
-      - validator-packages
-    # One grouped PR per run instead of a separate PR per dependency per module.
+    # One grouped PR per run instead of a separate PR per dependency.
     groups:
       maven-dependencies:
         patterns:
