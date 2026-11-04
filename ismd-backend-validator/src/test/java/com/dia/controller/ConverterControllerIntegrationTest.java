@@ -752,6 +752,26 @@ class ConverterControllerIntegrationTest {
     }
 
     @Test
+    void vocabularyNotOfn_isRejected400_withEveryVocabularyIssue() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "test.xml", "application/xml", minimalArchiXML.getBytes(StandardCharsets.UTF_8));
+        when(converterService.processArchiFile(anyString())).thenThrow(new com.dia.exception.OfnConformanceException(
+                "https://slovník.gov.cz/x", List.of(new ConformanceIssue(ConformanceIssue.Kind.VOCABULARY_INVALID,
+                        null, "/iri", "does not match the iri pattern"))));
+
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertFalse(body.get("success").asBoolean());
+        assertEquals(ErrorCode.VOCABULARY_OFN_NONCONFORMANT.name(), body.get("errorCode").asText());
+        assertEquals("https://slovník.gov.cz/x", body.at("/data/vocabularyIri").asText());
+        assertEquals("VOCABULARY_INVALID", body.at("/data/issues/0/kind").asText());
+        assertEquals("/iri", body.at("/data/issues/0/location").asText());
+    }
+
+    @Test
     void testDefaultOutputFormat() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "test.xml", "application/xml",

@@ -166,6 +166,34 @@ class OfnDocumentBuilderTest {
     }
 
     @Test
+    void governanceValues_areTrimmed_andSharingMethodsSplitOnSemicolon() {
+        ClassData a = cls("A");
+        a.setAcquisitionMethod(" Vlastní ");
+        a.setSharingMethod("veřejně přístupné; poskytované na žádost ;nesdílené");
+
+        OfnDocumentBuilder.Result result = build();
+
+        JsonNode concept = concept(result, "a");
+        assertThat(concept.get("způsob-získání-údaje").asText()).isEqualTo("způsoby-získání:vlastní");
+        assertThat(texts(concept.get("způsoby-sdílení-údaje"))).containsExactly(
+                "způsoby-sdílení:veřejně-přístupné",
+                "způsoby-sdílení:poskytované-na-žádost",
+                "způsoby-sdílení:nesdílené");
+        assertThat(result.issues()).noneMatch(issue -> issue.kind() == Kind.VALUE_DROPPED);
+    }
+
+    @Test
+    void sharingMethods_unknownItemIsDropped_knownItemsKept() {
+        cls("A").setSharingMethod("veřejně přístupné; neznámý způsob");
+
+        OfnDocumentBuilder.Result result = build();
+
+        assertThat(texts(concept(result, "a").get("způsoby-sdílení-údaje")))
+                .containsExactly("způsoby-sdílení:veřejně-přístupné");
+        assertThat(only(result, Kind.VALUE_DROPPED).message()).contains("neznámý způsob");
+    }
+
+    @Test
     void sources_eliBecomesProvision_urlAndTextBecomeDigitalObjects() {
         cls("A").setSource(ELI_SOURCE + "; https://example.org/dokument; Směrnice EU");
 

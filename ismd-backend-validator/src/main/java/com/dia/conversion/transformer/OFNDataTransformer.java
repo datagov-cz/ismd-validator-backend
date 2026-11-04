@@ -6,6 +6,7 @@ import com.dia.conversion.data.VocabularyMetadata;
 import com.dia.exception.ConversionException;
 import com.dia.exception.JsonExportException;
 import com.dia.exception.MissingVocabularyNameException;
+import com.dia.exception.OfnConformanceException;
 import com.dia.exception.TurtleExportException;
 import com.dia.ofn.ConformanceIssue;
 import com.dia.ofn.GateResult;
@@ -70,8 +71,9 @@ public class OFNDataTransformer {
             List<ConformanceIssue> issues = new ArrayList<>(built.issues());
             issues.addAll(gated.issues());
             if (!gated.isVocabularyValid()) {
-                log.warn("Vocabulary does not conform to the OFN schema: {}",
-                        gated.issuesOfKind(ConformanceIssue.Kind.VOCABULARY_INVALID));
+                List<ConformanceIssue> vocabularyIssues = gated.issuesOfKind(ConformanceIssue.Kind.VOCABULARY_INVALID);
+                log.warn("Vocabulary does not conform to the OFN schema: {}", vocabularyIssues);
+                throw new OfnConformanceException(gated.document().path("iri").asText(null), vocabularyIssues);
             }
 
             Model model = rdf.toModel(gated.document());
@@ -79,6 +81,8 @@ public class OFNDataTransformer {
                     gated.document().path("pojmy").size(), model.size(), issues.size());
 
             return new TransformationResult(gated.document(), model, issues, metadata.getName(), effectiveNamespace);
+        } catch (OfnConformanceException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Transformation failed", e);
             throw new ConversionException("Failed to transform ontology data", e);

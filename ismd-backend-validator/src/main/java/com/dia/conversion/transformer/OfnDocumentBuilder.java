@@ -187,11 +187,11 @@ public class OfnDocumentBuilder {
             String problem;
             if (codelistIri == null) {
                 problem = "datová sada v NKOD '" + datasetIri + "' nemá číselník";
-            } else if (isHttpIri(codelistIri)) {
+            } else if (isNotHttpIri(codelistIri)) {
                 problem = "číselník '" + codelistIri + "' není http(s) IRI";
             } else if (datasetIri == null) {
                 problem = "číselník '" + codelistIri + "' nemá datovou sadu v NKOD (povinná)";
-            } else if (isHttpIri(datasetIri)) {
+            } else if (isNotHttpIri(datasetIri)) {
                 problem = "datová sada v NKOD '" + datasetIri + "' není http(s) IRI";
             } else {
                 ObjectNode codelist = concept.putObject(INSTANCE_DEFINOVANY_CISELNIKEM);
@@ -539,21 +539,29 @@ public class OfnDocumentBuilder {
             ((ArrayNode) concept.get(TYP)).add(NEVEREJNY_UDAJ);
         }
 
-        /** A codelist value ("vlastní") as its item IRI, compacted with the context's prefix. */
+        /**
+         * A codelist value ("vlastní") as its item IRI, compacted with the context's prefix.
+         * Způsoby sdílení is a set, so its cell may hold several values separated by ";".
+         */
         private void addGovernanceValue(ObjectNode concept, String key, String value, String namespace) {
             if (isBlank(value)) {
                 return;
             }
+            if (ZPUSOBY_SDILENI_UDAJE.equals(key)) {
+                for (String item : splitList(value)) {
+                    governanceCurie(concept, key, item, namespace).ifPresent(curie -> addToSet(concept, key, curie));
+                }
+            } else {
+                governanceCurie(concept, key, value.trim(), namespace).ifPresent(curie -> concept.put(key, curie));
+            }
+        }
+
+        private Optional<String> governanceCurie(ObjectNode concept, String key, String value, String namespace) {
             if (!GOVERNANCE_VALUES.contains(value.toLowerCase())) {
                 dropped(concept, key, "hodnota '" + value + "' není v číselníku");
-                return;
+                return Optional.empty();
             }
-            String curie = specification.contextIndex().compactIri(namespace + UtilityMethods.sanitizeForIRI(value.trim()));
-            if (ZPUSOBY_SDILENI_UDAJE.equals(key)) {
-                addToSet(concept, key, curie);
-            } else {
-                concept.put(key, curie);
-            }
+            return Optional.of(specification.contextIndex().compactIri(namespace + UtilityMethods.sanitizeForIRI(value)));
         }
 
         // ------------------------------------------------------------ references and ranges
@@ -701,7 +709,8 @@ public class OfnDocumentBuilder {
         return isBlank(value) ? null : value.trim();
     }
 
-    private static boolean isHttpIri(String value) {
+    /** True when the value is not an http(s) IRI. */
+    private static boolean isNotHttpIri(String value) {
         return (!value.startsWith("https://") && !value.startsWith("http://")) || !UtilityMethods.isValidIRI(value);
     }
 }

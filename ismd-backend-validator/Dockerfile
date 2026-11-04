@@ -1,4 +1,6 @@
 ### Build stage
+# Java 17 Alpine images are amd64 only. On Apple Silicon build with --platform linux/amd64
+# (docker-compose.build.yml sets it).
 FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /app
 

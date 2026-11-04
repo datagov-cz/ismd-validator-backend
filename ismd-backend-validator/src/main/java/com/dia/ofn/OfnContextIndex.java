@@ -1,5 +1,6 @@
 package com.dia.ofn;
 
+import com.networknt.schema.format.IriFormat;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.*;
@@ -12,6 +13,9 @@ import java.util.*;
  * Nothing here knows OFN term names, so a modified context needs no code change.
  */
 public final class OfnContextIndex {
+
+    /** The JSON Schema validator's own {@code format: iri} check. */
+    private static final IriFormat SCHEMA_IRI_FORMAT = new IriFormat();
 
     /** One term definition and the context it lives in. */
     public record Term(String path, String name, JsonNode definition, Scope scope) {
@@ -37,8 +41,8 @@ public final class OfnContextIndex {
             return scope.children.get(name);
         }
 
-        /** By convention of the OFN contexts, capitalised terms name types (classes). */
-        public boolean isTypeTerm() {
+        /** By convention of the OFN contexts, capitalised terms name types (classes); others do not. */
+        public boolean isNotTypeTerm() {
             return name.isEmpty() || !Character.isUpperCase(name.codePointAt(0));
         }
     }
@@ -154,10 +158,15 @@ public final class OfnContextIndex {
         return bestPrefix == null ? iri : bestPrefix + ":" + iri.substring(bestNamespace.length());
     }
 
-    /** True for an absolute http(s) IRI or a compact IRI whose prefix the context defines. */
+    /**
+     * True for an absolute http(s) IRI or a compact IRI whose prefix the context defines. An http(s) IRI
+     * is checked by the same rule as the schema's {@code format: iri}, so a value the schema would reject
+     * is dropped here on its own instead of excluding its whole concept.
+     */
     public boolean isIriOrKnownCurie(String value) {
         if (value.startsWith("http://") || value.startsWith("https://")) {
-            return !value.contains(" ");
+            // IriFormat only parses the value; the execution context is not used.
+            return SCHEMA_IRI_FORMAT.matches(null, value);
         }
         int colon = value.indexOf(':');
         return colon > 0 && prefixes.containsKey(value.substring(0, colon)) && !value.contains(" ");

@@ -229,7 +229,7 @@ class JsonLdContextConformanceTest {
                 continue;
             }
             Optional<Term> typeTerm = OfnContextIndex.resolve(scopes, type.asText());
-            if (typeTerm.isEmpty() || typeTerm.get().isTypeTerm()) {
+            if (typeTerm.isEmpty() || typeTerm.get().isNotTypeTerm()) {
                 violations.add(at(location + "/typ") + "type '" + type.asText() + "' is not defined in the context");
                 continue;
             }

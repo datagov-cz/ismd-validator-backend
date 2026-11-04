@@ -1,6 +1,7 @@
 package com.dia.reader;
 
 import com.dia.conversion.data.*;
+import com.dia.conversion.reader.archi.ArchiParser;
 import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.exception.FileParsingException;
 import com.dia.utility.UtilityMethods;
@@ -179,10 +180,11 @@ class ArchiReaderUnitTest {
     @ParameterizedTest
     @MethodSource("propertyMappingTestCases")
     void testPropertyMapping_ShouldMapCorrectly(String propertyName, String expectedMappedValue) throws FileParsingException {
-        reader.readArchiFromString(validXmlContent);
+        ArchiParser parser = new ArchiParser();
+        parser.readArchiFromString(validXmlContent);
 
         // Verify property mapping contains expected mappings
-        assertTrue(reader.getPropertyMapping().containsValue(expectedMappedValue),
+        assertTrue(parser.getPropertyMapping().containsValue(expectedMappedValue),
                 "Property mapping should contain: " + expectedMappedValue);
     }
 
@@ -320,14 +322,15 @@ class ArchiReaderUnitTest {
 
     @Test
     void testEnhancedPropertyMapping_ShouldMapStandardizedLabels() throws FileParsingException {
-        reader.readArchiFromString(validXmlContent);
+        ArchiParser parser = new ArchiParser();
+        parser.readArchiFromString(validXmlContent);
 
-        assertTrue(reader.getPropertyMapping().containsValue("popis"));
-        assertTrue(reader.getPropertyMapping().containsValue("definice"));
-        assertTrue(reader.getPropertyMapping().containsValue("identifikátor"));
-        assertTrue(reader.getPropertyMapping().containsValue("typ"));
-        assertTrue(reader.getPropertyMapping().containsValue("zdroj"));
-        assertTrue(reader.getPropertyMapping().containsValue("související-zdroj"));
+        assertTrue(parser.getPropertyMapping().containsValue("popis"));
+        assertTrue(parser.getPropertyMapping().containsValue("definice"));
+        assertTrue(parser.getPropertyMapping().containsValue("identifikátor"));
+        assertTrue(parser.getPropertyMapping().containsValue("typ"));
+        assertTrue(parser.getPropertyMapping().containsValue("zdroj"));
+        assertTrue(parser.getPropertyMapping().containsValue("související-zdroj"));
     }
 
     @Test

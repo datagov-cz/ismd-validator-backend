@@ -112,7 +112,7 @@ public class OfnConformanceGate {
             Optional<Term> typeTerm = type.isTextual()
                     ? OfnContextIndex.resolve(scopes, type.asText())
                     : Optional.empty();
-            if (typeTerm.isEmpty() || typeTerm.get().isTypeTerm()) {
+            if (typeTerm.isEmpty() || typeTerm.get().isNotTypeTerm()) {
                 issues.add(new ConformanceIssue(Kind.VALUE_DROPPED, conceptIri, location + "/" + typeKey,
                         "typ " + type + " není definován v kontextu OFN"));
                 continue;

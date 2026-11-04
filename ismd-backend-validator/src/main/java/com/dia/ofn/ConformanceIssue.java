@@ -22,7 +22,7 @@ public record ConformanceIssue(Kind kind, String conceptIri, String location, St
          * data (name, definition, …) is not part of the output.
          */
         EXTERNAL_CONCEPT,
-        /** The vocabulary itself fails the OFN JSON Schema. */
+        /** The vocabulary itself fails the OFN JSON Schema: the conversion is refused (T1). */
         VOCABULARY_INVALID
     }
 }

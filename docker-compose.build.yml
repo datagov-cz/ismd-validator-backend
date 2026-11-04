@@ -11,6 +11,9 @@ services:
   ismd-validator-backend:
     image: ismd-validator-backend:local
     pull_policy: never
+    # The Java 17 Alpine base images exist for amd64 only; on Apple Silicon this builds and
+    # runs under emulation (slower, same image as CI and production).
+    platform: linux/amd64
     build:
       # Default `.` works when running from this directory directly.
       # When composed from ismd-infrastructure via `-f`, set VALIDATOR_BACKEND_PATH

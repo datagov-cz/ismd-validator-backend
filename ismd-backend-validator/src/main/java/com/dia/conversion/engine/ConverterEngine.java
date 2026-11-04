@@ -139,7 +139,7 @@ public class ConverterEngine {
             long duration = System.currentTimeMillis() - startTime;
             log.info("Archi model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
-        } catch (MissingVocabularyNameException e) {
+        } catch (MissingVocabularyNameException | OfnConformanceException e) {
             throw e;
         } catch (Exception e) {
             log.error("Unexpected error during Archi model conversion: requestId={}", requestId, e);

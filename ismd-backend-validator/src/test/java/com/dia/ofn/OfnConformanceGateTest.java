@@ -74,6 +74,32 @@ class OfnConformanceGateTest {
         assertThat(result.issuesOfKind(Kind.VALUE_DROPPED)).hasSize(1);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"https://example.org/a|b", "https://example.org/<b>", "https://example.org/\"b\"",
+            "https://example.org/b%zz", "https://example.org/b?x=[1]"})
+    void iriTheSchemaWouldReject_isDroppedAlone_conceptKept(String badIri) {
+        ObjectNode a = třída("a");
+        a.putArray("ekvivalentní-pojem").add(badIri).add("https://example.org/ok");
+
+        GateResult result = gate.apply(vocabulary(a));
+
+        assertThat(concept(result, "a").get("ekvivalentní-pojem"))
+                .containsExactly(mapper.getNodeFactory().textNode("https://example.org/ok"));
+        assertThat(result.issuesOfKind(Kind.VALUE_DROPPED)).singleElement()
+                .satisfies(issue -> assertThat(issue.message()).startsWith("hodnota není IRI"));
+        assertThat(result.issuesOfKind(Kind.CONCEPT_EXCLUDED)).isEmpty();
+    }
+
+    @Test
+    void unicodeIri_isKept() {
+        ObjectNode a = třída("a");
+        a.putArray("ekvivalentní-pojem").add("https://slovník.gov.cz/jiný/pojem/řidič");
+
+        GateResult result = gate.apply(vocabulary(a));
+
+        assertThat(result.issues()).isEmpty();
+    }
+
     @Test
     void singleValue_inSetTerm_isWrapped_singleItemArray_inSingleTerm_isUnwrapped() {
         ObjectNode a = třída("a").put("ekvivalentní-pojem", "https://example.org/b");
