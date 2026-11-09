@@ -158,6 +158,16 @@ public final class OfnContextIndex {
         return bestPrefix == null ? iri : bestPrefix + ":" + iri.substring(bestNamespace.length());
     }
 
+    /** A compact IRI with a context prefix expanded to the full IRI; anything else unchanged. */
+    public String expandIri(String value) {
+        int colon = value.indexOf(':');
+        if (colon <= 0 || value.startsWith("http://") || value.startsWith("https://")) {
+            return value;
+        }
+        String namespace = prefixes.get(value.substring(0, colon));
+        return namespace == null ? value : namespace + value.substring(colon + 1);
+    }
+
     /**
      * True for an absolute http(s) IRI or a compact IRI whose prefix the context defines. An http(s) IRI
      * is checked by the same rule as the schema's {@code format: iri}, so a value the schema would reject

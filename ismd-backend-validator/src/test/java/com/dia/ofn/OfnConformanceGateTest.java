@@ -126,6 +126,34 @@ class OfnConformanceGateTest {
     }
 
     @Test
+    void blankOrNonTextLanguageValues_areReported() {
+        ObjectNode a = třída("a");
+        a.putObject("alternativní-název").putArray("cs").add("Řidič").add("  ").add(42);
+
+        GateResult result = gate.apply(vocabulary(a));
+
+        assertThat(concept(result, "a").get("alternativní-název").get("cs"))
+                .containsExactly(mapper.getNodeFactory().textNode("Řidič"));
+        assertThat(result.issuesOfKind(Kind.VALUE_DROPPED))
+                .hasSize(2)
+                .allMatch(issue -> issue.location().equals("pojmy[a]/alternativní-název/cs"));
+    }
+
+    /** A blank name is reported as dropped, so the exclusion that follows has a visible cause. */
+    @Test
+    void blankName_isReportedBeforeTheConceptIsExcluded() {
+        ObjectNode a = třída("a");
+        a.putObject("název").put("cs", "   ");
+
+        GateResult result = gate.apply(vocabulary(a));
+
+        assertThat(result.issuesOfKind(Kind.VALUE_DROPPED))
+                .singleElement()
+                .satisfies(issue -> assertThat(issue.location()).isEqualTo("pojmy[a]/název/cs"));
+        assertThat(result.issuesOfKind(Kind.CONCEPT_EXCLUDED)).hasSize(1);
+    }
+
+    @Test
     void unknownType_isDropped() {
         ObjectNode a = třída("a");
         ((ArrayNode) a.get("typ")).add("Neexistující typ");
@@ -190,6 +218,52 @@ class OfnConformanceGateTest {
                 .containsExactlyInAnyOrder(NS + "a", NS + "c");
     }
 
+    /**
+     * A future context may put a concept reference inside a nested object. Exclusion removes it there too,
+     * while other references in the same object (here an NKOD-like dataset) stay.
+     */
+    @Test
+    void exclusion_removesNestedReferences_andKeepsUnrelatedOnes() {
+        OfnConformanceGate gateWithNested = new OfnConformanceGate(specificationWithNestedReference());
+        ObjectNode a = vlastnost("a", "c");
+        a.remove("definiční-obor");                // a fails the schema
+        ObjectNode b = třída("b");
+        ArrayNode links = b.putArray("vazba");
+        links.addObject().put("cíl", NS + "a").put("datová-sada", "https://data.gov.cz/zdroj/datové-sady/1");
+        links.addObject().put("cíl", NS + "c");
+        links.addObject().put("cíl", NS + "a");    // nothing else left: the object goes
+
+        GateResult result = gateWithNested.apply(vocabulary(a, b, třída("c")));
+
+        assertThat(iris(result)).containsExactly(NS + "b", NS + "c");
+        JsonNode kept = concept(result, "b").get("vazba");
+        assertThat(kept).hasSize(2);
+        assertThat(kept.get(0).has("cíl")).isFalse();
+        assertThat(kept.get(0).get("datová-sada").asText()).isEqualTo("https://data.gov.cz/zdroj/datové-sady/1");
+        assertThat(kept.get(1).get("cíl").asText()).isEqualTo(NS + "c");
+        assertThat(result.issuesOfKind(Kind.REFERENCE_REMOVED))
+                .allMatch(issue -> NS.concat("b").equals(issue.conceptIri()))
+                .extracting(ConformanceIssue::location)
+                .containsExactly("pojmy[b]/vazba[0]/cíl", "pojmy[b]/vazba[2]/cíl");
+    }
+
+    /** A reference written as a compact IRI still matches the excluded concept's full IRI. */
+    @Test
+    void exclusion_removesCompactIriReferences() {
+        OfnConformanceGate gateWithNested = new OfnConformanceGate(specificationWithNestedReference());
+        ObjectNode a = třída("a");
+        a.remove("název");                         // a fails the schema
+        ObjectNode b = třída("b");
+        b.putArray("nadřazená-třída").add("test:a").add("test:c");
+
+        GateResult result = gateWithNested.apply(vocabulary(a, b, třída("c")));
+
+        assertThat(concept(result, "b").get("nadřazená-třída"))
+                .containsExactly(mapper.getNodeFactory().textNode("test:c"));
+        assertThat(result.issuesOfKind(Kind.REFERENCE_REMOVED)).singleElement()
+                .satisfies(issue -> assertThat(issue.message()).contains("test:a"));
+    }
+
     @Test
     void vocabularyWithoutName_isReportedInvalid() {
         ObjectNode document = vocabulary(třída("a"));
@@ -237,6 +311,25 @@ class OfnConformanceGateTest {
         concept.put("definiční-obor", NS + domain);
         concept.put("obor-hodnot", "xsd:string");
         return concept;
+    }
+
+    /**
+     * The bundled specification with a test prefix and a hypothetical nested term on concepts:
+     * {@code vazba} (a set of objects) holding a concept reference {@code cíl} and a non-concept
+     * reference {@code datová-sada}.
+     */
+    private OfnSpecification specificationWithNestedReference() {
+        OfnSpecification bundled = OfnSpecification.bundled();
+        ObjectNode contextDocument = bundled.contextDocument().deepCopy();
+        ObjectNode context = (ObjectNode) contextDocument.get("@context");
+        context.put("test", NS);
+        ObjectNode conceptContext = (ObjectNode) context.get("pojmy").get("@context");
+        ObjectNode vazba = conceptContext.putObject("vazba");
+        vazba.put("@id", "https://example.org/vazba").put("@container", "@set");
+        ObjectNode vazbaContext = vazba.putObject("@context");
+        vazbaContext.putObject("cíl").put("@id", "https://example.org/cíl").put("@type", "@id");
+        vazbaContext.putObject("datová-sada").put("@id", "https://example.org/datová-sada").put("@type", "@id");
+        return new OfnSpecification(contextDocument, bundled.schemaDocument());
     }
 
     // ---------------------------------------------------------------- helpers

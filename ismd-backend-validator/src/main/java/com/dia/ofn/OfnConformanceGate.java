@@ -223,6 +223,9 @@ public class OfnConformanceGate {
             for (JsonNode text : asList(entry.getValue())) {
                 if (text.isTextual() && !text.asText().isBlank()) {
                     texts.add(text);
+                } else {
+                    issues.add(new ConformanceIssue(Kind.VALUE_DROPPED, conceptIri, location + "/" + language,
+                            "hodnota není neprázdný text: " + text));
                 }
             }
             if (!texts.isEmpty()) {
@@ -296,21 +299,59 @@ public class OfnConformanceGate {
         return List.copyOf(errors);
     }
 
-    /** Removes IRI references to the given concepts. Returns true when anything was removed. */
+    /**
+     * Removes IRI references to the given concepts, at any depth of the concept. Every {@code @id} term is
+     * scanned; only values naming an excluded concept are removed, so references to anything else (agendas,
+     * provisions, NKOD datasets) are never touched. Compact IRIs are expanded before comparing.
+     * Returns true when anything was removed.
+     */
     private boolean removeReferences(ObjectNode concept, Set<String> targets, List<ConformanceIssue> issues) {
-        Deque<Scope> scopes = conceptScopes(concept);
-        String iri = concept.path(idKey).asText(null);
+        Set<String> expandedTargets = new HashSet<>();
+        for (String target : targets) {
+            if (target != null) {
+                expandedTargets.add(context.expandIri(target));
+            }
+        }
+        return removeReferencesIn(concept, conceptScopes(concept), conceptLocation(concept),
+                concept.path(idKey).asText(null), expandedTargets, issues);
+    }
+
+    private boolean removeReferencesIn(ObjectNode node, Deque<Scope> scopes, String location, String conceptIri,
+                                       Set<String> targets, List<ConformanceIssue> issues) {
         boolean changed = false;
-        for (String key : List.copyOf(names(concept))) {
-            Optional<Term> term = OfnContextIndex.resolve(scopes, key);
-            if (term.isEmpty() || !"@id".equals(term.get().type())) {
+        for (String key : List.copyOf(names(node))) {
+            if (key.equals("@context") || key.equals(idKey) || key.equals(typeKey)) {
                 continue;
             }
-            JsonNode value = concept.get(key);
+            Optional<Term> term = OfnContextIndex.resolve(scopes, key);
+            if (term.isEmpty()) {
+                continue;
+            }
+            Deque<Scope> valueScopes = scopes;
+            if (term.get().nested() != null) {
+                valueScopes = new ArrayDeque<>(scopes);
+                valueScopes.push(term.get().nested());
+            }
+            boolean isReference = "@id".equals(term.get().type());
+            boolean isSet = "@set".equals(term.get().container());
+            String keyLocation = location + "/" + key;
+
+            JsonNode value = node.get(key);
+            List<JsonNode> items = asList(value);
             ArrayNode kept = JsonNodeFactory.instance.arrayNode();
-            for (JsonNode item : asList(value)) {
-                if (item.isTextual() && targets.contains(item.asText())) {
-                    issues.add(new ConformanceIssue(Kind.REFERENCE_REMOVED, iri, conceptLocation(concept) + "/" + key,
+            int index = 0;
+            for (JsonNode item : items) {
+                String itemLocation = isSet ? keyLocation + "[" + label(item, index) + "]" : keyLocation;
+                index++;
+                if (item.isObject()) {
+                    ObjectNode nested = (ObjectNode) item;
+                    changed |= removeReferencesIn(nested, withTypeScopes(valueScopes, nested), itemLocation,
+                            conceptIri, targets, issues);
+                    if (!nested.isEmpty()) {
+                        kept.add(nested);
+                    }
+                } else if (isReference && item.isTextual() && targets.contains(context.expandIri(item.asText()))) {
+                    issues.add(new ConformanceIssue(Kind.REFERENCE_REMOVED, conceptIri, keyLocation,
                             "odkaz na vyřazený pojem " + item.asText()));
                     changed = true;
                 } else {
@@ -318,9 +359,9 @@ public class OfnConformanceGate {
                 }
             }
             if (kept.isEmpty()) {
-                concept.remove(key);
-            } else if (kept.size() != asList(value).size()) {
-                concept.set(key, value.isArray() ? kept : kept.get(0));
+                node.remove(key);
+            } else if (kept.size() != items.size()) {
+                node.set(key, value.isArray() ? kept : kept.get(0));
             }
         }
         return changed;
@@ -332,12 +373,18 @@ public class OfnConformanceGate {
         if (conceptsTerm != null && conceptsTerm.nested() != null) {
             scopes.push(conceptsTerm.nested());
         }
-        for (JsonNode type : asList(concept.path(typeKey))) {
+        return withTypeScopes(scopes, concept);
+    }
+
+    /** The scopes with the type-scoped contexts of the node's types added. */
+    private Deque<Scope> withTypeScopes(Deque<Scope> scopes, ObjectNode node) {
+        Deque<Scope> result = new ArrayDeque<>(scopes);
+        for (JsonNode type : asList(node.path(typeKey))) {
             OfnContextIndex.resolve(scopes, type.asText())
                     .map(Term::nested)
-                    .ifPresent(scopes::push);
+                    .ifPresent(result::push);
         }
-        return scopes;
+        return result;
     }
 
     // ---------------------------------------------------------------- vocabulary
