@@ -5,9 +5,8 @@ WORKDIR /app
 # Install bash
 RUN apk add --no-cache bash
 
-# Copy validator and common modules from repo root context
+# Copy the validator module from repo root context (self-contained: all deps come from Maven Central)
 COPY ismd-backend-validator/ ./ismd-backend-validator
-COPY ismd-validator-common/ ./ismd-validator-common
 
 # Switch to validator module root (contains mvnw)
 WORKDIR /app/ismd-backend-validator
@@ -18,36 +17,6 @@ RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 # Build arguments with defaults
 ARG MODULE_VERSION=unknown
 ARG REVISION=0.0.1
-ARG GITHUB_TOKEN
-ARG GITHUB_ACTOR
-ARG GITHUB_REPOSITORY
-ARG USE_LOCAL_COMMON=true
-
-# Configure Maven to authenticate with GitHub Packages
-# Always needed because Maven verifies dependencies against remote repos
-RUN if [ -n "${GITHUB_TOKEN}" ] && [ -n "${GITHUB_ACTOR}" ]; then \
-      echo "Configuring Maven for GitHub Packages..."; \
-      mkdir -p ~/.m2 && \
-      echo '<settings><servers><server>' > ~/.m2/settings.xml && \
-      echo '<id>github</id>' >> ~/.m2/settings.xml && \
-      echo "<username>${GITHUB_ACTOR}</username>" >> ~/.m2/settings.xml && \
-      echo "<password>${GITHUB_TOKEN}</password>" >> ~/.m2/settings.xml && \
-      echo '</server></servers></settings>' >> ~/.m2/settings.xml; \
-    else \
-      echo "No GitHub credentials provided, skipping Maven auth setup"; \
-    fi
-
-# Set GITHUB_REPOSITORY as environment variable for Maven
-ENV GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
-
-# Pre-install common library locally if present and USE_LOCAL_COMMON=true (dev builds)
-# Production builds will download from GitHub Packages instead
-RUN if [ "$USE_LOCAL_COMMON" = "true" ] && [ -d ../ismd-validator-common ]; then \
-      echo "Installing common library from local repo (dev build)..."; \
-      ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install; \
-    else \
-      echo "Common library will be downloaded from GitHub Packages (prod build)"; \
-    fi
 
 # Build the validator application
 # Pass -Drevision to set version from Git tag

@@ -98,14 +98,6 @@ public class GlobalExceptionHandler {
         return error(ErrorCode.UNSUPPORTED_FORMAT, e.getMessage());
     }
 
-    /** The common library's own type, thrown by its {@code UtilityMethods} while detecting a downloaded file's type. */
-    @ExceptionHandler(com.dia.exceptions.UnsupportedFormatException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleCommonUnsupportedFormat(
-            com.dia.exceptions.UnsupportedFormatException e) {
-        log.warn("Unsupported format: {}", e.getMessage());
-        return error(ErrorCode.UNSUPPORTED_FORMAT, e.getMessage());
-    }
-
     @ExceptionHandler(InvalidFileException.class)
     public ResponseEntity<ApiResponseDto<Void>> handleInvalidFile(InvalidFileException e) {
         log.warn("Invalid file: {}", e.getMessage());
