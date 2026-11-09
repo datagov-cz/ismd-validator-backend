@@ -59,6 +59,19 @@ class ArchiReaderUnitTest {
         assertFalse(result.getRelationships().isEmpty());
     }
 
+    /** Element names must not stand in for the model name; a nameless model is left nameless so conversion rejects it. */
+    @Test
+    void testReadArchiFromString_ModelWithoutName_LeavesNameNull() throws FileParsingException {
+        String withoutModelName = validXmlContent.replaceFirst(
+                "<name xml:lang=\"en\">Příkladový slovník z metodiky popisu dat</name>", "");
+        assertNotEquals(validXmlContent, withoutModelName);
+
+        OntologyData result = reader.readArchiFromString(withoutModelName);
+
+        assertNull(result.getVocabularyMetadata().getName());
+        assertFalse(result.getClasses().isEmpty());
+    }
+
     @ParameterizedTest
     @MethodSource("invalidXmlTestCases")
     void testReadArchiFromString_InvalidInputs_ShouldThrowException(String input) {

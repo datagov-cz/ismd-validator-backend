@@ -131,14 +131,24 @@ public class ArchiParser {
                 .build();
     }
 
+    /** Reads the model's own name (a direct child of the root). A missing name is left null so conversion rejects it. */
     private void extractModelName() {
-        NodeList nameNodes = archiDoc.getElementsByTagNameNS(ARCHI_NS, "name");
-        if (nameNodes.getLength() > 0) {
-            modelName = nameNodes.item(0).getTextContent();
-            log.debug("Model name extracted: {}", modelName);
+        modelName = null;
+        NodeList children = archiDoc.getDocumentElement().getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() == Node.ELEMENT_NODE
+                    && ARCHI_NS.equals(child.getNamespaceURI())
+                    && "name".equals(child.getLocalName())) {
+                String text = child.getTextContent();
+                modelName = text == null || text.isBlank() ? null : text.trim();
+                break;
+            }
+        }
+        if (modelName == null) {
+            log.warn("Archi model has no name");
         } else {
-            modelName = "Untitled Model";
-            log.warn("No model name found, using default: {}", modelName);
+            log.debug("Model name extracted: {}", modelName);
         }
     }
 

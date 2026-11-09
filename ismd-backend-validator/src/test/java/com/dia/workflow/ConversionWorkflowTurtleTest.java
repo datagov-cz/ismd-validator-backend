@@ -886,7 +886,7 @@ class ConversionWorkflowTurtleTest {
 
     /**
      * Checks if a concept should be excluded from expected count because it's from an external namespace.
-     * The TurtleExporter filters out concepts that don't belong to the ontology's namespace.
+     * The export filters out concepts that don't belong to the ontology's namespace.
      *
      * @param identifier The concept's IRI/identifier
      * @param vocabularyNamespace The ontology's namespace

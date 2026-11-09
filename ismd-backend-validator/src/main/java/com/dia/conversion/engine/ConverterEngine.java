@@ -186,6 +186,8 @@ public class ConverterEngine {
             long duration = System.currentTimeMillis() - startTime;
             log.info("Excel model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
+        } catch (MissingVocabularyNameException | OfnConformanceException e) {
+            throw e;
         } catch (ConversionException e) {
             log.error("Failed to convert Excel model: requestId={}, error={}", requestId, e.getMessage(), e);
             throw e;
@@ -234,6 +236,8 @@ public class ConverterEngine {
             long duration = System.currentTimeMillis() - startTime;
             log.info("EA model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
+        } catch (MissingVocabularyNameException | OfnConformanceException e) {
+            throw e;
         } catch (ConversionException e) {
             log.error("Failed to convert EA model: requestId={}, error={}", requestId, e.getMessage(), e);
             throw e;
@@ -279,6 +283,8 @@ public class ConverterEngine {
             long duration = System.currentTimeMillis() - startTime;
             log.info("SSP model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
+        } catch (MissingVocabularyNameException | OfnConformanceException e) {
+            throw e;
         } catch (ConversionException e) {
             log.error("Failed to convert SSP model: requestId={}, error={}", requestId, e.getMessage(), e);
             throw e;
