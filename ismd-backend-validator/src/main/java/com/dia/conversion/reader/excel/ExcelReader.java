@@ -8,18 +8,13 @@ import com.dia.exception.ExcelReadingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
 
-import com.dia.utility.TemporalValues;
 import com.dia.utility.UtilityMethods;
 
 import java.io.InputStream;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.dia.constants.FormatConstants.Excel.*;
@@ -53,8 +48,6 @@ public class ExcelReader {
             builder = OntologyData.builder();
 
             VocabularyMetadata metadata = processVocabularySheet(workbook);
-            readLastModified(workbook)
-                    .ifPresent(modified -> metadata.setDateOfModification(TemporalValues.toDateTimeStamp(modified)));
             List<ClassData> classes = processClassesSheet(workbook);
             List<PropertyData> properties = processPropertiesSheet(workbook);
             List<RelationshipData> relationships = processRelationshipsSheet(workbook);
@@ -72,18 +65,6 @@ public class ExcelReader {
         } catch (Exception e) {
             throw new ExcelReadingException("Failed to read ontology from Excel.", e);
         }
-    }
-
-    /**
-     * Last save time from the file's core properties (dcterms:modified), when present.
-     * dcterms:created is not used: workbooks made from the template keep the template's creation date.
-     */
-    private Optional<Instant> readLastModified(Workbook workbook) {
-        if (workbook instanceof XSSFWorkbook xssf) {
-            Date modified = xssf.getProperties().getCoreProperties().getModified();
-            return Optional.ofNullable(modified).map(Date::toInstant);
-        }
-        return Optional.empty();
     }
 
     private VocabularyMetadata processVocabularySheet(Workbook workbook) throws ExcelReadingException {
@@ -304,8 +285,6 @@ public class ExcelReader {
                 .withColumn(IDENTIFIKATOR, (data, value) -> setValidatedIdentifier(data::setIdentifier, data::getName, value))
                 .withColumn(AGENDA, ClassData::setAgendaCode)
                 .withColumn(AIS, ClassData::setAgendaSystemCode)
-                .withColumn(INSTANCE_DEFINOVANY_CISELNIKEM, ClassData::setCodelistIri)
-                .withColumn(DATOVA_SADA_V_NKOD, ClassData::setCodelistNkodDataset)
                 .withColumn(JE_VEREJNY, ClassData::setIsPublic)
                 .withColumn(USTANOVENI_DOKLADAJICI_NEVEREJNOST, ClassData::setPrivacyProvision)
                 .withColumn(ZPUSOB_SDILENI_UDEJE, ClassData::setSharingMethod)

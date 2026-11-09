@@ -5,16 +5,11 @@ import com.dia.conversion.data.OntologyData;
 import com.dia.conversion.data.TransformationResult;
 import com.dia.conversion.data.VocabularyMetadata;
 import com.dia.conversion.transformer.ConceptFilterUtil;
-import com.dia.conversion.transformer.OFNDataTransformer;
-import com.dia.conversion.transformer.OfnDocumentBuilder;
-import com.dia.ofn.OfnConformanceGate;
-import com.dia.ofn.OfnRdf;
-import com.dia.ofn.OfnSpecification;
+import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
-import java.time.Clock;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,10 +38,7 @@ class VocabularyIdentifierExportTest {
                 .hierarchies(List.of())
                 .build();
 
-        OfnSpecification specification = OfnSpecification.bundled();
-        OFNDataTransformer transformer = new OFNDataTransformer(
-                new OfnDocumentBuilder(new ConceptFilterUtil(), specification),
-                new OfnConformanceGate(specification), new OfnRdf(specification), Clock.systemUTC());
+        OFNDataTransformerNew transformer = new OFNDataTransformerNew(new ConceptFilterUtil());
         TransformationResult result = transformer.transform(ontologyData);
         JsonNode json = new ObjectMapper().readTree(transformer.exportToJson(result));
 

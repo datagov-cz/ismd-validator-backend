@@ -9,7 +9,6 @@ import com.dia.conversion.data.TransformationResult;
 import com.dia.enums.ErrorCode;
 import com.dia.enums.FileFormat;
 import com.dia.exception.JsonExportException;
-import com.dia.ofn.ConformanceIssue;
 import com.dia.service.*;
 import com.dia.validation.ValidationSeverity;
 import com.dia.validation.data.DetailedValidationReportDto;
@@ -234,29 +233,6 @@ class ConverterControllerIntegrationTest {
         } else {
             verify(converterService).exportToTurtle(eq(FileFormat.ARCHI_XML), any());
         }
-    }
-
-    @Test
-    void conversion_reportsConformanceIssues() throws Exception {
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "test.xml", "application/xml",
-                minimalArchiXML.getBytes(StandardCharsets.UTF_8));
-        ConformanceIssue issue = new ConformanceIssue(ConformanceIssue.Kind.CONCEPT_EXCLUDED,
-                "https://slovník.gov.cz/test/pojem/věk", "pojmy[věk]", "pojem nesplňuje OFN schéma: definiční-obor");
-        when(mockConversionResult.getTransformationResult().conformanceIssues()).thenReturn(List.of(issue));
-        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
-        when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
-
-        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file).param("output", "json"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        JsonNode issues = objectMapper.readTree(result.getResponse().getContentAsString())
-                .path("data").path("conformanceIssues");
-        assertEquals(1, issues.size());
-        assertEquals("CONCEPT_EXCLUDED", issues.get(0).path("kind").asText());
-        assertEquals("https://slovník.gov.cz/test/pojem/věk", issues.get(0).path("conceptIri").asText());
-        assertEquals("pojmy[věk]", issues.get(0).path("location").asText());
     }
 
     @ParameterizedTest(name = "Successful XLSX conversion to {0}")
@@ -735,8 +711,6 @@ class ConverterControllerIntegrationTest {
         ValidationResultsDto resultsWithErrors = new ValidationResultsDto(List.of(
                 new SeverityGroupDto(ValidationSeverity.ERROR.getDisplayName(), 1, "chyba")));
         when(validationReportService.convertToDto(any(ISMDValidationReport.class))).thenReturn(resultsWithErrors);
-        when(mockConversionResult.getTransformationResult().conformanceIssues()).thenReturn(List.of(
-                new ConformanceIssue(ConformanceIssue.Kind.VOCABULARY_INVALID, null, "", "required property 'název' not found")));
 
         MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
                 .andExpect(status().isBadRequest())
@@ -747,28 +721,7 @@ class ConverterControllerIntegrationTest {
         assertEquals(ErrorCode.VALIDATION_REPORT_HAS_ERRORS.name(), body.get("errorCode").asText());
         assertEquals(1, body.at("/data/validationResults/severityGroups").size());
         assertTrue(body.at("/data/output").isNull());
-        assertEquals("VOCABULARY_INVALID", body.at("/data/conformanceIssues/0/kind").asText());
         verify(converterService, never()).exportToJson(any(), any());
-    }
-
-    @Test
-    void vocabularyNotOfn_isRejected400_withEveryVocabularyIssue() throws Exception {
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "test.xml", "application/xml", minimalArchiXML.getBytes(StandardCharsets.UTF_8));
-        when(converterService.processArchiFile(anyString())).thenThrow(new com.dia.exception.OfnConformanceException(
-                "https://slovník.gov.cz/x", List.of(new ConformanceIssue(ConformanceIssue.Kind.VOCABULARY_INVALID,
-                        null, "/iri", "does not match the iri pattern"))));
-
-        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
-                .andExpect(status().isBadRequest())
-                .andReturn();
-
-        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
-        assertFalse(body.get("success").asBoolean());
-        assertEquals(ErrorCode.VOCABULARY_OFN_NONCONFORMANT.name(), body.get("errorCode").asText());
-        assertEquals("https://slovník.gov.cz/x", body.at("/data/vocabularyIri").asText());
-        assertEquals("VOCABULARY_INVALID", body.at("/data/issues/0/kind").asText());
-        assertEquals("/iri", body.at("/data/issues/0/location").asText());
     }
 
     @Test

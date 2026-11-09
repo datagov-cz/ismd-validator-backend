@@ -1,8 +1,6 @@
 package com.dia.config;
 
 import com.dia.controller.dto.ApiResponseDto;
-import com.dia.controller.dto.ConformanceIssueDto;
-import com.dia.controller.dto.OfnConformanceFailureDto;
 import com.dia.enums.ErrorCode;
 import com.dia.exception.*;
 import lombok.extern.slf4j.Slf4j;
@@ -128,20 +126,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponseDto<Void>> handleExcelReading(ExcelReadingException e) {
         log.warn("Excel reading failed: {}", e.getMessage());
         return error(ErrorCode.EXCEL_READ_FAILED, e.getMessage());
-    }
-
-    @ExceptionHandler(MissingVocabularyNameException.class)
-    public ResponseEntity<ApiResponseDto<Void>> handleMissingVocabularyName(MissingVocabularyNameException e) {
-        log.warn("Vocabulary has no name: {}", e.getMessage());
-        return error(ErrorCode.VOCABULARY_NAME_MISSING, e.getMessage());
-    }
-
-    /** The vocabulary itself is not OFN: every vocabulary-level issue is returned, so the user knows what to correct. */
-    @ExceptionHandler(OfnConformanceException.class)
-    public ResponseEntity<ApiResponseDto<OfnConformanceFailureDto>> handleOfnConformance(OfnConformanceException e) {
-        log.info("Conversion of {} refused: {} OFN issue(s)", e.getVocabularyIri(), e.getIssues().size());
-        return error(ErrorCode.VOCABULARY_OFN_NONCONFORMANT, e.getMessage(),
-                new OfnConformanceFailureDto(e.getVocabularyIri(), ConformanceIssueDto.from(e.getIssues())));
     }
 
     @ExceptionHandler(ConversionException.class)

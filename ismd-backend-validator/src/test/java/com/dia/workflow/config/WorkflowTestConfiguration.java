@@ -69,11 +69,11 @@ public class WorkflowTestConfiguration {
                 .description("Complete Excel ontology test with all characteristics")
                 .inputPath("com/dia/canonical/complete/testExcelProject_no-lkod.xlsx")
                 .expectedOutputPath("com/dia/expected-outputs/complete/excel_output_jsonld_no-lkod.jsonld")
-                .contextPath("ofn/slovniky/kontext.jsonld")
+                .contextPath("com/dia/context/json_ld_context.jsonld")
                 .expectedCounts(EntityCounts.builder()
                         .classes(6)  // 6 local classes - Adresa is external reference and should not be counted
                         .properties(30)
-                        .relationships(5)
+                        .relationships(4)
                         .hierarchies(3)
                         .build())
                 .requiredCharacteristics(List.of(
@@ -97,8 +97,7 @@ public class WorkflowTestConfiguration {
                         ALTERNATIVNI_NAZEV,
                         DEFINUJICI_NELEGISLATIVNI_ZDROJ,
                         SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
-                        NADRAZENA_VLASTNOST,
-                        NADRAZENY_VZTAH
+                        NADRAZENA_VLASTNOST
                 ))
                 .build();
     }
@@ -113,7 +112,7 @@ public class WorkflowTestConfiguration {
                 .description("Complete Archi XML ontology test - unified with Excel output")
                 .inputPath("com/dia/canonical/complete/testArchiInput_no-lkod.xml")
                 .expectedOutputPath("com/dia/expected-outputs/complete/archi_output_jsonld_no-lkod.jsonld")
-                .contextPath("ofn/slovniky/kontext.jsonld")
+                .contextPath("com/dia/context/json_ld_context.jsonld")
                 .expectedCounts(EntityCounts.builder()
                         .classes(6)  // 6 local classes - Adresa is external reference and should not be counted
                         .properties(30)
@@ -155,7 +154,7 @@ public class WorkflowTestConfiguration {
                 .description("Complete Enterprise Architect ontology test with all characteristics")
                 .inputPath("com/dia/canonical/complete/testEAInput_no-lkod.xml")
                 .expectedOutputPath("com/dia/expected-outputs/complete/ea_output_jsonld_no-lkod.jsonld")
-                .contextPath("ofn/slovniky/kontext.jsonld")
+                .contextPath("com/dia/context/json_ld_context.jsonld")
                 .expectedCounts(EntityCounts.builder()
                         .classes(6)
                         .properties(30)

@@ -1,12 +1,9 @@
 ### Build stage
-# Ubuntu-based Temurin tags (not -alpine) are published multi-arch
-# (linux/amd64 + linux/arm64). The -alpine variants are amd64-only, which
-# breaks `docker build`/`pull` on Apple Silicon. bash ships in these images,
-# so no extra install is needed.
-# Both base images are pinned to the multi-arch index digest (same as ismd-tool-backend);
-# Dependabot (docker ecosystem) raises the bump PRs.
-FROM eclipse-temurin:17-jdk@sha256:5d6042fb8cdc14d614e4e421f52e3211fc5aeadddce44cbf9de8ed37c791f824 AS builder
+FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /app
+
+# Install bash
+RUN apk add --no-cache bash
 
 # Copy the validator module from repo root context (self-contained: all deps come from Maven Central)
 COPY ismd-backend-validator/ ./ismd-backend-validator
@@ -26,7 +23,7 @@ ARG REVISION=0.0.1
 RUN ./mvnw clean install -Drevision=${REVISION} -DskipTests
 
 ### Runtime stage
-FROM eclipse-temurin:17-jre@sha256:207ecae0b2b104dfc6dfa763d1e9cd2041cb344800a180e24cb1a28ed533ff90 AS runtime
+FROM eclipse-temurin:17-jre-alpine AS runtime
 WORKDIR /app
 
 # Get build arguments
@@ -44,9 +41,8 @@ COPY --from=builder /app/ismd-backend-validator/target/ismd-backend-validator-*.
 # JAVA_TOOL_OPTIONS=-javaagent:/app/applicationinsights-agent.jar per env
 # (enable_app_insights_agent), so one image serves all envs and telemetry can be
 # flipped on/off without a rebuild. The agent reads APPLICATIONINSIGHTS_CONNECTION_STRING
-# (injected by TF) for its destination. The checksum must change with the version.
-ADD --checksum=sha256:e81ef99fd30444f6f1da70cd31db5e47f8e6906acbbc9199cac3b390dc6cfedf \
-    https://github.com/microsoft/ApplicationInsights-Java/releases/download/3.6.2/applicationinsights-agent-3.6.2.jar /app/applicationinsights-agent.jar
+# (injected by TF) for its destination.
+ADD https://github.com/microsoft/ApplicationInsights-Java/releases/download/3.6.2/applicationinsights-agent-3.6.2.jar /app/applicationinsights-agent.jar
 
 # Add labels for better image identification
 LABEL org.opencontainers.image.title="ISMD Backend Validator"

@@ -3,8 +3,6 @@ package com.dia.controller.dto;
 import com.dia.validation.data.DetailedValidationReportDto;
 import lombok.*;
 
-import java.util.List;
-
 /** Conversion result, returned as the {@code data} of an {@link ApiResponseDto}. */
 @Data
 @Builder
@@ -15,8 +13,6 @@ public class ConversionResponseDto {
     private ValidationResultsDto validationResults;
     private DetailedValidationReportDto validationReport;
     private String ontologyData;
-    /** What the conversion dropped or excluded because it does not conform to OFN slovníky. */
-    private List<ConformanceIssueDto> conformanceIssues;
 
     public static ConversionResponseDto success(String output, ValidationResultsDto results, DetailedValidationReportDto validationReport) {
         return ConversionResponseDto.builder()
