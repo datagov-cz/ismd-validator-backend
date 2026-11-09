@@ -22,6 +22,9 @@
         <revision>1.0.0</revision>
         <jacoco.version>0.8.13</jacoco.version>
         <jacoco.line.minimum>0.00</jacoco.line.minimum>
+        <!-- Same test class order on macOS and CI (the default follows the filesystem).
+             Override with -Dsurefire.runOrder=random to look for state leaking between classes. -->
+        <surefire.runOrder>alphabetical</surefire.runOrder>
     </properties>
 
     <dependencies>
