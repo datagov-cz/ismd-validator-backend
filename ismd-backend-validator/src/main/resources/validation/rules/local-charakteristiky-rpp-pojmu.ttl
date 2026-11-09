@@ -3,8 +3,6 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
 @prefix a104: <https://slovník.gov.cz/agendový/104/pojem/> .
-@prefix vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/> .
-@prefix l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/> .
 
 # Info rule: RPP characteristics - Complete RPP information available
 <https://slovník.gov.cz/shacl/lokální/pojem-má-kompletní-údaje-charakteristiky-rpp>
@@ -18,8 +16,6 @@
     sh:sparql [
         sh:select """
             PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
-            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
-            PREFIX l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
             PREFIX a104: <https://slovník.gov.cz/agendový/104/pojem/>
 
             SELECT $this
@@ -30,17 +26,18 @@
 
                 # 2. Must be typ-subjektu-práva OR typ-objektu-práva
                 {
-                    $this a vsgov:typ-subjektu-práva .
+                    $this a slovníky:typ-subjektu-práva .
                 } UNION {
-                    $this a vsgov:typ-objektu-práva .
+                    $this a slovníky:typ-objektu-práva .
                 }
 
                 # 3. If it's neveřejný-údaj, it must have ustanovení
                 FILTER (
-                    NOT EXISTS { $this a l111-2009:neveřejný-údaj . } ||
+                    NOT EXISTS { $this a slovníky:neveřejný-údaj . } ||
                     EXISTS {
-                        $this a l111-2009:neveřejný-údaj .
-                        $this l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost ?ustanoveni .
+                        $this a slovníky:neveřejný-údaj .
+                        $this ?ustanoveniProp ?ustanoveni .
+                        FILTER(CONTAINS(STR(?ustanoveniProp), "ustanovení-dokládající-neveřejnost"))
                     }
                 )
             }
@@ -59,21 +56,19 @@
     sh:sparql [
         sh:select """
             PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
-            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
-            PREFIX l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
             PREFIX a104: <https://slovník.gov.cz/agendový/104/pojem/>
 
             SELECT $this
             WHERE {
                 # Has typ-subjektu-práva OR typ-objektu-práva OR is veřejný/neveřejný údaj
                 {
-                    $this a vsgov:typ-subjektu-práva .
+                    $this a slovníky:typ-subjektu-práva .
                 } UNION {
-                    $this a vsgov:typ-objektu-práva .
+                    $this a slovníky:typ-objektu-práva .
                 } UNION {
-                    $this a l111-2009:veřejný-údaj .
+                    $this a slovníky:veřejný-údaj .
                 } UNION {
-                    $this a l111-2009:neveřejný-údaj .
+                    $this a slovníky:neveřejný-údaj .
                 }
 
                 # But is not shared in PPDF (value may be typed boolean true or the string "true")
@@ -99,18 +94,17 @@
     sh:sparql [
         sh:select """
             PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
-            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
-            PREFIX l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
 
             SELECT $this
             WHERE {
                 # Is neveřejný údaj
-                $this a l111-2009:neveřejný-údaj .
+                $this a slovníky:neveřejný-údaj .
 
                 # But does not have ustanovení dokládající neveřejnost
                 FILTER (
                     NOT EXISTS {
-                        $this l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost ?ustanoveni .
+                        $this ?ustanoveniProp ?ustanoveni .
+                        FILTER(CONTAINS(STR(?ustanoveniProp), "ustanovení-dokládající-neveřejnost"))
                     }
                 )
             }
@@ -129,8 +123,6 @@
     sh:sparql [
         sh:select """
             PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
-            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
-            PREFIX l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
             PREFIX a104: <https://slovník.gov.cz/agendový/104/pojem/>
 
             SELECT $this

@@ -2,7 +2,7 @@ package com.dia.workflow;
 
 import com.dia.conversion.data.*;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
-import com.dia.conversion.transformer.OFNDataTransformer;
+import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.workflow.config.WorkflowTestConfiguration;
 import com.dia.workflow.deviation.DeviationDetector;
 import com.dia.workflow.deviation.WorkflowDeviation;
@@ -51,7 +51,7 @@ class ConversionWorkflowEAJsonTest {
     private EnterpriseArchitectReader eaReader;
 
     @Autowired
-    private OFNDataTransformer transformer;
+    private OFNDataTransformerNew transformer;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final DeviationDetector deviationDetector = new DeviationDetector();

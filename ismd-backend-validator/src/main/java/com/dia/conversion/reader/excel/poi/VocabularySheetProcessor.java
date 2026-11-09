@@ -67,12 +67,7 @@ public class VocabularySheetProcessor extends BaseSheetProcessor<VocabularyMetad
                     log.debug("Successfully set property for key: {}", key);
                 } else if (setter == null && !key.isEmpty()) {
                     unmappedKeys++;
-                    if (value.isEmpty()) {
-                        log.debug("No setter found for key: '{}'", key);
-                    } else {
-                        log.warn("Sheet '{}': '{}' is not a known vocabulary field; its value is ignored",
-                                sheet.getSheetName(), key);
-                    }
+                    log.debug("No setter found for key: '{}'", key);
                 }
             }
         }

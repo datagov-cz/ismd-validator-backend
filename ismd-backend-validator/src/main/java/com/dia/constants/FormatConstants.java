@@ -41,9 +41,6 @@ public class FormatConstants {
         public static final String ZPUSOB_SDILENI_UDEJE = "Způsob sdílení údaje";
         public static final String ZPUSOB_ZISKANI_UDEJE = "Způsob získání údaje";
         public static final String TYP_OBSAHU_UDAJE = "Typ obsahu údaje";
-        // Headers carry a suffix, e.g. "Instance definovány číselníkem (IRI číselníku)"; columns match by substring
-        public static final String INSTANCE_DEFINOVANY_CISELNIKEM = "Instance definovány číselníkem";
-        public static final String DATOVA_SADA_V_NKOD = "Datová sada v NKOD";
 
         private Excel() {
         }

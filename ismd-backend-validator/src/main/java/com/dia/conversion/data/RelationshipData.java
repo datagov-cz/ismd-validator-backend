@@ -1,8 +1,6 @@
 package com.dia.conversion.data;
 
 import lombok.Getter;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Setter;
 
 @Getter
@@ -31,7 +29,5 @@ public class RelationshipData {
     private String superRelation;
     private String alternativeName;
     private String equivalentConcept;
-    /** Broader concepts (skos:broader) by IRI, for "nadřazený-pojem". */
-    private List<String> broaderConcepts = new ArrayList<>();
     private String identifier;
 }

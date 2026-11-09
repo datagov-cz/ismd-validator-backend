@@ -18,8 +18,11 @@ public class VocabularyConstants {
     public static final String DCT_NS = "http://purl.org/dc/terms/";
     public static final String SKOS_NS = "http://www.w3.org/2004/02/skos/core#";
     public static final String CAS_NS = "https://slovník.gov.cz/generický/čas/pojem/";
+    public static final String CONTEXT = "https://ofn.gov.cz/slovníky/2026-02-26/kompletní/kontext.jsonld";
     public static final String SCHEMA_URL = "http://schema.org/url";
     public static final String IDENT = "identifier";
+    public static final String OFN_NAMESPACE_VS = "https://slovník.gov.cz/veřejný-sektor/pojem/";
+    public static final String OFN_NAMESPACE_LEGAL = "https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/";
     public static final String DIGITALNI_OBJEKT = "https://slovník.gov.cz/generický/digitální-objekty/pojem/digitální-objekt";
 
     // =============== VALIDATION NAMESPACES ===============
@@ -85,6 +88,8 @@ public class VocabularyConstants {
     public static final String ZPUSOB_SDILENI = "má-způsob-sdílení-údaje";
     public static final String ZPUSOB_ZISKANI = "má-způsob-získání-údaje";
     public static final String TYP_OBSAHU = "má-typ-obsahu-údaje";
+    public static final String MA_INSTANCE_DEFINOVANE_CISELNIKEM = "má-instance-definované-číselníkem";
+    public static final String MA_V_NKOD_ZASTRESUJICI_DATOVOU_SADU = "má-v-nkod-zastřešující-datovou-sadu";
 
     // Alternate forms from OFNJsonConstants
     public static final String ZPUSOBY_SDILENI_ALT = "způsoby-sdílení-údaje";
@@ -112,18 +117,30 @@ public class VocabularyConstants {
     public static final String TOP_JSON_LD = "Typ objektu práva";
     public static final String VEREJNY_UDAJ_JSON_LD = "Veřejný údaj";
     public static final String NEVEREJNY_UDAJ_JSON_LD = "Neveřejný údaj";
+    public static final String CISELNIK_JSON_LD = "Číselník";
 
     // =============== CODE LIST DATASET JSON-LD FIELD NAMES ===============
     public static final String INSTANCE_DEFINOVANY_CISELNIKEM = "instance-definovány-číselníkem";
     public static final String DATOVA_SADA_V_NKOD = "datová-sada-v-nkod";
 
     // =============== JSON STRUCTURE CONSTANTS ===============
+    public static final String JSON_CONTEXT = "@context";
     public static final String JSON_IRI = "iri";
+    public static final String JSON_TYP = "typ";
+    public static final String JSON_POJMY = "pojmy";
     public static final String TYPE_SLOVNIK = "Slovník";
     public static final String TYPE_TEZAURUS = "Tezaurus";
     public static final String TYPE_KM = "Konceptuální model";
 
     // =============== FIELD ORDERING FOR JSON OUTPUT ===============
+    public static final String[] CONCEPT_FIELD_ORDER = {
+            JSON_IRI, TYP, NAZEV, ALTERNATIVNI_NAZEV, IDENTIFIKATOR, POPIS, DEFINICE,
+            EKVIVALENTNI_POJEM, DEFINUJICI_USTANOVENI_PRAVNIHO_PREDPISU, SOUVISEJICI_USTANOVENI_PRAVNIHO_PREDPISU,
+            DEFINUJICI_NELEGISLATIVNI_ZDROJ, SOUVISEJICI_NELEGISLATIVNI_ZDROJ,
+            DEFINICNI_OBOR, OBOR_HODNOT, NADRAZENY_VZTAH, NADRAZENA_VLASTNOST,
+            NADRAZENA_TRIDA, INSTANCE_DEFINOVANY_CISELNIKEM,
+            ZPUSOBY_SDILENI_ALT, ZPUSOB_ZISKANI_ALT, TYP_OBSAHU_ALT
+    };
 
     private VocabularyConstants() {
     }

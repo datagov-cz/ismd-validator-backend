@@ -2,8 +2,6 @@ package com.dia.conversion.reader.excel.poi;
 
 import com.dia.conversion.reader.excel.mapper.ColumnMappingRegistry;
 import com.dia.exception.ExcelReadingException;
-import java.util.LinkedHashMap;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -94,37 +92,5 @@ public abstract class BaseSheetProcessor<T> {
         }
 
         return columnMap;
-    }
-
-    /**
-     * Header columns that no mapping reads (matched the way the processors match: exactly, or one
-     * name containing the other). Their values are not converted.
-     */
-    protected Map<String, Integer> unmappedColumns(Map<String, Integer> columnMap, Set<String> mappingKeys) {
-        Map<String, Integer> unmapped = new LinkedHashMap<>();
-        columnMap.forEach((column, index) -> {
-            boolean mapped = mappingKeys.stream()
-                    .anyMatch(key -> key.equals(column) || key.contains(column) || column.contains(key));
-            if (!mapped) {
-                unmapped.put(column, index);
-            }
-        });
-        return unmapped;
-    }
-
-    /** Counts, per unmapped column, the rows that have a value in it. */
-    protected void countUnmappedValues(Row row, Map<String, Integer> unmapped, Map<String, Integer> counts) {
-        unmapped.forEach((column, index) -> {
-            if (!getCellValueAsString(row.getCell(index)).isEmpty()) {
-                counts.merge(column, 1, Integer::sum);
-            }
-        });
-    }
-
-    /** Warns about unmapped columns that hold data: those values are not converted. */
-    protected void warnUnmappedValues(Sheet sheet, Map<String, Integer> counts) {
-        counts.forEach((column, rows) -> log.warn(
-                "Sheet '{}': column '{}' is not a known template column; its values in {} row(s) are ignored",
-                sheet.getSheetName(), column, rows));
     }
 }
