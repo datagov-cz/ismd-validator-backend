@@ -9,7 +9,7 @@ import com.dia.conversion.reader.ssp.SSPReader;
 import com.dia.conversion.data.TransformationResult;
 import com.dia.conversion.transformer.OFNDataTransformerNew;
 import com.dia.enums.FileFormat;
-import com.dia.exceptions.*;
+import com.dia.exception.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;

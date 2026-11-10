@@ -1,9 +1,9 @@
 name: PR Workflow
 
 on:
+  # No workflow-level path filter: a filtered-out PR never reports "PR gate", and a required check
+  # that never reports blocks the merge.
   pull_request:
-    paths:
-      - '**'
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -14,4 +14,26 @@ permissions:
 jobs:
   run-tests:
     uses: ./.github/workflows/reusable-test.yml
+    with:
+      coverage_minimum: ${{ vars.JACOCO_LINE_MINIMUM != '' && vars.JACOCO_LINE_MINIMUM || '0.00' }}
     secrets: inherit
+
+  # The single required status check. Job names above can change without editing the rulesets.
+  # Skipped jobs pass; failed or cancelled jobs fail the gate.
+  pr-gate:
+    name: PR gate
+    if: always()
+    needs: [run-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for r in $RESULTS; do
+            case "$r" in
+              success|skipped) ;;
+              *) echo "::error::A required job ended with '$r'"; exit 1 ;;
+            esac
+          done

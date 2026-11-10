@@ -18,6 +18,9 @@ import java.util.List;
 
 import static com.dia.constants.VocabularyConstants.*;
 import static com.dia.constants.ExportConstants.Common.DEFAULT_LANG;
+import static com.dia.constants.ExportConstants.Turtle.NS_TYPY_OBSAHU;
+import static com.dia.constants.ExportConstants.Turtle.NS_ZPUSOBY_SDILENI;
+import static com.dia.constants.ExportConstants.Turtle.NS_ZPUSOBY_ZISKANI;
 
 /**
  * Handles data governance metadata processing for ontology resources.
@@ -439,12 +442,9 @@ public class DataGovernanceProcessor {
         String sanitizedValue = UtilityMethods.sanitizeForIRI(value);
 
         return switch (propertyName) {
-            case OFN_NAMESPACE + TYP_OBSAHU ->
-                    "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/" + sanitizedValue;
-            case OFN_NAMESPACE + ZPUSOB_SDILENI ->
-                    "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/" + sanitizedValue;
-            case OFN_NAMESPACE + ZPUSOB_ZISKANI ->
-                    "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/" + sanitizedValue;
+            case OFN_NAMESPACE + TYP_OBSAHU -> NS_TYPY_OBSAHU + sanitizedValue;
+            case OFN_NAMESPACE + ZPUSOB_SDILENI -> NS_ZPUSOBY_SDILENI + sanitizedValue;
+            case OFN_NAMESPACE + ZPUSOB_ZISKANI -> NS_ZPUSOBY_ZISKANI + sanitizedValue;
             default -> null;
         };
     }

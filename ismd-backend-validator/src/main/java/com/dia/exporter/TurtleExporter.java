@@ -1,6 +1,6 @@
 package com.dia.exporter;
 
-import com.dia.exceptions.TurtleExportException;
+import com.dia.exception.TurtleExportException;
 import com.dia.utility.UtilityMethods;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +47,9 @@ public class TurtleExporter {
         STANDARD_PREFIXES.put("slovníky", "https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/");
         STANDARD_PREFIXES.put("čas", CAS_NS);
         STANDARD_PREFIXES.put("schema", "http://schema.org/");
+        STANDARD_PREFIXES.put(PREFIX_TYPY_OBSAHU, NS_TYPY_OBSAHU);
+        STANDARD_PREFIXES.put(PREFIX_ZPUSOBY_SDILENI, NS_ZPUSOBY_SDILENI);
+        STANDARD_PREFIXES.put(PREFIX_ZPUSOBY_ZISKANI, NS_ZPUSOBY_ZISKANI);
     }
 
     public TurtleExporter(OntModel ontModel, Map<String, Resource> resourceMap, String modelName, Map<String, String> modelProperties, String effectiveNamespace) {
@@ -200,8 +203,11 @@ public class TurtleExporter {
         }
 
         String uri = resource.getURI();
-
-        return !uri.startsWith(effectiveNamespace);
+        String ontologyIRI = getOntologyIRI();
+        if (ontologyIRI == null) {
+            return true;
+        }
+        return !uri.startsWith(ontologyIRI + "/pojem/");
     }
 
     private boolean shouldFilterAsBaseSchema(String uri) {
@@ -345,14 +351,8 @@ public class TurtleExporter {
             return ontologyIRI;
         }
 
-        String catalogNamespace = modelProperties.get(LOKALNI_KATALOG);
-        if (catalogNamespace != null && !catalogNamespace.isEmpty()) {
-            log.debug("Using catalog namespace as ontology IRI: {}", catalogNamespace);
-            return catalogNamespace;
-        }
-
-        log.warn("Could not determine ontology IRI from any source");
-        return null;
+        log.debug("Using effective namespace as ontology IRI: {}", effectiveNamespace);
+        return effectiveNamespace;
     }
 
     private void createConceptScheme(OntModel transformedModel) {

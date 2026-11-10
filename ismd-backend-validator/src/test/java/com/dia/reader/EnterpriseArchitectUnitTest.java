@@ -2,7 +2,7 @@ package com.dia.reader;
 
 import com.dia.conversion.data.*;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
-import com.dia.exceptions.FileParsingException;
+import com.dia.exception.FileParsingException;
 import com.dia.utility.UtilityMethods;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ class EnterpriseArchitectUnitTest {
         MDC.put(LOG_REQUEST_ID, "test-request-123");
 
         // Load the valid XML content
-        ClassPathResource resource = new ClassPathResource("/com/dia/minimal-ea.xml");
+        ClassPathResource resource = new ClassPathResource("/com/dia/canonical/complete/testEAInput_no-lkod.xml");
         validXmlContent = Files.readString(Paths.get(resource.getURI()));
         validXmlBytes = validXmlContent.getBytes(StandardCharsets.UTF_8);
     }
@@ -122,7 +122,7 @@ class EnterpriseArchitectUnitTest {
         VocabularyMetadata metadata = result.getVocabularyMetadata();
         assertNotNull(metadata);
         assertEquals("Příkladový slovník z metodiky popisu dat", metadata.getName());
-        assertNotNull(metadata.getNamespace());
+        assertNull(metadata.getNamespace());
     }
 
     // ========== CLASS EXTRACTION TESTS ==========

@@ -1,7 +1,7 @@
 package com.dia.conversion.reader.excel.poi;
 
 import com.dia.conversion.reader.excel.mapper.ColumnMappingRegistry;
-import com.dia.exceptions.ExcelReadingException;
+import com.dia.exception.ExcelReadingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DateUtil;

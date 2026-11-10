@@ -2,7 +2,7 @@ package com.dia.reader;
 
 import com.dia.conversion.data.OntologyData;
 import com.dia.conversion.reader.excel.ExcelReader;
-import com.dia.exceptions.ExcelReadingException;
+import com.dia.exception.ExcelReadingException;
 import com.dia.utility.UtilityMethods;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ class ExcelReaderUnitTest {
     @Test
     void readOntologyFromExcel_ShouldOnlyPreserveValidIRIIdentifiers() throws Exception {
         OntologyData result;
-        try (InputStream is = new ClassPathResource("com/dia/canonical/complete/testExcelProject.xlsx").getInputStream()) {
+        try (InputStream is = new ClassPathResource("com/dia/canonical/complete/testExcelProject_no-lkod.xlsx").getInputStream()) {
             result = reader.readOntologyFromExcel(is);
         }
 

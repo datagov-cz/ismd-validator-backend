@@ -4,7 +4,7 @@ import com.dia.conversion.data.*;
 import com.dia.conversion.reader.excel.mapper.ColumnMapping;
 import com.dia.conversion.reader.excel.mapper.ColumnMappingRegistry;
 import com.dia.conversion.reader.excel.poi.*;
-import com.dia.exceptions.ExcelReadingException;
+import com.dia.exception.ExcelReadingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -353,8 +353,6 @@ public class ExcelReader {
         ColumnMapping<VocabularyMetadata> vocabMapping = ColumnMapping.<VocabularyMetadata>builder()
                 .withKeyValuePair("Název slovníku:", VocabularyMetadata::setName)
                 .withKeyValuePair("Popis slovníku:", VocabularyMetadata::setDescription)
-                .withKeyValuePair("Adresa lokálního katalogu dat, ve kterém bude slovník registrován:",
-                        VocabularyMetadata::setNamespace)
                 .build();
 
         log.debug("Registering mapping for 'Slovník' sheet");

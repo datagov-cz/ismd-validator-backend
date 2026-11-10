@@ -7,36 +7,33 @@ on:
         description: 'Version to release (e.g., 1.3.0 for minor release, 2.0.0 for major; leave empty for auto-patch-increment)'
         required: false
         type: string
+      commit:
+        description: 'Commit SHA on dev to release from (leave empty for latest dev)'
+        required: false
+        type: string
 
 permissions:
   contents: write
   pull-requests: write
-  packages: read
 
 jobs:
   create-release-pr:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_ACTOR: ${{ github.actor }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       main_version: ${{ steps.main-version.outputs.version }}
       new_version: ${{ steps.new-version.outputs.version }}
     steps:
       - name: Checkout dev branch
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v7
         with:
           ref: dev
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '17'
-          server-id: github
-          server-username: GITHUB_ACTOR
-          server-password: GITHUB_TOKEN
 
       - name: Fetch main branch
         run: git fetch origin main:main
@@ -53,13 +50,20 @@ jobs:
 
       - name: Determine new version
         id: new-version
+        env:
+          # Through env, never ${{ }} inside the script
+          MAIN_VERSION: ${{ steps.main-version.outputs.version }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          MAIN_VERSION="${{ steps.main-version.outputs.version }}"
-          
           # Check if user provided a version
-          if [ -n "${{ github.event.inputs.version }}" ]; then
+          if [ -n "$INPUT_VERSION" ]; then
+            # Must be X.Y.Z: push-to-main.yml only recognises "Release vX.Y.Z"
+            if ! [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Invalid version '$INPUT_VERSION' (expected X.Y.Z, e.g. 1.3.0)"
+              exit 1
+            fi
             # User-provided version takes precedence
-            NEW_VERSION="${{ github.event.inputs.version }}"
+            NEW_VERSION="$INPUT_VERSION"
             echo "User provided version: $NEW_VERSION"
           else
             # Auto-increment patch version from main
@@ -71,99 +75,44 @@ jobs:
 
       - name: Create release branch
         id: create-branch
+        env:
+          RELEASE_COMMIT: ${{ github.event.inputs.commit }}
         run: |
           BRANCH_NAME="release-v${{ steps.new-version.outputs.version }}"
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-          
-          # Make sure we're on dev branch
-          git checkout dev
-          
-          # Create a new branch from dev (no pom.xml changes needed!)
-          git checkout -b $BRANCH_NAME
-          
+
+          if [ -n "$RELEASE_COMMIT" ]; then
+            # Validate the requested commit exists and is on dev
+            if ! git cat-file -e "$RELEASE_COMMIT^{commit}" 2>/dev/null; then
+              echo "❌ ERROR: Commit '$RELEASE_COMMIT' not found"
+              exit 1
+            fi
+            if ! git merge-base --is-ancestor "$RELEASE_COMMIT" origin/dev; then
+              echo "❌ ERROR: Commit '$RELEASE_COMMIT' is not on the dev branch"
+              exit 1
+            fi
+
+            # Create a new branch from the selected commit (no pom.xml changes needed!)
+            git checkout -b $BRANCH_NAME "$RELEASE_COMMIT"
+            echo "Created release branch $BRANCH_NAME from commit $RELEASE_COMMIT (no file changes needed)"
+          else
+            # Make sure we're on dev branch
+            git checkout dev
+
+            # Create a new branch from dev (no pom.xml changes needed!)
+            git checkout -b $BRANCH_NAME
+            echo "Created release branch $BRANCH_NAME from dev (no file changes needed)"
+          fi
+
           # Configure git for later steps
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          echo "Created release branch $BRANCH_NAME from dev (no file changes needed)"
-
-      - name: Configure Maven settings for GitHub Packages
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<EOF
-          <settings>
-            <servers>
-              <server>
-                <id>github</id>
-                <username>${{ github.actor }}</username>
-                <password>${{ secrets.GITHUB_TOKEN }}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
-
-      - name: Validate common library version
-        id: validate-common
-        run: |
-          # Dev branch has released versions only
-          COMMON_VERSION=$(grep '<version>' ismd-validator-common/pom.xml | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
-          VALIDATOR_COMMON_DEP=$(grep '<ismd-validator-common.version>' ismd-backend-validator/pom.xml | sed -E 's/.*<ismd-validator-common.version>([^<]+)<.*/\1/')
-          
-          echo "Common library version: $COMMON_VERSION"
-          echo "Validator dependency: $VALIDATOR_COMMON_DEP"
-          
-          # Verify it's a released version (no SNAPSHOT)
-          if [[ "$COMMON_VERSION" == *"-SNAPSHOT"* ]]; then
-            echo "❌ ERROR: Dev branch should not have SNAPSHOT versions"
-            echo "Please push to dev to trigger auto-release"
-            exit 1
-          fi
-          
-          # Verify the release tag exists
-          if ! git ls-remote --tags origin | grep -q "refs/tags/common-v${COMMON_VERSION}"; then
-            echo "❌ ERROR: Common library tag common-v$COMMON_VERSION not found"
-            echo "Publish common library before releasing validator"
-            exit 1
-          fi
-          
-          echo "✅ Using released common library: v$COMMON_VERSION"
-          echo "common_version=$COMMON_VERSION" >> $GITHUB_OUTPUT
-          
-          # Ensure validator dependency matches
-          if [ "$VALIDATOR_COMMON_DEP" != "$COMMON_VERSION" ]; then
-            echo "Updating validator to use $COMMON_VERSION..."
-            sed -i "s/<ismd-validator-common.version>.*<\/ismd-validator-common.version>/<ismd-validator-common.version>$COMMON_VERSION<\/ismd-validator-common.version>/" ismd-backend-validator/pom.xml
-          fi
-
-      - name: Install common library locally
-        working-directory: ismd-backend-validator
-        run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Commit release preparation
-        run: |
-          git add ismd-validator-common ismd-backend-validator/pom.xml
-          
-          # Only commit if there are changes
-          if git diff --staged --quiet; then
-            echo "No release preparation changes needed (already up to date)"
-          else
-            git commit -m "Prepare release v${{ steps.new-version.outputs.version }}
-            
-            - Use common library v${{ steps.validate-common.outputs.common_version }} (released)
-            - Common library code from tag common-v${{ steps.validate-common.outputs.common_version }}
-            - Updated validator dependency to released version"
-            echo "✅ Committed release preparation"
-          fi
 
       - name: Run tests
         working-directory: ismd-backend-validator
         run: |
           # Build and run tests to ensure the release is stable
           ./mvnw clean test
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push release branch
         run: |

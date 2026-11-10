@@ -1,6 +1,6 @@
 package com.dia.exporter;
 
-import com.dia.exceptions.TurtleExportException;
+import com.dia.exception.TurtleExportException;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
@@ -39,6 +39,7 @@ class TurtleExporterUnitTest {
     private String modelName;
     private Map<String, String> modelProperties;
     private String effectiveNamespace;
+    private String localConceptPrefix;
     private TurtleExporter exporter;
 
     @BeforeEach
@@ -50,8 +51,10 @@ class TurtleExporterUnitTest {
 
         // Use a specific vocabulary namespace that won't be filtered
         effectiveNamespace = "https://slovník.gov.cz/legislativní/sbírka/test/2024/pojem/";
+        // Local-concept prefix follows the production rule: <ontologyIRI>/pojem/
+        // Ontology IRI in these tests is `effectiveNamespace + "test-vocabulary"`.
+        localConceptPrefix = effectiveNamespace + "test-vocabulary/pojem/";
 
-        modelProperties.put(LOKALNI_KATALOG, effectiveNamespace);
         MDC.put(LOG_REQUEST_ID, "test-request-123");
         exporter = new TurtleExporter(ontModel, resourceMap, modelName, modelProperties, effectiveNamespace);
     }
@@ -188,6 +191,33 @@ class TurtleExporterUnitTest {
         // Assert
         assertTrue(result.contains(expectedPrefix),
                 "Should contain required prefix: " + expectedPrefix);
+    }
+
+    @ParameterizedTest(name = "Governance codelist prefix: {0}")
+    @CsvSource({
+            "https://data.dia.gov.cz/zdroj/číselníky/typy-obsahu-údajů/položky/, typy-obsahu-údajů, evidenční",
+            "https://data.dia.gov.cz/zdroj/číselníky/způsoby-sdílení-údajů/položky/, způsoby-sdílení-údajů, veřejně-přístupné",
+            "https://data.dia.gov.cz/zdroj/číselníky/způsoby-získání-údajů/položky/, způsoby-získání-údajů, vlastní"
+    })
+    void exportToTurtle_WithGovernanceCodelistValues_EmitsCurieForm(String namespace, String prefix, String localName) {
+        // Arrange: attach a governance codelist value (full IRI resource) to a concept
+        setupMinimalOntologyModel();
+        Resource concept = resourceMap.get("test-concept");
+        Property governanceProp = ontModel.createProperty(OFN_NAMESPACE + "má-governance-property");
+        concept.addProperty(governanceProp, ontModel.createResource(namespace + localName));
+
+        // Act
+        String result = exporter.exportToTurtle();
+
+        // Assert: prefix is declared and the value appears in compact CURIE form, not as a full IRI
+        assertAll("Governance codelist CURIE export",
+                () -> assertTrue(result.contains("@prefix " + prefix + ":") || result.contains("PREFIX " + prefix + ":"),
+                        "Should declare prefix for codelist namespace: " + prefix),
+                () -> assertTrue(result.contains(prefix + ":" + localName),
+                        "Should emit codelist value in CURIE form: " + prefix + ":" + localName),
+                () -> assertFalse(result.contains("<" + namespace + localName + ">"),
+                        "Should NOT emit codelist value as a full IRI")
+        );
     }
 
     @ParameterizedTest(name = "Language: {0}")
@@ -597,7 +627,7 @@ class TurtleExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
-        Resource testConcept = ontModel.createResource(namespace + "test-concept");
+        Resource testConcept = ontModel.createResource(namespace + "test-vocabulary/pojem/test-concept");
         testConcept.addProperty(RDF.type, ofnPojemType);
         testConcept.addProperty(RDFS.label, "Test Concept", "cs");
         resourceMap.put("test-concept", testConcept);
@@ -672,7 +702,7 @@ class TurtleExporterUnitTest {
         resourceMap.put("ontology", ontology);
 
         Resource ofnPojemType = ontModel.createResource(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "multilingual-concept");
+        Resource concept = ontModel.createResource(effectiveNamespace + "multilingual-vocab/pojem/multilingual-concept");
         concept.addProperty(RDF.type, ofnPojemType);
         concept.addProperty(RDFS.label, "Czech Concept", "cs");
         concept.addProperty(RDFS.label, "English Concept", "en");
@@ -708,11 +738,11 @@ class TurtleExporterUnitTest {
 
         Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
 
-        Resource concept1 = ontModel.createResource(effectiveNamespace + "concept-1");
+        Resource concept1 = ontModel.createResource(effectiveNamespace + "vocab-1/pojem/concept-1");
         concept1.addProperty(RDF.type, pojemClass);
         concept1.addProperty(RDFS.label, "Concept 1", "cs");
 
-        Resource concept2 = ontModel.createResource(effectiveNamespace + "concept-2");
+        Resource concept2 = ontModel.createResource(effectiveNamespace + "vocab-1/pojem/concept-2");
         concept2.addProperty(RDF.type, pojemClass);
         concept2.addProperty(RDFS.label, "Concept 2", "cs");
 
@@ -722,7 +752,7 @@ class TurtleExporterUnitTest {
     private void setupModelWithoutOntologyIRI() {
         // Create model without proper ontology setup
         Resource pojemClass = ontModel.createResource(OFN_NAMESPACE + POJEM);
-        Resource concept = ontModel.createResource(effectiveNamespace + "orphan-concept");
+        Resource concept = ontModel.createResource(effectiveNamespace + "orphan/pojem/orphan-concept");
         concept.addProperty(RDF.type, pojemClass);
         concept.addProperty(RDFS.label, "Orphan Concept", "cs");
     }

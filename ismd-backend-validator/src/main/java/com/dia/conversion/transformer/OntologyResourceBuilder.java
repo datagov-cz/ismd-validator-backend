@@ -53,6 +53,7 @@ public class OntologyResourceBuilder {
     private final DataGovernanceProcessor governanceProcessor;
     private final ConceptFilterUtil conceptFilterUtil;
     private Map<String, Resource> allClassResourcesForHierarchies;
+    private String localConceptPrefix;
 
     public OntologyResourceBuilder(OntModel ontModel, URIGenerator uriGenerator,
                                    DataGovernanceProcessor governanceProcessor,
@@ -64,7 +65,8 @@ public class OntologyResourceBuilder {
     }
 
     public void createOntologyResourceWithTemporal(VocabularyMetadata metadata, Map<String, Resource> localResourceMap) {
-        String ontologyIRI = uriGenerator.generateVocabularyURI(metadata.getName(), null);
+        String ontologyIRI = uriGenerator.generateVocabularyURI(metadata.getName(), metadata.getIdentifier());
+        this.localConceptPrefix = ontologyIRI + "/pojem/";
         log.debug("Creating ontology resource with temporal support and IRI: {}", ontologyIRI);
 
         ontModel.createOntology(ontologyIRI);
@@ -520,7 +522,7 @@ public class OntologyResourceBuilder {
 
     private void addSubPropertyOf(Resource resource, String superPropertyName) {
         String superPropertyURI = DataTypeConverter.isUri(superPropertyName)
-                ? superPropertyName
+                ? UtilityMethods.removeTrailingSlash(superPropertyName)
                 : uriGenerator.generateConceptURI(superPropertyName, null);
 
         resource.addProperty(RDFS.subPropertyOf, ontModel.createResource(superPropertyURI));
@@ -613,7 +615,8 @@ public class OntologyResourceBuilder {
 
         if (superClassResource == null && hierarchyData.getSuperClassIRI() != null) {
             log.debug("Superclass '{}' not found locally, using external IRI: {}", superClassName, hierarchyData.getSuperClassIRI());
-            superClassResource = ontModel.createResource(hierarchyData.getSuperClassIRI());
+            superClassResource = ontModel.createResource(
+                    UtilityMethods.removeTrailingSlash(hierarchyData.getSuperClassIRI()));
         }
 
         if (superClassResource == null) {
@@ -757,7 +760,7 @@ public class OntologyResourceBuilder {
         Property exactMatchProperty = ontModel.createProperty("http://www.w3.org/2004/02/skos/core#exactMatch");
 
         for (String concept : concepts) {
-            String trimmedConcept = concept.trim();
+            String trimmedConcept = UtilityMethods.removeTrailingSlash(concept.trim());
 
             if (trimmedConcept.isEmpty()) {
                 continue;
@@ -843,8 +846,9 @@ public class OntologyResourceBuilder {
     private void addResourceReference(Resource subject, Property property, String referenceName,
                                       Map<String, Resource> resourceMap) {
         if (DataTypeConverter.isUri(referenceName)) {
-            subject.addProperty(property, ontModel.createResource(referenceName));
-            log.debug("Added URI resource reference: {} -> {}", property.getLocalName(), referenceName);
+            String referenceIRI = UtilityMethods.removeTrailingSlash(referenceName);
+            subject.addProperty(property, ontModel.createResource(referenceIRI));
+            log.debug("Added URI resource reference: {} -> {}", property.getLocalName(), referenceIRI);
         } else {
             if (property.equals(RDFS.domain) || property.equals(RDFS.range)) {
                 Resource existingResource = resourceMap.get(referenceName);
@@ -880,6 +884,9 @@ public class OntologyResourceBuilder {
         log.debug("Processing data type for property '{}': '{}'", propertyData.getName(), trimmedDataType);
 
         if (checkIfXsdType(trimmedDataType, rangeProperty, propertyResource)) {
+            return;
+        }
+        if (checkIfRdfsType(trimmedDataType, rangeProperty, propertyResource)) {
             return;
         }
         if (checkIfFullXsdUri(trimmedDataType, rangeProperty, propertyResource)) {
@@ -919,6 +926,20 @@ public class OntologyResourceBuilder {
         return false;
     }
 
+    private boolean checkIfRdfsType(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
+        if (trimmedDataType.startsWith("rdfs:")) {
+            // Expand the rdfs: CURIE to its full IRI rather than letting checkIfValidUri keep it
+            // verbatim. Jena's IRI parser (used by isUri) accepts "rdfs:Literal" as an absolute
+            // IRI, so without this the raw CURIE would be emitted as the range resource.
+            String localName = trimmedDataType.substring("rdfs:".length());
+            propertyResource.addProperty(rangeProperty,
+                    ontModel.createResource(ExportConstants.Json.RDFS_NS + localName));
+            log.debug("Expanded rdfs CURIE range type: {}", trimmedDataType);
+            return true;
+        }
+        return false;
+    }
+
     private boolean checkIfFullXsdUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         if (trimmedDataType.startsWith(ExportConstants.Json.XSD_NS)) {
             String localName = trimmedDataType.substring(ExportConstants.Json.XSD_NS.length());
@@ -936,7 +957,8 @@ public class OntologyResourceBuilder {
 
     private boolean checkIfValidUri(String trimmedDataType, Property rangeProperty, Resource propertyResource) {
         if (DataTypeConverter.isUri(trimmedDataType)) {
-            propertyResource.addProperty(rangeProperty, ontModel.createResource(trimmedDataType));
+            propertyResource.addProperty(rangeProperty,
+                    ontModel.createResource(UtilityMethods.removeTrailingSlash(trimmedDataType)));
             log.debug("Added URI range type: {}", trimmedDataType);
             return true;
         }
@@ -988,13 +1010,13 @@ public class OntologyResourceBuilder {
     }
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
-        if (conceptURI == null || uriGenerator.getEffectiveNamespace() == null) {
+        if (conceptURI == null || localConceptPrefix == null) {
             return false;
         }
 
-        boolean belongs = conceptURI.startsWith(uriGenerator.getEffectiveNamespace());
-        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
-                conceptURI, belongs, uriGenerator.getEffectiveNamespace());
+        boolean belongs = conceptURI.startsWith(localConceptPrefix);
+        log.debug("Local-concept check for {}: belongs = {} (local prefix: {})",
+                conceptURI, belongs, localConceptPrefix);
         return belongs;
     }
 }

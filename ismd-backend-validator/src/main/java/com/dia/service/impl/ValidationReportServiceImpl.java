@@ -10,8 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,32 +26,6 @@ public class ValidationReportServiceImpl implements ValidationReportService {
         List<SeverityGroupDto> severityGroups = createMessageGroups(report);
 
         return new ValidationResultsDto(severityGroups);
-    }
-
-    @Override
-    public ValidationResultsDto convertToDto(ISMDValidationReport localReport, ISMDValidationReport globalReport) {
-
-        List<ValidationResult> combinedResults = new ArrayList<>(localReport.results());
-
-        List<ValidationResult> globalResults = globalReport.results().stream()
-                .map(result -> new ValidationResult(
-                        result.severity(),
-                        "[GLOBAL] " + result.message(),
-                        result.ruleName(),
-                        result.focusNodeUri(),
-                        result.resultPathUri(),
-                        result.value()
-                ))
-                .toList();
-
-        combinedResults.addAll(globalResults);
-
-        ISMDValidationReport combinedReport = new ISMDValidationReport(
-                combinedResults,
-                Instant.now()
-        );
-
-        return convertToDto(combinedReport);
     }
 
     private List<SeverityGroupDto> createMessageGroups(ISMDValidationReport report) {

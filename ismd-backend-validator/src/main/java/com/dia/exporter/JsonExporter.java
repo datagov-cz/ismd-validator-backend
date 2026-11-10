@@ -1,6 +1,6 @@
 package com.dia.exporter;
 
-import com.dia.exceptions.JsonExportException;
+import com.dia.exception.JsonExportException;
 import com.dia.utility.UtilityMethods;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -213,7 +213,7 @@ public class JsonExporter {
             return ontologyResource.getURI();
         }
 
-        return modelProperties.getOrDefault(LOKALNI_KATALOG, effectiveNamespace);
+        return effectiveNamespace;
     }
 
     private Map<String, Object> createOrderedModelMap(Map<String, Object> originalMap) {
@@ -590,11 +590,37 @@ public class JsonExporter {
 
     private String extractStatementValue(Statement statement) {
         if (statement.getObject().isLiteral()) {
-            return statement.getString();
+            return toGovernanceCurie(statement.getString());
         } else if (statement.getObject().isResource()) {
-            return statement.getObject().asResource().getURI();
+            return toGovernanceCurie(statement.getObject().asResource().getURI());
         }
         return null;
+    }
+
+    /**
+     * Compacts a governance codelist IRI to its JSON-LD CURIE form
+     * (e.g. {@code https://data.dia.gov.cz/.../způsoby-získání-údajů/položky/vlastní}
+     * becomes {@code způsoby-získání:vlastní}). Prefixes match the JSON-LD context
+     * (kontext.jsonld). Values that do not start with a known governance namespace
+     * are returned unchanged.
+     */
+    private String toGovernanceCurie(String value) {
+        if (value == null) {
+            return null;
+        }
+        if (value.startsWith(ExportConstants.Turtle.NS_ZPUSOBY_ZISKANI)) {
+            return ExportConstants.Json.PREFIX_ZPUSOBY_ZISKANI + ":"
+                    + value.substring(ExportConstants.Turtle.NS_ZPUSOBY_ZISKANI.length());
+        }
+        if (value.startsWith(ExportConstants.Turtle.NS_ZPUSOBY_SDILENI)) {
+            return ExportConstants.Json.PREFIX_ZPUSOBY_SDILENI + ":"
+                    + value.substring(ExportConstants.Turtle.NS_ZPUSOBY_SDILENI.length());
+        }
+        if (value.startsWith(ExportConstants.Turtle.NS_TYPY_OBSAHU)) {
+            return ExportConstants.Json.PREFIX_TYPY_OBSAHU + ":"
+                    + value.substring(ExportConstants.Turtle.NS_TYPY_OBSAHU.length());
+        }
+        return value;
     }
 
     private List<String> splitMultipleValues(String value) {
@@ -903,13 +929,17 @@ public class JsonExporter {
     }
 
     private boolean belongsToCurrentVocabulary(String conceptURI) {
-        if (conceptURI == null || effectiveNamespace == null) {
+        if (conceptURI == null) {
             return false;
         }
-
-        boolean belongs = conceptURI.startsWith(effectiveNamespace);
-        log.debug("Namespace check for {}: belongs to current vocabulary = {} (effective namespace: {})",
-                conceptURI, belongs, effectiveNamespace);
+        String ontologyIRI = getOntologyIRI();
+        if (ontologyIRI == null) {
+            return false;
+        }
+        String localPrefix = ontologyIRI + "/pojem/";
+        boolean belongs = conceptURI.startsWith(localPrefix);
+        log.debug("Local-concept check for {}: belongs = {} (local prefix: {})",
+                conceptURI, belongs, localPrefix);
         return belongs;
     }
 

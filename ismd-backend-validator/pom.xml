@@ -20,10 +20,8 @@
         <java.version>17</java.version>
         <!-- Version from Git tag, overridden at build time (this default is not used) -->
         <revision>1.0.0</revision>
-        <!-- Common library version - update explicitly when upgrading -->
-        <ismd-validator-common.version>1.0.11</ismd-validator-common.version>
-        <!-- GitHub repository for common library packages -->
-        <github.repository>datagov-cz/ismd-validator-backend</github.repository>
+        <jacoco.version>0.8.13</jacoco.version>
+        <jacoco.line.minimum>0.00</jacoco.line.minimum>
     </properties>
 
     <dependencies>
@@ -105,12 +103,6 @@
             <version>1.8</version>
         </dependency>
         <dependency>
-            <groupId>com.dia</groupId>
-            <artifactId>ismd-validator-common</artifactId>
-            <version>${ismd-validator-common.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
@@ -126,17 +118,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <repositories>
-        <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/${github.repository}</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 
     <build>
         <plugins>
@@ -164,6 +145,47 @@
                         </exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.line.minimum}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

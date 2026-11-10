@@ -1,6 +1,6 @@
 package com.dia.service.impl;
 
-import com.dia.exceptions.ValidationException;
+import com.dia.exception.ValidationException;
 import com.dia.service.DetailedValidationReportService;
 import com.dia.validation.ValidationResult;
 import com.dia.validation.ValidationSeverity;
@@ -122,39 +122,6 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
         String normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFC);
 
         return normalized.trim();
-    }
-
-    @Override
-    public DetailedValidationReportDto generateCombinedDetailedReport(
-            ISMDValidationReport localReport,
-            ISMDValidationReport globalReport,
-            Model ontologyModel,
-            Model shaclRulesModel) {
-
-        log.info("Generating combined detailed report (local: {}, global: {})",
-                localReport.getTotalResultCount(), globalReport.getTotalResultCount());
-
-        List<ValidationResult> combinedResults = new ArrayList<>(localReport.results());
-
-        List<ValidationResult> globalResults = globalReport.results().stream()
-                .map(result -> new ValidationResult(
-                        result.severity(),
-                        "[GLOBAL] " + result.message(),
-                        result.ruleName(),
-                        result.focusNodeUri(),
-                        result.resultPathUri(),
-                        result.value()
-                ))
-                .toList();
-
-        combinedResults.addAll(globalResults);
-
-        ISMDValidationReport combinedReport = new ISMDValidationReport(
-                combinedResults,
-                Instant.now()
-        );
-
-        return generateDetailedReport(combinedReport, ontologyModel);
     }
 
     @Override

@@ -1,0 +1,40 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+
+# Warning rule: IRI of a concept or vocabulary must not end with a slash
+<https://slovník.gov.cz/shacl/lokální/iri-končí-lomítkem>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem, skos:ConceptScheme ;
+    sh:name "IRI končí lomítkem"@cs ;
+    sh:description "Reports concepts and vocabularies whose IRI ends with a slash" ;
+    sh:message "IRI končí lomítkem \"/\""@cs ;
+    sh:severity sh:Warning ;
+
+    sh:sparql [
+        sh:select """
+            SELECT $this
+            WHERE {
+                FILTER(isIRI($this) && STRENDS(STR($this), "/"))
+            }
+        """ ;
+    ] .
+
+# Warning rule: IRIs referenced by a concept or vocabulary (provisions, agendas, other concepts, ...) must not end with a slash
+<https://slovník.gov.cz/shacl/lokální/odkazované-iri-končí-lomítkem>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem, skos:ConceptScheme ;
+    sh:name "Odkazované IRI končí lomítkem"@cs ;
+    sh:description "Reports IRIs referenced by a concept or vocabulary that end with a slash" ;
+    sh:message "Odkazované IRI končí lomítkem \"/\""@cs ;
+    sh:severity sh:Warning ;
+
+    sh:sparql [
+        sh:select """
+            SELECT $this ?path ?value
+            WHERE {
+                $this ?path ?value .
+                FILTER(isIRI(?value) && STRENDS(STR(?value), "/"))
+            }
+        """ ;
+    ] .

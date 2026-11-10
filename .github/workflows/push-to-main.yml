@@ -1,5 +1,9 @@
 name: Build Docker on Main
 
+concurrency:
+  group: build-main-validator-backend
+  cancel-in-progress: false
+
 on:
   push:
     branches:
@@ -30,42 +34,63 @@ jobs:
       should_build: ${{ steps.determine-version.outputs.should_build }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       
       - name: Determine version and create tag
         id: determine-version
+        env:
+          # Through env, never ${{ }} inside the script: the message is free text
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          IMAGE_REPO: ${{ github.repository }}
         run: |
-          # Check if this is a release PR merge by looking at the PR title
-          PR_TITLE="${{ github.event.head_commit.message }}"
-          
-          if [[ "$PR_TITLE" =~ Release\ v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-            echo "Detected release version: $VERSION"
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "should_build=true" >> $GITHUB_OUTPUT
-            
-            # Create and push the tag (idempotent)
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            
-            TAG_NAME="v$VERSION"
-            if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-              echo "Tag $TAG_NAME already exists locally, skipping creation"
-            elif git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
-              echo "Tag $TAG_NAME already exists remotely, fetching it"
-              git fetch origin "refs/tags/$TAG_NAME:refs/tags/$TAG_NAME"
-            else
-              echo "Creating new tag $TAG_NAME"
-              git tag "$TAG_NAME"
-              git push origin "$TAG_NAME"
-              echo "Created and pushed tag $TAG_NAME"
-            fi
-          else
-            echo "Not a release PR, skipping tag creation"
-            echo "should_build=false" >> $GITHUB_OUTPUT
+          # A release is a commit with a line that STARTS with "Release vX.Y.Z": the squash
+          # subject, or a line of a merge commit's body. 'Revert "Release v1.2.3"' does not match.
+          RELEASE_LINE=$(printf '%s\n' "$COMMIT_MESSAGE" | grep -m1 -oE '^Release v[0-9]+\.[0-9]+\.[0-9]+' || true)
+
+          if [ -z "$RELEASE_LINE" ]; then
+            echo "Not a release commit, skipping tag creation"
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          VERSION="${RELEASE_LINE#Release v}"
+          TAG_NAME="v$VERSION"
+          echo "Detected release version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch --no-tags origin "refs/tags/$TAG_NAME:refs/tags/$TAG_NAME" 2>/dev/null || true
+          if TAG_COMMIT=$(git rev-parse -q --verify "refs/tags/$TAG_NAME^{commit}"); then
+            if [ "$TAG_COMMIT" != "$GITHUB_SHA" ]; then
+              echo "::error::Tag $TAG_NAME already exists on $TAG_COMMIT, not on this commit ($GITHUB_SHA). Bump the version; a released version is never rebuilt from different code."
+              exit 1
+            fi
+
+            # Same commit (a re-run): rebuild only if the image never made it to the registry
+            OWNER_REPO=$(echo "$IMAGE_REPO" | tr '[:upper:]' '[:lower:]')
+            TOKEN=$(curl -fsS "https://ghcr.io/token?scope=repository:${OWNER_REPO}:pull" | jq -r .token)
+            STATUS=$(curl -s -o /dev/null -w '%{http_code}' -I \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Accept: application/vnd.oci.image.index.v1+json,application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.docker.distribution.manifest.v2+json" \
+              "https://ghcr.io/v2/${OWNER_REPO}/manifests/${VERSION}")
+            if [ "$STATUS" = "200" ]; then
+              echo "::notice::Tag $TAG_NAME and image ${OWNER_REPO}:${VERSION} already exist for this commit; skipping the build"
+              echo "should_build=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Tag $TAG_NAME exists on this commit but the image is missing (HTTP $STATUS); building it"
+          else
+            echo "Creating new tag $TAG_NAME"
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
+            echo "Created and pushed tag $TAG_NAME"
+          fi
+
+          echo "should_build=true" >> "$GITHUB_OUTPUT"
   
   # Build Docker image for main branch
   build-validator:
@@ -85,12 +110,12 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Get full history
       
       - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.8.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
       
@@ -114,28 +139,7 @@ jobs:
           
           echo "Creating sync branch $SYNC_BRANCH from main..."
           git checkout -b $SYNC_BRANCH origin/main
-          
-          # Check if dev has newer common lib or validator code
-          DEV_COMMON=$(git show origin/dev:ismd-validator-common/pom.xml | grep '<version>' | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
-          MAIN_COMMON=$(grep '<version>' ismd-validator-common/pom.xml | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
-          
-          echo "Main has common library: $MAIN_COMMON"
-          echo "Dev has common library: $DEV_COMMON"
-          
-          # Only update if dev has newer version
-          if [ "$DEV_COMMON" != "$MAIN_COMMON" ]; then
-            echo "Dev has newer common library, updating..."
-            git checkout origin/dev -- ismd-validator-common
-            sed -i "s/<ismd-validator-common.version>.*<\/ismd-validator-common.version>/<ismd-validator-common.version>$DEV_COMMON<\/ismd-validator-common.version>/" ismd-backend-validator/pom.xml
-            git add ismd-validator-common ismd-backend-validator/pom.xml
-            git commit -m "Sync common library from dev after release
-          
-          - Updated common library to v$DEV_COMMON from dev
-          - Updated validator dependency to v$DEV_COMMON"
-          else
-            echo "Dev and main have same common library version, no update needed"
-          fi
-          
+
           git push origin $SYNC_BRANCH
           
           # Check if PR already exists
@@ -151,12 +155,8 @@ jobs:
               
               ## Changes:
               - Syncs validator code from main (released v$VERSION)
-              - Updates common library if dev has a newer released version
-              
+
               ## Note:
-              Both branches use released versions only (no SNAPSHOT).
-              Dev may have newer common library versions from ongoing development.
-              
               - If there are no conflicts, this can be merged automatically
               - If conflicts exist, they need to be resolved manually
               

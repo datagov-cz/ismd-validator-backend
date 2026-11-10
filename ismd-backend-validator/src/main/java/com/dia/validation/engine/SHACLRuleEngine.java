@@ -1,6 +1,6 @@
 package com.dia.validation.engine;
 
-import com.dia.exceptions.ValidationException;
+import com.dia.exception.ValidationException;
 import com.dia.validation.ValidationResult;
 import com.dia.validation.ValidationSeverity;
 import com.dia.validation.config.RuleManager;

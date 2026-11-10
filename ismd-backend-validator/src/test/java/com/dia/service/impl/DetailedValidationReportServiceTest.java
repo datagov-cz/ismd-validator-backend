@@ -1,6 +1,6 @@
 package com.dia.service.impl;
 
-import com.dia.exceptions.ValidationException;
+import com.dia.exception.ValidationException;
 import com.dia.validation.ValidationResult;
 import com.dia.validation.ValidationSeverity;
 import com.dia.validation.data.ConceptValidationDto;
@@ -276,71 +276,6 @@ class DetailedValidationReportServiceTest {
             assertThat(csvResult)
                     .contains("concept-with-čšž")
                     .contains("Message with áčďťů special chars");
-        }
-    }
-
-    @Nested
-    @DisplayName("generateCombinedDetailedReport Tests")
-    class GenerateCombinedDetailedReportTests {
-
-        @Test
-        @DisplayName("Should combine local and global reports successfully")
-        void shouldCombineLocalAndGlobalReportsSuccessfully() {
-            // Given
-            ISMDValidationReport localReport = new ISMDValidationReport(
-                    Collections.singletonList(sampleValidationResults.get(0)), Instant.now());
-            ISMDValidationReport globalReport = new ISMDValidationReport(
-                    Collections.singletonList(sampleValidationResults.get(1)), Instant.now());
-            Model shaclRulesModel = ModelFactory.createDefaultModel();
-
-            // When
-            DetailedValidationReportDto result = validationService.generateCombinedDetailedReport(
-                    localReport, globalReport, mockOntologyModel, shaclRulesModel);
-
-            // Then
-            assertThat(result).isNotNull();
-            assertThat(result.validation()).isNotEmpty();
-
-            boolean hasGlobalPrefix = result.validation().values().stream()
-                    .flatMap(concept -> concept.violations().values().stream())
-                    .anyMatch(violation -> violation.description().startsWith("[GLOBAL]"));
-            assertThat(hasGlobalPrefix).isTrue();
-        }
-
-        @Test
-        @DisplayName("Should handle empty local and global reports")
-        void shouldHandleEmptyLocalAndGlobalReports() {
-            // Given
-            ISMDValidationReport emptyLocalReport = ISMDValidationReport.empty();
-            ISMDValidationReport emptyGlobalReport = ISMDValidationReport.empty();
-            Model shaclRulesModel = ModelFactory.createDefaultModel();
-
-            // When
-            DetailedValidationReportDto result = validationService.generateCombinedDetailedReport(
-                    emptyLocalReport, emptyGlobalReport, mockOntologyModel, shaclRulesModel);
-
-            // Then
-            assertThat(result).isNotNull();
-            assertThat(result.validation()).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Should correctly combine validation status")
-        void shouldCorrectlyCombineValidationStatus() {
-            // Given
-            ISMDValidationReport validLocalReport = new ISMDValidationReport(
-                    Collections.emptyList(), Instant.now());
-            ISMDValidationReport invalidGlobalReport = new ISMDValidationReport(
-                    Collections.singletonList(sampleValidationResults.get(0)), Instant.now());
-            Model shaclRulesModel = ModelFactory.createDefaultModel();
-
-            // When
-            DetailedValidationReportDto result = validationService.generateCombinedDetailedReport(
-                    validLocalReport, invalidGlobalReport, mockOntologyModel, shaclRulesModel);
-
-            // Then
-            assertThat(result).isNotNull();
-            assertThat(result.validation()).isNotEmpty();
         }
     }
 

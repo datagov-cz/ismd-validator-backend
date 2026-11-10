@@ -1,6 +1,6 @@
 package com.dia.config;
 
-import com.dia.exceptions.DomainException;
+import com.dia.exception.DomainException;
 import org.springframework.core.env.Environment;
 import java.util.Arrays;
 

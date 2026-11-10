@@ -102,7 +102,7 @@ class ConversionWorkflowEATurtleTest {
 
         // Stage 6: Load and compare with expected output
         String expectedTtlPath = config.getExpectedOutputPath() != null
-            ? config.getExpectedOutputPath().replace("jsonld.jsonld", "ttl.ttl")
+            ? config.getExpectedOutputPath().replace("jsonld_no-lkod.jsonld", "ttl_no-lkod.ttl")
             : null;
 
         if (expectedTtlPath != null) {

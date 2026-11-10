@@ -4,7 +4,7 @@ import com.dia.conversion.data.ConversionResult;
 import com.dia.conversion.data.TransformationResult;
 import com.dia.conversion.engine.ConverterEngine;
 import com.dia.enums.FileFormat;
-import com.dia.exceptions.*;
+import com.dia.exception.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

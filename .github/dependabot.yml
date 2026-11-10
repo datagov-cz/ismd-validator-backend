@@ -1,0 +1,33 @@
+# Dependabot — watches the validator's Maven dependencies (all public, Maven Central).
+version: 2
+
+updates:
+  - package-ecosystem: maven
+    directory: /ismd-backend-validator
+    schedule:
+      interval: weekly
+    # Scheduled version-update PRs open against dev for review before reaching main.
+    # NOTE: security updates always target the default branch and ignore this.
+    target-branch: dev
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+    # One grouped PR per run instead of a separate PR per dependency.
+    groups:
+      maven-dependencies:
+        patterns:
+          - "*"
+
+  # Watches action versions pinned in .github/workflows/ (actions/checkout, etc.).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: dev
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+    groups:
+      github-actions:
+        patterns:
+          - "*"
