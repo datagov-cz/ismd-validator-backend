@@ -1,0 +1,40 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+
+# Warning rule: Concept has definition without source (or vice versa)
+<https://slovník.gov.cz/shacl/lokální/definice-bez-zdroje>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Definice bez zdroje"@cs ;
+    sh:description "Reports when concept has definition but no source, or source but no definition" ;
+    sh:message "Pojem má vyplněný atribut definice a současně nemá vyplněný zdroj (a obráceně)"@cs ;
+    sh:severity sh:Warning ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX dct: <http://purl.org/dc/terms/>
+            PREFIX dc: <http://purl.org/dc/elements/1.1/>
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this
+            WHERE {
+                $this a slovníky:pojem .
+                {
+                    # Has definition but no source
+                    $this skos:definition ?def .
+                    FILTER(
+                        NOT EXISTS { $this dct:source ?s1 . } &&
+                        NOT EXISTS { $this dc:source ?s2 . }
+                    )
+                } UNION {
+                    # Has source but no definition
+                    { $this dct:source ?src . } UNION { $this dc:source ?src . }
+                    FILTER(NOT EXISTS { $this skos:definition ?def . })
+                }
+            }
+        """ ;
+    ] .

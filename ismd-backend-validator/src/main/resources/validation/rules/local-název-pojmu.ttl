@@ -1,0 +1,17 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+
+# Error rule: Concept must have a name
+<https://slovník.gov.cz/shacl/lokální/název-pojmu>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Název pojmu"@cs ;
+    sh:description "Ensures that each concept has a name" ;
+    sh:message "Pojem nemá vyplněný název"@cs ;
+    sh:severity sh:Violation ;
+
+    sh:property [
+        sh:path skos:prefLabel ;
+        sh:minCount 1 ;
+    ] .
