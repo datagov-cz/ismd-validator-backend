@@ -4,9 +4,46 @@
 @prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
 @prefix a104: <https://slovník.gov.cz/agendový/104/pojem/> .
 @prefix vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/> .
-@prefix l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/> .
+@prefix z111: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/> .
 
-# Info rule: RPP characteristics - Complete RPP information available
+# Info rule: Concept does not have RPP/360 characteristics
+<https://slovník.gov.cz/shacl/lokální/pojem-nemá-charakteristiky-rpp>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Charakteristiky RPP/360 pojmu"@cs ;
+    sh:description "Reports when concept does not have RPP/360 characteristics" ;
+    sh:message "Pojem nemá vyplněné charakteristiky pro RPP/360"@cs ;
+    sh:severity sh:Info ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+            PREFIX a104: <https://slovník.gov.cz/agendový/104/pojem/>
+            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
+            PREFIX z111: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
+
+            SELECT $this
+            WHERE {
+                $this a slovníky:pojem .
+
+                # Concept does not have any RPP/360 characteristics
+                FILTER (
+                    NOT EXISTS { $this a vsgov:typ-subjektu-práva . } &&
+                    NOT EXISTS { $this a vsgov:typ-objektu-práva . } &&
+                    NOT EXISTS { $this a z111:neveřejný-údaj . } &&
+                    NOT EXISTS { $this a z111:veřejný-údaj . } &&
+                    NOT EXISTS { $this a104:je-sdílen-v-propojeném-datovém-fondu ?ppdf . } &&
+                    NOT EXISTS { $this slovníky:má-způsob-získání-údaje ?zz . } &&
+                    NOT EXISTS { $this slovníky:má-typ-obsahu-údaje ?to . } &&
+                    NOT EXISTS { $this slovníky:má-způsob-sdílení-údaje ?zs . } &&
+                    NOT EXISTS { $this a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy ?ag . } &&
+                    NOT EXISTS { $this a104:údaje-jsou-v-ais ?ais . }
+                )
+            }
+        """ ;
+    ] .
+
+# Info rule: Concept has complete RPP characteristics
 <https://slovník.gov.cz/shacl/lokální/pojem-má-kompletní-údaje-charakteristiky-rpp>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
@@ -18,132 +55,31 @@
     sh:sparql [
         sh:select """
             PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
-            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
-            PREFIX l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
             PREFIX a104: <https://slovník.gov.cz/agendový/104/pojem/>
+            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
+            PREFIX z111: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
 
             SELECT $this
             WHERE {
-                # 1. Must be shared in PPDF (value may be typed boolean true or the string "true")
+                # Must be shared in PPDF (value may be typed boolean true or the string "true")
                 $this a104:je-sdílen-v-propojeném-datovém-fondu ?ppdfValue .
                 FILTER(STR(?ppdfValue) = "true")
 
-                # 2. Must be typ-subjektu-práva OR typ-objektu-práva
+                # Must be typ-subjektu-práva OR typ-objektu-práva
                 {
                     $this a vsgov:typ-subjektu-práva .
                 } UNION {
                     $this a vsgov:typ-objektu-práva .
                 }
 
-                # 3. If it's neveřejný-údaj, it must have ustanovení
+                # If it's neveřejný-údaj, it must have ustanovení
                 FILTER (
-                    NOT EXISTS { $this a l111-2009:neveřejný-údaj . } ||
+                    NOT EXISTS { $this a z111:neveřejný-údaj . } ||
                     EXISTS {
-                        $this a l111-2009:neveřejný-údaj .
-                        $this l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost ?ustanoveni .
+                        $this a z111:neveřejný-údaj .
+                        $this z111:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost ?ustanoveni .
                     }
                 )
-            }
-        """ ;
-    ] .
-
-# Info rule: RPP characteristics - Missing PPDF sharing
-<https://slovník.gov.cz/shacl/lokální/pojem-nemá-sdílení-v-rpp>
-    a sh:NodeShape ;
-    sh:targetClass slovníky:pojem ;
-    sh:name "Charakteristiky RPP nemají údaje PPDF"@cs ;
-    sh:description "Reports when concept doesn't have PPDF sharing" ;
-    sh:message "Pojem nemá sdílení v propojeném datovém fondu"@cs ;
-    sh:severity sh:Info ;
-
-    sh:sparql [
-        sh:select """
-            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
-            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
-            PREFIX l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
-            PREFIX a104: <https://slovník.gov.cz/agendový/104/pojem/>
-
-            SELECT $this
-            WHERE {
-                # Has typ-subjektu-práva OR typ-objektu-práva OR is veřejný/neveřejný údaj
-                {
-                    $this a vsgov:typ-subjektu-práva .
-                } UNION {
-                    $this a vsgov:typ-objektu-práva .
-                } UNION {
-                    $this a l111-2009:veřejný-údaj .
-                } UNION {
-                    $this a l111-2009:neveřejný-údaj .
-                }
-
-                # But is not shared in PPDF (value may be typed boolean true or the string "true")
-                FILTER (
-                    NOT EXISTS {
-                        $this a104:je-sdílen-v-propojeném-datovém-fondu ?ppdfValue .
-                        FILTER(STR(?ppdfValue) = "true")
-                    }
-                )
-            }
-        """ ;
-    ] .
-
-# Info rule: RPP characteristics - Missing legal provision for non-public information
-<https://slovník.gov.cz/shacl/lokální/pojem-neveřejný-údaj-nemá-ustanovení-dokládající-neveřejnost>
-    a sh:NodeShape ;
-    sh:targetClass slovníky:pojem ;
-    sh:name "Charakteristiky RPP nemají ustanovení dokládající neveřejnost"@cs ;
-    sh:description "Reports when neveřejný údaj is missing ustanovení dokládající neveřejnost" ;
-    sh:message "Pojem neveřejný údaj nemá ustanovení dokládající neveřejnost"@cs ;
-    sh:severity sh:Info ;
-
-    sh:sparql [
-        sh:select """
-            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
-            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
-            PREFIX l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
-
-            SELECT $this
-            WHERE {
-                # Is neveřejný údaj
-                $this a l111-2009:neveřejný-údaj .
-
-                # But does not have ustanovení dokládající neveřejnost
-                FILTER (
-                    NOT EXISTS {
-                        $this l111-2009:je-vymezen-ustanovením-stanovujícím-jeho-neveřejnost ?ustanoveni .
-                    }
-                )
-            }
-        """ ;
-    ] .
-
-# Info rule: RPP characteristics - Does not have agenda relationship
-<https://slovník.gov.cz/shacl/lokální/pojem-nemá-vztah-k-agendě-nebo-ais>
-    a sh:NodeShape ;
-    sh:targetClass slovníky:pojem ;
-    sh:name "Charakteristiky RPP a Agend"@cs ;
-    sh:description "Reports when concept does not have agenda or AIS relationships" ;
-    sh:message "Pojem nemá vztah k agendě nebo AIS"@cs ;
-    sh:severity sh:Info ;
-
-    sh:sparql [
-        sh:select """
-            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
-            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
-            PREFIX l111-2009: <https://slovník.gov.cz/legislativní/sbírka/111/2009/pojem/>
-            PREFIX a104: <https://slovník.gov.cz/agendový/104/pojem/>
-
-            SELECT $this
-            WHERE {
-                $this a slovníky:pojem .
-
-                # Flag only when the concept lacks both an agenda and an AIS relationship.
-                FILTER NOT EXISTS {
-                    $this a104:sdružuje-údaje-vedené-nebo-vytvářené-v-rámci-agendy ?agenda .
-                }
-                FILTER NOT EXISTS {
-                    $this a104:údaje-jsou-v-ais ?ais .
-                }
             }
         """ ;
     ] .
