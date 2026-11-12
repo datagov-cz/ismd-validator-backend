@@ -23,15 +23,15 @@
             SELECT $this
             WHERE {
                 $this a slovníky:pojem .
+                # No outgoing or incoming hierarchical/domain/range/exactMatch links.
+                # Comments must stay outside FILTER: Jena's lexer misreads "(" followed by a comment.
                 FILTER(
-                    # No hierarchical connections (outgoing)
                     NOT EXISTS { $this skos:broader ?b . } &&
                     NOT EXISTS { $this rdfs:subClassOf ?sc . } &&
                     NOT EXISTS { $this rdfs:subPropertyOf ?sp . } &&
                     NOT EXISTS { $this rdfs:domain ?d . } &&
                     NOT EXISTS { $this rdfs:range ?r . } &&
                     NOT EXISTS { $this skos:exactMatch ?em . } &&
-                    # No hierarchical connections (incoming)
                     NOT EXISTS { ?child skos:broader $this . } &&
                     NOT EXISTS { ?child rdfs:subClassOf $this . } &&
                     NOT EXISTS { ?child rdfs:subPropertyOf $this . } &&

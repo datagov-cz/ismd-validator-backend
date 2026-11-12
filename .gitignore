@@ -45,3 +45,7 @@ build/
 ### don't ignore ###
 !.github/
 !.github/**
+# Test fixtures (API contract, OFN JSON Schema) are JSON and must be versioned
+!ismd-backend-validator/src/test/resources/**/*.json
+# Bundled OFN JSON Schema is loaded at runtime and must be versioned
+!ismd-backend-validator/src/main/resources/**/*.json

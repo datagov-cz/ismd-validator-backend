@@ -1,6 +1,8 @@
 package com.dia.conversion.data;
 
 import lombok.Getter;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Setter;
 
 @Getter
@@ -18,6 +20,8 @@ public class PropertyData {
     private String superProperty;
     private String alternativeName;
     private String equivalentConcept;
+    /** Broader concepts (skos:broader) by IRI, for "nadřazený-pojem". */
+    private List<String> broaderConcepts = new ArrayList<>();
     private String dataType;
     private String sharedInPPDF;
 

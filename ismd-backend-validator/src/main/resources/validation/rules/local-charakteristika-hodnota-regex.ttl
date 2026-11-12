@@ -20,10 +20,10 @@
                 $this a slovníky:pojem .
                 {
                     $this slovníky:definující-ustanovení ?value .
-                    FILTER(!REGEX(STR(?value), "^https://slovník\\.gov\\.cz/legislativní/"))
+                    FILTER(!STRSTARTS(STR(?value), "https://slovník.gov.cz/legislativní/"))
                 } UNION {
                     $this slovníky:související-ustanovení ?value .
-                    FILTER(!REGEX(STR(?value), "^https://slovník\\.gov\\.cz/legislativní/"))
+                    FILTER(!STRSTARTS(STR(?value), "https://slovník.gov.cz/legislativní/"))
                 }
             }
         """ ;

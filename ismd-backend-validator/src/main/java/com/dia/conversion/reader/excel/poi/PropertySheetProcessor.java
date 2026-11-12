@@ -5,6 +5,7 @@ import com.dia.conversion.reader.excel.mapper.ColumnMapping;
 import com.dia.conversion.reader.excel.mapper.ColumnMappingRegistry;
 import com.dia.conversion.reader.excel.mapper.PropertySetter;
 import com.dia.exception.ExcelReadingException;
+import java.util.LinkedHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -44,6 +45,8 @@ public class PropertySheetProcessor extends BaseSheetProcessor<List<PropertyData
         log.debug("Header row found at row={}", headerRow.getRowNum());
 
         Map<String, Integer> columnMap = createColumnIndexMap(headerRow);
+        Map<String, Integer> unmapped = unmappedColumns(columnMap, mapping.getColumnNames());
+        Map<String, Integer> unmappedValueCounts = new LinkedHashMap<>();
 
         int processedRows = 0;
         int emptyRows = 0;
@@ -55,6 +58,7 @@ public class PropertySheetProcessor extends BaseSheetProcessor<List<PropertyData
             }
 
             processedRows++;
+            countUnmappedValues(row, unmapped, unmappedValueCounts);
             PropertyData propertyData = processDataRow(row, columnMap, mapping);
             properties.add(propertyData);
             log.debug("Property data extracted from row={}: name={}", rowIndex, propertyData.getName());
@@ -62,6 +66,7 @@ public class PropertySheetProcessor extends BaseSheetProcessor<List<PropertyData
 
         log.info("Property sheet processing completed: sheetName={}, totalRows={}, processedRows={}, validProperties={}, emptyRows={}",
                 sheet.getSheetName(), sheet.getLastRowNum() - headerRow.getRowNum(), processedRows, properties.size(), emptyRows);
+        warnUnmappedValues(sheet, unmappedValueCounts);
         return properties;
     }
 

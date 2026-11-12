@@ -95,6 +95,15 @@ public class AttributePatterns {
                 Pattern.compile(".*ais.*", Pattern.CASE_INSENSITIVE)
         });
 
+        ATTRIBUTE_PATTERNS.put("INSTANCE_DEFINOVANY_CISELNIKEM", new Pattern[]{
+                Pattern.compile(".*instance\\s+definov[aá]n[yý]\\s+[čc][ií]seln[ií]kem.*",
+                        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)
+        });
+
+        ATTRIBUTE_PATTERNS.put("DATOVA_SADA_V_NKOD", new Pattern[]{
+                Pattern.compile(".*datov[aá]\\s+sada\\s+v\\s+nkod.*", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)
+        });
+
         ATTRIBUTE_PATTERNS.put("TYP_OBSAHU_UDAJE", new Pattern[]{
                 Pattern.compile(".*typ\\s+obsahu\\s+[uú]daje.*", Pattern.UNICODE_CASE),
                 Pattern.compile(".*content.*type.*", Pattern.CASE_INSENSITIVE)
