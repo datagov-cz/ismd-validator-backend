@@ -16,6 +16,12 @@
 
     # Should have at least one source property
     sh:or (
+        # OFN slovníky sources: legal provisions and non-legislative documents
+        [ sh:path slovníky:definující-ustanovení ; sh:minCount 1 ]
+        [ sh:path slovníky:související-ustanovení ; sh:minCount 1 ]
+        [ sh:path slovníky:definující-nelegislativní-zdroj ; sh:minCount 1 ]
+        [ sh:path slovníky:související-nelegislativní-zdroj ; sh:minCount 1 ]
+
         # Has dct:source
         [ sh:path dct:source ; sh:minCount 1 ]
 

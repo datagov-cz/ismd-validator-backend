@@ -37,6 +37,8 @@ public enum ErrorCode {
     // Conversion
     FILE_PARSE_FAILED(HttpStatus.BAD_REQUEST, "Soubor se nepodařilo načíst."),
     EXCEL_READ_FAILED(HttpStatus.BAD_REQUEST, "Soubor Excel se nepodařilo načíst."),
+    VOCABULARY_NAME_MISSING(HttpStatus.BAD_REQUEST, "Slovník nemá vyplněný název."),
+    VOCABULARY_OFN_NONCONFORMANT(HttpStatus.BAD_REQUEST, "Slovník nesplňuje standard OFN Slovníky."),
     CONVERSION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Převod slovníku selhal."),
     EXPORT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Export slovníku selhal."),
 
