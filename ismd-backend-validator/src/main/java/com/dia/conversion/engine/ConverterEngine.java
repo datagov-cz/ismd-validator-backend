@@ -7,7 +7,7 @@ import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.reader.ssp.SSPReader;
 import com.dia.conversion.data.TransformationResult;
-import com.dia.conversion.transformer.OFNDataTransformerNew;
+import com.dia.conversion.transformer.OFNDataTransformer;
 import com.dia.enums.FileFormat;
 import com.dia.exception.*;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ import static com.dia.constants.FormatConstants.Converter.LOG_REQUEST_ID;
 @Slf4j
 public class ConverterEngine {
 
-    private final OFNDataTransformerNew ofnDataTransformerNew;
+    private final OFNDataTransformer ofnDataTransformer;
     private final ArchiReader archiReader;
     private final EnterpriseArchitectReader eaReader;
     private final ExcelReader excelReader;
@@ -39,7 +39,7 @@ public class ConverterEngine {
                     if (transformationResult == null) {
                         throw new JsonExportException("Archi transformation result is not available.");
                     }
-                    return ofnDataTransformerNew.exportToJson(transformationResult);
+                    return ofnDataTransformer.exportToJson(transformationResult);
                 }
 
                 @Override
@@ -47,7 +47,7 @@ public class ConverterEngine {
                     if (transformationResult == null) {
                         throw new TurtleExportException("Archi transformation result is not available.");
                     }
-                    return ofnDataTransformerNew.exportToTurtle(transformationResult);
+                    return ofnDataTransformer.exportToTurtle(transformationResult);
                 }
             },
             FileFormat.XLSX, new ConverterAdapter() {
@@ -56,7 +56,7 @@ public class ConverterEngine {
                     if (transformationResult == null) {
                         throw new JsonExportException("Excel transformation result is not available.");
                     }
-                    return ofnDataTransformerNew.exportToJson(transformationResult);
+                    return ofnDataTransformer.exportToJson(transformationResult);
                 }
 
                 @Override
@@ -64,7 +64,7 @@ public class ConverterEngine {
                     if (transformationResult == null) {
                         throw new TurtleExportException("Excel transformation result is not available.");
                     }
-                    return ofnDataTransformerNew.exportToTurtle(transformationResult);
+                    return ofnDataTransformer.exportToTurtle(transformationResult);
                 }
             },
             FileFormat.XMI, new ConverterAdapter() {
@@ -73,7 +73,7 @@ public class ConverterEngine {
                     if (transformationResult == null) {
                         throw new JsonExportException("EA transformation result is not available.");
                     }
-                    return ofnDataTransformerNew.exportToJson(transformationResult);
+                    return ofnDataTransformer.exportToJson(transformationResult);
                 }
 
                 @Override
@@ -81,7 +81,7 @@ public class ConverterEngine {
                     if (transformationResult == null) {
                         throw new TurtleExportException("EA transformation result is not available.");
                     }
-                    return ofnDataTransformerNew.exportToTurtle(transformationResult);
+                    return ofnDataTransformer.exportToTurtle(transformationResult);
                 }
             },
             FileFormat.SSP, new ConverterAdapter() {
@@ -90,7 +90,7 @@ public class ConverterEngine {
                     if (transformationResult == null) {
                         throw new JsonExportException("SSP transformation result is not available.");
                     }
-                    return ofnDataTransformerNew.exportToJson(transformationResult);
+                    return ofnDataTransformer.exportToJson(transformationResult);
                 }
 
                 @Override
@@ -98,7 +98,7 @@ public class ConverterEngine {
                     if (transformationResult == null) {
                         throw new TurtleExportException("SSP transformation result is not available.");
                     }
-                    return ofnDataTransformerNew.exportToTurtle(transformationResult);
+                    return ofnDataTransformer.exportToTurtle(transformationResult);
                 }
             }
     );
@@ -135,10 +135,12 @@ public class ConverterEngine {
 
         try {
             long startTime = System.currentTimeMillis();
-            TransformationResult result = ofnDataTransformerNew.transform(ontologyData);
+            TransformationResult result = ofnDataTransformer.transform(ontologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("Archi model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
+        } catch (MissingVocabularyNameException | OfnConformanceException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Unexpected error during Archi model conversion: requestId={}", requestId, e);
             throw new ConversionException("Během konverze Archi souboru došlo k nečekané chybě.");
@@ -180,10 +182,12 @@ public class ConverterEngine {
 
         try {
             long startTime = System.currentTimeMillis();
-            TransformationResult result = ofnDataTransformerNew.transform(ontologyData);
+            TransformationResult result = ofnDataTransformer.transform(ontologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("Excel model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
+        } catch (MissingVocabularyNameException | OfnConformanceException e) {
+            throw e;
         } catch (ConversionException e) {
             log.error("Failed to convert Excel model: requestId={}, error={}", requestId, e.getMessage(), e);
             throw e;
@@ -228,10 +232,12 @@ public class ConverterEngine {
 
         try {
             long startTime = System.currentTimeMillis();
-            TransformationResult result = ofnDataTransformerNew.transform(ontologyData);
+            TransformationResult result = ofnDataTransformer.transform(ontologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("EA model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
+        } catch (MissingVocabularyNameException | OfnConformanceException e) {
+            throw e;
         } catch (ConversionException e) {
             log.error("Failed to convert EA model: requestId={}, error={}", requestId, e.getMessage(), e);
             throw e;
@@ -273,10 +279,12 @@ public class ConverterEngine {
 
         try {
             long startTime = System.currentTimeMillis();
-            TransformationResult result = ofnDataTransformerNew.transform(ontologyData);
+            TransformationResult result = ofnDataTransformer.transform(ontologyData);
             long duration = System.currentTimeMillis() - startTime;
             log.info("SSP model conversion completed: requestId={}, durationMs={}", requestId, duration);
             return result;
+        } catch (MissingVocabularyNameException | OfnConformanceException e) {
+            throw e;
         } catch (ConversionException e) {
             log.error("Failed to convert SSP model: requestId={}, error={}", requestId, e.getMessage(), e);
             throw e;

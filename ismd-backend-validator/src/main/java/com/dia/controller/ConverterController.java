@@ -1,5 +1,6 @@
 package com.dia.controller;
 
+import com.dia.controller.dto.ConformanceIssueDto;
 import com.dia.controller.data.UrlMultipartFile;
 import com.dia.controller.dto.ApiResponseDto;
 import com.dia.controller.dto.ConversionResponseDto;
@@ -366,13 +367,16 @@ public class ConverterController {
         String requestId = MDC.get(LOG_REQUEST_ID);
         log.debug("Preparing response entity: requestId={}, outputFormat={}", requestId, outputFormat);
 
+        List<ConformanceIssueDto> conformanceIssues =
+                ConformanceIssueDto.from(conversionResult.getTransformationResult().conformanceIssues());
         String ontologyData = null;
         if (validationConfiguration.isEnableOntologyViolationDownload()) {
             log.debug("Including ontology data due to validation violations: requestId={}", requestId);
             ontologyData = converterService.exportToTurtle(fileFormat, conversionResult.getTransformationResult());
         } else if (results.getSeverityGroups().stream().anyMatch(r -> r.getSeverity().equalsIgnoreCase(ValidationSeverity.ERROR.getDisplayName()))) {
-            throw new ValidationReportHasErrorsException(
-                    ConversionResponseDto.success(null, results, detailedReport));
+            ConversionResponseDto body = ConversionResponseDto.success(null, results, detailedReport);
+            body.setConformanceIssues(conformanceIssues);
+            throw new ValidationReportHasErrorsException(body);
         }
 
         return switch (outputFormat.toLowerCase()) {
@@ -387,6 +391,7 @@ public class ConverterController {
                                 .validationResults(results)
                                 .validationReport(detailedReport)
                                 .ontologyData(ontologyData)
+                                .conformanceIssues(conformanceIssues)
                                 .build(), null));
             }
             case "ttl" -> {
@@ -400,6 +405,7 @@ public class ConverterController {
                                 .validationResults(results)
                                 .validationReport(detailedReport)
                                 .ontologyData(ontologyData)
+                                .conformanceIssues(conformanceIssues)
                                 .build(), null));
             }
             default -> {

@@ -12,7 +12,7 @@ import com.dia.conversion.reader.archi.ArchiReader;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
 import com.dia.conversion.reader.excel.ExcelReader;
 import com.dia.conversion.reader.ssp.SSPReader;
-import com.dia.conversion.transformer.OFNDataTransformerNew;
+import com.dia.conversion.transformer.OFNDataTransformer;
 import com.dia.enums.FileFormat;
 import com.dia.exception.*;
 import org.junit.jupiter.api.AfterEach;
@@ -50,7 +50,7 @@ class ConverterEngineTest {
     private SSPReader sspReader;
 
     @Mock
-    private OFNDataTransformerNew ofnDataTransformer;
+    private OFNDataTransformer ofnDataTransformer;
 
     @InjectMocks
     private ConverterEngine converterEngine;
@@ -144,6 +144,19 @@ class ConverterEngineTest {
             // Check error log
             assertTrue(listAppender.list.stream().anyMatch(event ->
                     event.getFormattedMessage().contains("Failed to parse Archi file: requestId=req-3")));
+        }
+
+        @Test
+        void testProcessArchiFile_missingVocabularyName_notWrapped() throws Exception {
+            String content = "<xml>content</xml>";
+            OntologyData mockOntologyData = mock(OntologyData.class);
+            MissingVocabularyNameException missing = new MissingVocabularyNameException("Slovník nemá vyplněný název.");
+
+            when(archiReader.readArchiFromString(content)).thenReturn(mockOntologyData);
+            when(ofnDataTransformer.transform(mockOntologyData)).thenThrow(missing);
+
+            assertSame(missing, assertThrows(MissingVocabularyNameException.class,
+                    () -> converterEngine.processArchiFile(content)));
         }
 
         @Test
