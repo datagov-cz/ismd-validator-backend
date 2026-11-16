@@ -2,6 +2,7 @@ package com.dia.conversion.reader.ea;
 
 import com.dia.conversion.data.*;
 import com.dia.exception.FileParsingException;
+import com.dia.utility.TemporalValues;
 import com.dia.utility.UtilityMethods;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -89,6 +91,7 @@ public class EnterpriseArchitectReader {
         hierarchies.addAll(extractHierarchiesFromProperties(properties, index, generalizations));
 
         inferSubPropertyDomains(properties, hierarchies);
+        warnUnknownTags(document);
 
         log.info("Parsed {} classes, {} properties, {} relationships, {} hierarchies",
                 classes.size(), properties.size(), relationships.size(), hierarchies.size());
@@ -162,9 +165,38 @@ public class EnterpriseArchitectReader {
         Element extensionElement = findExtensionElement(index, vocabularyPackageId);
         if (extensionElement != null) {
             metadata.setDescription(getTagValueByPattern(extensionElement, "POPIS_SLOVNIKU"));
+            firstProjectAttribute(extensionElement, "created")
+                    .flatMap(TemporalValues::parseEaTimestamp)
+                    .ifPresent(created -> metadata.setDateOfCreation(TemporalValues.toDateTimeStamp(created)));
         }
 
+        latestModification(index)
+                .ifPresent(modified -> metadata.setDateOfModification(TemporalValues.toDateTimeStamp(modified)));
+
         return metadata;
+    }
+
+    /** Reads an attribute of the {@code <project>} child EA writes into each extension element. */
+    private Optional<String> firstProjectAttribute(Element extensionElement, String attribute) {
+        NodeList projects = extensionElement.getElementsByTagName("project");
+        if (projects.getLength() == 0) {
+            return Optional.empty();
+        }
+        String value = ((Element) projects.item(0)).getAttribute(attribute);
+        return value.isBlank() ? Optional.empty() : Optional.of(value);
+    }
+
+    /**
+     * EA does not bump the package's own {@code modified} when its elements change,
+     * so the last change is the latest {@code modified} of any element in the export.
+     */
+    private Optional<Instant> latestModification(XmiIndex index) {
+        return index.extensionsByIdRef.values().stream()
+                .map(extension -> firstProjectAttribute(extension, "modified"))
+                .flatMap(Optional::stream)
+                .map(TemporalValues::parseEaTimestamp)
+                .flatMap(Optional::stream)
+                .max(Comparator.naturalOrder());
     }
 
     private Element findMainModelElement(XmiIndex index, String elementId) {
@@ -303,6 +335,8 @@ public class EnterpriseArchitectReader {
         classData.setSharedInPPDF(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_SDILEN_V_PPDF"));
         classData.setAgendaCode(getTagValueByPattern(extensionElement, "AGENDA"));
         classData.setAgendaSystemCode(getTagValueByPattern(extensionElement, "AGENDOVY_INFORMACNI_SYSTEM"));
+        classData.setCodelistIri(getTagValueByPattern(extensionElement, "INSTANCE_DEFINOVANY_CISELNIKEM"));
+        classData.setCodelistNkodDataset(getTagValueByPattern(extensionElement, "DATOVA_SADA_V_NKOD"));
 
         classData.setIsPublic(getBooleanTagValueByPattern(extensionElement, "JE_POJEM_VEREJNY"));
         classData.setPrivacyProvision(getTagValueByPattern(extensionElement, "USTANOVENI_DOKLADAJICI_NEVEREJNOST"));
@@ -812,6 +846,36 @@ public class EnterpriseArchitectReader {
 
         log.debug("Boolean field '{}': raw='{}' -> converted='{}'", logicalAttributeName, value, value);
         return value;
+    }
+
+    /**
+     * Warns about tagged values whose name matches no known template attribute: their values are
+     * not converted. One warning per tag name, with the number of values found.
+     */
+    private void warnUnknownTags(Document document) {
+        Map<String, Integer> unknown = new TreeMap<>();
+        NodeList tags = document.getElementsByTagName("tag");
+        for (int i = 0; i < tags.getLength(); i++) {
+            Element tag = (Element) tags.item(i);
+            String name = tag.getAttribute("name").trim();
+            if (name.isEmpty() || tag.getAttribute("value").trim().isEmpty() || isKnownTag(name)) {
+                continue;
+            }
+            unknown.merge(name, 1, Integer::sum);
+        }
+        unknown.forEach((name, count) -> log.warn(
+                "EA tag '{}' is not a known template attribute; its {} value(s) are ignored", name, count));
+    }
+
+    private static boolean isKnownTag(String tagName) {
+        for (Pattern[] patterns : ATTRIBUTE_PATTERNS.values()) {
+            for (Pattern pattern : patterns) {
+                if (pattern.matcher(tagName).matches()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private List<String> getAllTagNames(Element element) {

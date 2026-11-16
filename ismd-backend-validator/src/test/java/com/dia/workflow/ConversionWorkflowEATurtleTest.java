@@ -2,7 +2,7 @@ package com.dia.workflow;
 
 import com.dia.conversion.data.*;
 import com.dia.conversion.reader.ea.EnterpriseArchitectReader;
-import com.dia.conversion.transformer.OFNDataTransformerNew;
+import com.dia.conversion.transformer.OFNDataTransformer;
 import com.dia.workflow.config.WorkflowTestConfiguration;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -55,7 +55,7 @@ class ConversionWorkflowEATurtleTest {
     private EnterpriseArchitectReader eaReader;
 
     @Autowired
-    private OFNDataTransformerNew transformer;
+    private OFNDataTransformer transformer;
 
     static Stream<WorkflowTestConfiguration> testConfigurationProvider() {
         return WorkflowTestConfiguration.eaConfigurations().stream();
@@ -338,24 +338,7 @@ class ConversionWorkflowEATurtleTest {
             System.out.println("Statements missing in actual output: " + missingCount);
             System.out.println("Extra statements in actual output: " + extraCount);
 
-            // Check if the differences are only due to blank node identifiers
-            boolean onlyBlankNodeDifferences = (missingCount == extraCount) &&
-                (expectedSize == actualSize) &&
-                containsBlankNodes(missingInActual) &&
-                containsBlankNodes(extraInActual);
-
-            if (onlyBlankNodeDifferences) {
-                System.out.println("\nNote: Differences appear to be only due to blank node identifiers.");
-                System.out.println("The graphs are structurally equivalent (same triple count, same predicate distribution).");
-                System.out.println("This is expected behavior when blank nodes are re-parsed with different auto-generated IDs.");
-
-                // Verify predicate distribution is identical
-                if (haveSamePredicateDistribution(missingInActual, extraInActual)) {
-                    System.out.println("Predicate distribution matches - graphs are semantically equivalent despite blank node ID differences.");
-                    System.out.println("Test passes: Models are isomorphic (blank node IDs differ but structure is identical)");
-                    return; // Pass the test
-                }
-            }
+            // isIsomorphicWith already ignores blank node IDs, so any remaining difference is real.
 
             if (missingCount > 0) {
                 System.out.println("\nSample missing statements (up to 10):");
@@ -698,29 +681,5 @@ class ConversionWorkflowEATurtleTest {
         }
 
         return !identifier.startsWith(vocabularyNamespace);
-    }
-
-    private boolean containsBlankNodes(Model model) {
-        return model.listStatements().toList().stream()
-            .anyMatch(stmt ->
-                stmt.getSubject().isAnon() ||
-                (stmt.getObject().isResource() && stmt.getObject().asResource().isAnon())
-            );
-    }
-
-    private boolean haveSamePredicateDistribution(Model model1, Model model2) {
-        Map<String, Long> dist1 = model1.listStatements().toList().stream()
-            .collect(java.util.stream.Collectors.groupingBy(
-                stmt -> stmt.getPredicate().getURI(),
-                java.util.stream.Collectors.counting()
-            ));
-
-        Map<String, Long> dist2 = model2.listStatements().toList().stream()
-            .collect(java.util.stream.Collectors.groupingBy(
-                stmt -> stmt.getPredicate().getURI(),
-                java.util.stream.Collectors.counting()
-            ));
-
-        return dist1.equals(dist2);
     }
 }
