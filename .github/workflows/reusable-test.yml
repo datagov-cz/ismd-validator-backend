@@ -39,11 +39,19 @@ jobs:
 
       - name: Run tests with coverage
         working-directory: ismd-backend-validator
+        # Inputs reach the script through env, never as ${{ }} inside run:.
+        env:
+          ENFORCE_COVERAGE: ${{ inputs.enforce_coverage }}
+          COVERAGE_MINIMUM: ${{ inputs.coverage_minimum }}
         run: |
-          if [ "${{ inputs.enforce_coverage }}" = "true" ]; then
-            ./mvnw clean verify -Djacoco.line.minimum=${{ inputs.coverage_minimum }}
+          if ! [[ "$COVERAGE_MINIMUM" =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]]; then
+            echo "::error::coverage_minimum must be a ratio between 0.00 and 1.00"
+            exit 1
+          fi
+          if [ "$ENFORCE_COVERAGE" = "true" ]; then
+            ./mvnw clean verify "-Djacoco.line.minimum=$COVERAGE_MINIMUM"
           else
-            ./mvnw clean test jacoco:report -Djacoco.line.minimum=${{ inputs.coverage_minimum }}
+            ./mvnw clean test jacoco:report "-Djacoco.line.minimum=$COVERAGE_MINIMUM"
           fi
 
       - name: Upload JaCoCo coverage report

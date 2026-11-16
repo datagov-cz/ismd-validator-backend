@@ -38,23 +38,39 @@ jobs:
 
       - name: Set up repository path
         id: repo-setup
+        # Inputs reach the script through env, never as ${{ }} inside run:.
+        env:
+          REPOSITORY: ${{ github.repository }}
+          INPUT_BRANCH: ${{ inputs.branch }}
         run: |
-          # Convert repository name to lowercase and set as base path
-          REPO_PATH=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          
-          # Append branch suffix for non-main branches
-          if [ "${{ inputs.branch }}" != "main" ]; then
-            REPO_PATH="${REPO_PATH}-${{ inputs.branch }}"
+          if ! [[ "$INPUT_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "::error::branch input has characters outside [A-Za-z0-9._/-]"
+            exit 1
           fi
-          
-          echo "REPO_PATH=${REPO_PATH}" >> $GITHUB_ENV
+
+          # Append branch suffix for non-main branches
+          REPO_PATH="$REPOSITORY"
+          if [ "$INPUT_BRANCH" != "main" ]; then
+            REPO_PATH="${REPO_PATH}-${INPUT_BRANCH}"
+          fi
+
+          # Image names must be lowercase
+          REPO_PATH=$(echo "$REPO_PATH" | tr '[:upper:]' '[:lower:]')
+          echo "REPO_PATH=${REPO_PATH}" >> "$GITHUB_ENV"
 
       - name: Get version info
         id: version
+        env:
+          INPUT_BRANCH: ${{ inputs.branch }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           # If version provided via input, use it
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
+          if [ -n "$INPUT_VERSION" ]; then
+            if ! [[ "$INPUT_VERSION" =~ ^[0-9A-Za-z._-]+$ ]]; then
+              echo "::error::version input has characters outside [0-9A-Za-z._-]"
+              exit 1
+            fi
+            VERSION="$INPUT_VERSION"
             echo "Using provided version: $VERSION"
           else
             # Get base version from latest Git tag (only tags matching v[0-9]*)
@@ -67,7 +83,7 @@ jobs:
               echo "Found tag: $TAG, using version: $BASE_VERSION"
             fi
             
-            if [ "${{ inputs.branch }}" = "main" ]; then
+            if [ "$INPUT_BRANCH" = "main" ]; then
               # For main, use tag version as-is
               VERSION="$BASE_VERSION"
               echo "Using version from Git tag: $VERSION"
@@ -86,10 +102,13 @@ jobs:
           echo "Final version: $VERSION (commit: $GIT_SHA)"
 
       - name: Build and push Docker image
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          GIT_SHA: ${{ steps.version.outputs.git_sha }}
         run: |
           # Use the precomputed repository path
-          IMAGE_TAG="ghcr.io/${{ env.REPO_PATH }}:${{ steps.version.outputs.version }}"
-          LATEST_TAG="ghcr.io/${{ env.REPO_PATH }}:latest"
+          IMAGE_TAG="ghcr.io/${REPO_PATH}:${VERSION}"
+          LATEST_TAG="ghcr.io/${REPO_PATH}:latest"
           
           echo "Building validator with tags:"
           echo "  - $IMAGE_TAG"
@@ -100,16 +119,16 @@ jobs:
           docker build \
             -f ismd-backend-validator/Dockerfile \
             --target runtime \
-            --build-arg REVISION="${{ steps.version.outputs.version }}" \
-            --build-arg MODULE_VERSION="${{ steps.version.outputs.version }}" \
-            --build-arg GIT_COMMIT="${{ steps.version.outputs.git_sha }}" \
-            -t $IMAGE_TAG \
-            -t $LATEST_TAG \
+            --build-arg REVISION="$VERSION" \
+            --build-arg MODULE_VERSION="$VERSION" \
+            --build-arg GIT_COMMIT="$GIT_SHA" \
+            -t "$IMAGE_TAG" \
+            -t "$LATEST_TAG" \
             .
           
           # Push the built images
-          docker push $IMAGE_TAG
-          docker push $LATEST_TAG
+          docker push "$IMAGE_TAG"
+          docker push "$LATEST_TAG"
           
           echo "Successfully pushed $IMAGE_TAG"
           echo "Successfully pushed $LATEST_TAG"
