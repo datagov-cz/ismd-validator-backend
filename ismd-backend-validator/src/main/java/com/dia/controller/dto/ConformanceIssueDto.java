@@ -13,11 +13,11 @@ import java.util.List;
  * @param location   where in the OFN document, e.g. {@code pojmy[řidič]/agenda}
  * @param message    reason, in Czech
  */
-public record ConformanceIssueDto(String kind, String conceptIri, String location, String message) {
+public record ConformanceIssueDto(ConformanceIssue.Kind kind, String conceptIri, String location, String message) {
 
     public static List<ConformanceIssueDto> from(List<ConformanceIssue> issues) {
         return issues.stream()
-                .map(issue -> new ConformanceIssueDto(issue.kind().name(), issue.conceptIri(),
+                .map(issue -> new ConformanceIssueDto(issue.kind(), issue.conceptIri(),
                         issue.location(), issue.message()))
                 .toList();
     }

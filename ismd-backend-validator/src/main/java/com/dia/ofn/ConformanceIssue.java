@@ -1,5 +1,7 @@
 package com.dia.ofn;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Something the conformance gate removed from the converted vocabulary, and why.
  *
@@ -10,6 +12,8 @@ package com.dia.ofn;
  */
 public record ConformanceIssue(Kind kind, String conceptIri, String location, String message) {
 
+    /** Exposed in OpenAPI as a named enum so generated clients (orval) get the values as a type. */
+    @Schema(name = "ConformanceIssueKind", enumAsRef = true)
     public enum Kind {
         /** A value with no matching term or shape in the OFN context was dropped. */
         VALUE_DROPPED,
