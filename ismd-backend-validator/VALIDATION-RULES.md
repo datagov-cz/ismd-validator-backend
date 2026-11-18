@@ -49,8 +49,8 @@ Each `.ttl` file contains one or more SHACL `sh:NodeShape` definitions. The file
 | File | Message |
 |------|---------|
 | `local-popis-slovníku.ttl` | Slovnik nema vyplneny popis |
-| `local-zdroj-pojmu.ttl` | Pojem nema vyplneny zdroj |
-| `local-definice-bez-zdroje.ttl` | Pojem ma vyplneny atribut definice a soucasne nema vyplneny zdroj (a obracene) |
+| `local-zdroj-pojmu.ttl` | Pojem nema vyplneny definujici zdroj (ustanoveni nebo nelegislativni zdroj; `dcterms:source`/`dc:source` jako legacy) |
+| `local-definice-bez-zdroje.ttl` | Pojem ma vyplneny atribut definice a soucasne nema vyplneny definujici zdroj (a obracene) |
 | `local-zdroj-ani-související-zdroj.ttl` | Pojem nema vyplneny atribut zdroj ani souvisejici zdroj |
 | `local-osamocené-pojmy.ttl` | Pojem nema vazbu na model jako celek |
 | `local-alternativní-název-stejný.ttl` | Alternativni nazev je stejny, jako nazev |
@@ -197,7 +197,7 @@ Reference for properties used in rules:
 | alternativni-nazev | `skos:altLabel` |
 | definice | `skos:definition` |
 | popis | `dcterms:description` |
-| zdroj | `dcterms:source` / `dc:source` |
+| zdroj (legacy) | `dcterms:source` / `dc:source` |
 | definujici-ustanoveni | `slovníky:definující-ustanovení` |
 | souvisejici-ustanoveni | `slovníky:související-ustanovení` |
 | definujici-nelegislativni-zdroj | `slovníky:definující-nelegislativní-zdroj` |

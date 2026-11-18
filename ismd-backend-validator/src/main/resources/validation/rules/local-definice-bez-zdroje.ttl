@@ -4,12 +4,14 @@
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
 
-# Warning rule: Concept has definition without source (or vice versa)
+# Warning rule: Concept has definition without a defining source (or vice versa).
+# Defining source = definující-ustanovení or definující-nelegislativní-zdroj;
+# dct:source / dc:source are accepted as legacy forms.
 <https://slovník.gov.cz/shacl/lokální/definice-bez-zdroje>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "Definice bez zdroje"@cs ;
-    sh:description "Reports when concept has definition but no source, or source but no definition" ;
+    sh:description "Reports when concept has definition but no defining source, or defining source but no definition" ;
     sh:message "Pojem má vyplněný atribut definice a současně nemá vyplněný zdroj (a obráceně)"@cs ;
     sh:severity sh:Warning ;
 
@@ -20,20 +22,27 @@
             PREFIX dc: <http://purl.org/dc/elements/1.1/>
             PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
 
-            SELECT $this
+            SELECT DISTINCT $this
             WHERE {
                 $this a slovníky:pojem .
                 {
                     # Has definition but no source
                     $this skos:definition ?def .
-                    FILTER(
-                        NOT EXISTS { $this dct:source ?s1 . } &&
-                        NOT EXISTS { $this dc:source ?s2 . }
-                    )
+                    FILTER NOT EXISTS {
+                        VALUES ?sourceProperty {
+                            slovníky:definující-ustanovení slovníky:definující-nelegislativní-zdroj
+                            dct:source dc:source
+                        }
+                        $this ?sourceProperty ?src .
+                    }
                 } UNION {
                     # Has source but no definition
-                    { $this dct:source ?src . } UNION { $this dc:source ?src . }
-                    FILTER(NOT EXISTS { $this skos:definition ?def . })
+                    VALUES ?sourceProperty {
+                        slovníky:definující-ustanovení slovníky:definující-nelegislativní-zdroj
+                        dct:source dc:source
+                    }
+                    $this ?sourceProperty ?src .
+                    FILTER NOT EXISTS { $this skos:definition ?def . }
                 }
             }
         """ ;
