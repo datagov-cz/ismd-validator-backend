@@ -2,7 +2,7 @@ package com.dia.validation;
 
 import com.dia.controller.dto.ApiResponseDto;
 import com.dia.enums.ErrorCode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -26,7 +26,7 @@ import java.util.List;
 class ValidationReportContractTest {
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper objectMapper;
 
     @Test
     void validationReportMatchesContractFixture() throws Exception {
