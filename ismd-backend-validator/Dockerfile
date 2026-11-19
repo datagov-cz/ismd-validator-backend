@@ -5,7 +5,7 @@
 # so no extra install is needed.
 # Both base images are pinned to the multi-arch index digest (same as ismd-tool-backend);
 # Dependabot (docker ecosystem) raises the bump PRs.
-FROM eclipse-temurin:17-jdk@sha256:5d6042fb8cdc14d614e4e421f52e3211fc5aeadddce44cbf9de8ed37c791f824 AS builder
+FROM eclipse-temurin:24-jdk@sha256:7493205ffe6caa8074fa8a06a276bb1c5ac41d3dd0fd43a0db66d7f776e80b3e AS builder
 WORKDIR /app
 
 # Copy the validator module from repo root context (self-contained: all deps come from Maven Central)
@@ -26,7 +26,7 @@ ARG REVISION=0.0.1
 RUN ./mvnw clean install -Drevision=${REVISION} -DskipTests
 
 ### Runtime stage
-FROM eclipse-temurin:17-jre@sha256:207ecae0b2b104dfc6dfa763d1e9cd2041cb344800a180e24cb1a28ed533ff90 AS runtime
+FROM eclipse-temurin:24-jre@sha256:8cb2387a28af84cf0db0948d9c67d4480192f4e567027a3963f145d218e8b4f2 AS runtime
 WORKDIR /app
 
 # Get build arguments
