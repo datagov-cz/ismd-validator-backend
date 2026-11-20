@@ -27,6 +27,19 @@
         <surefire.runOrder>alphabetical</surefire.runOrder>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Jena 5.3.0 pulls libthrift 0.21.0 (GHSA-7pwc-h2j2-rjgj, GHSA-gf47-qgg5-9g9q,
+                 GHSA-8wv5-x4w7-5gww, all fixed in 0.24.0). 0.24.0 is what Jena 6.2.0 ships with.
+                 Drop this pin once Jena is upgraded to a release that brings >= 0.24.0. -->
+            <dependency>
+                <groupId>org.apache.thrift</groupId>
+                <artifactId>libthrift</artifactId>
+                <version>0.24.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
