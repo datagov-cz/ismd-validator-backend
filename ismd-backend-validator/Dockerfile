@@ -1,13 +1,15 @@
 ### Build stage
-FROM eclipse-temurin:17-jdk-alpine AS builder
+# Ubuntu-based Temurin tags (not -alpine) are published multi-arch
+# (linux/amd64 + linux/arm64). The -alpine variants are amd64-only, which
+# breaks `docker build`/`pull` on Apple Silicon. bash ships in these images,
+# so no extra install is needed.
+# Both base images are pinned to the multi-arch index digest (same as ismd-tool-backend);
+# Dependabot (docker ecosystem) raises the bump PRs.
+FROM eclipse-temurin:17-jdk@sha256:5d6042fb8cdc14d614e4e421f52e3211fc5aeadddce44cbf9de8ed37c791f824 AS builder
 WORKDIR /app
 
-# Install bash
-RUN apk add --no-cache bash
-
-# Copy validator and common modules from repo root context
+# Copy the validator module from repo root context (self-contained: all deps come from Maven Central)
 COPY ismd-backend-validator/ ./ismd-backend-validator
-COPY ismd-validator-common/ ./ismd-validator-common
 
 # Switch to validator module root (contains mvnw)
 WORKDIR /app/ismd-backend-validator
@@ -18,43 +20,13 @@ RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 # Build arguments with defaults
 ARG MODULE_VERSION=unknown
 ARG REVISION=0.0.1
-ARG GITHUB_TOKEN
-ARG GITHUB_ACTOR
-ARG GITHUB_REPOSITORY
-ARG USE_LOCAL_COMMON=true
-
-# Configure Maven to authenticate with GitHub Packages
-# Always needed because Maven verifies dependencies against remote repos
-RUN if [ -n "${GITHUB_TOKEN}" ] && [ -n "${GITHUB_ACTOR}" ]; then \
-      echo "Configuring Maven for GitHub Packages..."; \
-      mkdir -p ~/.m2 && \
-      echo '<settings><servers><server>' > ~/.m2/settings.xml && \
-      echo '<id>github</id>' >> ~/.m2/settings.xml && \
-      echo "<username>${GITHUB_ACTOR}</username>" >> ~/.m2/settings.xml && \
-      echo "<password>${GITHUB_TOKEN}</password>" >> ~/.m2/settings.xml && \
-      echo '</server></servers></settings>' >> ~/.m2/settings.xml; \
-    else \
-      echo "No GitHub credentials provided, skipping Maven auth setup"; \
-    fi
-
-# Set GITHUB_REPOSITORY as environment variable for Maven
-ENV GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
-
-# Pre-install common library locally if present and USE_LOCAL_COMMON=true (dev builds)
-# Production builds will download from GitHub Packages instead
-RUN if [ "$USE_LOCAL_COMMON" = "true" ] && [ -d ../ismd-validator-common ]; then \
-      echo "Installing common library from local repo (dev build)..."; \
-      ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install; \
-    else \
-      echo "Common library will be downloaded from GitHub Packages (prod build)"; \
-    fi
 
 # Build the validator application
 # Pass -Drevision to set version from Git tag
 RUN ./mvnw clean install -Drevision=${REVISION} -DskipTests
 
 ### Runtime stage
-FROM eclipse-temurin:17-jre-alpine AS runtime
+FROM eclipse-temurin:17-jre@sha256:207ecae0b2b104dfc6dfa763d1e9cd2041cb344800a180e24cb1a28ed533ff90 AS runtime
 WORKDIR /app
 
 # Get build arguments
@@ -72,8 +44,9 @@ COPY --from=builder /app/ismd-backend-validator/target/ismd-backend-validator-*.
 # JAVA_TOOL_OPTIONS=-javaagent:/app/applicationinsights-agent.jar per env
 # (enable_app_insights_agent), so one image serves all envs and telemetry can be
 # flipped on/off without a rebuild. The agent reads APPLICATIONINSIGHTS_CONNECTION_STRING
-# (injected by TF) for its destination.
-ADD https://github.com/microsoft/ApplicationInsights-Java/releases/download/3.6.2/applicationinsights-agent-3.6.2.jar /app/applicationinsights-agent.jar
+# (injected by TF) for its destination. The checksum must change with the version.
+ADD --checksum=sha256:e81ef99fd30444f6f1da70cd31db5e47f8e6906acbbc9199cac3b390dc6cfedf \
+    https://github.com/microsoft/ApplicationInsights-Java/releases/download/3.6.2/applicationinsights-agent-3.6.2.jar /app/applicationinsights-agent.jar
 
 # Add labels for better image identification
 LABEL org.opencontainers.image.title="ISMD Backend Validator"

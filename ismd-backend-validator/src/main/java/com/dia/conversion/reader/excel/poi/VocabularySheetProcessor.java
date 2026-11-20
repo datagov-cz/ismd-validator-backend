@@ -4,7 +4,7 @@ import com.dia.conversion.data.VocabularyMetadata;
 import com.dia.conversion.reader.excel.mapper.ColumnMapping;
 import com.dia.conversion.reader.excel.mapper.ColumnMappingRegistry;
 import com.dia.conversion.reader.excel.mapper.PropertySetter;
-import com.dia.exceptions.ExcelReadingException;
+import com.dia.exception.ExcelReadingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -67,7 +67,12 @@ public class VocabularySheetProcessor extends BaseSheetProcessor<VocabularyMetad
                     log.debug("Successfully set property for key: {}", key);
                 } else if (setter == null && !key.isEmpty()) {
                     unmappedKeys++;
-                    log.debug("No setter found for key: '{}'", key);
+                    if (value.isEmpty()) {
+                        log.debug("No setter found for key: '{}'", key);
+                    } else {
+                        log.warn("Sheet '{}': '{}' is not a known vocabulary field; its value is ignored",
+                                sheet.getSheetName(), key);
+                    }
                 }
             }
         }

@@ -44,12 +44,12 @@ class GlobalRuleMetadataTest {
     }
 
     @Test
-    void parsesWarningSeverityRule() {
+    void parsesViolationSeverityConceptRule() {
         Optional<GlobalRuleMetadata> meta =
                 GlobalRuleMetadata.from(load("global-pojem-se-stejným-iri-jiným-názvem"));
 
         assertThat(meta).isPresent();
-        assertThat(meta.get().severity()).isEqualTo(ValidationSeverity.WARNING);
+        assertThat(meta.get().severity()).isEqualTo(ValidationSeverity.ERROR); // sh:Violation -> ERROR
     }
 
     @Test

@@ -4,7 +4,7 @@ import com.dia.conversion.data.ConversionResult;
 import com.dia.conversion.data.TransformationResult;
 import com.dia.conversion.engine.ConverterEngine;
 import com.dia.enums.FileFormat;
-import com.dia.exceptions.*;
+import com.dia.exception.*;
 import com.dia.service.ConverterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

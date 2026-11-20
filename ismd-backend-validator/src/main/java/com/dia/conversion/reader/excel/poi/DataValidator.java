@@ -1,7 +1,7 @@
 package com.dia.conversion.reader.excel.poi;
 
 import com.dia.conversion.data.*;
-import com.dia.exceptions.ExcelReadingException;
+import com.dia.exception.ExcelReadingException;
 
 import java.util.List;
 import java.util.Set;

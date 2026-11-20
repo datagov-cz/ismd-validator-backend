@@ -5,7 +5,7 @@ import com.dia.conversion.reader.ssp.SSPReader;
 import com.dia.conversion.reader.ssp.config.SPARQLConfiguration;
 import com.dia.conversion.reader.ssp.data.ConceptData;
 import com.dia.conversion.reader.ssp.data.DomainRangeInfo;
-import com.dia.exceptions.ConversionException;
+import com.dia.exception.ConversionException;
 import com.dia.utility.UtilityMethods;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Literal;

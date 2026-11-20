@@ -1,15 +1,21 @@
 package com.dia.controller;
 
+import com.dia.controller.dto.ApiResponseDto;
 import com.dia.controller.dto.ConversionResponseDto;
+import com.dia.controller.dto.SeverityGroupDto;
 import com.dia.controller.dto.ValidationResultsDto;
 import com.dia.conversion.data.ConversionResult;
 import com.dia.conversion.data.TransformationResult;
-import com.dia.dto.CatalogRecordDto;
+import com.dia.enums.ErrorCode;
 import com.dia.enums.FileFormat;
-import com.dia.exceptions.JsonExportException;
+import com.dia.exception.JsonExportException;
+import com.dia.ofn.ConformanceIssue;
 import com.dia.service.*;
+import com.dia.validation.ValidationSeverity;
 import com.dia.validation.data.DetailedValidationReportDto;
 import com.dia.validation.data.ISMDValidationReport;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.jena.ontology.OntModel;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +25,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -29,7 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,8 +71,6 @@ class ConverterControllerIntegrationTest {
     @MockitoBean
     private DetailedValidationReportService detailedValidationReportService;
 
-    @MockitoBean
-    private CatalogReportService catalogReportService;
 
     @MockitoBean
     private com.dia.validation.config.ValidationConfiguration validationConfiguration;
@@ -86,13 +90,13 @@ class ConverterControllerIntegrationTest {
         return Stream.of(
                 Arguments.of("Empty file",
                         new MockMultipartFile("file", "empty.xml", "application/xml", new byte[0]),
-                        400, "Nebyl vložen žádný soubor."),
+                        400, ErrorCode.UPLOAD_FILE_MISSING, "Nebyl vložen žádný soubor."),
                 Arguments.of("Oversized file",
                         new MockMultipartFile("file", "large.xml", "application/xml", new byte[5_242_881]),
-                        415, "Nepodporovaný formát souboru."), // Springboot has global file size limit that throws 415
+                        415, ErrorCode.UNSUPPORTED_FORMAT, "Nepodporovaný formát souboru."), // Springboot has global file size limit that throws 415
                 Arguments.of("Unsupported format",
                         new MockMultipartFile("file", "test.pdf", "application/pdf", "PDF content".getBytes()),
-                        415, "Nepodporovaný formát souboru.")
+                        415, ErrorCode.UNSUPPORTED_FORMAT, "Nepodporovaný formát souboru.")
         );
     }
 
@@ -162,7 +166,6 @@ class ConverterControllerIntegrationTest {
         ISMDValidationReport mockValidationReport = mock(ISMDValidationReport.class);
         ValidationResultsDto mockValidationResults = mock(ValidationResultsDto.class);
         DetailedValidationReportDto mockDetailedReport = mock(DetailedValidationReportDto.class);
-        CatalogRecordDto mockCatalogRecord = mock(CatalogRecordDto.class);
 
         // Configure validation service mocks
         when(validationService.validate(any(TransformationResult.class))).thenReturn(mockValidationReport);
@@ -172,12 +175,12 @@ class ConverterControllerIntegrationTest {
                 .thenReturn(mockDetailedReport);
         when(detailedValidationReportService.generateDetailedReportFromTtlFile(any(ISMDValidationReport.class), any(MultipartFile.class)))
                 .thenReturn(mockDetailedReport);
-        when(catalogReportService.generateCatalogReport(any(ConversionResult.class), any(ValidationResultsDto.class), anyString()))
-                .thenReturn(Optional.of(mockCatalogRecord));
-        when(catalogReportService.generateCatalogReportFromFile(any(MultipartFile.class), any(ValidationResultsDto.class), anyString()))
-                .thenReturn(Optional.of(mockCatalogRecord));
 
         reset(converterService);
+    }
+
+    private ApiResponseDto<ConversionResponseDto> readBody(String responseBody) throws IOException {
+        return objectMapper.readValue(responseBody, new TypeReference<>() {});
     }
 
     private String loadTestFile() throws IOException {
@@ -213,11 +216,12 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
         assertNotNull(responseDto);
         assertEquals(expectedOutput, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertTrue(body.isSuccess());
         assertNotNull(responseDto.getValidationResults());
 
         // Verify service interactions
@@ -230,6 +234,29 @@ class ConverterControllerIntegrationTest {
         } else {
             verify(converterService).exportToTurtle(eq(FileFormat.ARCHI_XML), any());
         }
+    }
+
+    @Test
+    void conversion_reportsConformanceIssues() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "test.xml", "application/xml",
+                minimalArchiXML.getBytes(StandardCharsets.UTF_8));
+        ConformanceIssue issue = new ConformanceIssue(ConformanceIssue.Kind.CONCEPT_EXCLUDED,
+                "https://slovník.gov.cz/test/pojem/věk", "pojmy[věk]", "pojem nesplňuje OFN schéma: definiční-obor");
+        when(mockConversionResult.getTransformationResult().conformanceIssues()).thenReturn(List.of(issue));
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
+        when(converterService.exportToJson(eq(FileFormat.ARCHI_XML), any())).thenReturn(JSON_OUTPUT);
+
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file).param("output", "json"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode issues = objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("data").path("conformanceIssues");
+        assertEquals(1, issues.size());
+        assertEquals("CONCEPT_EXCLUDED", issues.get(0).path("kind").asText());
+        assertEquals("https://slovník.gov.cz/test/pojem/věk", issues.get(0).path("conceptIri").asText());
+        assertEquals("pojmy[věk]", issues.get(0).path("location").asText());
     }
 
     @ParameterizedTest(name = "Successful XLSX conversion to {0}")
@@ -258,11 +285,12 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
         assertNotNull(responseDto);
         assertEquals(expectedOutput, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertTrue(body.isSuccess());
         assertNotNull(responseDto.getValidationResults());
 
         // Verify service interactions
@@ -304,11 +332,12 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
         assertNotNull(responseDto);
         assertEquals(expectedOutput, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertTrue(body.isSuccess());
         assertNotNull(responseDto.getValidationResults());
 
         // Verify service interactions
@@ -327,7 +356,7 @@ class ConverterControllerIntegrationTest {
 
     @ParameterizedTest(name = "File validation: {0}")
     @MethodSource("fileValidationProvider")
-    void testFileValidation(String testName, MockMultipartFile file, int expectedStatus, String expectedMessage) throws Exception {
+    void testFileValidation(String testName, MockMultipartFile file, int expectedStatus, ErrorCode expectedCode, String expectedMessage) throws Exception {
         MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
                 .andExpect(status().is(expectedStatus))
                 .andExpect(content().contentType("application/json"))
@@ -335,12 +364,13 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify error DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
-        assertNotNull(responseDto);
-        assertNull(responseDto.getOutput());
-        assertEquals(expectedMessage, responseDto.getErrorMessage());
-        assertNull(responseDto.getValidationResults());
+        assertFalse(body.isSuccess());
+        assertNull(responseDto);
+        assertEquals(expectedCode, body.getErrorCode());
+        assertEquals(expectedMessage, body.getMessage());
     }
 
     // ========== ACCEPT HEADER TESTS ==========
@@ -372,11 +402,12 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
         assertNotNull(responseDto);
         assertEquals(expectedOutput, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertTrue(body.isSuccess());
         assertNotNull(responseDto.getValidationResults());
 
         verify(validationService).validate(any(TransformationResult.class));
@@ -419,11 +450,12 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
         assertNotNull(responseDto);
         assertEquals(expectedOutput, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertTrue(body.isSuccess());
         assertNotNull(responseDto.getValidationResults());
 
         verify(validationService).validate(any(TransformationResult.class));
@@ -455,11 +487,12 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
         assertNotNull(responseDto);
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertTrue(body.isSuccess());
         assertNotNull(responseDto.getValidationResults());
 
         verify(converterService).processArchiFile(anyString());
@@ -493,7 +526,8 @@ class ConverterControllerIntegrationTest {
         if (expectedStatus == 200) {
             // Parse and verify success DTO response
             String responseBody = result.getResponse().getContentAsString();
-            ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+            ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+            ConversionResponseDto responseDto = body.getData();
 
             assertNotNull(responseDto);
             if (filename.endsWith(".ttl")) {
@@ -503,16 +537,16 @@ class ConverterControllerIntegrationTest {
                 assertEquals(JSON_OUTPUT, responseDto.getOutput());
                 assertNotNull(responseDto.getValidationResults());
             }
-            assertNull(responseDto.getErrorMessage());
+            assertTrue(body.isSuccess());
         } else {
             // Parse and verify error DTO response
             String responseBody = result.getResponse().getContentAsString();
-            ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+            ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+            ConversionResponseDto responseDto = body.getData();
 
-            assertNotNull(responseDto);
-            assertNull(responseDto.getOutput());
-            assertNotNull(responseDto.getErrorMessage());
-            assertNull(responseDto.getValidationResults());
+            assertFalse(body.isSuccess());
+            assertNull(responseDto);
+            assertEquals(ErrorCode.UNSUPPORTED_FORMAT, body.getErrorCode());
         }
 
         if (shouldCallService && filename.endsWith(".xlsx")) {
@@ -551,11 +585,12 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
         assertNotNull(responseDto);
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertTrue(body.isSuccess());
         assertNotNull(responseDto.getValidationResults());
 
         verify(validationService).validate(any(TransformationResult.class));
@@ -579,12 +614,13 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify error DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
-        assertNotNull(responseDto);
-        assertNull(responseDto.getOutput());
-        assertEquals("Můžete nahrát pouze jeden soubor.", responseDto.getErrorMessage());
-        assertNull(responseDto.getValidationResults());
+        assertFalse(body.isSuccess());
+        assertNull(responseDto);
+        assertEquals(ErrorCode.UPLOAD_MULTIPLE_FILES, body.getErrorCode());
+        assertEquals("Můžete nahrát pouze jeden soubor.", body.getMessage());
     }
 
     // ========== EXCEPTION HANDLING TESTS ==========
@@ -615,12 +651,13 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify error DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
-        assertNotNull(responseDto);
-        assertNull(responseDto.getOutput());
-        assertEquals(exceptionMessage, responseDto.getErrorMessage());
-        assertNull(responseDto.getValidationResults());
+        assertFalse(body.isSuccess());
+        assertNull(responseDto);
+        assertEquals(ErrorCode.EXPORT_FAILED, body.getErrorCode());
+        assertEquals(exceptionMessage, body.getMessage());
 
         // Validation services should still be called before export
         verify(validationService).validate(any(TransformationResult.class));
@@ -644,12 +681,13 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify error DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
-        assertNotNull(responseDto);
-        assertNull(responseDto.getOutput());
-        assertEquals("Nepodporovaný výstupní formát: csv", responseDto.getErrorMessage());
-        assertNull(responseDto.getValidationResults());
+        assertFalse(body.isSuccess());
+        assertNull(responseDto);
+        assertEquals(ErrorCode.UNSUPPORTED_FORMAT, body.getErrorCode());
+        assertEquals("Nepodporovaný výstupní formát: csv", body.getMessage());
 
         // Validation services should still be called before export attempt
         verify(validationService).validate(any(TransformationResult.class));
@@ -674,16 +712,63 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify error DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
-        assertNotNull(responseDto);
-        assertNull(responseDto.getOutput());
-        assertEquals("Service processing error", responseDto.getErrorMessage());
-        assertNull(responseDto.getValidationResults());
+        assertFalse(body.isSuccess());
+        assertNull(responseDto);
+        assertEquals(ErrorCode.INTERNAL_ERROR, body.getErrorCode());
+        assertEquals(ErrorCode.INTERNAL_ERROR.getDefaultMessage(), body.getMessage());
 
         // Validation services should not be called if processing fails
         verifyNoInteractions(validationService);
         verifyNoInteractions(validationReportService);
+    }
+
+    @Test
+    void testValidationErrorsWithholdOutputButReturnResults() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "test.xml", "application/xml",
+                minimalArchiXML.getBytes(StandardCharsets.UTF_8));
+
+        when(converterService.processArchiFile(anyString())).thenReturn(mockConversionResult);
+        ValidationResultsDto resultsWithErrors = new ValidationResultsDto(List.of(
+                new SeverityGroupDto(ValidationSeverity.ERROR.getDisplayName(), 1, "chyba")));
+        when(validationReportService.convertToDto(any(ISMDValidationReport.class))).thenReturn(resultsWithErrors);
+        when(mockConversionResult.getTransformationResult().conformanceIssues()).thenReturn(List.of(
+                new ConformanceIssue(ConformanceIssue.Kind.VOCABULARY_INVALID, null, "", "required property 'název' not found")));
+
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertFalse(body.get("success").asBoolean());
+        assertEquals(ErrorCode.VALIDATION_REPORT_HAS_ERRORS.name(), body.get("errorCode").asText());
+        assertEquals(1, body.at("/data/validationResults/severityGroups").size());
+        assertTrue(body.at("/data/output").isNull());
+        assertEquals("VOCABULARY_INVALID", body.at("/data/conformanceIssues/0/kind").asText());
+        verify(converterService, never()).exportToJson(any(), any());
+    }
+
+    @Test
+    void vocabularyNotOfn_isRejected400_withEveryVocabularyIssue() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "test.xml", "application/xml", minimalArchiXML.getBytes(StandardCharsets.UTF_8));
+        when(converterService.processArchiFile(anyString())).thenThrow(new com.dia.exception.OfnConformanceException(
+                "https://slovník.gov.cz/x", List.of(new ConformanceIssue(ConformanceIssue.Kind.VOCABULARY_INVALID,
+                        null, "/iri", "does not match the iri pattern"))));
+
+        MvcResult result = mockMvc.perform(multipart("/api/converter/convert").file(file))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertFalse(body.get("success").asBoolean());
+        assertEquals(ErrorCode.VOCABULARY_OFN_NONCONFORMANT.name(), body.get("errorCode").asText());
+        assertEquals("https://slovník.gov.cz/x", body.at("/data/vocabularyIri").asText());
+        assertEquals("VOCABULARY_INVALID", body.at("/data/issues/0/kind").asText());
+        assertEquals("/iri", body.at("/data/issues/0/location").asText());
     }
 
     @Test
@@ -702,11 +787,12 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
         assertNotNull(responseDto);
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertTrue(body.isSuccess());
         assertNotNull(responseDto.getValidationResults());
 
         verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
@@ -733,11 +819,12 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
         assertNotNull(responseDto);
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertTrue(body.isSuccess());
         assertNotNull(responseDto.getValidationResults());
 
         verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
@@ -763,11 +850,12 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify DTO response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
         assertNotNull(responseDto);
         assertEquals(JSON_OUTPUT, responseDto.getOutput());
-        assertNull(responseDto.getErrorMessage());
+        assertTrue(body.isSuccess());
         assertNotNull(responseDto.getValidationResults());
 
         verify(converterService).exportToJson(eq(FileFormat.ARCHI_XML), any());
@@ -783,12 +871,13 @@ class ConverterControllerIntegrationTest {
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
-        assertNotNull(responseDto);
-        assertNull(responseDto.getOutput());
-        assertEquals("Nebyl vložen žádný soubor.", responseDto.getErrorMessage());
-        assertNull(responseDto.getValidationResults());
+        assertFalse(body.isSuccess());
+        assertNull(responseDto);
+        assertEquals(ErrorCode.UPLOAD_FILE_MISSING, body.getErrorCode());
+        assertEquals("Nebyl vložen žádný soubor.", body.getMessage());
     }
 
     @Test
@@ -810,12 +899,13 @@ class ConverterControllerIntegrationTest {
 
         // Parse and verify response
         String responseBody = result.getResponse().getContentAsString();
-        ConversionResponseDto responseDto = objectMapper.readValue(responseBody, ConversionResponseDto.class);
+        ApiResponseDto<ConversionResponseDto> body = readBody(responseBody);
+        ConversionResponseDto responseDto = body.getData();
 
-        assertNotNull(responseDto);
-        assertNull(responseDto.getOutput());
-        assertEquals("Validation service error", responseDto.getErrorMessage());
-        assertNull(responseDto.getValidationResults());
+        assertFalse(body.isSuccess());
+        assertNull(responseDto);
+        assertEquals(ErrorCode.INTERNAL_ERROR, body.getErrorCode());
+        assertEquals(ErrorCode.INTERNAL_ERROR.getDefaultMessage(), body.getMessage());
 
         verify(converterService).processArchiFile(anyString());
         verify(validationService).validate(any(TransformationResult.class));
