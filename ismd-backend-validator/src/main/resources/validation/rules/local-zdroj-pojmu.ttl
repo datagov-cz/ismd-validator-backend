@@ -5,20 +5,19 @@
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
 
-# Warning rule: Concept should have a source
+# Warning rule: Concept should have a defining source (legislative or non-legislative).
+# dct:source / dc:source are accepted as legacy forms.
 <https://slovník.gov.cz/shacl/lokální/pojem-nemá-zdroj>
     a sh:NodeShape ;
     sh:targetClass slovníky:pojem ;
     sh:name "Zdroj pojmu"@cs ;
-    sh:description "Ensures that each concept has a source" ;
+    sh:description "Ensures that each concept has a defining source" ;
     sh:message "Pojem nemá vyplněný zdroj"@cs ;
     sh:severity sh:Warning ;
 
-    # Should have at least one source property
     sh:or (
-        # Has dct:source
+        [ sh:path slovníky:definující-ustanovení ; sh:minCount 1 ]
+        [ sh:path slovníky:definující-nelegislativní-zdroj ; sh:minCount 1 ]
         [ sh:path dct:source ; sh:minCount 1 ]
-
-        # Has dc:source (backup option)
         [ sh:path dc:source ; sh:minCount 1 ]
     ) .

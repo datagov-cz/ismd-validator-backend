@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.0</version>
+        <version>4.1.2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.dia</groupId>
@@ -18,15 +18,28 @@
 
     <properties>
         <java.version>17</java.version>
+        <jena.version>5.6.0</jena.version>
         <!-- Version from Git tag, overridden at build time (this default is not used) -->
         <revision>1.0.0</revision>
-        <jacoco.version>0.8.13</jacoco.version>
+        <jacoco.version>0.8.16</jacoco.version>
         <jacoco.line.minimum>0.00</jacoco.line.minimum>
-        <!-- Common library version - update explicitly when upgrading -->
-        <ismd-validator-common.version>1.0.19</ismd-validator-common.version>
-        <!-- GitHub repository for common library packages -->
-        <github.repository>datagov-cz/ismd-validator-backend</github.repository>
+        <!-- Same test class order on macOS and CI (the default follows the filesystem).
+             Override with -Dsurefire.runOrder=random to look for state leaking between classes. -->
+        <surefire.runOrder>alphabetical</surefire.runOrder>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Jena 5.6.0 pulls libthrift 0.22.0 (GHSA-7pwc-h2j2-rjgj, GHSA-gf47-qgg5-9g9q,
+                 GHSA-8wv5-x4w7-5gww, all fixed in 0.24.0).
+                 Drop this pin once Jena is upgraded to a release that brings >= 0.24.0. -->
+            <dependency>
+                <groupId>org.apache.thrift</groupId>
+                <artifactId>libthrift</artifactId>
+                <version>0.24.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -49,8 +62,20 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <!-- Checks converted concepts against the official OFN slovníky JSON Schema (draft 2020-12) -->
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>1.5.9</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Spring Boot 4 moved @WebMvcTest / @AutoConfigureMockMvc into their own module -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -60,62 +85,47 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>3.0.0-RC1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-webmvc</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-validation</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>3.2.0</version>
+        </dependency>
+        <!-- JsonExporter still uses Jackson 2 (Spring Boot 4 itself is on Jackson 3, tools.jackson);
+             declared explicitly so it doesn't ride on springdoc's transitive copy. Version from the Boot BOM. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.json/json -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20250517</version>
+            <version>20260814</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.jena/apache-jena-libs -->
         <dependency>
             <groupId>org.apache.jena</groupId>
             <artifactId>apache-jena-libs</artifactId>
-            <version>5.3.0</version>
+            <version>${jena.version}</version>
             <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.apache.jena</groupId>
             <artifactId>jena-shacl</artifactId>
-            <version>5.3.0</version>
+            <version>${jena.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.poi/poi -->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
-            <version>5.4.1</version>
+            <version>6.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>5.4.1</version>
+            <version>6.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
-            <version>1.8</version>
-        </dependency>
-        <dependency>
-            <groupId>com.dia</groupId>
-            <artifactId>ismd-validator-common</artifactId>
-            <version>${ismd-validator-common.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
+            <version>1.14.1</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -128,17 +138,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <repositories>
-        <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/${github.repository}</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 
     <build>
         <plugins>

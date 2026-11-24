@@ -1,0 +1,23 @@
+# Context terms (paths into src/main/resources/ofn/slovniky/kontext.jsonld) that no fixture produces yet.
+# JsonLdContextConformanceTest fails if a term is missing from both the outputs and this list,
+# and also if a term listed here becomes covered — so remove lines as support lands.
+
+# ---- Supported, but no offline fixture can supply it -----------------------------------------
+
+# skos:broader is read only from SSP (SPARQL endpoint, no offline fixture). Builder support is
+# covered by OfnDocumentBuilderTest and SSPReaderBroaderTest. Excel/Archi/EA have no such field.
+pojmy/nadřazený-pojem
+
+# ---- No input field: exporter supports it, no reader can supply the value -------------------
+
+# Readers and the conversion-time fallback always give a full timestamp (datum_a_čas);
+# no input format provides a date-only or "unspecified" instant.
+vytvořeno/Časový okamžik/je_nespecifikovaný
+vytvořeno/Časový okamžik/datum
+aktualizováno/Časový okamžik/je_nespecifikovaný
+aktualizováno/Časový okamžik/datum
+
+# Source cells become either url or název; templates have no description column/tag.
+# Export is covered by DigitalObjectDescriptionExportTest.
+pojmy/definující-nelegislativní-zdroj/Digitální objekt/popis
+pojmy/související-nelegislativní-zdroj/Digitální objekt/popis

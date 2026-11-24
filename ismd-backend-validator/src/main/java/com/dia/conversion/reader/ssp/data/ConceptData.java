@@ -14,8 +14,14 @@ public class ConceptData {
     private String definition;
     private String source;
     private String note;
-    private String broader;
+    private List<String> broader = new ArrayList<>();
     private List<String> alternativeNames = new ArrayList<>();
+
+    public void addBroader(String iri) {
+        if (iri != null && !broader.contains(iri)) {
+            broader.add(iri);
+        }
+    }
 
     public void addAlternativeName(String altName) {
         if (altName != null && !altName.trim().isEmpty()) {

@@ -5,7 +5,7 @@ import com.dia.conversion.reader.ssp.config.SPARQLConfiguration;
 import com.dia.conversion.reader.ssp.data.ConceptData;
 import com.dia.conversion.reader.ssp.data.DomainRangeInfo;
 import com.dia.conversion.reader.ssp.data.PropertyDomainInfo;
-import com.dia.exceptions.ConversionException;
+import com.dia.exception.ConversionException;
 import com.dia.utility.UtilityMethods;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -133,6 +133,7 @@ public class SSPReader {
         log.debug("Reading vocabulary metadata for: {}", ontologyIRI);
 
         VocabularyMetadata metadata = new VocabularyMetadata();
+        metadata.setIdentifier(ontologyIRI);
         
         String queryString = String.format("""
             PREFIX dcterms: <http://purl.org/dc/terms/>
@@ -445,7 +446,7 @@ public class SSPReader {
                         concept.setDefinition(definition);
                         concept.setSource(source);
                         concept.setNote(scopeNote);
-                        concept.setBroader(broader);
+                        concept.addBroader(broader);
 
                         if (altLabel != null) {
                             concept.addAlternativeName(altLabel);
@@ -502,7 +503,7 @@ public class SSPReader {
                     concept.setDefinition(definition);
                     concept.setSource(source);
                     concept.setNote(scopeNote);
-                    concept.setBroader(broader);
+                    concept.addBroader(broader);
 
                     if (altLabel != null) {
                         concept.addAlternativeName(altLabel);
@@ -557,7 +558,7 @@ public class SSPReader {
         return conceptTypes;
     }
 
-    private ClassData convertToClassData(ConceptData concept, String conceptIRI) {
+    ClassData convertToClassData(ConceptData concept, String conceptIRI) {
         ClassData classData = new ClassData();
         classData.setName(concept.getName());
         classData.setDefinition(concept.getDefinition());
@@ -567,6 +568,7 @@ public class SSPReader {
         if (!concept.getAlternativeNames().isEmpty()) {
             classData.setAlternativeName(String.join(";", concept.getAlternativeNames()));
         }
+        classData.setBroaderConcepts(new ArrayList<>(concept.getBroader()));
 
         String name = concept.getName().toLowerCase();
         if (name.contains("subjekt") || name.contains("osoba")) {
@@ -578,7 +580,7 @@ public class SSPReader {
         return classData;
     }
 
-    private PropertyData convertToPropertyData(ConceptData concept, String conceptIRI, PropertyDomainInfo domainInfo) {
+    PropertyData convertToPropertyData(ConceptData concept, String conceptIRI, PropertyDomainInfo domainInfo) {
         PropertyData propertyData = new PropertyData();
         propertyData.setName(concept.getName());
         propertyData.setDefinition(concept.getDefinition());
@@ -588,10 +590,11 @@ public class SSPReader {
         if (!concept.getAlternativeNames().isEmpty()) {
             propertyData.setAlternativeName(String.join(";", concept.getAlternativeNames()));
         }
+        propertyData.setBroaderConcepts(new ArrayList<>(concept.getBroader()));
 
         if (domainInfo != null) {
             if (domainInfo.getDomain() != null) {
-                propertyData.setDomain(UtilityMethods.extractNameFromIRI(domainInfo.getDomain()));
+                propertyData.setDomain(domainInfo.getDomain());
                 log.debug("Set property domain: {} -> {}", conceptIRI, domainInfo.getDomain());
             }
             if (domainInfo.getDomainLabel() != null) {
@@ -602,7 +605,7 @@ public class SSPReader {
         return propertyData;
     }
 
-    private RelationshipData convertToRelationshipData(ConceptData concept, String conceptIRI, DomainRangeInfo domainRange) {
+    RelationshipData convertToRelationshipData(ConceptData concept, String conceptIRI, DomainRangeInfo domainRange) {
         RelationshipData relationshipData = new RelationshipData();
         relationshipData.setName(concept.getName());
         relationshipData.setDefinition(concept.getDefinition());
@@ -612,17 +615,18 @@ public class SSPReader {
         if (!concept.getAlternativeNames().isEmpty()) {
             relationshipData.setAlternativeName(String.join(";", concept.getAlternativeNames()));
         }
+        relationshipData.setBroaderConcepts(new ArrayList<>(concept.getBroader()));
 
         if (domainRange != null) {
             log.info("PROCESSING DOMAIN/RANGE: {} -> domainRange.domain={}, domainRange.range={}",
                     conceptIRI, domainRange.getDomain(), domainRange.getRange());
             if (domainRange.getDomain() != null) {
-                String extractedDomain = UtilityMethods.extractNameFromIRI(domainRange.getDomain());
+                String extractedDomain = domainRange.getDomain();
                 relationshipData.setDomain(extractedDomain);
                 log.info("SET DOMAIN: {} -> '{}' (from {})", conceptIRI, extractedDomain, domainRange.getDomain());
             }
             if (domainRange.getRange() != null) {
-                String extractedRange = UtilityMethods.extractNameFromIRI(domainRange.getRange());
+                String extractedRange = domainRange.getRange();
                 relationshipData.setRange(extractedRange);
                 log.info("SET RANGE: {} -> '{}' (from {})", conceptIRI, extractedRange, domainRange.getRange());
             }

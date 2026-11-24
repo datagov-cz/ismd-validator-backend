@@ -1,7 +1,6 @@
 name: Reusable Test Workflow
 permissions:
   contents: read
-  packages: read
 
 on:
   workflow_call:
@@ -20,9 +19,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_ACTOR: ${{ github.actor }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -32,29 +28,30 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          server-id: github
-          server-username: GITHUB_ACTOR
-          server-password: GITHUB_TOKEN
 
       - name: Cache Maven packages
         uses: actions/cache@v6
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'ismd-validator-common/src/**') }}
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Install common library locally
-        working-directory: ismd-backend-validator
-        run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
-
       - name: Run tests with coverage
         working-directory: ismd-backend-validator
+        # Inputs reach the script through env, never as ${{ }} inside run:.
+        env:
+          ENFORCE_COVERAGE: ${{ inputs.enforce_coverage }}
+          COVERAGE_MINIMUM: ${{ inputs.coverage_minimum }}
         run: |
-          if [ "${{ inputs.enforce_coverage }}" = "true" ]; then
-            ./mvnw clean verify -Djacoco.line.minimum=${{ inputs.coverage_minimum }}
+          if ! [[ "$COVERAGE_MINIMUM" =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]]; then
+            echo "::error::coverage_minimum must be a ratio between 0.00 and 1.00"
+            exit 1
+          fi
+          if [ "$ENFORCE_COVERAGE" = "true" ]; then
+            ./mvnw clean verify "-Djacoco.line.minimum=$COVERAGE_MINIMUM"
           else
-            ./mvnw clean test jacoco:report -Djacoco.line.minimum=${{ inputs.coverage_minimum }}
+            ./mvnw clean test jacoco:report "-Djacoco.line.minimum=$COVERAGE_MINIMUM"
           fi
 
       - name: Upload JaCoCo coverage report

@@ -1,0 +1,33 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+@prefix vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/> .
+
+# Warning rule: Concept does not have a type (Subjekt/Objekt/Vlastnost/Vztah)
+<https://slovník.gov.cz/shacl/lokální/typ-pojmu>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Typ pojmu"@cs ;
+    sh:description "Reports when concept does not have a type (Subject/Object/Property/Relationship)" ;
+    sh:message "Pojem nemá vyplněný typ (Subjekt/Objekt/Vlastnost/Vztah)"@cs ;
+    sh:severity sh:Warning ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+            PREFIX vsgov: <https://slovník.gov.cz/veřejný-sektor/pojem/>
+
+            SELECT $this
+            WHERE {
+                $this a slovníky:pojem .
+                FILTER(
+                    NOT EXISTS { $this a owl:Class . } &&
+                    NOT EXISTS { $this a owl:DatatypeProperty . } &&
+                    NOT EXISTS { $this a owl:ObjectProperty . } &&
+                    NOT EXISTS { $this a vsgov:typ-subjektu-práva . } &&
+                    NOT EXISTS { $this a vsgov:typ-objektu-práva . }
+                )
+            }
+        """ ;
+    ] .

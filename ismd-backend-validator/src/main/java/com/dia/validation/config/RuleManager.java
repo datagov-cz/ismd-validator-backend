@@ -1,6 +1,6 @@
 package com.dia.validation.config;
 
-import com.dia.exceptions.ValidationConfigurationException;
+import com.dia.exception.ValidationConfigurationException;
 import com.dia.utility.UtilityMethods;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;

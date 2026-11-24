@@ -1,6 +1,6 @@
 package com.dia.service.impl;
 
-import com.dia.exceptions.ValidationException;
+import com.dia.exception.ValidationException;
 import com.dia.service.DetailedValidationReportService;
 import com.dia.validation.ValidationResult;
 import com.dia.validation.ValidationSeverity;

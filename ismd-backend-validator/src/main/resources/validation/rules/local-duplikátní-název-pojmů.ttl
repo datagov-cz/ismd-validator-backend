@@ -1,0 +1,32 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/> .
+
+# Error rule: Vocabulary contains multiple concepts with the same name
+<https://slovník.gov.cz/shacl/lokální/duplikátní-název-pojmů>
+    a sh:NodeShape ;
+    sh:targetClass slovníky:pojem ;
+    sh:name "Duplikátní název pojmů"@cs ;
+    sh:description "Detects when a vocabulary contains multiple concepts with the same name" ;
+    sh:message "Slovník obsahuje více pojmů se stejným názvem"@cs ;
+    sh:severity sh:Violation ;
+
+    sh:sparql [
+        sh:select """
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            PREFIX slovníky: <https://slovník.gov.cz/generický/datový-slovník-ofn-slovníků/pojem/>
+
+            SELECT $this ?otherConcept ?name
+            WHERE {
+                $this a slovníky:pojem .
+                $this skos:inScheme ?scheme .
+                $this skos:prefLabel ?name .
+
+                ?otherConcept a slovníky:pojem .
+                ?otherConcept skos:inScheme ?scheme .
+                ?otherConcept skos:prefLabel ?name .
+
+                FILTER(?this != ?otherConcept)
+            }
+        """ ;
+    ] .

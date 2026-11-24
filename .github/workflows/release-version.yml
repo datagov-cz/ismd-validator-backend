@@ -15,14 +15,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  packages: read
 
 jobs:
   create-release-pr:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_ACTOR: ${{ github.actor }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       main_version: ${{ steps.main-version.outputs.version }}
       new_version: ${{ steps.new-version.outputs.version }}
@@ -38,9 +34,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          server-id: github
-          server-username: GITHUB_ACTOR
-          server-password: GITHUB_TOKEN
 
       - name: Fetch main branch
         run: git fetch origin main:main
@@ -57,13 +50,20 @@ jobs:
 
       - name: Determine new version
         id: new-version
+        env:
+          # Through env, never ${{ }} inside the script
+          MAIN_VERSION: ${{ steps.main-version.outputs.version }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          MAIN_VERSION="${{ steps.main-version.outputs.version }}"
-          
           # Check if user provided a version
-          if [ -n "${{ github.event.inputs.version }}" ]; then
+          if [ -n "$INPUT_VERSION" ]; then
+            # Must be X.Y.Z: push-to-main.yml only recognises "Release vX.Y.Z"
+            if ! [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Invalid version '$INPUT_VERSION' (expected X.Y.Z, e.g. 1.3.0)"
+              exit 1
+            fi
             # User-provided version takes precedence
-            NEW_VERSION="${{ github.event.inputs.version }}"
+            NEW_VERSION="$INPUT_VERSION"
             echo "User provided version: $NEW_VERSION"
           else
             # Auto-increment patch version from main
@@ -108,83 +108,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Configure Maven settings for GitHub Packages
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<EOF
-          <settings>
-            <servers>
-              <server>
-                <id>github</id>
-                <username>${{ github.actor }}</username>
-                <password>${{ secrets.GITHUB_TOKEN }}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
-
-      - name: Validate common library version
-        id: validate-common
-        run: |
-          # Dev branch has released versions only
-          COMMON_VERSION=$(grep '<version>' ismd-validator-common/pom.xml | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/')
-          VALIDATOR_COMMON_DEP=$(grep '<ismd-validator-common.version>' ismd-backend-validator/pom.xml | sed -E 's/.*<ismd-validator-common.version>([^<]+)<.*/\1/')
-          
-          echo "Common library version: $COMMON_VERSION"
-          echo "Validator dependency: $VALIDATOR_COMMON_DEP"
-          
-          # Verify it's a released version (no SNAPSHOT)
-          if [[ "$COMMON_VERSION" == *"-SNAPSHOT"* ]]; then
-            echo "❌ ERROR: Dev branch should not have SNAPSHOT versions"
-            echo "Please push to dev to trigger auto-release"
-            exit 1
-          fi
-          
-          # Verify the release tag exists
-          if ! git ls-remote --tags origin | grep -q "refs/tags/common-v${COMMON_VERSION}"; then
-            echo "❌ ERROR: Common library tag common-v$COMMON_VERSION not found"
-            echo "Publish common library before releasing validator"
-            exit 1
-          fi
-          
-          echo "✅ Using released common library: v$COMMON_VERSION"
-          echo "common_version=$COMMON_VERSION" >> $GITHUB_OUTPUT
-          
-          # Ensure validator dependency matches
-          if [ "$VALIDATOR_COMMON_DEP" != "$COMMON_VERSION" ]; then
-            echo "Updating validator to use $COMMON_VERSION..."
-            sed -i "s/<ismd-validator-common.version>.*<\/ismd-validator-common.version>/<ismd-validator-common.version>$COMMON_VERSION<\/ismd-validator-common.version>/" ismd-backend-validator/pom.xml
-          fi
-
-      - name: Install common library locally
-        working-directory: ismd-backend-validator
-        run: ./mvnw -f ../ismd-validator-common/pom.xml -DskipTests install
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Commit release preparation
-        run: |
-          git add ismd-validator-common ismd-backend-validator/pom.xml
-          
-          # Only commit if there are changes
-          if git diff --staged --quiet; then
-            echo "No release preparation changes needed (already up to date)"
-          else
-            git commit -m "Prepare release v${{ steps.new-version.outputs.version }}
-            
-            - Use common library v${{ steps.validate-common.outputs.common_version }} (released)
-            - Common library code from tag common-v${{ steps.validate-common.outputs.common_version }}
-            - Updated validator dependency to released version"
-            echo "✅ Committed release preparation"
-          fi
-
       - name: Run tests
         working-directory: ismd-backend-validator
         run: |
           # Build and run tests to ensure the release is stable
           ./mvnw clean test
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push release branch
         run: |
@@ -201,7 +129,7 @@ jobs:
           
           if [ "$PR_EXISTS" = "0" ]; then
             # Create new PR
-            gh pr create \
+            if ! gh pr create \
               --title "Release v${{ steps.new-version.outputs.version }}" \
               --body "# Release v${{ steps.new-version.outputs.version }}
 
@@ -215,9 +143,17 @@ jobs:
 
           **Note:** Version is managed via Git tags, no pom.xml changes needed." \
               --base main \
-              --head $BRANCH_NAME
-          
-            echo "Created new PR from $BRANCH_NAME to main"
+              --head $BRANCH_NAME; then
+              echo "::warning::Could not open the release PR (GitHub Actions is not allowed to create PRs here). Open it by hand with the title exactly 'Release v${{ steps.new-version.outputs.version }}': ${{ github.server_url }}/${{ github.repository }}/compare/main...${BRANCH_NAME}?expand=1"
+              {
+                echo "### Release PR not created"
+                echo "GitHub Actions could not open the PR. Open it by hand: [main...${BRANCH_NAME}](${{ github.server_url }}/${{ github.repository }}/compare/main...${BRANCH_NAME}?expand=1)"
+                echo ""
+                echo "The title must be exactly \`Release v${{ steps.new-version.outputs.version }}\` - the push-to-main release gate matches it."
+              } >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Created new PR from $BRANCH_NAME to main"
+            fi
           else
             # PR already exists, just update the description
             PR_NUMBER=$(gh pr list --head $BRANCH_NAME --base main --json number --jq '.[0].number')

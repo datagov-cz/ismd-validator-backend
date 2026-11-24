@@ -7,6 +7,7 @@ import lombok.*;
 @NoArgsConstructor
 public class VocabularyMetadata {
     private String name;
+    private String identifier;
     private String description;
     private String namespace;
     private String dateOfCreation;
