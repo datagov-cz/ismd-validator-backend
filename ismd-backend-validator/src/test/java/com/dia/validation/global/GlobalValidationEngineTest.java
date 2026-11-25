@@ -48,9 +48,9 @@ class GlobalValidationEngineTest {
 
         when(client.isConfigured()).thenReturn(true);
         // default: no corpus hits unless a test overrides
-        lenient().when(client.findExistingIris(any(), anyString())).thenReturn(Set.of());
-        lenient().when(client.fetchCorpusLabels(any(), anyString())).thenReturn(List.of());
-        lenient().when(client.findOtherIrisByLabel(any(), anyString(), any()))
+        lenient().when(client.findExistingIris(any(), anyString(), any(CorpusLookupTracker.class))).thenReturn(Set.of());
+        lenient().when(client.fetchCorpusLabels(any(), anyString(), any(CorpusLookupTracker.class))).thenReturn(List.of());
+        lenient().when(client.findOtherIrisByLabel(any(), anyString(), any(), any(CorpusLookupTracker.class)))
                 .thenReturn(Map.of());
     }
 
@@ -90,10 +90,10 @@ class GlobalValidationEngineTest {
     void conceptSameIri_firesOnCorpusHit() {
         enableRealRule("global-pojem-se-stejným-iri");
         Model upload = uploadWith("https://slovník.gov.cz/x", POJEM_TYPE, "cs", "Osoba");
-        when(client.findExistingIris(any(), eq(CorpusSparqlClient.TYPE_POJEM)))
+        when(client.findExistingIris(any(), eq(CorpusSparqlClient.TYPE_POJEM), any(CorpusLookupTracker.class)))
                 .thenReturn(Set.of("https://slovník.gov.cz/x"));
         // corpus prefLabel for navigation
-        when(client.fetchCorpusLabels(any(), eq(CorpusSparqlClient.TYPE_POJEM))).thenReturn(List.of(
+        when(client.fetchCorpusLabels(any(), eq(CorpusSparqlClient.TYPE_POJEM), any(CorpusLookupTracker.class))).thenReturn(List.of(
                 new CorpusSparqlClient.IriLabel("https://slovník.gov.cz/x", "cs", "Osoba")));
 
         ISMDValidationReport report = engine.validate(upload);
@@ -126,7 +126,7 @@ class GlobalValidationEngineTest {
         // checked — this is the regression guard for the ~940 pojem-only corpus concepts.
         enableRealRule("global-pojem-s-jiným-iri-stejným-názvem");
         Model upload = uploadWith("https://slovník.gov.cz/only-pojem", POJEM_TYPE, "cs", "Osoba");
-        when(client.findOtherIrisByLabel(any(), eq(CorpusSparqlClient.TYPE_POJEM), any()))
+        when(client.findOtherIrisByLabel(any(), eq(CorpusSparqlClient.TYPE_POJEM), any(), any(CorpusLookupTracker.class)))
                 .thenReturn(Map.of(new CandidateNode.Label("cs", "Osoba"),
                         List.of("https://slovník.gov.cz/other")));
 
@@ -144,7 +144,7 @@ class GlobalValidationEngineTest {
         enableRealRule("global-pojem-se-stejným-iri-jiným-názvem");
         String iri = "https://slovník.gov.cz/x";
         Model upload = uploadWith(iri, POJEM_TYPE, "cs", "Osoba", "en", "Person");
-        when(client.fetchCorpusLabels(any(), eq(CorpusSparqlClient.TYPE_POJEM))).thenReturn(List.of(
+        when(client.fetchCorpusLabels(any(), eq(CorpusSparqlClient.TYPE_POJEM), any(CorpusLookupTracker.class))).thenReturn(List.of(
                 new CorpusSparqlClient.IriLabel(iri, "cs", "Osoba"),
                 new CorpusSparqlClient.IriLabel(iri, "en", "Person")));
 
@@ -157,7 +157,7 @@ class GlobalValidationEngineTest {
         String iri = "https://slovník.gov.cz/x";
         Model upload = uploadWith(iri, POJEM_TYPE, "cs", "Osoba");
         // corpus has a DIFFERENT cs label for the same IRI
-        when(client.fetchCorpusLabels(any(), eq(CorpusSparqlClient.TYPE_POJEM))).thenReturn(List.of(
+        when(client.fetchCorpusLabels(any(), eq(CorpusSparqlClient.TYPE_POJEM), any(CorpusLookupTracker.class))).thenReturn(List.of(
                 new CorpusSparqlClient.IriLabel(iri, "cs", "Člověk")));
 
         ISMDValidationReport report = engine.validate(upload);
@@ -170,11 +170,11 @@ class GlobalValidationEngineTest {
     void vocabDiffIriSameName_firesWithViolationSeverity() {
         enableRealRule("global-slovník-s-jiným-iri-stejným-názvem");
         Model upload = uploadWith("https://slovník.gov.cz/voc", SKOS + "ConceptScheme", "cs", "Můj slovník");
-        when(client.findOtherIrisByLabel(any(), eq(CorpusSparqlClient.TYPE_CONCEPT_SCHEME), any()))
+        when(client.findOtherIrisByLabel(any(), eq(CorpusSparqlClient.TYPE_CONCEPT_SCHEME), any(), any(CorpusLookupTracker.class)))
                 .thenReturn(Map.of(new CandidateNode.Label("cs", "Můj slovník"),
                         List.of("https://slovník.gov.cz/other-voc")));
         // prefLabel of the DIFFERENT conflicting corpus resource, fetched for navigation
-        when(client.fetchCorpusLabels(any(), eq(CorpusSparqlClient.TYPE_CONCEPT_SCHEME))).thenReturn(List.of(
+        when(client.fetchCorpusLabels(any(), eq(CorpusSparqlClient.TYPE_CONCEPT_SCHEME), any(CorpusLookupTracker.class))).thenReturn(List.of(
                 new CorpusSparqlClient.IriLabel("https://slovník.gov.cz/other-voc", "cs", "Jiný slovník")));
 
         ISMDValidationReport report = engine.validate(upload);
@@ -188,5 +188,47 @@ class GlobalValidationEngineTest {
         assertThat(r.nkdResource()).isNotNull();
         assertThat(r.nkdResource().iri()).isEqualTo("https://slovník.gov.cz/other-voc");
         assertThat(r.nkdResource().prefLabel()).isEqualTo("Jiný slovník");
+    }
+
+    // --- global validation status (OK / SKIPPED / UNAVAILABLE) ---
+
+    @Test
+    void status_notConfigured_isSkipped() {
+        when(client.isConfigured()).thenReturn(false);
+        ISMDValidationReport report = engine.validate(uploadWith("https://example.org/p/a", POJEM_TYPE, "cs", "A"));
+        assertThat(report.global().status()).isEqualTo(com.dia.validation.GlobalValidationStatus.SKIPPED);
+    }
+
+    @Test
+    void status_noGlobalRulesEnabled_isSkipped() {
+        when(ruleManager.getEnabledGlobalRuleNames()).thenReturn(Set.of());
+        ISMDValidationReport report = engine.validate(uploadWith("https://example.org/p/a", POJEM_TYPE, "cs", "A"));
+        assertThat(report.global().status()).isEqualTo(com.dia.validation.GlobalValidationStatus.SKIPPED);
+    }
+
+    @Test
+    void status_allLookupsSucceed_isOk() {
+        enableRealRule("global-pojem-se-stejným-iri");
+        ISMDValidationReport report = engine.validate(uploadWith("https://example.org/p/a", POJEM_TYPE, "cs", "A"));
+        assertThat(report.results()).as("no warning when the corpus answered").isEmpty();
+        assertThat(report.global().status()).isEqualTo(com.dia.validation.GlobalValidationStatus.OK);
+    }
+
+    @Test
+    void status_lookupFailed_isUnavailable_notSilentlyOk() {
+        enableRealRule("global-pojem-se-stejným-iri");
+        when(client.findExistingIris(any(), anyString(), any(CorpusLookupTracker.class))).thenAnswer(inv -> {
+            inv.<CorpusLookupTracker>getArgument(2).failed("corpus same-IRI");
+            return Set.of(); // the client fails open to "no hits"
+        });
+        ISMDValidationReport report = engine.validate(uploadWith("https://example.org/p/a", POJEM_TYPE, "cs", "A"));
+        assertThat(report.global().status()).isEqualTo(com.dia.validation.GlobalValidationStatus.UNAVAILABLE);
+        // surfaced as a single report-level WARNING (never an ERROR, so the conversion gate is unaffected)
+        assertThat(report.results()).singleElement().satisfies(r -> {
+            assertThat(r.severity()).isEqualTo(ValidationSeverity.WARNING);
+            assertThat(r.ruleName()).isEqualTo(GlobalValidationEngine.CORPUS_UNAVAILABLE_RULE);
+            assertThat(r.focusNodeUri()).isNull();
+            assertThat(r.message()).isEqualTo(report.global().message());
+        });
     }
 }

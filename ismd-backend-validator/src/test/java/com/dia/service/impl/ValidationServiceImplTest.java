@@ -127,6 +127,37 @@ class ValidationServiceImplTest {
     }
 
     @Test
+    void testValidate_carriesGlobalStatus_whenGlobalHasNoResults() {
+        when(transformationResult.getOntModel()).thenReturn(ontModel);
+        when(shaclEngine.validate(any(Model.class)))
+                .thenReturn(new ISMDValidationReport(List.of(), java.time.Instant.now()));
+        when(globalEngine.validate(any(Model.class)))
+                .thenReturn(ISMDValidationReport.empty()
+                        .withGlobal(com.dia.validation.GlobalValidationSummary.unavailable()));
+
+        ISMDValidationReport result = validationService.validate(transformationResult);
+
+        assertEquals(com.dia.validation.GlobalValidationStatus.UNAVAILABLE, result.global().status());
+    }
+
+    @Test
+    void testValidate_carriesGlobalStatus_whenResultsAreMerged() {
+        when(transformationResult.getOntModel()).thenReturn(ontModel);
+        when(shaclEngine.validate(any(Model.class)))
+                .thenReturn(new ISMDValidationReport(List.of(), java.time.Instant.now()));
+        ValidationResult global = new ValidationResult(
+                ValidationSeverity.INFO, "Corpus finding", "global-rule", "n2", null, null);
+        when(globalEngine.validate(any(Model.class)))
+                .thenReturn(new ISMDValidationReport(List.of(global), java.time.Instant.now(),
+                        com.dia.validation.GlobalValidationSummary.ok()));
+
+        ISMDValidationReport result = validationService.validate(transformationResult);
+
+        assertEquals(1, result.results().size());
+        assertEquals(com.dia.validation.GlobalValidationStatus.OK, result.global().status());
+    }
+
+    @Test
     void testValidate_WithSpecificTiming_BeforeExport() {
         // Arrange
         when(transformationResult.getOntModel()).thenReturn(ontModel);

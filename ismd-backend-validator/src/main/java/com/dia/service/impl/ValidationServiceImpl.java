@@ -145,14 +145,15 @@ public class ValidationServiceImpl implements ValidationService {
      * Global results are prefixed with {@value #GLOBAL_MESSAGE_PREFIX} so users can tell
      * corpus findings apart from local ones. The global pass is fail-open: an unset or
      * unreachable corpus endpoint yields an empty global report, so the local results
-     * always stand on their own.
+     * always stand on their own. The global pass's status (OK / SKIPPED / UNAVAILABLE) is
+     * carried on the merged report so clients can tell "no conflicts" from "not checked".
      */
     private ISMDValidationReport validateWithGlobal(Model dataModel) {
         ISMDValidationReport local = shaclEngine.validate(dataModel);
         ISMDValidationReport global = globalEngine.validate(dataModel);
 
         if (global.results().isEmpty()) {
-            return local;
+            return global.global() == null ? local : local.withGlobal(global.global());
         }
 
         List<ValidationResult> merged = new ArrayList<>(local.results());
@@ -166,7 +167,7 @@ public class ValidationServiceImpl implements ValidationService {
                     r.value(),
                     r.nkdResource()));
         }
-        return new ISMDValidationReport(merged, Instant.now());
+        return new ISMDValidationReport(merged, Instant.now(), global.global());
     }
 
     private Model extractDataModel(TransformationResult result, ValidationTiming timing) {

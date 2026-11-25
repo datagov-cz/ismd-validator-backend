@@ -1,5 +1,6 @@
 package com.dia.validation.data;
 
+import com.dia.validation.GlobalValidationSummary;
 import com.dia.validation.ValidationResult;
 import com.dia.validation.ValidationSeverity;
 
@@ -8,7 +9,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public record ISMDValidationReport(List<ValidationResult> results, Instant timestamp) {
+/**
+ * @param global outcome of the corpus (global) pass; {@code null} for a report that never went through it
+ *               (e.g. a local-only SHACL report). Set by the global engine and carried onto the merged report.
+ */
+public record ISMDValidationReport(List<ValidationResult> results, Instant timestamp, GlobalValidationSummary global) {
+
+    public ISMDValidationReport(List<ValidationResult> results, Instant timestamp) {
+        this(results, timestamp, null);
+    }
+
+    public ISMDValidationReport withGlobal(GlobalValidationSummary summary) {
+        return new ISMDValidationReport(results, timestamp, summary);
+    }
 
     public static ISMDValidationReport empty() {
         return new ISMDValidationReport(Collections.emptyList(), Instant.now());

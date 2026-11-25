@@ -72,6 +72,10 @@ public class CorpusSparqlClient {
      * {@code corpusType}. Returned set of input IRIs.
      */
     public Set<String> findExistingIris(List<String> uploadedIris, String corpusType) {
+        return findExistingIris(uploadedIris, corpusType, CorpusLookupTracker.IGNORE);
+    }
+
+    public Set<String> findExistingIris(List<String> uploadedIris, String corpusType, CorpusLookupTracker tracker) {
         List<String> safe = uploadedIris.stream().filter(SafeIri::isSafeHttpIri).toList();
         if (safe.isEmpty()) {
             return Set.of();
@@ -86,7 +90,7 @@ public class CorpusSparqlClient {
         pss.appendIri(corpusType);
         pss.append(" }");
 
-        return lenient("corpus same-IRI", pss.toString(), rs -> {
+        return lenient(tracker, "corpus same-IRI", pss.toString(), rs -> {
             Set<String> found = new HashSet<>();
             while (rs.hasNext()) {
                 String s = SparqlSolutions.resourceUri(rs.next(), "s");
@@ -104,6 +108,10 @@ public class CorpusSparqlClient {
      * against the uploaded labels per-language in Java.
      */
     public List<IriLabel> fetchCorpusLabels(List<String> uploadedIris, String corpusType) {
+        return fetchCorpusLabels(uploadedIris, corpusType, CorpusLookupTracker.IGNORE);
+    }
+
+    public List<IriLabel> fetchCorpusLabels(List<String> uploadedIris, String corpusType, CorpusLookupTracker tracker) {
         List<String> safe = uploadedIris.stream().filter(SafeIri::isSafeHttpIri).toList();
         if (safe.isEmpty()) {
             return List.of();
@@ -120,7 +128,7 @@ public class CorpusSparqlClient {
         pss.append(LABEL_PREDICATES);
         pss.append(" ?l }");
 
-        return lenient("corpus same-IRI labels", pss.toString(), rs -> {
+        return lenient(tracker, "corpus same-IRI labels", pss.toString(), rs -> {
             List<IriLabel> out = new ArrayList<>();
             while (rs.hasNext()) {
                 QuerySolution sol = rs.next();
@@ -148,6 +156,12 @@ public class CorpusSparqlClient {
      */
     public Map<CandidateNode.Label, List<String>> findOtherIrisByLabel(
             Set<CandidateNode.Label> labels, String corpusType, Set<String> excludeIris) {
+        return findOtherIrisByLabel(labels, corpusType, excludeIris, CorpusLookupTracker.IGNORE);
+    }
+
+    public Map<CandidateNode.Label, List<String>> findOtherIrisByLabel(
+            Set<CandidateNode.Label> labels, String corpusType, Set<String> excludeIris,
+            CorpusLookupTracker tracker) {
         if (labels.isEmpty()) {
             return Map.of();
         }
@@ -166,7 +180,7 @@ public class CorpusSparqlClient {
         pss.append(LABEL_PREDICATES);
         pss.append(" ?l . FILTER(STR(?l) = ?name && LANG(?l) = ?lang) }");
 
-        return lenient("corpus diff-IRI same-name", pss.toString(), rs -> {
+        return lenient(tracker, "corpus diff-IRI same-name", pss.toString(), rs -> {
             Map<CandidateNode.Label, List<String>> out = new LinkedHashMap<>();
             while (rs.hasNext()) {
                 QuerySolution sol = rs.next();
@@ -193,9 +207,11 @@ public class CorpusSparqlClient {
      * swallowed inside the supplier, the breaker would only ever see success, and it could
      * never open. The lenient behaviour is applied <em>here, outside</em> the breaker: both a
      * query failure and the breaker's own fast-fail (when open) are caught and degrade to
-     * {@code fallback}, so corpus unavailability never propagates to validation.
+     * {@code fallback}, so corpus unavailability never propagates to validation. The failure is
+     * recorded in {@code tracker} so the response can say the corpus was not (fully) checked.
      */
-    private <T> T lenient(String op, String query, java.util.function.Function<ResultSet, T> mapper, T fallback) {
+    private <T> T lenient(CorpusLookupTracker tracker, String op, String query,
+                          java.util.function.Function<ResultSet, T> mapper, T fallback) {
         if (!executor.isConfigured()) {
             return fallback;
         }
@@ -203,6 +219,7 @@ public class CorpusSparqlClient {
             return breaker.call(() -> executor.select(op, query, mapper));
         } catch (RuntimeException e) {
             log.warn("Corpus lookup '{}' skipped: {}", op, e.getMessage());
+            tracker.failed(op);
             return fallback;
         }
     }

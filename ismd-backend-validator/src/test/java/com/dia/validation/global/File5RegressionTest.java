@@ -53,9 +53,9 @@ class File5RegressionTest {
 
         when(client.isConfigured()).thenReturn(true);
         // Empty corpus: no IRI exists, no label matches — the real-world result for file-5's IRIs.
-        when(client.findExistingIris(any(), anyString())).thenReturn(Set.of());
-        when(client.fetchCorpusLabels(any(), anyString())).thenReturn(List.of());
-        when(client.findOtherIrisByLabel(any(), anyString(), any())).thenReturn(Map.of());
+        when(client.findExistingIris(any(), anyString(), any(CorpusLookupTracker.class))).thenReturn(Set.of());
+        when(client.fetchCorpusLabels(any(), anyString(), any(CorpusLookupTracker.class))).thenReturn(List.of());
+        when(client.findOtherIrisByLabel(any(), anyString(), any(), any(CorpusLookupTracker.class))).thenReturn(Map.of());
 
         when(ruleManager.getEnabledGlobalRuleNames())
                 .thenReturn(new java.util.LinkedHashSet<>(ALL_GLOBAL_RULES));

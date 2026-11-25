@@ -40,6 +40,7 @@ public class ValidatorController {
         );
 
         ValidationReportDto dto = new ValidationReportDto(ismdReport.results(), request.getIri(), Instant.now());
+        dto.setGlobalValidation(ismdReport.global());
 
         log.info("Ontology validation completed successfully [requestId={}]", requestId);
         return ResponseEntity.ok(dto);
@@ -56,6 +57,7 @@ public class ValidatorController {
         ISMDValidationReport ismdReport = validationService.validateTtlFile(file);
 
         ValidationReportDto dto = new ValidationReportDto(ismdReport.results(), Instant.now());
+        dto.setGlobalValidation(ismdReport.global());
 
         log.info("RDF validation completed successfully [requestId={}]", requestId);
         return ResponseEntity.ok(dto);

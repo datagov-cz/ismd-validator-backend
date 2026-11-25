@@ -1,5 +1,6 @@
 package com.dia.validation.global;
 
+import com.dia.validation.GlobalValidationSummary;
 import com.dia.validation.NkdResource;
 import com.dia.validation.ValidationResult;
 import com.dia.validation.ValidationSeverity;
@@ -47,6 +48,9 @@ public class GlobalValidationEngine {
     private static final String RDFS = "http://www.w3.org/2000/01/rdf-schema#";
     private static final String DCT = "http://purl.org/dc/terms/";
 
+    /** Rule name of the report-level warning emitted when the corpus could not be (fully) queried. */
+    public static final String CORPUS_UNAVAILABLE_RULE = "global-nkd-nedostupné";
+
     private final CorpusSparqlClient client;
     private final RuleManager ruleManager;
 
@@ -58,13 +62,15 @@ public class GlobalValidationEngine {
     public ISMDValidationReport validate(Model dataModel) {
         if (!client.isConfigured()) {
             log.debug("Corpus endpoint not configured — skipping global validation.");
-            return ISMDValidationReport.empty();
+            return ISMDValidationReport.empty().withGlobal(GlobalValidationSummary.notConfigured());
         }
 
         Set<String> enabledGlobalRules = ruleManager.getEnabledGlobalRuleNames();
         if (enabledGlobalRules.isEmpty()) {
-            return ISMDValidationReport.empty();
+            return ISMDValidationReport.empty().withGlobal(GlobalValidationSummary.noRulesEnabled());
         }
+
+        CorpusLookupTracker tracker = new CorpusLookupTracker();
 
         List<CandidateNode> concepts = extractCandidates(dataModel, conceptTypes(),
                 new String[]{RDFS + "label", SKOS + "prefLabel"});
@@ -82,11 +88,22 @@ public class GlobalValidationEngine {
                     .flatMap(GlobalRuleMetadata::from)
                     .ifPresentOrElse(
                             meta -> results.addAll(runRule(kind, meta,
-                                    kind.target() == GlobalRuleKind.Target.CONCEPT ? concepts : vocabularies)),
+                                    kind.target() == GlobalRuleKind.Target.CONCEPT ? concepts : vocabularies, tracker)),
                             () -> log.warn("Global rule '{}' has no parseable shape metadata — skipping.", ruleName));
         }
 
-        return new ISMDValidationReport(results, Instant.now());
+        GlobalValidationSummary summary;
+        if (tracker.anyFailed()) {
+            log.warn("Global validation incomplete, corpus lookups failed: {}", tracker.failedOperations());
+            summary = GlobalValidationSummary.unavailable();
+            // Also surfaced as a report-level WARNING so clients that do not read globalValidation still see it.
+            // WARNING (not ERROR): corpus downtime must not block conversion.
+            results.add(new ValidationResult(ValidationSeverity.WARNING, summary.message(),
+                    CORPUS_UNAVAILABLE_RULE, null, null, null));
+        } else {
+            summary = GlobalValidationSummary.ok();
+        }
+        return new ISMDValidationReport(results, Instant.now(), summary);
     }
 
     private Set<String> conceptTypes() {
@@ -100,27 +117,29 @@ public class GlobalValidationEngine {
     }
 
     private List<ValidationResult> runRule(GlobalRuleKind kind, GlobalRuleMetadata meta,
-                                           List<CandidateNode> candidates) {
+                                           List<CandidateNode> candidates,
+                                           CorpusLookupTracker tracker) {
         if (candidates.isEmpty()) {
             return List.of();
         }
         String corpusType = corpusType(kind.target());
         return switch (kind.check()) {
-            case SAME_IRI -> checkSameIri(meta, candidates, corpusType);
-            case SAME_IRI_DIFF_NAME -> checkSameIriDiffName(meta, candidates, corpusType);
-            case DIFF_IRI_SAME_NAME -> checkDiffIriSameName(meta, candidates, corpusType);
+            case SAME_IRI -> checkSameIri(meta, candidates, corpusType, tracker);
+            case SAME_IRI_DIFF_NAME -> checkSameIriDiffName(meta, candidates, corpusType, tracker);
+            case DIFF_IRI_SAME_NAME -> checkDiffIriSameName(meta, candidates, corpusType, tracker);
         };
     }
 
     private List<ValidationResult> checkSameIri(GlobalRuleMetadata meta, List<CandidateNode> candidates,
-                                                String corpusType) {
+                                                String corpusType,
+                                           CorpusLookupTracker tracker) {
         List<String> iris = candidates.stream().map(CandidateNode::iri).toList();
-        Set<String> existing = client.findExistingIris(iris, corpusType);
+        Set<String> existing = client.findExistingIris(iris, corpusType, tracker);
         if (existing.isEmpty()) {
             return List.of();
         }
         // The corpus resource IS the uploaded IRI; fetch its prefLabel for navigation.
-        Map<String, String> prefLabels = corpusPrefLabels(new ArrayList<>(existing), corpusType);
+        Map<String, String> prefLabels = corpusPrefLabels(new ArrayList<>(existing), corpusType, tracker);
         List<ValidationResult> out = new ArrayList<>();
         for (String iri : iris) {
             if (existing.contains(iri)) {
@@ -131,13 +150,14 @@ public class GlobalValidationEngine {
     }
 
     private List<ValidationResult> checkSameIriDiffName(GlobalRuleMetadata meta, List<CandidateNode> candidates,
-                                                        String corpusType) {
+                                                        String corpusType,
+                                           CorpusLookupTracker tracker) {
         List<String> iris = candidates.stream().map(CandidateNode::iri).toList();
         // corpus labels for the same IRIs, grouped by IRI then language
         Map<String, Map<String, Set<String>>> corpusByIriLang = new LinkedHashMap<>();
         // best (cs-preferred) prefLabel per corpus IRI, for navigation
         Map<String, String> prefLabelByIri = new LinkedHashMap<>();
-        for (CorpusSparqlClient.IriLabel il : client.fetchCorpusLabels(iris, corpusType)) {
+        for (CorpusSparqlClient.IriLabel il : client.fetchCorpusLabels(iris, corpusType, tracker)) {
             corpusByIriLang
                     .computeIfAbsent(il.iri(), k -> new LinkedHashMap<>())
                     .computeIfAbsent(il.lang(), k -> new java.util.HashSet<>())
@@ -165,7 +185,8 @@ public class GlobalValidationEngine {
     }
 
     private List<ValidationResult> checkDiffIriSameName(GlobalRuleMetadata meta, List<CandidateNode> candidates,
-                                                        String corpusType) {
+                                                        String corpusType,
+                                           CorpusLookupTracker tracker) {
         Set<String> uploadedIris = candidates.stream().map(CandidateNode::iri)
                 .collect(java.util.stream.Collectors.toSet());
 
@@ -175,7 +196,7 @@ public class GlobalValidationEngine {
                 .flatMap(n -> n.labels().stream())
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
         Map<CandidateNode.Label, List<String>> hitsByLabel =
-                client.findOtherIrisByLabel(allLabels, corpusType, uploadedIris);
+                client.findOtherIrisByLabel(allLabels, corpusType, uploadedIris, tracker);
         if (hitsByLabel.isEmpty()) {
             return List.of();
         }
@@ -183,7 +204,7 @@ public class GlobalValidationEngine {
         // The conflicting corpus resources are DIFFERENT IRIs — fetch their prefLabels.
         Set<String> otherIris = hitsByLabel.values().stream().flatMap(List::stream)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        Map<String, String> prefLabels = corpusPrefLabels(new ArrayList<>(otherIris), corpusType);
+        Map<String, String> prefLabels = corpusPrefLabels(new ArrayList<>(otherIris), corpusType, tracker);
 
         List<ValidationResult> out = new ArrayList<>();
         for (CandidateNode node : candidates) {
@@ -204,12 +225,13 @@ public class GlobalValidationEngine {
      * Fetch the preferred label (Czech preferred, otherwise first seen) for each corpus IRI.
      * Returns a map from IRI to its chosen prefLabel; IRIs with no published label are absent.
      */
-    private Map<String, String> corpusPrefLabels(List<String> corpusIris, String corpusType) {
+    private Map<String, String> corpusPrefLabels(List<String> corpusIris, String corpusType,
+                                                 CorpusLookupTracker tracker) {
         if (corpusIris.isEmpty()) {
             return Map.of();
         }
         Map<String, String> byIri = new LinkedHashMap<>();
-        for (CorpusSparqlClient.IriLabel il : client.fetchCorpusLabels(corpusIris, corpusType)) {
+        for (CorpusSparqlClient.IriLabel il : client.fetchCorpusLabels(corpusIris, corpusType, tracker)) {
             byIri.merge(il.iri(), il.text(), (cur, next) -> preferLabel(cur, next, il.lang()));
         }
         return byIri;

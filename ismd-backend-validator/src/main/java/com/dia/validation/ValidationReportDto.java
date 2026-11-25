@@ -10,7 +10,7 @@ import java.util.UUID;
 
 /**
  * Response body of the {@code /validate} endpoints. Its JSON shape ({@code id, results, timestamp,
- * ontologyIri}) is the API contract with consumers such as the tool backend, which keeps its own copy
+ * ontologyIri, globalValidation}) is the API contract with consumers such as the tool backend, which keeps its own copy
  * of this type — change it only together with {@code ValidationReportContractTest}.
  */
 @Getter
@@ -20,6 +20,8 @@ public class ValidationReportDto {
     private List<ValidationResult> results;
     private Instant timestamp;
     private String ontologyIri;
+    /** Whether the corpus (global) checks ran; {@code null} only if the report never went through them. */
+    private GlobalValidationSummary globalValidation;
 
     public ValidationReportDto(List<ValidationResult> results,
                                String ontologyIri, Instant timestamp) {

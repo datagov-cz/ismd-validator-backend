@@ -38,6 +38,7 @@ class ValidationReportContractTest {
                         "https://example.org/slovnik/pojem/b", null, "b",
                         new NkdResource("https://slovník.gov.cz/pojem/b", "Pojem B"))),
                 "https://example.org/slovnik", Instant.parse("2026-01-01T00:00:00Z"));
+        report.setGlobalValidation(GlobalValidationSummary.unavailable());
 
         String actual = objectMapper.writeValueAsString(report);
 

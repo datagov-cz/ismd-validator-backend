@@ -25,7 +25,9 @@ public class ValidationReportServiceImpl implements ValidationReportService {
 
         List<SeverityGroupDto> severityGroups = createMessageGroups(report);
 
-        return new ValidationResultsDto(severityGroups);
+        ValidationResultsDto dto = new ValidationResultsDto(severityGroups);
+        dto.setGlobalValidation(report.global());
+        return dto;
     }
 
     private List<SeverityGroupDto> createMessageGroups(ISMDValidationReport report) {

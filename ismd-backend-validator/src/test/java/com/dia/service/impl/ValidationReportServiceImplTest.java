@@ -238,4 +238,16 @@ class ValidationReportServiceImplTest {
         Assertions.assertEquals(3, group.getCount());
     }
 
+
+    @Test
+    void convertToDto_exposesGlobalValidationStatus() {
+        ISMDValidationReport report = new ISMDValidationReport(Collections.emptyList(), Instant.now(),
+                com.dia.validation.GlobalValidationSummary.notConfigured());
+
+        ValidationResultsDto dto = validationReportService.convertToDto(report);
+
+        Assertions.assertEquals(com.dia.validation.GlobalValidationStatus.SKIPPED,
+                dto.getGlobalValidation().status());
+        Assertions.assertFalse(dto.getGlobalValidation().message().isBlank());
+    }
 }

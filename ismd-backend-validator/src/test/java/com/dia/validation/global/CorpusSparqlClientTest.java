@@ -148,7 +148,19 @@ class CorpusSparqlClientTest {
         String endpoint = startServer(500, "boom", 0);
         CorpusSparqlClient client = clientFor(endpoint, 2000);
 
-        assertThat(client.findExistingIris(List.of(IRI_A), POJEM)).isEmpty();
+        CorpusLookupTracker tracker = new CorpusLookupTracker();
+        assertThat(client.findExistingIris(List.of(IRI_A), POJEM, tracker)).isEmpty();
+        assertThat(tracker.anyFailed()).as("failure is recorded, not silently reported as no hits").isTrue();
+    }
+
+    @Test
+    void successfulLookup_recordsNoFailure() throws IOException {
+        String endpoint = startServer(200, selectJson("s", IRI_A), 0);
+        CorpusSparqlClient client = clientFor(endpoint, 2000);
+
+        CorpusLookupTracker tracker = new CorpusLookupTracker();
+        assertThat(client.findExistingIris(List.of(IRI_A), POJEM, tracker)).containsExactly(IRI_A);
+        assertThat(tracker.anyFailed()).isFalse();
     }
 
     @Test
@@ -171,7 +183,9 @@ class CorpusSparqlClientTest {
         CorpusSparqlClient client = clientFor(endpoint, 2000, 2);
 
         for (int i = 0; i < 6; i++) {
-            assertThat(client.findExistingIris(List.of(IRI_A), POJEM)).isEmpty(); // fail-open every time
+            CorpusLookupTracker tracker = new CorpusLookupTracker();
+            assertThat(client.findExistingIris(List.of(IRI_A), POJEM, tracker)).isEmpty(); // fail-open every time
+            assertThat(tracker.anyFailed()).as("open breaker also counts as unavailable").isTrue();
         }
 
         // Only the first 2 calls reached the endpoint; the breaker fast-failed the remaining 4.
@@ -183,7 +197,9 @@ class CorpusSparqlClientTest {
         String endpoint = startServer(200, selectJson("s", IRI_A), 1500);
         CorpusSparqlClient client = clientFor(endpoint, 200); // 200ms timeout < 1500ms delay
 
-        assertThat(client.findExistingIris(List.of(IRI_A), POJEM)).isEmpty();
+        CorpusLookupTracker tracker = new CorpusLookupTracker();
+        assertThat(client.findExistingIris(List.of(IRI_A), POJEM, tracker)).isEmpty();
+        assertThat(tracker.anyFailed()).isTrue();
     }
 
     @Test
