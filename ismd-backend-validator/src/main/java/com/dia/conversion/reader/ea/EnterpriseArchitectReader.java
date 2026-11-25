@@ -4,6 +4,7 @@ import com.dia.conversion.data.*;
 import com.dia.exception.FileParsingException;
 import com.dia.utility.TemporalValues;
 import com.dia.utility.UtilityMethods;
+import com.dia.conversion.reader.xml.SecureXml;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
@@ -11,7 +12,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -46,9 +46,7 @@ public class EnterpriseArchitectReader {
                 log.info("Trying to parse XML with encoding: {}", charset.name());
                 String xmlContent = new String(content, charset);
 
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                factory.setNamespaceAware(true);
-                DocumentBuilder builder = factory.newDocumentBuilder();
+                DocumentBuilder builder = SecureXml.documentBuilderFactory().newDocumentBuilder();
 
                 return builder.parse(new ByteArrayInputStream(xmlContent.getBytes(StandardCharsets.UTF_8)));
 

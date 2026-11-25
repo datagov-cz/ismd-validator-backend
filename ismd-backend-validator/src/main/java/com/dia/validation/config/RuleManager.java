@@ -59,10 +59,30 @@ public class RuleManager {
 
             log.info("Successfully loaded {} validation rules", allRules.size());
             logRuleStatus();
+            verifyEnabledRulesLoaded();
 
         } catch (IOException e) {
             log.error("Failed to load validation rules", e);
             throw new ValidationConfigurationException("Could not load validation rules", e);
+        }
+    }
+
+    /**
+     * Fail startup rather than validate with a silently reduced rule set: every rule explicitly enabled in
+     * {@code validation.rules.enabled.*} must have been loaded, and at least one local rule must be active.
+     * A validator that "passes" because its rules never loaded is worse than one that does not start.
+     */
+    void verifyEnabledRulesLoaded() {
+        Set<String> missing = new TreeSet<>(config.getEnabledRuleNames());
+        missing.removeAll(ruleModels.keySet());
+        if (!missing.isEmpty()) {
+            throw new ValidationConfigurationException(
+                    "Enabled validation rules failed to load or do not exist: " + missing);
+        }
+        if (getEnabledRuleNames().isEmpty()) {
+            throw new ValidationConfigurationException(
+                    "No local validation rules are enabled; refusing to start with an empty rule set ("
+                            + config.getRulesDirectory() + ")");
         }
     }
 

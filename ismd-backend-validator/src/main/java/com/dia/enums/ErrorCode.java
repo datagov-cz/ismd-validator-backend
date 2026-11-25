@@ -18,6 +18,9 @@ public enum ErrorCode {
     INVALID_ARGUMENT(HttpStatus.BAD_REQUEST, "Požadavek obsahuje neplatnou hodnotu."),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
             "Nepodporovaný typ požadavku (Content-Type). Požadováno multipart/form-data."),
+    NOT_FOUND(HttpStatus.NOT_FOUND, "Požadovaný zdroj neexistuje."),
+    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Metoda požadavku není pro tento zdroj podporována."),
+    NOT_ACCEPTABLE(HttpStatus.NOT_ACCEPTABLE, "Požadovaný formát odpovědi (Accept) není podporován."),
 
     // Generic
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Nastala neočekávaná chyba."),

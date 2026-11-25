@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * @see CorsConfig
  */
-@SpringBootTest
+@SpringBootTest(properties = "cors.allowed-origins=https://stage.example.gov.cz")
 @ActiveProfiles("stage")
 @AutoConfigureMockMvc
 class CorsConfigStageTest {
@@ -30,7 +30,7 @@ class CorsConfigStageTest {
 
     @Test
     void stageFrontendDomain() throws Exception {
-        String testOrigin = "https://www.domain.org";
+        String testOrigin = "https://stage.example.gov.cz";
 
         mockMvc.perform(get("/actuator/health")
                         .header("Origin", testOrigin))
@@ -43,11 +43,6 @@ class CorsConfigStageTest {
     @ValueSource(strings = {
             "http://localhost:3000",             // Local development HTTP
             "https://localhost:3000",            // Local development HTTPS
-            "http://192.168.0.18",               // Local network
-            "https://192.168.0.18",              // Local network HTTPS
-            "http://192.168.1.20",               // Local network different subnet
-            "https://b2b6-89-103-185-10.ngrok-free.app",  // Ngrok tunnel
-            "https://t1.domain.org",             // Cloudflare tunnel
     })
     void allowedOriginsTest(String testOrigin) throws Exception {
         mockMvc.perform(get("/actuator/health")
@@ -55,5 +50,19 @@ class CorsConfigStageTest {
                 .andExpect(status().isOk())
                 .andExpect(header().exists("Access-Control-Allow-Origin"))
                 .andExpect(header().string("Access-Control-Allow-Origin", testOrigin));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://www.domain.org",
+            "http://192.168.0.18",
+            "https://b2b6-89-103-185-10.ngrok-free.app",
+            "https://t1.domain.org",
+    })
+    void blockedOriginsTest(String testOrigin) throws Exception {
+        mockMvc.perform(get("/actuator/health")
+                        .header("Origin", testOrigin))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 }

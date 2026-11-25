@@ -512,4 +512,58 @@ class EnterpriseArchitectUnitTest {
             </xmi:XMI>
             """;
     }
+
+    private byte[] withDoctype(String doctype, String replaceName, String replacement) {
+        int declEnd = validXmlContent.indexOf("?>") + 2;
+        String xml = validXmlContent.substring(0, declEnd) + "\n" + doctype
+                + validXmlContent.substring(declEnd).replace(replaceName, replacement);
+        return xml.getBytes(StandardCharsets.UTF_8);
+    }
+
+    @Test
+    void testReadXmiFromBytes_ExternalParameterEntity_IsNotFetched(@org.junit.jupiter.api.io.TempDir java.nio.file.Path tmp)
+            throws Exception {
+        // The external file is not valid DTD: if the parser fetched it (XXE / SSRF), parsing would fail.
+        java.nio.file.Path external = tmp.resolve("external.dtd");
+        Files.writeString(external, "THIS IS NOT A DTD <<<");
+        byte[] payload = withDoctype(
+                "<!DOCTYPE xmi:XMI [<!ENTITY % ext SYSTEM \"" + external.toUri() + "\"> %ext;]>",
+                "\u0000none\u0000", "");
+
+        OntologyData result = reader.readXmiFromBytes(payload);
+        assertEquals("Příkladový slovník z metodiky popisu dat", result.getVocabularyMetadata().getName());
+    }
+
+    @Test
+    void testReadXmiFromBytes_ExternalDtd_IsNotFetched(@org.junit.jupiter.api.io.TempDir java.nio.file.Path tmp)
+            throws Exception {
+        java.nio.file.Path external = tmp.resolve("external.dtd");
+        Files.writeString(external, "THIS IS NOT A DTD <<<");
+        byte[] payload = withDoctype("<!DOCTYPE xmi:XMI SYSTEM \"" + external.toUri() + "\">", "\u0000none\u0000", "");
+
+        OntologyData result = reader.readXmiFromBytes(payload);
+        assertEquals("Příkladový slovník z metodiky popisu dat", result.getVocabularyMetadata().getName());
+    }
+
+    @Test
+    void testReadXmiFromBytes_EntityExpansionBomb_IsRejected() {
+        StringBuilder dtd = new StringBuilder("<!DOCTYPE xmi:XMI [<!ENTITY l0 \"lol\">");
+        for (int i = 1; i <= 10; i++) {
+            dtd.append("<!ENTITY l").append(i).append(" \"");
+            dtd.append(("&l" + (i - 1) + ";").repeat(10));
+            dtd.append("\">");
+        }
+        dtd.append("]>");
+        byte[] payload = withDoctype(dtd.toString(), "Příkladový slovník z metodiky popisu dat", "&l10;");
+
+        assertThrows(FileParsingException.class, () -> reader.readXmiFromBytes(payload));
+    }
+
+    @Test
+    void testReadXmiFromBytes_InternalDoctypeWithoutEntities_StillParses() throws FileParsingException {
+        // Older EA XMI 1.1 exports carry a DOCTYPE; it must not break parsing.
+        byte[] payload = withDoctype("<!DOCTYPE xmi:XMI SYSTEM \"UML_EA.DTD\">", "\u0000none\u0000", "");
+        OntologyData result = reader.readXmiFromBytes(payload);
+        assertEquals("Příkladový slovník z metodiky popisu dat", result.getVocabularyMetadata().getName());
+    }
 }

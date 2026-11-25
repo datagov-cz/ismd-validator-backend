@@ -6,6 +6,7 @@ import com.dia.validation.ValidationSeverity;
 import com.dia.validation.config.RuleManager;
 import com.dia.validation.config.ValidationConfiguration;
 import com.dia.validation.data.ISMDValidationReport;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
@@ -23,6 +24,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 @Slf4j
@@ -39,7 +41,21 @@ public class SHACLRuleEngine {
     public SHACLRuleEngine(ValidationConfiguration config, RuleManager ruleManager) {
         this.config = config;
         this.ruleManager = ruleManager;
-        this.executorService = Executors.newFixedThreadPool(2);
+        int poolSize = config.getPoolSize() > 0
+                ? config.getPoolSize()
+                : Math.max(2, Runtime.getRuntime().availableProcessors());
+        AtomicInteger threadNo = new AtomicInteger();
+        this.executorService = Executors.newFixedThreadPool(poolSize, r -> {
+            Thread t = new Thread(r, "shacl-validation-" + threadNo.incrementAndGet());
+            t.setDaemon(true);
+            return t;
+        });
+        log.info("SHACL validation pool size: {}", poolSize);
+    }
+
+    @PreDestroy
+    void shutdown() {
+        executorService.shutdownNow();
     }
 
     public ISMDValidationReport validate(Model dataModel) {
@@ -78,7 +94,11 @@ public class SHACLRuleEngine {
     private ISMDValidationReport executeValidationWithTimeout(Model dataModel, Model shapesModel)
             throws ValidationException {
 
+        // The timeout covers execution only: time spent queued behind other validations is bounded separately,
+        // so a busy server reports "busy" instead of timing out work that never started.
+        CountDownLatch started = new CountDownLatch(1);
         Future<ISMDValidationReport> future = executorService.submit(() -> {
+            started.countDown();
             try {
                 return executeValidation(dataModel, shapesModel);
             } catch (Exception e) {
@@ -87,8 +107,14 @@ public class SHACLRuleEngine {
         });
 
         try {
+            if (!started.await(config.getQueueTimeoutMs(), TimeUnit.MILLISECONDS)) {
+                future.cancel(false);
+                throw new ValidationException("Validation could not start within " + config.getQueueTimeoutMs()
+                        + "ms: server is busy, try again later");
+            }
             return future.get(config.getTimeoutMs(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
+            // Jena SHACL does not observe interruption: the worker may keep running until it finishes.
             future.cancel(true);
             throw new ValidationException("Validation timed out after " + config.getTimeoutMs() + "ms");
         } catch (InterruptedException e) {

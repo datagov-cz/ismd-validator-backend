@@ -19,7 +19,13 @@ public class ValidationConfiguration {
 
     private ValidationTiming defaultTiming = ValidationTiming.BEFORE_EXPORT;
 
-    private long timeoutMs = 10000; // 10 seconds
+    private long timeoutMs = 10000; // 10 seconds, execution time of one SHACL validation
+
+    /** Max time a validation may wait for a free worker before the request is rejected as busy. */
+    private long queueTimeoutMs = 30000;
+
+    /** SHACL worker threads; 0 = max(2, available processors). */
+    private int poolSize = 0;
 
     private boolean cacheResults = true;
 

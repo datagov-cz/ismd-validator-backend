@@ -21,12 +21,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.ontology.OntModel;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.util.unit.DataSize;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +44,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.regex.Pattern;
 
 import static com.dia.constants.FormatConstants.Converter.*;
 import static com.dia.enums.FileFormat.*;
@@ -54,9 +56,6 @@ public class ConverterController {
 
     private static final Duration DOWNLOAD_TIMEOUT = Duration.ofSeconds(30);
     private static final Set<String> ALLOWED_PROTOCOLS = Set.of("https");
-    private static final Pattern PRIVATE_IP_PATTERN = Pattern.compile(
-            "^(10\\.|172\\.(1[6-9]|2\\d|3[0-1])\\.|192\\.168\\.|127\\.|169\\.254\\.|::1|fc00:|fe80:)"
-    );
 
     private final ConverterService converterService;
     private final ValidationService validationService;
@@ -64,7 +63,14 @@ public class ConverterController {
     private final DetailedValidationReportService detailedValidationReportService;
     private final com.dia.validation.config.ValidationConfiguration validationConfiguration;
 
-    private HttpClient httpClient;
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(DOWNLOAD_TIMEOUT)
+            .followRedirects(HttpClient.Redirect.NEVER)
+            .build();
+
+    /** Same cap as multipart uploads, so a fileUrl download cannot bypass it. */
+    @Value("${spring.servlet.multipart.max-file-size:10MB}")
+    private DataSize maxDownloadSize = DataSize.ofMegabytes(10);
 
     @Operation(
             summary = "Konverze slovníku ze souboru nebo URL do formátu dle OFN a jeho export dle parametrů,",
@@ -238,19 +244,19 @@ public class ConverterController {
         }
         String csvContent = detailedValidationReportService.generateCSV(detailedReport);
 
-        byte[] csvBytes = csvContent.getBytes(StandardCharsets.UTF_8);
+        // UTF-8 BOM so that Excel opens Czech text correctly.
+        byte[] csvBytes = ("\uFEFF" + csvContent).getBytes(StandardCharsets.UTF_8);
 
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-        String finalFilename = filename + "_" + timestamp + ".csv";
+        String finalFilename = sanitizeDownloadFilename(filename) + "_" + timestamp + ".csv";
 
         HttpHeaders headers = new HttpHeaders();
 
         headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
-        headers.setContentDispositionFormData("attachment", finalFilename);
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename(finalFilename, StandardCharsets.UTF_8)
+                .build());
         headers.setContentLength(csvBytes.length);
-
-        headers.add("Content-Transfer-Encoding", "binary");
-        headers.add("Accept-Ranges", "bytes");
 
         headers.setCacheControl("no-cache, no-store, must-revalidate");
         headers.setPragma("no-cache");
@@ -435,7 +441,9 @@ public class ConverterController {
         try {
             return validationReportService.convertToDto(report);
         } catch (Exception e) {
-            return null;
+            // Fail closed: without results the error gate cannot decide, so never return output.
+            log.error("Failed to convert validation report to DTO", e);
+            throw new ValidationException("Nepodařilo se sestavit výsledky validace.", e);
         }
     }
 
@@ -478,13 +486,17 @@ public class ConverterController {
         }
     }
 
-    private MultipartFile downloadAsMultipartFile(String fileUrl) throws Exception {
-        if (httpClient == null) {
-            httpClient = HttpClient.newBuilder()
-                    .connectTimeout(DOWNLOAD_TIMEOUT)
-                    .build();
+    /** Letters (incl. Czech), digits, dot, dash, underscore and space only; never empty; max 100 chars. */
+    static String sanitizeDownloadFilename(String raw) {
+        String cleaned = raw == null ? "" : raw.replaceAll("[^\\p{L}\\p{N}._ -]", "_").strip();
+        cleaned = cleaned.replaceAll("^\\.+", "");
+        if (cleaned.isEmpty()) {
+            cleaned = "validation-report";
         }
+        return cleaned.length() > 100 ? cleaned.substring(0, 100) : cleaned;
+    }
 
+    private MultipartFile downloadAsMultipartFile(String fileUrl) throws Exception {
         URL url = UtilityMethods.validateUrl(fileUrl, ALLOWED_PROTOCOLS);
 
         performSecurityChecks(url);
@@ -497,14 +509,24 @@ public class ConverterController {
                 .GET()
                 .build();
 
-        HttpResponse<byte[]> response = httpClient.send(request,
-                HttpResponse.BodyHandlers.ofByteArray());
+        HttpResponse<InputStream> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofInputStream());
 
-        if (response.statusCode() != 200) {
-            throw new UrlDownloadException("Chyba při stahování souboru z URL. HTTP " + response.statusCode());
+        byte[] fileContent;
+        try (InputStream body = response.body()) {
+            if (response.statusCode() != 200) {
+                throw new UrlDownloadException("Chyba při stahování souboru z URL. HTTP " + response.statusCode());
+            }
+            long maxBytes = maxDownloadSize.toBytes();
+            long declared = response.headers().firstValueAsLong("content-length").orElse(-1L);
+            if (declared > maxBytes) {
+                throw new UrlDownloadException(tooLargeMessage());
+            }
+            fileContent = body.readNBytes((int) Math.min(Integer.MAX_VALUE - 8L, maxBytes + 1));
+            if (fileContent.length > maxBytes) {
+                throw new UrlDownloadException(tooLargeMessage());
+            }
         }
-
-        byte[] fileContent = response.body();
 
         if (fileContent.length == 0) {
             throw new UrlDownloadException("Stažený soubor je prázdný.");
@@ -514,21 +536,22 @@ public class ConverterController {
 
         log.info("Soubor úspěšně stažen: název={}, velikost={}", filename, fileContent.length);
 
-        return new UrlMultipartFile(fileContent, filename, UtilityMethods.extractContentType(response, filename));
+        return new UrlMultipartFile(fileContent, filename,
+                UtilityMethods.extractContentType(response.headers(), filename));
+    }
+
+    private String tooLargeMessage() {
+        return "Stažený soubor překračuje maximální povolenou velikost " + maxDownloadSize.toMegabytes() + " MB.";
     }
 
     private void performSecurityChecks(URL url) throws UnknownHostException {
-        InetAddress address = InetAddress.getByName(url.getHost());
-        String hostAddress = address.getHostAddress();
-
-        if (PRIVATE_IP_PATTERN.matcher(hostAddress).find()) {
-            throw new UrlDownloadException("Přístup k privátním IP adresám není povolen.");
-        }
-
-        if ("localhost".equalsIgnoreCase(url.getHost()) ||
-                "127.0.0.1".equals(url.getHost()) ||
-                "0.0.0.0".equals(url.getHost())) {
+        if ("localhost".equalsIgnoreCase(url.getHost())) {
             throw new UrlDownloadException("Přístup k localhost není povolen.");
+        }
+        for (InetAddress address : InetAddress.getAllByName(url.getHost())) {
+            if (UtilityMethods.isNonPublicAddress(address)) {
+                throw new UrlDownloadException("Přístup k privátním IP adresám není povolen.");
+            }
         }
 
         int port = url.getPort() == -1 ? url.getDefaultPort() : url.getPort();

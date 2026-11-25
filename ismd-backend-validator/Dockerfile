@@ -45,12 +45,21 @@ COPY --from=builder /app/ismd-backend-validator/target/ismd-backend-validator-*.
 # (enable_app_insights_agent), so one image serves all envs and telemetry can be
 # flipped on/off without a rebuild. The agent reads APPLICATIONINSIGHTS_CONNECTION_STRING
 # (injected by TF) for its destination. The checksum must change with the version.
-ADD --checksum=sha256:e81ef99fd30444f6f1da70cd31db5e47f8e6906acbbc9199cac3b390dc6cfedf \
+# --chmod: ADD from a URL creates the file 0600 root-owned, which the non-root runtime user could not read.
+ADD --checksum=sha256:e81ef99fd30444f6f1da70cd31db5e47f8e6906acbbc9199cac3b390dc6cfedf --chmod=0644 \
     https://github.com/microsoft/ApplicationInsights-Java/releases/download/3.6.2/applicationinsights-agent-3.6.2.jar /app/applicationinsights-agent.jar
 
 # Add labels for better image identification
 LABEL org.opencontainers.image.title="ISMD Backend Validator"
 LABEL org.opencontainers.image.version="${MODULE_VERSION}"
 
+# Run as an unprivileged user. Only /tmp (Tomcat work dir, multipart buffering) needs to be writable.
+RUN groupadd --system --gid 10001 app \
+    && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
+USER 10001:10001
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Heap sized from the container memory limit (JVM default is only 25%). 70 matches ismd-tool-backend and leaves
+# room for metaspace, thread stacks and the App Insights agent. Kept on the command line rather than in
+# JAVA_TOOL_OPTIONS, which Terraform owns (App Insights agent); command-line flags take precedence anyway.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=70", "-XX:+ExitOnOutOfMemoryError", "-jar", "app.jar"]

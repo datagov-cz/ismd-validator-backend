@@ -95,8 +95,8 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
                                         normalizeString(violation.description()),
                                         normalizeString(violation.severity()),
                                         normalizeString(violation.level()),
-                                        normalizeString(violation.value()),
-                                        ""
+                                        normalizeString(violation.description()),
+                                        normalizeString(violation.value())
                                 );
                             } catch (IOException e) {
                                 log.error("Error writing CSV record for concept: {} rule: {}", conceptIri, ruleKey, e);
@@ -114,14 +114,21 @@ public class DetailedValidationReportServiceImpl implements DetailedValidationRe
         }
     }
 
-    private String normalizeString(String value) {
+    /**
+     * NFC-normalized, trimmed CSV cell. Cells that a spreadsheet would evaluate as a formula
+     * ({@code = + - @}, tab, CR) are prefixed with an apostrophe (OWASP CSV injection guidance):
+     * the request body is client-supplied JSON, so its strings are untrusted.
+     */
+    static String normalizeString(String value) {
         if (value == null) {
             return "";
         }
 
-        String normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFC);
-
-        return normalized.trim();
+        String normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFC).trim();
+        if (!normalized.isEmpty() && "=+-@\t\r".indexOf(normalized.charAt(0)) >= 0) {
+            return "'" + normalized;
+        }
+        return normalized;
     }
 
     @Override

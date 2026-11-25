@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -471,5 +472,18 @@ class DetailedValidationReportServiceTest {
                     .contains("http://www.w3.org/ns/shacl#Warning")
                     .contains("http://www.w3.org/ns/shacl#Info");
         }
+    }
+
+    @Test
+    void csvCells_areEscapedAgainstFormulaInjection() {
+        assertThat(DetailedValidationReportServiceImpl.normalizeString("=HYPERLINK(\"http://x\")"))
+                .isEqualTo("'=HYPERLINK(\"http://x\")");
+        assertThat(DetailedValidationReportServiceImpl.normalizeString("+1")).isEqualTo("'+1");
+        assertThat(DetailedValidationReportServiceImpl.normalizeString("-2+3")).isEqualTo("'-2+3");
+        assertThat(DetailedValidationReportServiceImpl.normalizeString("@SUM(A1)")).isEqualTo("'@SUM(A1)");
+        assertThat(DetailedValidationReportServiceImpl.normalizeString("https://slovník.gov.cz/x"))
+                .isEqualTo("https://slovník.gov.cz/x");
+        assertThat(DetailedValidationReportServiceImpl.normalizeString("  plain  ")).isEqualTo("plain");
+        assertThat(DetailedValidationReportServiceImpl.normalizeString(null)).isEmpty();
     }
 }

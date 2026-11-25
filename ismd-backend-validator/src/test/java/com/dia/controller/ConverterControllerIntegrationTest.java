@@ -911,4 +911,40 @@ class ConverterControllerIntegrationTest {
         verify(validationService).validate(any(TransformationResult.class));
         verifyNoInteractions(validationReportService);
     }
+
+    @Test
+    void detailedReportCsv_isUtf8AttachmentWithBomAndSafeFilename() throws Exception {
+        when(detailedValidationReportService.generateCSV(any())).thenReturn("Concept_IRI\nžluťoučký\n");
+        String body = "{\"detailedReport\":{\"ontology\":{\"name\":{},\"description\":{}},\"validation\":{}}}";
+
+        MvcResult result = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/converter/convert/detailed-report/csv")
+                        .param("filename", "../Příliš \"zlý\"\r\nX-Evil: 1")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String disposition = result.getResponse().getHeader("Content-Disposition");
+        assertNotNull(disposition);
+        assertTrue(disposition.startsWith("attachment;"), disposition);
+        assertTrue(disposition.contains("filename*=UTF-8''"), disposition);
+        assertFalse(disposition.contains("\r") || disposition.contains("\n") || disposition.contains("/"), disposition);
+        assertTrue(java.net.URLDecoder.decode(disposition, StandardCharsets.UTF_8).contains("Příliš"), disposition);
+
+        byte[] bytes = result.getResponse().getContentAsByteArray();
+        assertArrayEquals(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF}, java.util.Arrays.copyOf(bytes, 3));
+        assertTrue(new String(bytes, StandardCharsets.UTF_8).contains("žluťoučký"));
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+            "report, report",
+            "'', validation-report",
+            "../../etc/passwd, _.._etc_passwd",
+            "slovník-2026, slovník-2026"
+    })
+    void sanitizeDownloadFilename(String raw, String expected) {
+        assertEquals(expected, ConverterController.sanitizeDownloadFilename(raw));
+    }
 }

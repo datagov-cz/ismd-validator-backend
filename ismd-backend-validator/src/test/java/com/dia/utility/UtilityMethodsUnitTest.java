@@ -444,4 +444,42 @@ class UtilityMethodsUnitTest {
         assertEquals("https://example.com/slovnik/pojem/adresa",
                 uriGenerator.generateConceptURI("Adresa", "https://jinde.cz/adresa/"));
     }
+
+    private static java.net.http.HttpHeaders headers(Map<String, List<String>> map) {
+        return java.net.http.HttpHeaders.of(map, (k, v) -> true);
+    }
+
+    @Test
+    void extractContentType_usesHeaderWithoutRequiringTtlExtension() {
+        // Regression: the filename fallback used to be evaluated eagerly and threw for any non-.ttl name.
+        var h = headers(Map.of("content-type",
+                List.of("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")));
+        assertEquals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                UtilityMethods.extractContentType(h, "slovnik.xlsx"));
+        assertDoesNotThrow(() -> UtilityMethods.extractContentType(
+                headers(Map.of("content-type", List.of("application/xml"))), "downloaded-file"));
+    }
+
+    @Test
+    void extractContentType_fallsBackToFilenameWhenHeaderMissing() {
+        assertEquals("text/turtle", UtilityMethods.extractContentType(headers(Map.of()), "slovnik.ttl"));
+        assertThrows(com.dia.exception.UnsupportedFormatException.class,
+                () -> UtilityMethods.extractContentType(headers(Map.of()), "slovnik.bin"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "127.0.0.1", "0.0.0.0", "0.1.2.3", "10.1.2.3", "172.16.0.1", "192.168.1.1",
+            "169.254.169.254", "100.64.0.1", "100.127.255.255", "224.0.0.1",
+            "::1", "::", "fe80::1", "fc00::1", "fd12:3456::1", "::ffff:127.0.0.1", "::ffff:10.0.0.1"
+    })
+    void isNonPublicAddress_blocksInternalRanges(String ip) throws Exception {
+        assertTrue(UtilityMethods.isNonPublicAddress(java.net.InetAddress.getByName(ip)), ip);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"8.8.8.8", "100.63.255.255", "100.128.0.1", "172.32.0.1", "2001:4860:4860::8888"})
+    void isNonPublicAddress_allowsPublicAddresses(String ip) throws Exception {
+        assertFalse(UtilityMethods.isNonPublicAddress(java.net.InetAddress.getByName(ip)), ip);
+    }
 }

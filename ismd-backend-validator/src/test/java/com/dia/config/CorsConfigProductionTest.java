@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * @see CorsConfig
  */
-@SpringBootTest
+@SpringBootTest(properties = "cors.allowed-origins=https://validator.example.gov.cz, https://fe.example.gov.cz")
 @ActiveProfiles("production")
 @AutoConfigureMockMvc
 class CorsConfigProductionTest {
@@ -33,7 +33,8 @@ class CorsConfigProductionTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "https://www.domain.com"
+            "https://validator.example.gov.cz",
+            "https://fe.example.gov.cz"
     })
     void allowedOriginsTest(String testOrigin) throws Exception {
         String activeProfiles = String.join(", ", environment.getActiveProfiles());
@@ -43,11 +44,13 @@ class CorsConfigProductionTest {
                         .header("Origin", testOrigin))
                 .andExpect(status().isOk())
                 .andExpect(header().exists("Access-Control-Allow-Origin"))
-                .andExpect(header().string("Access-Control-Allow-Origin", testOrigin));
+                .andExpect(header().string("Access-Control-Allow-Origin", testOrigin))
+                .andExpect(header().string("Access-Control-Expose-Headers", "Content-Disposition, X-Request-Id"));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {
+            "https://www.domain.com",
             "https://www.twitter.com",
             "http://localhost:3000",
             "https://malicious-site.com",

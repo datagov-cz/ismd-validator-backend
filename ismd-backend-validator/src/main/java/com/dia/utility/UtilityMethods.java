@@ -6,7 +6,10 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.http.HttpResponse;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.http.HttpHeaders;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -522,10 +525,32 @@ public class UtilityMethods {
         return filename;
     }
 
-    public String extractContentType(HttpResponse<byte[]> response, String filename) {
-        return response.headers()
+    public String extractContentType(HttpHeaders headers, String filename) {
+        return headers
                 .firstValue("content-type")
-                .orElse(guessContentTypeFromFilename(filename));
+                .orElseGet(() -> guessContentTypeFromFilename(filename));
+    }
+
+    /**
+     * True for any address a server-side download must not reach: loopback, wildcard, private (RFC 1918 and
+     * IPv6 ULA fc00::/7), link-local (incl. cloud metadata 169.254.169.254), multicast, CGNAT 100.64.0.0/10
+     * and 0.0.0.0/8. IPv4-mapped IPv6 addresses are already returned by the JDK as {@link Inet4Address}.
+     */
+    public boolean isNonPublicAddress(InetAddress address) {
+        if (address.isLoopbackAddress() || address.isAnyLocalAddress() || address.isLinkLocalAddress()
+                || address.isSiteLocalAddress() || address.isMulticastAddress()) {
+            return true;
+        }
+        byte[] b = address.getAddress();
+        if (address instanceof Inet4Address) {
+            int first = b[0] & 0xFF;
+            int second = b[1] & 0xFF;
+            return first == 0 || (first == 100 && second >= 64 && second <= 127);
+        }
+        if (address instanceof Inet6Address) {
+            return (b[0] & 0xFE) == 0xFC;
+        }
+        return false;
     }
 
     private String guessContentTypeFromFilename(String filename) {

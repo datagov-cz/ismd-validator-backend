@@ -3,10 +3,29 @@ package com.dia.config.cors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.cors.CorsConfiguration;
 
+import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Builds the per-profile CORS configuration.
+ *
+ * <p>Exact origins always come from {@code cors.allowed-origins} (env {@code CORS_ALLOWED_ORIGINS},
+ * comma-separated) so that each deployed environment sets its own frontend origin without a rebuild.
+ * Server-to-server callers (ismd-tool-backend) are not subject to CORS and need no entry here.
+ */
 @Slf4j
 public class CorsConfigUtil {
+
+    private static final List<String> METHODS = List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD");
+
+    /** Response headers browser JS must be able to read (CSV download filename, request correlation). */
+    private static final List<String> EXPOSED_HEADERS = List.of("Content-Disposition", "X-Request-Id");
+
+    /** Localhost only: a deployed stage frontend must be listed explicitly in {@code cors.allowed-origins}. */
+    private static final List<String> STAGE_PATTERNS = List.of(
+            "http://localhost:[*]",
+            "https://localhost:[*]"
+    );
 
     private static final List<String> DEV_PATTERNS = List.of(
             // access from localhost
@@ -27,58 +46,66 @@ public class CorsConfigUtil {
             // Docker container/service names (aligned in docker-compose.yml)
             "http://ismd-validator-frontend:[*]",
             "http://ismd-validator-backend:[*]",
-            
+
             // Docker host.docker.internal (for standalone Docker containers)
             "http://host.docker.internal:[*]",
             "https://host.docker.internal:[*]"
     );
 
+    private final List<String> allowedOrigins;
+
+    public CorsConfigUtil(String allowedOrigins) {
+        this.allowedOrigins = parseOrigins(allowedOrigins);
+    }
+
+    static List<String> parseOrigins(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+    }
+
     public CorsConfiguration createProductionCorsConfiguration() {
-        var config = new CorsConfiguration();
-        // TODO: change to relevant domain before production release
-        config.setAllowedOrigins(List.of("https://www.domain.com"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
-
-        // TODO: switch to 1 day when this setting is verified
-        config.setMaxAge(600L);
-
+        if (allowedOrigins.isEmpty()) {
+            log.warn("cors.allowed-origins (CORS_ALLOWED_ORIGINS) is empty in production: "
+                    + "all cross-origin browser requests will be rejected");
+        } else {
+            log.info("CORS allowed origins (production): {}", allowedOrigins);
+        }
+        var config = base();
+        config.setAllowedOrigins(allowedOrigins);
+        config.setMaxAge(3600L);
         return config;
     }
 
     public CorsConfiguration createStageCorsConfiguration() {
-        var config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("https://www.domain.org"));
-        config.setAllowedOriginPatterns(DEV_PATTERNS);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
-
+        log.info("CORS allowed origins (stage): {}", allowedOrigins);
+        var config = base();
+        config.setAllowedOrigins(allowedOrigins);
+        config.setAllowedOriginPatterns(STAGE_PATTERNS);
         config.setMaxAge(3600L);
-
         return config;
     }
 
     public CorsConfiguration createLocalCorsConfiguration() {
-        var config = new CorsConfiguration();
-
-        // Get allowed origins from environment variable
-        String corsAllowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
-        if (corsAllowedOrigins != null && !corsAllowedOrigins.isEmpty()) {
-            // Split comma-separated origins to support multiple origins
-            log.info("CORS allowed origins set from environment: {}", corsAllowedOrigins);
-            config.setAllowedOrigins(List.of(corsAllowedOrigins.split(",")));
-        }
-
+        log.info("CORS allowed origins (local): {}", allowedOrigins);
+        var config = base();
+        config.setAllowedOrigins(allowedOrigins);
         // Always include development patterns for local environment
         config.setAllowedOriginPatterns(DEV_PATTERNS);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
-
         config.setMaxAge(600L);
+        return config;
+    }
 
+    private static CorsConfiguration base() {
+        var config = new CorsConfiguration();
+        config.setAllowedMethods(METHODS);
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(EXPOSED_HEADERS);
+        config.setAllowCredentials(true);
         return config;
     }
 }

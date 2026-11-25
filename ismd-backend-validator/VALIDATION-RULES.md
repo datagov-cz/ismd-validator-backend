@@ -79,17 +79,25 @@ Each `.ttl` file contains one or more SHACL `sh:NodeShape` definitions. The file
 In `application.properties`, each rule has a toggle:
 
 ```properties
-validation.rules.enabled.<rule-key>=true|false
+validation.rules.enabled[<rule-key>]=true|false
 ```
 
 The `<rule-key>` **must match the sanitized filename** (lowercase, no `.ttl` extension). For example, the file `local-název-slovníku.ttl` has key `local-název-slovníku`.
+
+Two gotchas, both of which silently break the toggle:
+
+- **Use brackets.** Without `[...]`, Spring's map binder drops every non-ASCII character from the key (`local-nzev-slovnku`), so the key no longer matches the rule.
+- **Escape non-ASCII as `\uXXXX`.** `.properties` files are read as ISO-8859-1: `validation.rules.enabled[local-n\u00e1zev-slovn\u00edku]=true`.
+
+Startup fails if a rule enabled in properties does not match a loaded rule file.
 
 **Default behavior:** If a `.ttl` file exists in the rules directory but has no corresponding entry in `application.properties`, the rule is **enabled by default**.
 
 To disable a rule, explicitly set it to `false`:
 
 ```properties
-validation.rules.enabled.local-povinné-údaje-pojmu=false
+# local-povinné-údaje-pojmu
+validation.rules.enabled[local-povinn\u00e9-\u00fadaje-pojmu]=false
 ```
 
 ### Execution Settings
@@ -166,7 +174,7 @@ validation.global.retry-delay-ms=1000
 3. **Add a config entry** in `application.properties`:
 
    ```properties
-   validation.rules.enabled.local-my-rule-name=true
+   validation.rules.enabled[local-my-rule-name]=true
    ```
 
 4. **Restart the application.** Rules are loaded at startup. Check the logs for:

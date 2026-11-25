@@ -20,6 +20,8 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=${VALIDATOR_PROFILE:-localhost}
       - CORS_ALLOWED_ORIGINS=${VALIDATOR_CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      # The localhost profile defaults to 8082 (for `mvn spring-boot:run`); inside the container listen on 8080.
+      - SERVER_PORT=8080
     ports:
       - "8082:8080"
     networks:
